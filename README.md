@@ -16,15 +16,16 @@ apps/be source ──pnpm openapi:emit──▶ packages/contract/openapi.json �
 
 ## Status
 
-Skeleton only — `apps/be` and `apps/fe` are not bootstrapped yet. Root scripts that filter
-into an app fail until then (expected); `bash init.sh` degrades to skeleton checks. CI goes
-fully green after step 4 below.
+**Steps 1–3 done** — `apps/be` is live (identity + catalog slices, ABAC, offline contract
+emit) and `packages/contract/openapi.json` is real. Next: **step 4 (frontend)**. `apps/fe`
+does not exist yet, so `pnpm generate:api` and the FE half of CI stay red until then.
+Dev DB: `docker compose up -d` · seed: `pnpm --filter be migrate && pnpm --filter be seed`.
 
 ## Bootstrap order (do not reorder — FE needs the real contract)
 
-### 1. Skeleton — DONE (this commit)
+### 1. Skeleton — DONE
 
-### 2. Backend — next step. Kickoff prompt (run in a fresh agent session at repo root):
+### 2. Backend — DONE (see `apps/be/AGENTS.md`). Original kickoff prompt kept for reference:
 
 ```text
 You are bootstrapping the BACKEND of this monorepo, inside apps/be/ only.

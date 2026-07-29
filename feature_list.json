@@ -11,8 +11,8 @@
     {
       "id": "infra/be-bootstrap",
       "title": "Bootstrap apps/be per docs/spec/init-nestjs-hexagonal + emit-openapi script (init-monorepo-contract 02 §2)",
-      "status": "todo",
-      "evidence": null
+      "status": "pass",
+      "evidence": "2026-07-30: build/lint/arch(0 violations,97 modules)/test(8) green; pnpm openapi:emit OFFLINE writes packages/contract/openapi.json (tags identity+catalog, pinned operationIds); migrations 0001-0002 applied on compose Postgres; smoke.sh vs running app: login 200, no-token 401, create dress 201, duplicate code 409, me=owner; psql proof: EXCLUDE constraint rejects overlapping rental_items AND accepts after blocking=false (rolled back). ABAC: fail-closed policy registry + PoliciesGuard, catalog policies registered."
     },
     {
       "id": "infra/fe-bootstrap",
@@ -23,8 +23,8 @@
     {
       "id": "catalog/list-dresses",
       "title": "Dress catalog: list/search by code, size, status; one-time seed import from the shop's Google Sheets CSV (~200 dresses)",
-      "status": "todo",
-      "evidence": null
+      "status": "in-progress",
+      "evidence": "create-dress + list-dresses (q/status/pagination) shipped as the bootstrap proving slice, runtime-proven via smoke.sh; REMAINING: CSV seed import (import-dresses command)"
     },
     {
       "id": "catalog/manage-dress",

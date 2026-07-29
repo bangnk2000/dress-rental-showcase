@@ -1,0 +1,458 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "LoginHttpController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        },
+        "summary": "Staff login with email + password",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "RefreshTokenHttpController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired refresh token"
+          }
+        },
+        "summary": "Exchange a refresh token for a new token pair",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "MeHttpController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Current authenticated staff profile",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/dresses": {
+      "post": {
+        "operationId": "CreateDressHttpController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDressRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Dress code already exists"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a dress to the catalog",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "get": {
+        "operationId": "ListDressesHttpController_list",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Search in code and name",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 100,
+              "example": "VD-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "retired"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DressListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List dresses (paginated, filter by code/name/status)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "dress-rental API",
+    "description": "",
+    "version": "0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "LoginRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "owner@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "example": "changeme"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "TokenPairResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "Short-lived JWT access token (Bearer)"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Long-lived refresh token"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken"
+        ]
+      },
+      "RefreshTokenRequestDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "MeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "email": {
+            "type": "string",
+            "example": "owner@example.com"
+          },
+          "name": {
+            "type": "string",
+            "example": "Chị Hoa"
+          },
+          "role": {
+            "enum": [
+              "owner",
+              "staff"
+            ],
+            "type": "string",
+            "example": "owner"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "role"
+        ]
+      },
+      "CreateDressRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{1,19}$",
+            "example": "VD-012",
+            "description": "Unique shop code"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "Váy cưới đuôi cá ren trắng"
+          },
+          "sizeLabel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "example": "M"
+          },
+          "rentalPrice": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1500000,
+            "description": "Rental price in VND (integer)"
+          },
+          "depositAmount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 3000000,
+            "description": "Standard deposit in VND (integer)"
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "Rách nhẹ vạt dưới, đã sửa 06/2026"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "rentalPrice",
+          "depositAmount"
+        ]
+      },
+      "IdResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "DressResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "code": {
+            "type": "string",
+            "example": "VD-012"
+          },
+          "name": {
+            "type": "string",
+            "example": "Váy cưới đuôi cá ren trắng"
+          },
+          "sizeLabel": {
+            "type": "string",
+            "nullable": true,
+            "example": "M"
+          },
+          "rentalPrice": {
+            "type": "number",
+            "example": 1500000,
+            "description": "Rental price in VND"
+          },
+          "depositAmount": {
+            "type": "number",
+            "example": 3000000,
+            "description": "Standard deposit in VND"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "retired"
+            ],
+            "type": "string",
+            "example": "active"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-07-30T10:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sizeLabel",
+          "rentalPrice",
+          "depositAmount",
+          "status",
+          "notes",
+          "createdAt"
+        ]
+      },
+      "DressListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DressResponseDto"
+            }
+          },
+          "count": {
+            "type": "number",
+            "example": 200
+          },
+          "limit": {
+            "type": "number",
+            "example": 20
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "data",
+          "count",
+          "limit",
+          "page"
+        ]
+      }
+    }
+  }
+}

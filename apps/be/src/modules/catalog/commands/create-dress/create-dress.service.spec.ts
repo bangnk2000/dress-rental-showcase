@@ -1,0 +1,65 @@
+import { CreateDressCommand } from './create-dress.command';
+import { CreateDressService } from './create-dress.service';
+import { DressCodeAlreadyExistsError } from '../../domain/dress.errors';
+import { DressEntity } from '../../domain/dress.entity';
+import { DressRepositoryPort } from '../../application/ports/dress.repository.port';
+
+function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepositoryPort {
+  return {
+    insert: jest.fn().mockResolvedValue(undefined),
+    save: jest.fn().mockResolvedValue(undefined),
+    findOneById: jest.fn().mockResolvedValue(null),
+    findOneByCode: jest.fn().mockResolvedValue(null),
+    nextId: jest.fn().mockReturnValue('00000000-0000-4000-8000-000000000001'),
+    ...overrides,
+  };
+}
+
+const baseCommand = new CreateDressCommand({
+  code: 'vd-012',
+  name: 'Váy cưới đuôi cá',
+  sizeLabel: 'M',
+  rentalPrice: 1_500_000,
+  depositAmount: 3_000_000,
+  notes: null,
+});
+
+describe('CreateDressService', () => {
+  it('creates a dress, normalizes the code, and returns its id', async () => {
+    const repo = makeRepo();
+    const service = new CreateDressService(repo);
+
+    const result = await service.execute(baseCommand);
+
+    expect(result.isOk()).toBe(true);
+    expect(result.unwrap()).toBe('00000000-0000-4000-8000-000000000001');
+    expect(repo.insert).toHaveBeenCalledTimes(1);
+    const inserted = (repo.insert as jest.Mock).mock.calls[0][0] as DressEntity;
+    expect(inserted.getProps().code.unpack()).toBe('VD-012'); // uppercased by the VO
+    expect(inserted.getProps().status).toBe('active');
+    expect(inserted.domainEvents).toHaveLength(1); // DressCreatedDomainEvent queued
+  });
+
+  it('returns Err(DressCodeAlreadyExistsError) when the code is taken', async () => {
+    const existing = DressEntity.create(
+      {
+        code: (await import('../../domain/dress-code.value-object')).DressCode.create('VD-012'),
+        name: 'x',
+        sizeLabel: null,
+        rentalPrice: (await import('../../../../libs/ddd/money.value-object')).Money.create(1),
+        depositAmount: (await import('../../../../libs/ddd/money.value-object')).Money.create(1),
+        notes: null,
+      },
+      '00000000-0000-4000-8000-000000000002',
+      new Date('2026-01-01'),
+    );
+    const repo = makeRepo({ findOneByCode: jest.fn().mockResolvedValue(existing) });
+    const service = new CreateDressService(repo);
+
+    const result = await service.execute(baseCommand);
+
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapErr()).toBeInstanceOf(DressCodeAlreadyExistsError);
+    expect(repo.insert).not.toHaveBeenCalled();
+  });
+});

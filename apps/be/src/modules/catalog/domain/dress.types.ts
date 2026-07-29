@@ -1,0 +1,24 @@
+import { Money } from '../../../libs/ddd/money.value-object';
+import { DressCode } from './dress-code.value-object';
+
+/** Lifecycle status owned by catalog. Operational status (renting/cleaning) is derived from rentals on the read side. */
+export type DressStatus = 'active' | 'retired';
+
+export interface DressProps {
+  code: DressCode;
+  name: string;
+  sizeLabel: string | null;
+  rentalPrice: Money;
+  depositAmount: Money;
+  status: DressStatus;
+  notes: string | null;
+}
+
+export interface CreateDressProps {
+  code: DressCode;
+  name: string;
+  sizeLabel: string | null;
+  rentalPrice: Money;
+  depositAmount: Money;
+  notes: string | null;
+}
