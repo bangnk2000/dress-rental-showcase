@@ -1,0 +1,18 @@
+{
+  "name": "dress-rental",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "openapi:emit": "pnpm --filter be openapi:emit",
+    "generate:api": "pnpm --filter fe generate:api",
+    "contract": "pnpm openapi:emit && pnpm generate:api",
+    "contract:check": "pnpm contract && git diff --exit-code packages/contract apps/fe/src/api/generated",
+    "check": "pnpm --filter be build && pnpm --filter fe check",
+    "lint": "pnpm -r --if-present lint",
+    "arch": "pnpm -r --if-present arch",
+    "test": "pnpm -r --if-present test",
+    "build": "pnpm -r --if-present build"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "product": "dress-rental",
+  "rules": "ONE in-progress at a time. Evidence before pass. Cross-contract features carry BOTH sides' proof in one entry (docs/spec/init-monorepo-contract/04-harness-binding.md).",
+  "features": [
+    {
+      "id": "infra/monorepo-skeleton",
+      "title": "Workspace skeleton: pnpm workspace, contract package, CI drift gates, root harness",
+      "status": "pass",
+      "evidence": "initial commit 2026-07-30; bash init.sh passes skeleton-only checks; apps not yet bootstrapped"
+    },
+    {
+      "id": "infra/be-bootstrap",
+      "title": "Bootstrap apps/be per docs/spec/init-nestjs-hexagonal + emit-openapi script (init-monorepo-contract 02 §2)",
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "infra/fe-bootstrap",
+      "title": "Bootstrap apps/fe per docs/spec/init-react against the real packages/contract/openapi.json",
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "catalog/list-dresses",
+      "title": "Dress catalog: list/search by code, size, status; one-time seed import from the shop's Google Sheets CSV (~200 dresses)",
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "catalog/manage-dress",
+      "title": "Create/update a dress: code, photos, rental price, standard deposit, status (available / renting / cleaning / retired)",
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "rentals/create-rental",
+      "title": "Create rental: customer + per-dress date range + cleaning buffer after return; overlapping bookings rejected at the DB level (Postgres daterange exclusion constraint), not only in application code",
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "rentals/availability-check",
+      "title": "Availability: answer 'is dress X free from A to B'; dress detail shows booked ranges on a calendar",
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "rentals/return-rental",
+      "title": "Return flow: settle deposit, record late/damage fees, dress moves to cleaning then available",
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "rentals/today-board",
+      "title": "Today screen: dresses due out and due back today — the screen staff open every morning",
+      "status": "todo",
+      "evidence": null
+    }
+  ]
+}

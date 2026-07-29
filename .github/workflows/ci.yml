@@ -1,0 +1,44 @@
+name: ci
+on:
+  pull_request:
+  push: { branches: [master] }
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm openapi:emit
+      - run: git diff --exit-code packages/contract
+      - run: pnpm generate:api
+      - run: git diff --exit-code apps/fe/src/api/generated
+      - run: pnpm check
+
+  be:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter be lint && pnpm --filter be arch
+      - run: pnpm --filter be test
+      # + migrate/test:e2e with postgres service once apps/be lands
+      #   (docs/spec/init-nestjs-hexagonal/09-testing-strategy.md)
+
+  fe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter fe lint && pnpm --filter fe arch
+      - run: pnpm --filter fe test
+      - run: pnpm --filter fe build
