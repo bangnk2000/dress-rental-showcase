@@ -16,9 +16,11 @@ apps/be source ──pnpm openapi:emit──▶ packages/contract/openapi.json �
 
 ## Status
 
-**Steps 1–3 done** — `apps/be` is live (identity + catalog slices, ABAC, offline contract
-emit) and `packages/contract/openapi.json` is real. Next: **step 4 (frontend)**. `apps/fe`
-does not exist yet, so `pnpm generate:api` and the FE half of CI stay red until then.
+**Steps 1–4 done** — `apps/be` (identity + catalog slices, ABAC, offline contract emit) and
+`apps/fe` (auth + dresses slices, PWA/i18n, Orval client from the real contract) are both live;
+the FE half of CI (`pnpm generate:api`, fe check/lint/arch/test/build) is now green. Next:
+**step 5** — prove `bash init.sh` from a clean checkout, then start features
+(`rentals/create-rental` first: BE slice → `pnpm contract` → FE slice, one entry).
 Dev DB: `docker compose up -d` · seed: `pnpm --filter be migrate && pnpm --filter be seed`.
 
 ## Bootstrap order (do not reorder — FE needs the real contract)

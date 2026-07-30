@@ -1,0 +1,6 @@
+{
+  "title": "Today",
+  "shell": {
+    "comingSoon": "The today board will be available once its backend slice ships."
+  }
+}

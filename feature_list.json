@@ -17,14 +17,14 @@
     {
       "id": "infra/fe-bootstrap",
       "title": "Bootstrap apps/fe per docs/spec/init-react against the real packages/contract/openapi.json",
-      "status": "todo",
-      "evidence": null
+      "status": "pass",
+      "evidence": "2026-07-30: FE gates green — check (tsc clean), lint (eslint + boundaries v7 policies, 0 warnings), arch (scripts/check-architecture.sh: 11 PASS incl. generated-freshness and vi/en locale parity), test (vitest 15 passed / 3 files), build (vite + PWA precache 20 entries). contract:check green (BE openapi:emit offline + orval regenerate, git diff clean — client fresh vs BE emit). Runtime proof against compose Postgres + node dist/main.js THROUGH the Vite dev proxy (:5173→:3000): GET / = 200 SPA html; POST /api/v1/auth/login (owner@example.com) = 200 accessToken+refreshToken; GET /api/v1/dresses with Bearer = 200 list JSON; no-token = 401; POST dress = 201 then duplicate code = 409. Proof is HTTP-level via proxy + component tests for loading/empty/error render states (no manual browser session). Deferred: Playwright e2e until first cross-contract feature; SignOut UX minimal (header button, local-only revoke)."
     },
     {
       "id": "catalog/list-dresses",
       "title": "Dress catalog: list/search by code, size, status; one-time seed import from the shop's Google Sheets CSV (~200 dresses)",
       "status": "in-progress",
-      "evidence": "create-dress + list-dresses (q/status/pagination) shipped as the bootstrap proving slice, runtime-proven via smoke.sh; REMAINING: CSV seed import (import-dresses command)"
+      "evidence": "create-dress + list-dresses (q/status/pagination) shipped as the bootstrap proving slice, runtime-proven via smoke.sh; FE list/search/status-filter/pagination/create-dialog surface shipped with fe-bootstrap (2026-07-30, features/dresses); REMAINING: CSV seed import (import-dresses command)"
     },
     {
       "id": "catalog/manage-dress",

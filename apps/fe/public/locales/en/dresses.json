@@ -1,0 +1,66 @@
+{
+  "title": "Dresses",
+  "list": {
+    "searchPlaceholder": "Search by code or name...",
+    "searchButton": "Search",
+    "statusFilterLabel": "Status",
+    "statusAll": "All statuses",
+    "createButton": "Add dress",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "size": "Size",
+      "rentalPrice": "Rental price",
+      "deposit": "Deposit",
+      "status": "Status"
+    },
+    "empty": {
+      "noDresses": "No dresses yet",
+      "noDressesHint": "Add the first dress to the shop catalog.",
+      "noMatch": "No dresses match",
+      "noMatchHint": "Try a different search or status filter."
+    },
+    "pagination": {
+      "label": "Page {{page}} / {{totalPages}}",
+      "previous": "Previous page",
+      "next": "Next page"
+    }
+  },
+  "status": {
+    "active": "Available",
+    "retired": "Retired"
+  },
+  "form": {
+    "title": "Add a new dress",
+    "description": "Enter the dress details to add it to the catalog.",
+    "fields": {
+      "code": "Dress code",
+      "name": "Dress name",
+      "sizeLabel": "Size",
+      "rentalPrice": "Rental price (VND)",
+      "depositAmount": "Deposit (VND)",
+      "notes": "Notes"
+    },
+    "errors": {
+      "codeRequired": "Please enter a dress code",
+      "codeInvalid": "The code is 2-20 letters, digits or hyphens, starting with a letter or digit",
+      "nameRequired": "Please enter a dress name",
+      "nameTooLong": "The name is at most 200 characters",
+      "sizeTooLong": "The size is at most 20 characters",
+      "rentalPriceRequired": "Please enter a rental price",
+      "depositRequired": "Please enter a deposit",
+      "amountInvalid": "The amount must be a non-negative whole number",
+      "notesTooLong": "Notes are at most 2000 characters",
+      "duplicateCode": "This dress code already exists"
+    },
+    "success": "Dress added to the catalog",
+    "error": "Could not add the dress. Please try again."
+  },
+  "detail": {
+    "title": "Dress detail",
+    "shell": {
+      "title": "Dress detail is coming soon",
+      "description": "Dress details and its booked calendar will appear once the rentals and availability-check features ship."
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "title": "Váy",
+  "list": {
+    "searchPlaceholder": "Tìm theo mã hoặc tên...",
+    "searchButton": "Tìm",
+    "statusFilterLabel": "Trạng thái",
+    "statusAll": "Tất cả trạng thái",
+    "createButton": "Thêm váy",
+    "columns": {
+      "code": "Mã",
+      "name": "Tên",
+      "size": "Kích cỡ",
+      "rentalPrice": "Giá thuê",
+      "deposit": "Tiền cọc",
+      "status": "Trạng thái"
+    },
+    "empty": {
+      "noDresses": "Chưa có váy nào",
+      "noDressesHint": "Thêm váy đầu tiên vào danh mục của tiệm.",
+      "noMatch": "Không tìm thấy váy phù hợp",
+      "noMatchHint": "Thử đổi từ khóa hoặc bộ lọc trạng thái."
+    },
+    "pagination": {
+      "label": "Trang {{page}} / {{totalPages}}",
+      "previous": "Trang trước",
+      "next": "Trang sau"
+    }
+  },
+  "status": {
+    "active": "Đang cho thuê",
+    "retired": "Ngừng khai thác"
+  },
+  "form": {
+    "title": "Thêm váy mới",
+    "description": "Nhập thông tin váy để thêm vào danh mục.",
+    "fields": {
+      "code": "Mã váy",
+      "name": "Tên váy",
+      "sizeLabel": "Kích cỡ",
+      "rentalPrice": "Giá thuê (VND)",
+      "depositAmount": "Tiền cọc (VND)",
+      "notes": "Ghi chú"
+    },
+    "errors": {
+      "codeRequired": "Vui lòng nhập mã váy",
+      "codeInvalid": "Mã váy gồm 2-20 ký tự chữ, số hoặc gạch nối, bắt đầu bằng chữ hoặc số",
+      "nameRequired": "Vui lòng nhập tên váy",
+      "nameTooLong": "Tên váy tối đa 200 ký tự",
+      "sizeTooLong": "Kích cỡ tối đa 20 ký tự",
+      "rentalPriceRequired": "Vui lòng nhập giá thuê",
+      "depositRequired": "Vui lòng nhập tiền cọc",
+      "amountInvalid": "Số tiền phải là số nguyên không âm",
+      "notesTooLong": "Ghi chú tối đa 2000 ký tự",
+      "duplicateCode": "Mã váy đã tồn tại"
+    },
+    "success": "Đã thêm váy vào danh mục",
+    "error": "Không thể thêm váy. Vui lòng thử lại."
+  },
+  "detail": {
+    "title": "Chi tiết váy",
+    "shell": {
+      "title": "Chi tiết váy sẽ sớm có mặt",
+      "description": "Thông tin chi tiết và lịch đã đặt của váy sẽ hiển thị khi tính năng thuê và kiểm tra lịch trống hoàn tất."
+    }
+  }
+}

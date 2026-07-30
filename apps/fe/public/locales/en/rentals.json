@@ -1,0 +1,7 @@
+{
+  "title": "Rentals",
+  "newTitle": "New rental",
+  "shell": {
+    "comingSoon": "Rentals will be available once its backend slice ships."
+  }
+}

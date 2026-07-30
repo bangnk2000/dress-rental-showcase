@@ -1,0 +1,38 @@
+{
+  "app": {
+    "name": "Quản lý váy"
+  },
+  "nav": {
+    "today": "Hôm nay",
+    "dresses": "Váy",
+    "rentals": "Thuê"
+  },
+  "actions": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "create": "Tạo mới",
+    "retry": "Thử lại"
+  },
+  "states": {
+    "loading": "Đang tải...",
+    "empty": "Chưa có dữ liệu",
+    "error": "Đã có lỗi xảy ra",
+    "retry": "Thử lại"
+  },
+  "pwa": {
+    "updateAvailable": "Đã có phiên bản mới",
+    "reload": "Tải lại"
+  },
+  "language": {
+    "label": "Ngôn ngữ",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "backHome": "Về trang chủ"
+  },
+  "errors": {
+    "mutationFailed": "Thao tác thất bại. Vui lòng thử lại."
+  }
+}
