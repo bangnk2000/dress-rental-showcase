@@ -12,6 +12,8 @@ export interface DressProps {
   depositAmount: Money;
   status: DressStatus;
   notes: string | null;
+  /** Photo LINKS (staff paste them); binary upload is a deliberate MVP non-goal. */
+  photoUrls: string[];
 }
 
 export interface CreateDressProps {
@@ -21,4 +23,5 @@ export interface CreateDressProps {
   rentalPrice: Money;
   depositAmount: Money;
   notes: string | null;
+  photoUrls: string[];
 }

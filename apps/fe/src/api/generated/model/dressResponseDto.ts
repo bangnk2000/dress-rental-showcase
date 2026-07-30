@@ -19,5 +19,7 @@ export interface DressResponseDto {
   status: DressResponseDtoStatus;
   /** @nullable */
   notes: string | null;
+  /** Photo links (staff-pasted; no upload in MVP) */
+  photoUrls: string[];
   createdAt: string;
 }

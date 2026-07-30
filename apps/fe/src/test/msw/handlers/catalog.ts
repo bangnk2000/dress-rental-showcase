@@ -9,6 +9,7 @@ import type {
   DressListResponseDto,
   DressResponseDto,
   IdResponse,
+  UpdateDressRequestDto,
 } from '@/api/generated/model';
 import { DressResponseDtoStatus } from '@/api/generated/model';
 
@@ -28,6 +29,7 @@ export function makeDress(overrides: Partial<DressResponseDto> = {}): DressRespo
     depositAmount: 1_000_000,
     status: DressResponseDtoStatus.active,
     notes: null,
+    photoUrls: [],
     createdAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };
@@ -45,6 +47,48 @@ export function resetCatalog(): void {
 }
 
 export const catalogHandlers: HttpHandler[] = [
+  // PATCH /api/v1/dresses/:id — partial update; 404 unknown, 409 taken code.
+  http.patch('/api/v1/dresses/:id', async ({ params, request }) => {
+    const dress = dresses.find((candidate) => candidate.id === params.id);
+    if (!dress) {
+      return new HttpResponse(null, { status: 404 });
+    }
+    const body = (await request.json()) as UpdateDressRequestDto;
+    if (
+      body.code !== undefined &&
+      dresses.some(
+        (candidate) =>
+          candidate.id !== dress.id &&
+          candidate.code.toLowerCase() === body.code!.toLowerCase(),
+      )
+    ) {
+      return new HttpResponse(null, { status: 409 });
+    }
+    if (body.code !== undefined) dress.code = body.code.toUpperCase();
+    if (body.name !== undefined) dress.name = body.name;
+    if (body.sizeLabel !== undefined) dress.sizeLabel = body.sizeLabel;
+    if (body.rentalPrice !== undefined) dress.rentalPrice = body.rentalPrice;
+    if (body.depositAmount !== undefined) dress.depositAmount = body.depositAmount;
+    if (body.notes !== undefined) dress.notes = body.notes;
+    if (body.photoUrls !== undefined) dress.photoUrls = [...body.photoUrls];
+    const response: IdResponse = { id: dress.id };
+    return HttpResponse.json(response);
+  }),
+
+  // POST /api/v1/dresses/:id/retire — 404 unknown, 409 already retired.
+  http.post('/api/v1/dresses/:id/retire', ({ params }) => {
+    const dress = dresses.find((candidate) => candidate.id === params.id);
+    if (!dress) {
+      return new HttpResponse(null, { status: 404 });
+    }
+    if (dress.status === DressResponseDtoStatus.retired) {
+      return new HttpResponse(null, { status: 409 });
+    }
+    dress.status = DressResponseDtoStatus.retired;
+    const response: IdResponse = { id: dress.id };
+    return HttpResponse.json(response);
+  }),
+
   // GET /api/v1/dresses/:id — one dress, or 404 like the real API.
   http.get('/api/v1/dresses/:id', ({ params }) => {
     const dress = dresses.find((candidate) => candidate.id === params.id);

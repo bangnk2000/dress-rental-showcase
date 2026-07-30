@@ -33,13 +33,17 @@
   "form": {
     "title": "Thêm váy mới",
     "description": "Nhập thông tin váy để thêm vào danh mục.",
+    "editTitle": "Sửa thông tin váy",
+    "editDescription": "Cập nhật thông tin váy trong danh mục.",
     "fields": {
       "code": "Mã váy",
       "name": "Tên váy",
       "sizeLabel": "Kích cỡ",
       "rentalPrice": "Giá thuê (VND)",
       "depositAmount": "Tiền cọc (VND)",
-      "notes": "Ghi chú"
+      "notes": "Ghi chú",
+      "photoUrls": "Ảnh (mỗi dòng một liên kết)",
+      "photoUrlsPlaceholder": "https://..."
     },
     "errors": {
       "codeRequired": "Vui lòng nhập mã váy",
@@ -51,13 +55,30 @@
       "depositRequired": "Vui lòng nhập tiền cọc",
       "amountInvalid": "Số tiền phải là số nguyên không âm",
       "notesTooLong": "Ghi chú tối đa 2000 ký tự",
-      "duplicateCode": "Mã váy đã tồn tại"
+      "duplicateCode": "Mã váy đã tồn tại",
+      "photoUrlInvalid": "Mỗi dòng phải là một liên kết http(s) hợp lệ",
+      "photoUrlsTooMany": "Tối đa 10 ảnh"
     },
     "success": "Đã thêm váy vào danh mục",
-    "error": "Không thể thêm váy. Vui lòng thử lại."
+    "error": "Không thể thêm váy. Vui lòng thử lại.",
+    "updateSuccess": "Đã cập nhật váy",
+    "updateError": "Không thể cập nhật váy. Vui lòng thử lại."
   },
   "detail": {
     "title": "Chi tiết váy",
+    "actions": {
+      "edit": "Sửa",
+      "retire": "Ngừng khai thác"
+    },
+    "retire": {
+      "confirm": "Ngừng khai thác váy này? Váy sẽ không thể cho thuê nữa (không thể hoàn tác).",
+      "success": "Đã ngừng khai thác váy",
+      "alreadyRetired": "Váy đã ngừng khai thác trước đó",
+      "error": "Không thể ngừng khai thác. Chỉ chủ tiệm có quyền này."
+    },
+    "photos": {
+      "title": "Hình ảnh"
+    },
     "info": {
       "size": "Kích cỡ",
       "rentalPrice": "Giá thuê",

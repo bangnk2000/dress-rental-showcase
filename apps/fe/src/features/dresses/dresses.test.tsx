@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
-import { beforeEach, expect, test } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
 import { makeDress, resetCatalog, seedDresses } from '@/test/msw/handlers/catalog';
@@ -42,11 +42,14 @@ beforeEach(() => {
 
 function renderDetail(route: string) {
   return renderWithProviders(
-    <Suspense fallback={<output>loading</output>}>
-      <Routes>
-        <Route path="/dresses/:id" element={<DressDetailRoute />} />
-      </Routes>
-    </Suspense>,
+    <>
+      <Suspense fallback={<output>loading</output>}>
+        <Routes>
+          <Route path="/dresses/:id" element={<DressDetailRoute />} />
+        </Routes>
+      </Suspense>
+      <Toaster />
+    </>,
     { route },
   );
 }
@@ -243,4 +246,81 @@ test('the availability checker rejects an inverted range client-side', async () 
   await user.click(screen.getByRole('button', { name: 'Kiểm tra' }));
 
   expect(await screen.findByRole('alert')).toHaveTextContent(/khoảng ngày hợp lệ/);
+});
+
+test('editing from the detail page prefills the dialog and saves changes incl. photos', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  await user.click(screen.getByRole('button', { name: 'Sửa' }));
+  const codeInput = await screen.findByLabelText('Mã váy');
+  expect(codeInput).toHaveValue('DR-001'); // prefilled from the dress
+
+  const nameInput = screen.getByLabelText('Tên váy');
+  await user.clear(nameInput);
+  await user.type(nameInput, 'Đầm đỏ mới');
+  fireEvent.change(screen.getByLabelText('Ảnh (mỗi dòng một liên kết)'), {
+    target: { value: 'https://example.com/a.jpg' },
+  });
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  expect(await screen.findByText('Đã cập nhật váy')).toBeInTheDocument();
+  // invalidation refetched the detail: new name in the header, photo rendered
+  expect(await screen.findByText('DR-001 — Đầm đỏ mới')).toBeInTheDocument();
+  expect(await screen.findByRole('img')).toHaveAttribute('src', 'https://example.com/a.jpg');
+});
+
+test('an invalid photo link line blocks the save with a translated error', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByRole('button', { name: 'Sửa' });
+
+  await user.click(screen.getByRole('button', { name: 'Sửa' }));
+  fireEvent.change(await screen.findByLabelText('Ảnh (mỗi dòng một liên kết)'), {
+    target: { value: 'khong-phai-link' },
+  });
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  expect(
+    await screen.findByText('Mỗi dòng phải là một liên kết http(s) hợp lệ'),
+  ).toBeInTheDocument();
+});
+
+test('editing to a taken code maps the 409 to a field error', async () => {
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001' }),
+    makeDress({ id: 'd2', code: 'DR-002' }),
+  ]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByRole('button', { name: 'Sửa' });
+
+  await user.click(screen.getByRole('button', { name: 'Sửa' }));
+  const codeInput = await screen.findByLabelText('Mã váy');
+  await user.clear(codeInput);
+  await user.type(codeInput, 'DR-002');
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  expect(await screen.findByText('Mã váy đã tồn tại')).toBeInTheDocument();
+  expect(screen.getByRole('dialog')).toBeInTheDocument(); // stays open for correction
+});
+
+test('retiring a dress (confirmed) flips the badge and removes the retire button', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByRole('button', { name: 'Ngừng khai thác' });
+
+  await user.click(screen.getByRole('button', { name: 'Ngừng khai thác' }));
+
+  expect(await screen.findByText('Đã ngừng khai thác váy')).toBeInTheDocument();
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Ngừng khai thác' })).not.toBeInTheDocument(),
+  );
+  expect(screen.getByText('Ngừng khai thác')).toBeInTheDocument(); // the status badge
+  confirmSpy.mockRestore();
 });

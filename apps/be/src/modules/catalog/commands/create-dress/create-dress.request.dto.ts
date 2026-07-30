@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Length, Matches, Min } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  Min,
+} from 'class-validator';
 
 export class CreateDressRequestDto {
   @ApiProperty({ example: 'VD-012', description: 'Unique shop code' })
@@ -33,4 +42,16 @@ export class CreateDressRequestDto {
   @IsString()
   @Length(1, 2000)
   readonly notes?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Photo links (http/https), max 10 — no binary upload in MVP',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @Matches(/^https?:\/\/\S+$/, { each: true })
+  @Length(1, 2000, { each: true })
+  readonly photoUrls?: string[];
 }

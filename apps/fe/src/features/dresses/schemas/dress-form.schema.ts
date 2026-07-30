@@ -14,6 +14,16 @@ const vndAmount = (requiredKey: string) =>
     .min(1, requiredKey)
     .regex(/^[0-9]+$/, 'form.errors.amountInvalid');
 
+const PHOTO_URL_LINE = /^https?:\/\/\S+$/;
+
+/** Textarea value (one link per line) → cleaned URL list. */
+export function parsePhotoUrls(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
 export const dressFormSchema = z.object({
   code: z
     .string()
@@ -30,6 +40,13 @@ export const dressFormSchema = z.object({
   rentalPrice: vndAmount('form.errors.rentalPriceRequired'),
   depositAmount: vndAmount('form.errors.depositRequired'),
   notes: z.string().trim().max(2000, 'form.errors.notesTooLong'),
+  photoUrls: z
+    .string()
+    .refine((value) => parsePhotoUrls(value).length <= 10, 'form.errors.photoUrlsTooMany')
+    .refine(
+      (value) => parsePhotoUrls(value).every((line) => PHOTO_URL_LINE.test(line)),
+      'form.errors.photoUrlInvalid',
+    ),
 });
 
 export type DressFormValues = z.infer<typeof dressFormSchema>;
@@ -41,4 +58,5 @@ export const dressFormDefaults: DressFormValues = {
   rentalPrice: '',
   depositAmount: '',
   notes: '',
+  photoUrls: '',
 };

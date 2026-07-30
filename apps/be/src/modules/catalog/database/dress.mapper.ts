@@ -22,6 +22,7 @@ export class DressMapper implements Mapper<DressEntity, DressModel, DressRespons
         depositAmount: Money.create(record.deposit_amount),
         status: record.status,
         notes: record.notes,
+        photoUrls: [...record.photo_urls],
       },
     });
   }
@@ -37,6 +38,7 @@ export class DressMapper implements Mapper<DressEntity, DressModel, DressRespons
       deposit_amount: props.depositAmount.amount,
       status: props.status,
       notes: props.notes,
+      photo_urls: [...props.photoUrls],
       created_at: props.createdAt,
       updated_at: props.updatedAt,
     };
@@ -53,6 +55,7 @@ export class DressMapper implements Mapper<DressEntity, DressModel, DressRespons
       depositAmount: props.depositAmount.amount,
       status: props.status,
       notes: props.notes,
+      photoUrls: [...props.photoUrls],
       createdAt: props.createdAt.toISOString(),
     });
   }

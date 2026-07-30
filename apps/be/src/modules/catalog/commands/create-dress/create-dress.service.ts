@@ -36,6 +36,7 @@ export class CreateDressService implements ICommandHandler<CreateDressCommand, C
         rentalPrice: Money.create(command.rentalPrice),
         depositAmount: Money.create(command.depositAmount),
         notes: command.notes,
+        photoUrls: command.photoUrls,
       },
       this.dressRepo.nextId(),
       new Date(),

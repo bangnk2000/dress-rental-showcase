@@ -31,7 +31,8 @@ import type {
   DressListResponseDto,
   DressResponseDto,
   IdResponse,
-  ListDressesHttpControllerListParams
+  ListDressesHttpControllerListParams,
+  UpdateDressRequestDto
 } from '../model';
 
 import { customInstance } from '../../mutator/custom-instance';
@@ -269,6 +270,71 @@ export function useListDressesHttpControllerListSuspense<TData = Awaited<ReturnT
 
 
 /**
+ * @summary Update a dress (partial; omitted fields are kept)
+ */
+export const updateDressHttpControllerUpdate = (
+    id: string,
+    updateDressRequestDto: UpdateDressRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/dresses/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateDressRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getUpdateDressHttpControllerUpdateMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext> => {
+
+const mutationKey = ['updateDressHttpControllerUpdate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, {id: string;data: UpdateDressRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateDressHttpControllerUpdate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDressHttpControllerUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>>
+    export type UpdateDressHttpControllerUpdateMutationBody = UpdateDressRequestDto
+    export type UpdateDressHttpControllerUpdateMutationError = void
+
+    /**
+ * @summary Update a dress (partial; omitted fields are kept)
+ */
+export const useUpdateDressHttpControllerUpdate = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>,
+        TError,
+        {id: string;data: UpdateDressRequestDto},
+        TContext
+      > => {
+      return useMutation(getUpdateDressHttpControllerUpdateMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Get one dress by id
  */
 export const getDressHttpControllerGet = (
@@ -415,3 +481,65 @@ export function useGetDressHttpControllerGetSuspense<TData = Awaited<ReturnType<
 
 
 
+/**
+ * @summary Retire a dress (owner only; one-way in MVP)
+ */
+export const retireDressHttpControllerRetire = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/dresses/${id}/retire`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getRetireDressHttpControllerRetireMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retireDressHttpControllerRetire>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof retireDressHttpControllerRetire>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['retireDressHttpControllerRetire'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retireDressHttpControllerRetire>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  retireDressHttpControllerRetire(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetireDressHttpControllerRetireMutationResult = NonNullable<Awaited<ReturnType<typeof retireDressHttpControllerRetire>>>
+
+    export type RetireDressHttpControllerRetireMutationError = void
+
+    /**
+ * @summary Retire a dress (owner only; one-way in MVP)
+ */
+export const useRetireDressHttpControllerRetire = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retireDressHttpControllerRetire>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof retireDressHttpControllerRetire>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRetireDressHttpControllerRetireMutationOptions(options), queryClient);
+    }

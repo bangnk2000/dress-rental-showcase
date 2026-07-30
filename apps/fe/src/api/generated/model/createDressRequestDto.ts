@@ -36,4 +36,12 @@ export interface CreateDressRequestDto {
      * @maxLength 2000
      */
   notes?: string;
+  /**
+     * Photo links (http/https), max 10 — no binary upload in MVP
+     * @maxItems 10
+     * @items.minLength 1
+     * @items.maxLength 2000
+     * @items.pattern ^https?:\/\/\S+$
+     */
+  photoUrls?: string[];
 }

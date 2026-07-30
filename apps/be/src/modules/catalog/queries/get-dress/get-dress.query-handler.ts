@@ -30,6 +30,7 @@ export class GetDressQueryHandler
       depositAmount: row.deposit_amount,
       status: row.status,
       notes: row.notes,
+      photoUrls: [...row.photo_urls],
       createdAt: toDate(row.created_at).toISOString(),
     });
   }

@@ -7,6 +7,7 @@ export class CreateDressCommand extends Command {
   readonly rentalPrice: number;
   readonly depositAmount: number;
   readonly notes: string | null;
+  readonly photoUrls: string[];
 
   constructor(props: CommandProps<CreateDressCommand>) {
     super(props);
@@ -16,5 +17,6 @@ export class CreateDressCommand extends Command {
     this.rentalPrice = props.rentalPrice;
     this.depositAmount = props.depositAmount;
     this.notes = props.notes;
+    this.photoUrls = props.photoUrls;
   }
 }

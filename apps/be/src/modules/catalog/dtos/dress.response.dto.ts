@@ -25,6 +25,9 @@ export class DressResponseDto {
   @ApiProperty({ nullable: true, type: String })
   readonly notes!: string | null;
 
+  @ApiProperty({ type: [String], description: 'Photo links (staff-pasted; no upload in MVP)' })
+  readonly photoUrls!: string[];
+
   @ApiProperty({ example: '2026-07-30T10:00:00.000Z' })
   readonly createdAt!: string;
 }

@@ -24,3 +24,4 @@ export * from './meResponseDto';
 export * from './meResponseDtoRole';
 export * from './refreshTokenRequestDto';
 export * from './tokenPairResponseDto';
+export * from './updateDressRequestDto';

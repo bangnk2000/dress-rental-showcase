@@ -210,6 +210,56 @@
       }
     },
     "/api/v1/dresses/{id}": {
+      "patch": {
+        "operationId": "UpdateDressHttpController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDressRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dress not found"
+          },
+          "409": {
+            "description": "New dress code already exists"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a dress (partial; omitted fields are kept)",
+        "tags": [
+          "catalog"
+        ]
+      },
       "get": {
         "operationId": "GetDressHttpController_get",
         "parameters": [
@@ -243,6 +293,51 @@
           }
         ],
         "summary": "Get one dress by id",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/dresses/{id}/retire": {
+      "post": {
+        "operationId": "RetireDressHttpController_retire",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only the owner may retire a dress"
+          },
+          "404": {
+            "description": "Dress not found"
+          },
+          "409": {
+            "description": "Dress is already retired"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retire a dress (owner only; one-way in MVP)",
         "tags": [
           "catalog"
         ]
@@ -526,6 +621,17 @@
             "minLength": 1,
             "maxLength": 2000,
             "example": "Rách nhẹ vạt dưới, đã sửa 06/2026"
+          },
+          "photoUrls": {
+            "maxItems": 10,
+            "description": "Photo links (http/https), max 10 — no binary upload in MVP",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 1,
+              "pattern": "^https?:\\/\\/\\S+$"
+            }
           }
         },
         "required": [
@@ -546,6 +652,61 @@
         "required": [
           "id"
         ]
+      },
+      "UpdateDressRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{1,19}$",
+            "example": "VD-012",
+            "description": "New unique shop code"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "Váy cưới đuôi cá ren trắng"
+          },
+          "sizeLabel": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 20,
+            "example": "M",
+            "description": "null clears it"
+          },
+          "rentalPrice": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1500000,
+            "description": "Rental price in VND (integer)"
+          },
+          "depositAmount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 3000000,
+            "description": "Standard deposit in VND (integer)"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "null clears it"
+          },
+          "photoUrls": {
+            "maxItems": 10,
+            "description": "Photo links (http/https), max 10 — replaces the whole list",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 1,
+              "pattern": "^https?:\\/\\/\\S+$"
+            }
+          }
+        }
       },
       "DressResponseDto": {
         "type": "object",
@@ -589,6 +750,13 @@
             "type": "string",
             "nullable": true
           },
+          "photoUrls": {
+            "description": "Photo links (staff-pasted; no upload in MVP)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "createdAt": {
             "type": "string",
             "example": "2026-07-30T10:00:00.000Z"
@@ -603,6 +771,7 @@
           "depositAmount",
           "status",
           "notes",
+          "photoUrls",
           "createdAt"
         ]
       },

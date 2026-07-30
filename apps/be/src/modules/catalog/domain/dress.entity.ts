@@ -2,6 +2,7 @@ import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateRoot } from '../../../libs/ddd/aggregate-root.base';
 import { Money } from '../../../libs/ddd/money.value-object';
 import { CreateDressProps, DressProps, DressStatus } from './dress.types';
+import { DressCode } from './dress-code.value-object';
 import { DressAlreadyRetiredError } from './dress.errors';
 import { DressCreatedDomainEvent } from './events/dress-created.domain-event';
 import { DressRetiredDomainEvent } from './events/dress-retired.domain-event';
@@ -20,7 +21,14 @@ export class DressEntity extends AggregateRoot<DressProps> {
   }
 
   updateDetails(
-    update: { name: string; sizeLabel: string | null; rentalPrice: Money; depositAmount: Money; notes: string | null },
+    update: {
+      name: string;
+      sizeLabel: string | null;
+      rentalPrice: Money;
+      depositAmount: Money;
+      notes: string | null;
+      photoUrls: string[];
+    },
     now: Date,
   ): void {
     this.props.name = update.name;
@@ -28,6 +36,14 @@ export class DressEntity extends AggregateRoot<DressProps> {
     this.props.rentalPrice = update.rentalPrice;
     this.props.depositAmount = update.depositAmount;
     this.props.notes = update.notes;
+    this.props.photoUrls = [...update.photoUrls];
+    this.setUpdatedAt(now);
+    this.validate();
+  }
+
+  /** The shop-assigned code is identity to staff — changing it is a deliberate, separate act. */
+  changeCode(code: DressCode, now: Date): void {
+    this.props.code = code;
     this.setUpdatedAt(now);
     this.validate();
   }

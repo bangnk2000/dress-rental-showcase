@@ -33,13 +33,17 @@
   "form": {
     "title": "Add a new dress",
     "description": "Enter the dress details to add it to the catalog.",
+    "editTitle": "Edit dress",
+    "editDescription": "Update the dress details in the catalog.",
     "fields": {
       "code": "Dress code",
       "name": "Dress name",
       "sizeLabel": "Size",
       "rentalPrice": "Rental price (VND)",
       "depositAmount": "Deposit (VND)",
-      "notes": "Notes"
+      "notes": "Notes",
+      "photoUrls": "Photos (one link per line)",
+      "photoUrlsPlaceholder": "https://..."
     },
     "errors": {
       "codeRequired": "Please enter a dress code",
@@ -51,13 +55,30 @@
       "depositRequired": "Please enter a deposit",
       "amountInvalid": "The amount must be a non-negative whole number",
       "notesTooLong": "Notes are at most 2000 characters",
-      "duplicateCode": "This dress code already exists"
+      "duplicateCode": "This dress code already exists",
+      "photoUrlInvalid": "Each line must be a valid http(s) link",
+      "photoUrlsTooMany": "At most 10 photos"
     },
     "success": "Dress added to the catalog",
-    "error": "Could not add the dress. Please try again."
+    "error": "Could not add the dress. Please try again.",
+    "updateSuccess": "Dress updated",
+    "updateError": "Could not update the dress. Please try again."
   },
   "detail": {
     "title": "Dress detail",
+    "actions": {
+      "edit": "Edit",
+      "retire": "Retire"
+    },
+    "retire": {
+      "confirm": "Retire this dress? It can no longer be rented (cannot be undone).",
+      "success": "Dress retired",
+      "alreadyRetired": "This dress was already retired",
+      "error": "Could not retire the dress. Only the owner may do this."
+    },
+    "photos": {
+      "title": "Photos"
+    },
     "info": {
       "size": "Size",
       "rentalPrice": "Rental price",

@@ -36,6 +36,7 @@ export class CreateDressHttpController {
         rentalPrice: body.rentalPrice,
         depositAmount: body.depositAmount,
         notes: body.notes ?? null,
+        photoUrls: body.photoUrls ?? [],
       }),
     );
 

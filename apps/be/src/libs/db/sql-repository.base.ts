@@ -6,6 +6,7 @@ import {
   IdentifierSqlToken,
   sql,
   UniqueIntegrityConstraintViolationError,
+  type SqlToken,
 } from 'slonik';
 import { ZodType } from 'zod';
 import { AggregateID } from '../ddd/entity.base';
@@ -106,9 +107,10 @@ export abstract class SqlRepositoryBase<Aggregate extends AggregateRoot<unknown>
     `);
   }
 
-  private serialize(value: unknown): string | number | boolean | null {
+  private serialize(value: unknown): string | number | boolean | null | SqlToken {
     if (value === undefined || value === null) return null;
     if (value instanceof Date) return value.toISOString();
+    if (Array.isArray(value)) return sql.array(value as string[], 'text');
     return value as string | number | boolean;
   }
 }

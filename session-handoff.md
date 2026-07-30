@@ -1,5 +1,33 @@
 # Session Handoff
 
+## 2026-07-30 (6) — `catalog/manage-dress` = pass (update + retire + photo links)
+
+- Done: the missing write-side of the catalog — BE migration 0003 `photo_urls text[]`
+  (photos = staff-pasted LINKS; binary upload deliberately out of MVP),
+  `SqlRepositoryBase.serialize` now maps JS arrays → `sql.array(..., 'text')`,
+  `PATCH /dresses/:id` (partial merge: undefined keeps, explicit null clears
+  sizeLabel/notes; code change re-checks uniqueness → 409) and `POST /dresses/:id/retire`
+  (owner-only `dress:retire` policy from bootstrap, ONE-WAY, already-retired → 409);
+  `pnpm contract`; FE DressFormDialog dual-mode (edit prefilled from the detail page,
+  sends the FULL form with explicit nulls), photos textarea (one link per line, ≤10) +
+  thumbnail strip on detail, retire button with confirm; `ui/textarea` added. All gates
+  green both sides; smoke.sh now 26 checks; proxy proof (PATCH + retire via :5173).
+  Evidence in `feature_list.json`.
+- Next: EITHER a rentals LIST read slice / `rentals/today-board` (post-create navigation
+  still lands on a shell), OR finish `catalog/list-dresses` (CSV seed import — the one
+  remaining in-progress entry; photoUrls import can ride along now).
+- Watch out:
+  - Status model stays `active`/`retired` (bootstrap deviation vs the feature title):
+    renting/cleaning are DERIVED from rentals — do not add them to the dress row.
+  - PATCH semantics: omitted = keep, explicit null = clear. The FE edit dialog always
+    sends the full form, so blank optional fields arrive as nulls and clear.
+  - Retire is one-way ON PURPOSE — reactivation has no registered policy (fail-closed
+    registry). Adding it = policy + command + FE, not just a status write.
+  - `SqlRepositoryBase.serialize` assumes array columns are text[]; a non-text array
+    column would need a smarter mapping.
+  - smoke.sh (FRESH DB as always) now RETIRES VD-001 near the end — steps added after
+    that must not book or rely on an active VD-001.
+
 ## 2026-07-30 (5) — `rentals/availability-check` = pass (dress detail live)
 
 - Done: full README step-5 rhythm in one entry — BE 3 read slices (catalog `get-dress`;

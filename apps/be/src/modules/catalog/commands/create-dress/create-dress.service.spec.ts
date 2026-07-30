@@ -22,6 +22,7 @@ const baseCommand = new CreateDressCommand({
   rentalPrice: 1_500_000,
   depositAmount: 3_000_000,
   notes: null,
+  photoUrls: [],
 });
 
 describe('CreateDressService', () => {
@@ -49,6 +50,7 @@ describe('CreateDressService', () => {
         rentalPrice: (await import('../../../../libs/ddd/money.value-object')).Money.create(1),
         depositAmount: (await import('../../../../libs/ddd/money.value-object')).Money.create(1),
         notes: null,
+        photoUrls: [],
       },
       '00000000-0000-4000-8000-000000000002',
       new Date('2026-01-01'),

@@ -110,6 +110,43 @@ avail_ghost=$(curl -s -o /dev/null -w '%{http_code}' \
   -H "Authorization: Bearer $TOKEN")
 echo "availability unknown dress -> $avail_ghost (expect 404)"
 
+# --- catalog/manage-dress (partial update + owner-only retire; photos are pasted links) ---
+
+DRESS1_ID=$(curl -sf "$BASE/dresses?q=VD-001" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).data[0].id))")
+
+patch=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/dresses/$DRESS1_ID" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"Váy cưới ren trắng (sửa)","rentalPrice":1800000,"photoUrls":["https://example.com/vd001-a.jpg","https://example.com/vd001-b.jpg"]}')
+echo "PATCH /dresses/:id -> $patch (expect 200)"
+
+patched=$(curl -sf "$BASE/dresses/$DRESS1_ID" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.name+':'+j.photoUrls.length+':'+j.rentalPrice)})")
+echo "GET after PATCH -> $patched (expect 'Váy cưới ren trắng (sửa):2:1800000' — omitted fields kept)"
+
+dupcode=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$BASE/dresses/$DRESS1_ID" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"code":"VD-900"}')
+echo "PATCH code to a taken one -> $dupcode (expect 409)"
+
+patch404=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH \
+  "$BASE/dresses/00000000-0000-4000-8000-000000000999" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"name":"Ma"}')
+echo "PATCH unknown dress -> $patch404 (expect 404)"
+
+retire=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/dresses/$DRESS1_ID/retire" \
+  -H "Authorization: Bearer $TOKEN")
+echo "POST /dresses/:id/retire -> $retire (expect 200; token belongs to the owner)"
+
+retire2=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/dresses/$DRESS1_ID/retire" \
+  -H "Authorization: Bearer $TOKEN")
+echo "POST retire again -> $retire2 (expect 409)"
+
+retired_avail=$(curl -sf "$BASE/dresses/$DRESS1_ID/availability?startDate=2026-10-01&endDate=2026-10-02" \
+  -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).available))")
+echo "availability of a RETIRED dress -> available=$retired_avail (expect false even with a free calendar)"
+
 [ "$unauth" = "401" ] && [ "$create" = "201" ] && [ "$dup" = "409" ] && [ "$me" = "owner" ] \
   && [ "$rent" = "201" ] && [ "$buffered" = "409" ] && [ "$free" = "201" ] \
   && [ "$ghost" = "404" ] && [ "$badrange" = "400" ] \
@@ -117,4 +154,7 @@ echo "availability unknown dress -> $avail_ghost (expect 404)"
   && [ "$avail_free" = "true" ] && [ "$avail_buffer" = "false:1" ] \
   && [ "$avail_overlap" = "false" ] && [ "$ranges" = "3:2026-08-05" ] \
   && [ "$avail_bad" = "400" ] && [ "$avail_ghost" = "404" ] \
+  && [ "$patch" = "200" ] && [ "$patched" = "Váy cưới ren trắng (sửa):2:1800000" ] \
+  && [ "$dupcode" = "409" ] && [ "$patch404" = "404" ] \
+  && [ "$retire" = "200" ] && [ "$retire2" = "409" ] && [ "$retired_avail" = "false" ] \
   && echo "SMOKE: ALL PASS" || { echo "SMOKE: FAIL"; exit 1; }
