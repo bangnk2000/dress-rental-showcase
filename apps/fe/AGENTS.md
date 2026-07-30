@@ -41,8 +41,9 @@ files here.
    interceptor (their 401s are terminal).
 2. **vi is the i18n key schema (vi-first)**, en mirrors it — `src/types/i18next.d.ts` imports the
    vi JSON; `pnpm arch` enforces vi↔en key parity.
-3. **`/dresses/:id` is a shell** until a get-dress/availability endpoint exists — never
-   fetch-list-and-find.
+3. **`/dresses/:id` is live** (`rentals/availability-check`): dress info from get-dress,
+   calendar from booked-ranges, checker from availability — detail data comes from those
+   endpoints only, never fetch-list-and-find.
 4. **rentals LIST and today/ routes are shells** awaiting their read slices; `/rentals/new` is
    live (`rentals/create-rental`) and navigates back to the shell list on success.
 5. **Playwright/e2e deferred** until the first cross-contract feature; root gates exclude fe e2e.

@@ -1,5 +1,35 @@
 # Session Handoff
 
+## 2026-07-30 (5) — `rentals/availability-check` = pass (dress detail live)
+
+- Done: full README step-5 rhythm in one entry — BE 3 read slices (catalog `get-dress`;
+  rentals `list-booked-ranges` + `check-availability` nested under `/dresses/:dressId/*` with
+  `@ApiTags('rentals')`; availability mirrors the create precondition EXACTLY: asked period +
+  CLEANING_BUFFER_DAYS tested against blocking blocked_periods, retired ⇒ never available),
+  `pnpm contract`, FE `/dresses/:id` real (info grid + Monday-first month BookingCalendar with
+  rented/buffer/free shading + AvailabilityChecker). Fixed a latent daterange bug on the way:
+  slonik hands back PARSED RANGE OBJECTS, not literals — every SELECT of a range column now
+  casts `::text` (also fixed the dormant `rental.repository.findOneById`). All gates green
+  both sides; smoke.sh now 19 checks (get-dress 200/404; availability true / false:1 via the
+  candidate's OWN buffer hitting a later booking / false direct / 400 / 404; booked-ranges
+  3:2026-08-05) + Vite-proxy proof (get-dress, booked-ranges, availability through :5173).
+  Evidence in `feature_list.json`.
+- Next: EITHER `rentals/today-board` or a rentals LIST read slice (post-create navigation
+  still lands on a shell), OR finish `catalog/list-dresses` (CSV seed import — the one
+  remaining in-progress entry).
+- Watch out:
+  - slonik + daterange: ALWAYS cast `::text` when SELECTing range columns; the zod schemas in
+    `sql.type(...)` are typing-only (no result-parser interceptor — nothing validates at
+    runtime, failures surface as 500s in the mapper/projection).
+  - `smoke.sh` still assumes a FRESH DB; it now also books 08-20..08-21 on VD-900 to isolate
+    the candidate-side buffer.
+  - BookingCalendar opens on the month of the first still-blocking booking (else current
+    month); FE tests use 2099 fixtures to stay deterministic — keep that when adding tests.
+  - The availability checker clears its result when an input changes, so the shown verdict
+    always matches the submitted range.
+  - The two detail suspense queries waterfall (get-dress → booked-ranges) — accepted at this
+    scale, noted as deferred in the evidence.
+
 ## 2026-07-30 (4) — `rentals/create-rental` = pass (first cross-contract feature)
 
 - Done: full README step-5 rhythm in one entry — BE slice `modules/rentals` (RentalPeriod VO,

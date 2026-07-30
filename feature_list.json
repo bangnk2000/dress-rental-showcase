@@ -41,8 +41,8 @@
     {
       "id": "rentals/availability-check",
       "title": "Availability: answer 'is dress X free from A to B'; dress detail shows booked ranges on a calendar",
-      "status": "todo",
-      "evidence": null
+      "status": "pass",
+      "evidence": "2026-07-30: BE 3 read slices — catalog get-dress (GET /dresses/:id) + rentals list-booked-ranges (GET /dresses/:dressId/booked-ranges) + check-availability (GET /dresses/:dressId/availability?startDate&endDate) mirroring the create-rental precondition (asked period extended by CLEANING_BUFFER_DAYS tested against blocking blocked_periods; retired never available); rentals-owned reads nest under the dress path with @ApiTags rentals. Fixed latent daterange bug: slonik returns PARSED RANGE OBJECTS, not literals — every range SELECT now casts ::text (incl. dormant rental.repository.findOneById). BE gates green: build/lint/arch(130 modules, 0 violations)/test(24, +2 projection specs). Runtime vs fresh compose DB: smoke.sh extended to 19 checks — get-dress 200 + unknown 404; availability 08-16..08-17=true, 08-17..08-18=false:1 (ONLY the candidate's own buffer hits the 08-20 booking), 08-02..08-02=false (direct overlap), end<start=400, unknown dress=404; booked-ranges=3 ranges, first blockedUntilDate=2026-08-05 (buffer materialized). Contract regenerated (useGetDressHttpControllerGetSuspense, useListBookedRangesHttpControllerListSuspense, useCheckAvailabilityHttpControllerCheck). FE: /dresses/:id live — info grid + BookingCalendar (Monday-first month grid, rented/buffer/free day shading, opens on the first still-blocking booking) + AvailabilityChecker (client-side inverted-range guard; result cleared on input edit); vi/en locale parity kept; FE gates green: check/lint/test(27: -1 shell, +4 detail, +4 day-status)/build; arch 11/11 after this commit (check (d) diffs generated vs committed). Proxy proof :5173->:3000: get-dress 200, booked-ranges 200, availability 200 available=false conflicts=1. Deferred: dress-detail suspense queries waterfall; no e2e for calendar month navigation."
     },
     {
       "id": "rentals/return-rental",

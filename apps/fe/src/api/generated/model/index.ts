@@ -5,6 +5,11 @@
  * OpenAPI spec version: 0
  */
 
+export * from './availabilityResponseDto';
+export * from './bookedRangeDto';
+export * from './bookedRangeDtoStatus';
+export * from './bookedRangeListResponseDto';
+export * from './checkAvailabilityHttpControllerCheckParams';
 export * from './createDressRequestDto';
 export * from './createRentalItemRequestDto';
 export * from './createRentalRequestDto';

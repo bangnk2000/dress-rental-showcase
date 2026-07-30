@@ -209,6 +209,45 @@
         ]
       }
     },
+    "/api/v1/dresses/{id}": {
+      "get": {
+        "operationId": "GetDressHttpController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DressResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dress not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one dress by id",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/v1/rentals": {
       "post": {
         "operationId": "CreateRentalHttpController_create",
@@ -247,6 +286,106 @@
           }
         ],
         "summary": "Create a rental booking 1..n dresses for a date range",
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/api/v1/dresses/{dressId}/availability": {
+      "get": {
+        "operationId": "CheckAvailabilityHttpController_check",
+        "parameters": [
+          {
+            "name": "dressId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "required": true,
+            "in": "query",
+            "description": "First rental day (inclusive)",
+            "schema": {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2026-08-10",
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": true,
+            "in": "query",
+            "description": "Last rental day (inclusive)",
+            "schema": {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2026-08-12",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dress not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Is the dress free for [startDate, endDate]? (cleaning buffer included)",
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/api/v1/dresses/{dressId}/booked-ranges": {
+      "get": {
+        "operationId": "ListBookedRangesHttpController_list",
+        "parameters": [
+          {
+            "name": "dressId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookedRangeListResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dress not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the blocking bookings of a dress (rental + cleaning buffer)",
         "tags": [
           "rentals"
         ]
@@ -563,6 +702,99 @@
           "startDate",
           "endDate",
           "items"
+        ]
+      },
+      "BookedRangeDto": {
+        "type": "object",
+        "properties": {
+          "rentalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-08-01",
+            "description": "First rental day (inclusive)"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2026-08-03",
+            "description": "Last rental day (inclusive)"
+          },
+          "blockedUntilDate": {
+            "type": "string",
+            "example": "2026-08-05",
+            "description": "Last day the dress is blocked, cleaning buffer included (inclusive)"
+          },
+          "status": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string",
+            "example": "booked"
+          }
+        },
+        "required": [
+          "rentalId",
+          "startDate",
+          "endDate",
+          "blockedUntilDate",
+          "status"
+        ]
+      },
+      "AvailabilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "dressId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-08-10",
+            "description": "First rental day asked about (inclusive)"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2026-08-12",
+            "description": "Last rental day asked about (inclusive)"
+          },
+          "available": {
+            "type": "boolean",
+            "description": "True when booking [startDate, endDate] would succeed — the cleaning buffer is included and a retired dress is never available"
+          },
+          "conflicts": {
+            "description": "Blocking bookings that overlap the asked period extended by the cleaning buffer (empty when available)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookedRangeDto"
+            }
+          }
+        },
+        "required": [
+          "dressId",
+          "startDate",
+          "endDate",
+          "available",
+          "conflicts"
+        ]
+      },
+      "BookedRangeListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "Blocking bookings, ordered by start",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookedRangeDto"
+            }
+          }
+        },
+        "required": [
+          "data"
         ]
       }
     }

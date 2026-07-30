@@ -5,16 +5,31 @@
  * OpenAPI spec version: 0
  */
 import {
-  useMutation
+  useMutation,
+  useQuery,
+  useSuspenseQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
-  UseMutationResult
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult,
+  UseSuspenseQueryOptions,
+  UseSuspenseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  AvailabilityResponseDto,
+  BookedRangeListResponseDto,
+  CheckAvailabilityHttpControllerCheckParams,
   CreateRentalRequestDto,
   IdResponse
 } from '../model';
@@ -25,6 +40,21 @@ import { customInstance } from '../../mutator/custom-instance';
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
+
+const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
+  const result = { queryKey } as T & { queryKey: K };
+  for (const key of Object.keys(query)) {
+    // The explicit queryKey always wins, matching the previous
+    // `{ ...query, queryKey }` spread where it was set last.
+    if (key === 'queryKey') continue;
+    Object.defineProperty(result, key, {
+      enumerable: true,
+      configurable: true,
+      get: () => (query as Record<string, unknown>)[key],
+    });
+  }
+  return result;
+};
 
 /**
  * @summary Create a rental booking 1..n dresses for a date range
@@ -90,3 +120,310 @@ export const useCreateRentalHttpControllerCreate = <TError = void,
       > => {
       return useMutation(getCreateRentalHttpControllerCreateMutationOptions(options), queryClient);
     }
+    /**
+ * @summary Is the dress free for [startDate, endDate]? (cleaning buffer included)
+ */
+export const checkAvailabilityHttpControllerCheck = (
+    dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<AvailabilityResponseDto>(
+      {url: `/api/v1/dresses/${dressId}/availability`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCheckAvailabilityHttpControllerCheckQueryKey = (dressId: string,
+    params?: CheckAvailabilityHttpControllerCheckParams,) => {
+    return [
+    `/api/v1/dresses/${dressId}/availability`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getCheckAvailabilityHttpControllerCheckQueryOptions = <TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCheckAvailabilityHttpControllerCheckQueryKey(dressId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>> = ({ signal }) => checkAvailabilityHttpControllerCheck(dressId,params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: dressId !== null && dressId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CheckAvailabilityHttpControllerCheckQueryResult = NonNullable<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>>
+export type CheckAvailabilityHttpControllerCheckQueryError = void
+
+
+export function useCheckAvailabilityHttpControllerCheck<TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(
+ dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>,
+          TError,
+          Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCheckAvailabilityHttpControllerCheck<TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(
+ dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>,
+          TError,
+          Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCheckAvailabilityHttpControllerCheck<TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(
+ dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Is the dress free for [startDate, endDate]? (cleaning buffer included)
+ */
+
+export function useCheckAvailabilityHttpControllerCheck<TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(
+ dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCheckAvailabilityHttpControllerCheckQueryOptions(dressId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getCheckAvailabilityHttpControllerCheckSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCheckAvailabilityHttpControllerCheckQueryKey(dressId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>> = ({ signal }) => checkAvailabilityHttpControllerCheck(dressId,params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseSuspenseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CheckAvailabilityHttpControllerCheckSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>>
+export type CheckAvailabilityHttpControllerCheckSuspenseQueryError = void
+
+
+export function useCheckAvailabilityHttpControllerCheckSuspense<TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(
+ dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCheckAvailabilityHttpControllerCheckSuspense<TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(
+ dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCheckAvailabilityHttpControllerCheckSuspense<TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(
+ dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Is the dress free for [startDate, endDate]? (cleaning buffer included)
+ */
+
+export function useCheckAvailabilityHttpControllerCheckSuspense<TData = Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError = void>(
+ dressId: string,
+    params: CheckAvailabilityHttpControllerCheckParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof checkAvailabilityHttpControllerCheck>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCheckAvailabilityHttpControllerCheckSuspenseQueryOptions(dressId,params,options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary List the blocking bookings of a dress (rental + cleaning buffer)
+ */
+export const listBookedRangesHttpControllerList = (
+    dressId: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<BookedRangeListResponseDto>(
+      {url: `/api/v1/dresses/${dressId}/booked-ranges`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListBookedRangesHttpControllerListQueryKey = (dressId: string,) => {
+    return [
+    `/api/v1/dresses/${dressId}/booked-ranges`
+    ] as const;
+    }
+
+
+export const getListBookedRangesHttpControllerListQueryOptions = <TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(dressId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBookedRangesHttpControllerListQueryKey(dressId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>> = ({ signal }) => listBookedRangesHttpControllerList(dressId, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: dressId !== null && dressId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListBookedRangesHttpControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>>
+export type ListBookedRangesHttpControllerListQueryError = void
+
+
+export function useListBookedRangesHttpControllerList<TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(
+ dressId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBookedRangesHttpControllerList<TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(
+ dressId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBookedRangesHttpControllerList<TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(
+ dressId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List the blocking bookings of a dress (rental + cleaning buffer)
+ */
+
+export function useListBookedRangesHttpControllerList<TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(
+ dressId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListBookedRangesHttpControllerListQueryOptions(dressId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getListBookedRangesHttpControllerListSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(dressId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBookedRangesHttpControllerListQueryKey(dressId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>> = ({ signal }) => listBookedRangesHttpControllerList(dressId, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListBookedRangesHttpControllerListSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>>
+export type ListBookedRangesHttpControllerListSuspenseQueryError = void
+
+
+export function useListBookedRangesHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(
+ dressId: string, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBookedRangesHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(
+ dressId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBookedRangesHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(
+ dressId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List the blocking bookings of a dress (rental + cleaning buffer)
+ */
+
+export function useListBookedRangesHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError = void>(
+ dressId: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listBookedRangesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListBookedRangesHttpControllerListSuspenseQueryOptions(dressId,options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+

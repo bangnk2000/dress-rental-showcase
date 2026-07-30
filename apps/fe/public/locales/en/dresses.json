@@ -58,9 +58,33 @@
   },
   "detail": {
     "title": "Dress detail",
-    "shell": {
-      "title": "Dress detail is coming soon",
-      "description": "Dress details and its booked calendar will appear once the rentals and availability-check features ship."
+    "info": {
+      "size": "Size",
+      "rentalPrice": "Rental price",
+      "deposit": "Deposit",
+      "notes": "Notes"
+    },
+    "calendar": {
+      "title": "Booking calendar",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "empty": "No bookings for this dress yet.",
+      "legend": {
+        "rented": "Rented",
+        "buffer": "Cleaning buffer",
+        "free": "Free"
+      }
+    },
+    "checker": {
+      "title": "Check availability",
+      "startLabel": "From",
+      "endLabel": "To",
+      "submit": "Check",
+      "invalidRange": "Please pick a valid date range (the start must not be after the end).",
+      "available": "Free from {{start}} to {{end}}.",
+      "unavailable": "Booked in this range (cleaning buffer included).",
+      "conflict": "Busy from {{start}} to {{end}} (held until the end of {{blockedUntil}})",
+      "error": "Could not check availability. Please try again."
     }
   }
 }

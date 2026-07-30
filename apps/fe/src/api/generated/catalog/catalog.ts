@@ -29,6 +29,7 @@ import type {
 import type {
   CreateDressRequestDto,
   DressListResponseDto,
+  DressResponseDto,
   IdResponse,
   ListDressesHttpControllerListParams
 } from '../model';
@@ -256,6 +257,153 @@ export function useListDressesHttpControllerListSuspense<TData = Awaited<ReturnT
  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListDressesHttpControllerListSuspenseQueryOptions(params,options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Get one dress by id
+ */
+export const getDressHttpControllerGet = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<DressResponseDto>(
+      {url: `/api/v1/dresses/${id}`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getGetDressHttpControllerGetQueryKey = (id: string,) => {
+    return [
+    `/api/v1/dresses/${id}`
+    ] as const;
+    }
+
+
+export const getGetDressHttpControllerGetQueryOptions = <TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDressHttpControllerGetQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDressHttpControllerGet>>> = ({ signal }) => getDressHttpControllerGet(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDressHttpControllerGetQueryResult = NonNullable<Awaited<ReturnType<typeof getDressHttpControllerGet>>>
+export type GetDressHttpControllerGetQueryError = void
+
+
+export function useGetDressHttpControllerGet<TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDressHttpControllerGet>>,
+          TError,
+          Awaited<ReturnType<typeof getDressHttpControllerGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDressHttpControllerGet<TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDressHttpControllerGet>>,
+          TError,
+          Awaited<ReturnType<typeof getDressHttpControllerGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDressHttpControllerGet<TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get one dress by id
+ */
+
+export function useGetDressHttpControllerGet<TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDressHttpControllerGetQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetDressHttpControllerGetSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDressHttpControllerGetQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDressHttpControllerGet>>> = ({ signal }) => getDressHttpControllerGet(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetDressHttpControllerGetSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getDressHttpControllerGet>>>
+export type GetDressHttpControllerGetSuspenseQueryError = void
+
+
+export function useGetDressHttpControllerGetSuspense<TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(
+ id: string, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDressHttpControllerGetSuspense<TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(
+ id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDressHttpControllerGetSuspense<TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(
+ id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get one dress by id
+ */
+
+export function useGetDressHttpControllerGetSuspense<TData = Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError = void>(
+ id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getDressHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetDressHttpControllerGetSuspenseQueryOptions(id,options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
@@ -6,6 +6,7 @@ import { beforeEach, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
 import { makeDress, resetCatalog, seedDresses } from '@/test/msw/handlers/catalog';
+import { makeBookedRange, resetRentals, seedBookedRanges } from '@/test/msw/handlers/rentals';
 import { renderWithProviders } from '@/test/render';
 
 import { DressDetailRoute } from './dress-detail-route';
@@ -36,7 +37,19 @@ function renderList(route = '/dresses') {
 
 beforeEach(() => {
   resetCatalog();
+  resetRentals();
 });
+
+function renderDetail(route: string) {
+  return renderWithProviders(
+    <Suspense fallback={<output>loading</output>}>
+      <Routes>
+        <Route path="/dresses/:id" element={<DressDetailRoute />} />
+      </Routes>
+    </Suspense>,
+    { route },
+  );
+}
 
 test('renders dress rows from the API through Suspense', async () => {
   seedDresses([
@@ -155,15 +168,79 @@ test('a duplicate code maps the 409 to a field error on code', async () => {
   expect(screen.getByRole('dialog')).toBeInTheDocument();
 });
 
-test('the detail route is a shell with the id and the coming-soon explanation', async () => {
-  renderWithProviders(
-    <Routes>
-      <Route path="/dresses/:id" element={<DressDetailRoute />} />
-    </Routes>,
-    { route: '/dresses/d42' },
-  );
+test('the detail route shows dress info and shades rented/buffer days on the calendar', async () => {
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm dạ hội đỏ', sizeLabel: 'M' }),
+  ]);
+  // Far-future dates keep the default month (first upcoming booking) deterministic.
+  seedBookedRanges('d1', [
+    makeBookedRange({
+      startDate: '2099-08-03',
+      endDate: '2099-08-05',
+      blockedUntilDate: '2099-08-07',
+    }),
+  ]);
+  const { container } = renderDetail('/dresses/d1');
 
-  expect(await screen.findByText('Chi tiết váy')).toBeInTheDocument();
-  expect(screen.getByText('d42')).toBeInTheDocument();
-  expect(screen.getByText('Chi tiết váy sẽ sớm có mặt')).toBeInTheDocument();
+  expect(await screen.findByText('DR-001 — Đầm dạ hội đỏ')).toBeInTheDocument();
+  expect(screen.getByText('M')).toBeInTheDocument();
+  expect(screen.getByText('Đang cho thuê')).toBeInTheDocument();
+  expect(screen.getByText('Lịch đặt')).toBeInTheDocument();
+
+  const statusOf = (date: string) =>
+    container.querySelector(`[data-date="${date}"]`)?.getAttribute('data-status');
+  expect(statusOf('2099-08-03')).toBe('rented');
+  expect(statusOf('2099-08-05')).toBe('rented');
+  expect(statusOf('2099-08-06')).toBe('buffer');
+  expect(statusOf('2099-08-07')).toBe('buffer');
+  expect(statusOf('2099-08-02')).toBe('free');
+  expect(statusOf('2099-08-08')).toBe('free');
+});
+
+test('the availability checker reports a free range', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('Kiểm tra lịch trống');
+
+  fireEvent.change(screen.getByLabelText('Từ ngày'), { target: { value: '2099-09-10' } });
+  fireEvent.change(screen.getByLabelText('Đến ngày'), { target: { value: '2099-09-12' } });
+  await user.click(screen.getByRole('button', { name: 'Kiểm tra' }));
+
+  expect(await screen.findByRole('status')).toHaveTextContent(/^Còn trống/);
+});
+
+test('the availability checker reports conflicts, buffer included', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  seedBookedRanges('d1', [
+    makeBookedRange({
+      startDate: '2099-08-03',
+      endDate: '2099-08-05',
+      blockedUntilDate: '2099-08-07',
+    }),
+  ]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('Kiểm tra lịch trống');
+
+  // 08-06..08-07 misses the rental days but sits inside the cleaning buffer.
+  fireEvent.change(screen.getByLabelText('Từ ngày'), { target: { value: '2099-08-06' } });
+  fireEvent.change(screen.getByLabelText('Đến ngày'), { target: { value: '2099-08-07' } });
+  await user.click(screen.getByRole('button', { name: 'Kiểm tra' }));
+
+  expect(await screen.findByText(/^Đã kín/)).toBeInTheDocument();
+  expect(screen.getByText(/^Bận từ/)).toBeInTheDocument();
+});
+
+test('the availability checker rejects an inverted range client-side', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('Kiểm tra lịch trống');
+
+  fireEvent.change(screen.getByLabelText('Từ ngày'), { target: { value: '2099-09-12' } });
+  fireEvent.change(screen.getByLabelText('Đến ngày'), { target: { value: '2099-09-10' } });
+  await user.click(screen.getByRole('button', { name: 'Kiểm tra' }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(/khoảng ngày hợp lệ/);
 });

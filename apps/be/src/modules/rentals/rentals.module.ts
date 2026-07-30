@@ -7,14 +7,24 @@ import { CreateRentalService } from './commands/create-rental/create-rental.serv
 import { DressLookupAdapter } from './database/dress-lookup.adapter';
 import { RentalMapper } from './database/rental.mapper';
 import { RentalRepository } from './database/rental.repository';
+import { CheckAvailabilityHttpController } from './queries/check-availability/check-availability.http.controller';
+import { CheckAvailabilityQueryHandler } from './queries/check-availability/check-availability.query-handler';
+import { ListBookedRangesHttpController } from './queries/list-booked-ranges/list-booked-ranges.http.controller';
+import { ListBookedRangesQueryHandler } from './queries/list-booked-ranges/list-booked-ranges.query-handler';
 import './rentals.policies';
 
 @Module({
   imports: [CqrsModule],
-  controllers: [CreateRentalHttpController],
+  controllers: [
+    CreateRentalHttpController,
+    CheckAvailabilityHttpController,
+    ListBookedRangesHttpController,
+  ],
   providers: [
     RentalMapper,
     CreateRentalService,
+    CheckAvailabilityQueryHandler,
+    ListBookedRangesQueryHandler,
     { provide: RENTAL_REPOSITORY, useClass: RentalRepository },
     { provide: DRESS_LOOKUP, useClass: DressLookupAdapter },
   ],

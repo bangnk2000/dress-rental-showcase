@@ -60,13 +60,19 @@ export class RentalRepository
   }
 
   override async findOneById(id: AggregateID): Promise<RentalEntity | null> {
-    const rental = await this.pool.maybeOne(
-      sql.type(rentalRowSchema)`SELECT * FROM rentals WHERE id = ${id}`,
-    );
+    // ::text keeps ranges as literals for the mapper — slonik would otherwise
+    // hand back parsed range objects that daterange.ts does not speak.
+    const rental = await this.pool.maybeOne(sql.type(rentalRowSchema)`
+      SELECT id, customer_name, customer_phone, period::text AS period,
+             status, notes, created_at, updated_at
+      FROM rentals WHERE id = ${id}
+    `);
     if (!rental) return null;
-    const items = await this.pool.any(
-      sql.type(rentalItemRowSchema)`SELECT * FROM rental_items WHERE rental_id = ${id} ORDER BY id`,
-    );
+    const items = await this.pool.any(sql.type(rentalItemRowSchema)`
+      SELECT id, rental_id, dress_id, price,
+             blocked_period::text AS blocked_period, blocking
+      FROM rental_items WHERE rental_id = ${id} ORDER BY id
+    `);
     return this.mapper.toDomain({ rental, items: [...items] });
   }
 

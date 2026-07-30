@@ -58,9 +58,33 @@
   },
   "detail": {
     "title": "Chi tiết váy",
-    "shell": {
-      "title": "Chi tiết váy sẽ sớm có mặt",
-      "description": "Thông tin chi tiết và lịch đã đặt của váy sẽ hiển thị khi tính năng thuê và kiểm tra lịch trống hoàn tất."
+    "info": {
+      "size": "Kích cỡ",
+      "rentalPrice": "Giá thuê",
+      "deposit": "Tiền cọc",
+      "notes": "Ghi chú"
+    },
+    "calendar": {
+      "title": "Lịch đặt",
+      "prevMonth": "Tháng trước",
+      "nextMonth": "Tháng sau",
+      "empty": "Chưa có lịch đặt nào cho váy này.",
+      "legend": {
+        "rented": "Ngày thuê",
+        "buffer": "Ngày đệm vệ sinh",
+        "free": "Còn trống"
+      }
+    },
+    "checker": {
+      "title": "Kiểm tra lịch trống",
+      "startLabel": "Từ ngày",
+      "endLabel": "Đến ngày",
+      "submit": "Kiểm tra",
+      "invalidRange": "Vui lòng chọn khoảng ngày hợp lệ (từ ngày không sau đến ngày).",
+      "available": "Còn trống từ {{start}} đến {{end}}.",
+      "unavailable": "Đã kín trong khoảng này (tính cả ngày đệm vệ sinh).",
+      "conflict": "Bận từ {{start}} đến {{end}} (giữ váy đến hết {{blockedUntil}})",
+      "error": "Không kiểm tra được. Vui lòng thử lại."
     }
   }
 }

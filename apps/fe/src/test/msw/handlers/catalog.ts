@@ -45,6 +45,15 @@ export function resetCatalog(): void {
 }
 
 export const catalogHandlers: HttpHandler[] = [
+  // GET /api/v1/dresses/:id — one dress, or 404 like the real API.
+  http.get('/api/v1/dresses/:id', ({ params }) => {
+    const dress = dresses.find((candidate) => candidate.id === params.id);
+    if (!dress) {
+      return new HttpResponse(null, { status: 404 });
+    }
+    return HttpResponse.json(dress);
+  }),
+
   // GET /api/v1/dresses — respects q / status / page / limit like the real API.
   http.get('/api/v1/dresses', ({ request }) => {
     const url = new URL(request.url);

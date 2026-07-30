@@ -14,14 +14,17 @@ This file is the ONE harness in this repo — never create another under `apps/*
 
 ## Current state (re-sync at every session end — see Session rules)
 
-Both apps bootstrapped and gated; first cross-contract feature `rentals/create-rental` = pass
-(BE slice → `pnpm contract` → FE slice, one entry). `apps/be`: NestJS hexagonal — identity
-(JWT + ABAC), catalog, rentals (create-rental command; overlap incl. cleaning buffer rejected
-by the rental_items EXCLUDE constraint, proven via psql bypass), offline `openapi:emit`.
-`apps/fe`: React SPA — auth + dresses slices and the live new-rental form on the generated
-client; rentals LIST, today and dress-detail are still shells awaiting read slices. App-level
-contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`. Next: `rentals/availability-check`
-(unblocks the dress-detail calendar) or finish `catalog/list-dresses` (CSV seed import).
+Both apps bootstrapped and gated; cross-contract features `rentals/create-rental` and
+`rentals/availability-check` = pass (BE slice → `pnpm contract` → FE slice, one entry each).
+`apps/be`: NestJS hexagonal — identity (JWT + ABAC), catalog (create/list/get dress), rentals
+(create-rental command with the rental_items EXCLUDE overlap constraint incl. cleaning
+buffer; availability + booked-ranges read slices — range columns are always SELECTed as
+`::text` literals), offline `openapi:emit`. `apps/fe`: React SPA — auth + dresses slices
+(incl. the live `/dresses/:id` detail: info grid, booking calendar, availability checker) and
+the new-rental form on the generated client; rentals LIST and today are still shells awaiting
+read slices. App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`. Next:
+`rentals/today-board` or a rentals list slice, or finish `catalog/list-dresses` (CSV seed
+import).
 
 ## Invariants (carry these into every session)
 
