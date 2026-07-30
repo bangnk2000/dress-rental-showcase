@@ -231,6 +231,34 @@ ghostret=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{}')
 echo "POST return unknown rental -> $ghostret (expect 404)"
 
+# --- rentals/list-rentals ---
+# State: 4 rentals on VD-900 — 08-01 (RETURNED, Nguyễn Thị Hoa), 08-06 (Trần Văn B),
+# 08-20 (Lê Thị C), 09-20 (Phạm Thị D). ORDER BY created_at DESC → newest first.
+
+list_all=$(curl -sf "$BASE/rentals" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.count+':'+j.data.length+':'+j.data[0].customerName)})")
+echo "GET /rentals -> $list_all (expect 4:4:Phạm Thị D — newest first)"
+
+list_q=$(curl -sf "$BASE/rentals?q=Hoa" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.count+':'+j.data[0].customerName)})")
+echo "GET /rentals?q=Hoa -> $list_q (expect 1:Nguyễn Thị Hoa)"
+
+list_phone=$(curl -sf "$BASE/rentals?q=0912" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).count))")
+echo "GET /rentals?q=0912 (phone search) -> $list_phone (expect 1 — Trần Văn B)"
+
+list_status=$(curl -sf "$BASE/rentals?status=returned" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.count+':'+j.data[0].dresses[0].code)})")
+echo "GET /rentals?status=returned -> $list_status (expect 1:VD-900 — dresses ride along)"
+
+list_page=$(curl -sf "$BASE/rentals?limit=2&page=2" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.data.length+':'+j.page+':'+j.count)})")
+echo "GET /rentals?limit=2&page=2 -> $list_page (expect 2:2:4)"
+
+list_badstatus=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/rentals?status=weird" \
+  -H "Authorization: Bearer $TOKEN")
+echo "GET /rentals?status=weird -> $list_badstatus (expect 400)"
+
 [ "$unauth" = "401" ] && [ "$create" = "201" ] && [ "$dup" = "409" ] && [ "$me" = "owner" ] \
   && [ "$rent" = "201" ] && [ "$buffered" = "409" ] && [ "$free" = "201" ] \
   && [ "$ghost" = "404" ] && [ "$badrange" = "400" ] \
@@ -248,4 +276,7 @@ echo "POST return unknown rental -> $ghostret (expect 404)"
   && [ "$board_back_status" = "out" ] && [ "$board_overdue" = "1:out" ] \
   && [ "$ret" = "200" ] && [ "$ret2" = "409" ] && [ "$board_after_return" = "0:0" ] \
   && [ "$badfee" = "400" ] && [ "$ghostpick" = "404" ] && [ "$ghostret" = "404" ] \
+  && [ "$list_all" = "4:4:Phạm Thị D" ] && [ "$list_q" = "1:Nguyễn Thị Hoa" ] \
+  && [ "$list_phone" = "1" ] && [ "$list_status" = "1:VD-900" ] \
+  && [ "$list_page" = "2:2:4" ] && [ "$list_badstatus" = "400" ] \
   && echo "SMOKE: ALL PASS" || { echo "SMOKE: FAIL"; exit 1; }

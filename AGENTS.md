@@ -14,21 +14,22 @@ This file is the ONE harness in this repo — never create another under `apps/*
 
 ## Current state (re-sync at every session end — see Session rules)
 
-**Every `feature_list.json` entry is pass** — the MVP scope is complete. `apps/be`: NestJS
-hexagonal — identity (JWT + ABAC), catalog (create/update/owner-only-retire + photo LINKS
-in `photo_urls text[]`, list/get dress; status stays active/retired — renting/cleaning
+MVP scope complete and the follow-up backlog is tracked; NO shell routes remain. `apps/be`:
+NestJS hexagonal — identity (JWT + ABAC), catalog (create/update/owner-only-retire + photo
+LINKS in `photo_urls text[]`, list/get dress; status stays active/retired — renting/cleaning
 derived from rentals; one-time seed via `pnpm --filter be import:dresses <csv>`), rentals
 (create-rental with the rental_items EXCLUDE overlap constraint incl. cleaning buffer;
 pickup booked→out and return booked|out→returned, the return settling deposit/late/damage
 fees into the payments table via `PaymentRecorderPort` — payments context itself is still
-schema-only; availability + booked-ranges + today-board reads, the board carrying
-due-out/due-back/OVERDUE; range columns always SELECTed as `::text` literals), offline
-`openapi:emit`. `apps/fe`: React SPA — auth + dresses slices (live `/dresses/:id` detail),
-the new-rental form, and the ACTIONABLE today board at `/` (device-local date; pickup
-button on due-out, return-and-settle dialog on due-back + overdue); the rentals LIST route
-is the one remaining shell. App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`.
-Next: nothing tracked — candidates: rentals list slice, cancel-rental, payments read
-slice, Playwright e2e (see session-handoff (9)).
+schema-only; availability + booked-ranges + today-board + list-rentals reads — the board
+carries due-out/due-back/OVERDUE, the list searches customer name/phone with status filter
+and pagination; range columns always SELECTed as `::text` literals), offline `openapi:emit`.
+`apps/fe`: React SPA — auth + dresses slices (live `/dresses/:id` detail), the new-rental
+form, the ACTIONABLE today board at `/` (device-local date; pickup button on due-out,
+return-and-settle dialog on due-back + overdue), and the real `/rentals` list (URL-owned
+q/status/page filters). App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`.
+Next (tracked todos): `rentals/cancel-rental`, `payments/list-payments`,
+`infra/e2e-playwright` — see session-handoff (10) for the suggested order.
 
 ## Invariants (carry these into every session)
 

@@ -33,6 +33,8 @@ import type {
   CreateRentalRequestDto,
   GetTodayBoardHttpControllerGetParams,
   IdResponse,
+  ListRentalsHttpControllerListParams,
+  RentalListResponseDto,
   ReturnRentalRequestDto,
   TodayBoardResponseDto
 } from '../model';
@@ -124,6 +126,154 @@ export const useCreateRentalHttpControllerCreate = <TError = void,
       return useMutation(getCreateRentalHttpControllerCreateMutationOptions(options), queryClient);
     }
     /**
+ * @summary List rentals (paginated, search customer name/phone, filter by status)
+ */
+export const listRentalsHttpControllerList = (
+    params?: ListRentalsHttpControllerListParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<RentalListResponseDto>(
+      {url: `/api/v1/rentals`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getListRentalsHttpControllerListQueryKey = (params?: ListRentalsHttpControllerListParams,) => {
+    return [
+    `/api/v1/rentals`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListRentalsHttpControllerListQueryOptions = <TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(params?: ListRentalsHttpControllerListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRentalsHttpControllerListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRentalsHttpControllerList>>> = ({ signal }) => listRentalsHttpControllerList(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListRentalsHttpControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof listRentalsHttpControllerList>>>
+export type ListRentalsHttpControllerListQueryError = unknown
+
+
+export function useListRentalsHttpControllerList<TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(
+ params: undefined |  ListRentalsHttpControllerListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listRentalsHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listRentalsHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRentalsHttpControllerList<TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(
+ params?: ListRentalsHttpControllerListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listRentalsHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listRentalsHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRentalsHttpControllerList<TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(
+ params?: ListRentalsHttpControllerListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List rentals (paginated, search customer name/phone, filter by status)
+ */
+
+export function useListRentalsHttpControllerList<TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(
+ params?: ListRentalsHttpControllerListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListRentalsHttpControllerListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getListRentalsHttpControllerListSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(params?: ListRentalsHttpControllerListParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRentalsHttpControllerListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRentalsHttpControllerList>>> = ({ signal }) => listRentalsHttpControllerList(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListRentalsHttpControllerListSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listRentalsHttpControllerList>>>
+export type ListRentalsHttpControllerListSuspenseQueryError = unknown
+
+
+export function useListRentalsHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(
+ params: undefined |  ListRentalsHttpControllerListParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRentalsHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(
+ params?: ListRentalsHttpControllerListParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListRentalsHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(
+ params?: ListRentalsHttpControllerListParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List rentals (paginated, search customer name/phone, filter by status)
+ */
+
+export function useListRentalsHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError = unknown>(
+ params?: ListRentalsHttpControllerListParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listRentalsHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListRentalsHttpControllerListSuspenseQueryOptions(params,options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
  * @summary Mark a booked rental as handed out to the customer
  */
 export const pickupRentalHttpControllerPickup = (

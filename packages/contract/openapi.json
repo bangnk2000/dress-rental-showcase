@@ -384,6 +384,79 @@
         "tags": [
           "rentals"
         ]
+      },
+      "get": {
+        "operationId": "ListRentalsHttpController_list",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Search in customer name and phone",
+            "schema": {
+              "minLength": 1,
+              "maxLength": 100,
+              "example": "Hoa",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "booked",
+                "out",
+                "returned",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List rentals (paginated, search customer name/phone, filter by status)",
+        "tags": [
+          "rentals"
+        ]
       }
     },
     "/api/v1/rentals/{id}/pickup": {
@@ -1113,7 +1186,7 @@
           "conflicts"
         ]
       },
-      "TodayBoardDressDto": {
+      "RentalDressDto": {
         "type": "object",
         "properties": {
           "dressId": {
@@ -1173,7 +1246,7 @@
           "dresses": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TodayBoardDressDto"
+              "$ref": "#/components/schemas/RentalDressDto"
             }
           }
         },
@@ -1237,6 +1310,98 @@
         },
         "required": [
           "data"
+        ]
+      },
+      "RentalListItemDto": {
+        "type": "object",
+        "properties": {
+          "rentalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Nguyễn Thị Hoa"
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "0903123456"
+          },
+          "status": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string",
+            "example": "booked"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-08-01",
+            "description": "First rental day (inclusive)"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2026-08-03",
+            "description": "Last rental day (inclusive)"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "example": "Khách quen"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-07-30T09:00:00.000Z"
+          },
+          "dresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentalDressDto"
+            }
+          }
+        },
+        "required": [
+          "rentalId",
+          "customerName",
+          "customerPhone",
+          "status",
+          "startDate",
+          "endDate",
+          "notes",
+          "createdAt",
+          "dresses"
+        ]
+      },
+      "RentalListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentalListItemDto"
+            }
+          },
+          "count": {
+            "type": "number",
+            "example": 42
+          },
+          "limit": {
+            "type": "number",
+            "example": 20
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "data",
+          "count",
+          "limit",
+          "page"
         ]
       }
     }

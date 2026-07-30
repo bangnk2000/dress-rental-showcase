@@ -1,16 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RentalStatus } from '../../domain/rental.types';
-
-export class TodayBoardDressDto {
-  @ApiProperty({ format: 'uuid' })
-  readonly dressId!: string;
-
-  @ApiProperty({ example: 'VD-001' })
-  readonly code!: string;
-
-  @ApiProperty({ example: 'Váy cưới ren trắng' })
-  readonly name!: string;
-}
+import { RentalDressDto } from '../../dtos/rental-dress.response.dto';
 
 /** One rental the staff must hand out or take back on the board's date. */
 export class TodayBoardRentalDto {
@@ -32,8 +22,8 @@ export class TodayBoardRentalDto {
   @ApiProperty({ example: '2026-08-03', description: 'Last rental day (inclusive)' })
   readonly endDate!: string;
 
-  @ApiProperty({ type: [TodayBoardDressDto] })
-  readonly dresses!: TodayBoardDressDto[];
+  @ApiProperty({ type: [RentalDressDto] })
+  readonly dresses!: RentalDressDto[];
 }
 
 export class TodayBoardResponseDto {

@@ -1,5 +1,35 @@
 # Session Handoff
 
+## 2026-07-30 (10) — `rentals/list-rentals` = pass (no shells left)
+
+- Done: the follow-up backlog became 4 tracked entries (list-rentals, cancel-rental,
+  payments/list-payments, infra/e2e-playwright) and the first shipped end-to-end:
+  `GET /rentals?q=&status=&page=&limit=` mirroring the list-dresses shape (q searches
+  customer name OR phone; newest first; pages over RENTALS with items + dress names
+  riding along via `rental-list.projection` + `DressLookupPort`); FE `/rentals` is REAL —
+  filters bar, table (tel: links, dress-code links, status badges), pagination, URL-owned
+  q/status/page (`use-rental-filters`). `TodayBoardDressDto` was promoted to the shared
+  `RentalDressDto` (contract rename, generated-only impact). All gates green; smoke.sh
+  49 checks + proxy proof. Evidence in `feature_list.json`.
+- Next: the remaining tracked todos, easiest-first suggestion: `rentals/cancel-rental`
+  (domain method + `blocking=false` flip — the repo save already upserts items, and the
+  EXCLUDE constraint ignores non-blocking rows), then `payments/list-payments` (first
+  read surface of the payments context, probably nested under the rental), then
+  `infra/e2e-playwright` (compose stack, the deferred bootstrap item).
+- Watch out:
+  - GET /rentals vs GET /rentals/today-board coexist because today-board is a literal
+    segment — a future `GET /rentals/:id` MUST be registered so Nest keeps today-board
+    first, or the uuid pipe will eat 'today-board' (Nest orders by controller
+    registration; today-board's controller is listed before any :id route would be).
+  - The list pages over rentals; the items query hits only the PAGE's rental ids — do
+    not "simplify" into one JOIN, it breaks LIMIT/OFFSET semantics (item rows multiply
+    rentals).
+  - jsdom cannot open the Radix Select popover — drive status filters via the URL in
+    tests (both list tests do this).
+  - smoke.sh list checks assume EXACTLY the 4 fixture rentals with their customer names
+    and the 08-01 one returned — inserting new rentals earlier in the script shifts
+    `4:4:Phạm Thị D` and the count-based expectations.
+
 ## 2026-07-30 (9) — `rentals/return-rental` = pass (FEATURE LIST COMPLETE)
 
 - Done: the last todo entry, full step-5 rhythm — BE status machine (`markPickedUp`

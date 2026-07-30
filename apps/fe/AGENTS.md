@@ -44,12 +44,13 @@ files here.
 3. **`/dresses/:id` is live** (`rentals/availability-check`): dress info from get-dress,
    calendar from booked-ranges, checker from availability — detail data comes from those
    endpoints only, never fetch-list-and-find.
-4. **The rentals LIST route is a shell** awaiting its read slice; `/rentals/new` is live
-   (`rentals/create-rental`) and navigates back to the shell list on success. The today board
-   at `/` is live and ACTIONABLE (`rentals/today-board` + `rentals/return-rental`): three
-   sections (due-out / due-back / overdue), pickup + return-and-settle mutations, and it
-   ALWAYS sends the device-local date (`features/today/lib/local-date.ts`) — never rely on
-   the server's "today".
+4. **No shell routes remain.** `/rentals` is the real list (`rentals/list-rentals`,
+   URL-owned q/status/page via `use-rental-filters`); `/rentals/new` navigates to it on
+   success. The today board at `/` is live and ACTIONABLE (`rentals/today-board` +
+   `rentals/return-rental`): three sections (due-out / due-back / overdue), pickup +
+   return-and-settle mutations, and it ALWAYS sends the device-local date
+   (`features/today/lib/local-date.ts`) — never rely on the server's "today". jsdom cannot
+   open the Radix Select popover — drive status filters via the URL in tests.
 5. **Playwright/e2e deferred** until the first cross-contract feature; root gates exclude fe e2e.
 6. **`customInstance` omits the legacy `promise.cancel` hack** — TanStack Query v5 passes
    AbortSignal in the request config (signal-based cancellation).

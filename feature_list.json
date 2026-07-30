@@ -55,6 +55,30 @@
       "title": "Today screen: dresses due out and due back today — the screen staff open every morning",
       "status": "pass",
       "evidence": "2026-07-30: BE read slice GET /rentals/today-board?date=YYYY-MM-DD (date optional, default server-today; @ApiTags rentals, auth-only read). due OUT = booked rentals with lower(period)=date; due BACK = booked/out rentals with upper(period)-1=date (inclusive last day) — 'returned'/'cancelled' excluded, forward-compatible with the return flow. SQL computes both membership flags over rentals ⋈ rental_items (ranges SELECTed ::text per convention); today-board.projection groups item rows per rental, dresses sorted by code; a single-day rental appears on BOTH lists. Dress code/name via DressLookupPort (DressSnapshot extended with code+name — no catalog imports). Request DTO: @Matches date shape + @IsISO8601 strict, so 2026-02-30 is a 400, not a 500 from the ::date cast. BE gates: build/lint/arch(145 modules, 0 violations)/test(44, +3 projection specs). Contract regenerated (useGetTodayBoardHttpControllerGetSuspense, TodayBoardResponseDto/RentalDto/DressDto). FE: features/today real board at the INDEX route — two sections (Giao váy cho khách / Nhận váy về) with count, customer + tel: link, status badge (Đã đặt/Đang thuê), period via formatDate, dress codes linking to /dresses/:id; date input defaults to the DEVICE-local day (localDateIso — a UTC server flips dates at 7am Hanoi, so the FE always sends ?date). FE gates: check/lint/test(35, +4 today)/build; arch 11/11 after this commit (check (d) diffs generated vs committed). Runtime vs fresh compose DB: smoke.sh now 33 checks — 2026-08-01=1:0:VD-900 (due out), 2026-08-03=0:1 (due back), single-day 09-20 rental 201 then 1:1:true (both lists, same rentalId), quiet day 0:0, 2026-02-30=400, no-date default=200. Proxy proof :5173->:3000: login, today-board date=2026-08-01 -> 2026-08-01:1:VD-900, default 200. Deferred: no pickup/return status transitions yet (all rentals 'booked' until return-rental ships); board date changes suspend via the route boundary (accepted)."
+    },
+    {
+      "id": "rentals/list-rentals",
+      "title": "Rentals list: search by customer name/phone, filter by status, pagination — fills the last remaining shell route (/rentals, the post-create landing)",
+      "status": "pass",
+      "evidence": "2026-07-30: BE read slice GET /rentals?q=&status=&page=&limit= mirroring the list-dresses shape (q ILIKE over customer_name OR customer_phone; status IsIn enum → 400 on junk; PaginatedQueryBase caps limit at 100; ORDER BY created_at DESC, id — newest first). Pages over RENTALS, not item rows: page query + count query + one items query for the page's rental ids + DressLookupPort for code/name; rental-list.projection joins them (dresses sorted by code, period literal → inclusive dates, created_at → ISO; 2 specs incl. empty-items no-crash). TodayBoardDressDto promoted to shared RentalDressDto in dtos/ (board + list reuse; contract model renamed — generated only, no hand-written FE references existed). BE gates: build/lint/arch(163 modules, 0 violations)/test(54, +2). Contract regenerated (useListRentalsHttpControllerListSuspense, RentalListResponseDto/ItemDto, RentalDressDto). FE: /rentals is REAL (last shell gone) — filters bar (draft search input + Radix status Select), table (customer, tel: phone, dress code links to /dresses/:id, formatted period, status badge), pagination; URL owns q/status/page via use-rental-filters (linkable, back/forward, search resets page). rentals.json shell key replaced by list.* + status.* (vi/en parity). FE gates: check/lint/test(44, +5: rows+badges+links, empty-CTA, search resets page, pagination, URL status filter)/build; arch 11/11 after commit. Runtime vs fresh compose DB: smoke.sh now 49 checks — GET /rentals = 4:4:Phạm Thị D (newest first), q=Hoa = 1:Nguyễn Thị Hoa, q=0912 phone search = 1, status=returned = 1:VD-900 (dresses ride along), limit=2&page=2 = 2:2:4, status=weird = 400. Proxy proof :5173→:3000: GET /rentals = 4:VD-900, q=Hoa&status=returned = 1. Deferred: no rental detail route (rows link to dresses only); notes/createdAt returned by the API but not shown in the table; jsdom cannot open the Radix Select popover — status-filter test drives the URL instead (same trick as the dresses list test)."
+    },
+    {
+      "id": "rentals/cancel-rental",
+      "title": "Cancel a booked rental: status → cancelled, items flip blocking=false (frees the calendar, keeps history)",
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "payments/list-payments",
+      "title": "Payments read slice: the money movements of a rental (deposit refund, late/damage fees) — first read surface for the payments context",
+      "status": "todo",
+      "evidence": null
+    },
+    {
+      "id": "infra/e2e-playwright",
+      "title": "Playwright e2e over the compose stack (deferred since fe-bootstrap): sign-in, create rental, today-board pickup/return happy path",
+      "status": "todo",
+      "evidence": null
     }
   ]
 }

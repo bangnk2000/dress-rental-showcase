@@ -5,7 +5,7 @@
  * OpenAPI spec version: 0
  */
 
-export interface TodayBoardDressDto {
+export interface RentalDressDto {
   dressId: string;
   code: string;
   name: string;

@@ -1,8 +1,35 @@
 {
   "title": "Rentals",
   "newTitle": "New rental",
-  "shell": {
-    "comingSoon": "The rentals list will be available once its backend slice ships."
+  "status": {
+    "booked": "Booked",
+    "out": "Out",
+    "returned": "Returned",
+    "cancelled": "Cancelled"
+  },
+  "list": {
+    "searchPlaceholder": "Search by customer name or phone…",
+    "searchButton": "Search",
+    "statusFilterLabel": "Filter by status",
+    "statusAll": "All statuses",
+    "columns": {
+      "customer": "Customer",
+      "phone": "Phone",
+      "dresses": "Dresses",
+      "period": "Rental period",
+      "status": "Status"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "label": "Page {{page}}/{{totalPages}}"
+    },
+    "empty": {
+      "noRentals": "No rentals yet",
+      "noRentalsHint": "Create the first rental for your customer.",
+      "noMatch": "No rentals found",
+      "noMatchHint": "Try another search term or clear the status filter."
+    }
   },
   "form": {
     "fields": {

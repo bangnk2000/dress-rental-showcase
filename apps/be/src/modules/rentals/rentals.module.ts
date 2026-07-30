@@ -19,6 +19,8 @@ import { GetTodayBoardHttpController } from './queries/get-today-board/get-today
 import { GetTodayBoardQueryHandler } from './queries/get-today-board/get-today-board.query-handler';
 import { ListBookedRangesHttpController } from './queries/list-booked-ranges/list-booked-ranges.http.controller';
 import { ListBookedRangesQueryHandler } from './queries/list-booked-ranges/list-booked-ranges.query-handler';
+import { ListRentalsHttpController } from './queries/list-rentals/list-rentals.http.controller';
+import { ListRentalsQueryHandler } from './queries/list-rentals/list-rentals.query-handler';
 import './rentals.policies';
 
 @Module({
@@ -30,6 +32,7 @@ import './rentals.policies';
     CheckAvailabilityHttpController,
     GetTodayBoardHttpController,
     ListBookedRangesHttpController,
+    ListRentalsHttpController,
   ],
   providers: [
     RentalMapper,
@@ -39,6 +42,7 @@ import './rentals.policies';
     CheckAvailabilityQueryHandler,
     GetTodayBoardQueryHandler,
     ListBookedRangesQueryHandler,
+    ListRentalsQueryHandler,
     { provide: RENTAL_REPOSITORY, useClass: RentalRepository },
     { provide: DRESS_LOOKUP, useClass: DressLookupAdapter },
     { provide: PAYMENT_RECORDER, useClass: PaymentRecorderAdapter },

@@ -16,12 +16,12 @@ apps/be source ──pnpm openapi:emit──▶ packages/contract/openapi.json �
 
 ## Status
 
-**MVP feature list COMPLETE** (2026-07-30) — every `feature_list.json` entry is pass:
-catalog (list/search, create/update/retire, photo links, CSV seed import), rentals
-(create with the DB-level EXCLUDE overlap constraint + cleaning buffer, availability +
-booking calendar, pickup/return with deposit & fee settlement into `payments`), and the
-actionable today board (due out / due back / overdue). The only remaining shell is the
-`/rentals` list route. Follow-up candidates live in `session-handoff.md` (9).
+**MVP COMPLETE + first backlog item shipped** (2026-07-30) — catalog (list/search,
+create/update/retire, photo links, CSV seed import), rentals (create with the DB-level
+EXCLUDE overlap constraint + cleaning buffer, availability + booking calendar,
+pickup/return with deposit & fee settlement into `payments`, searchable paginated list),
+and the actionable today board (due out / due back / overdue). No shell routes remain.
+Tracked follow-ups in `feature_list.json`: cancel-rental, payments read slice, Playwright e2e.
 Dev DB: `docker compose up -d` · seed: `pnpm --filter be migrate && pnpm --filter be seed`.
 
 ## Bootstrap order (do not reorder — FE needs the real contract)

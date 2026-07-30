@@ -1,8 +1,35 @@
 {
   "title": "Thuê váy",
   "newTitle": "Tạo lượt thuê",
-  "shell": {
-    "comingSoon": "Danh sách lượt thuê sẽ sẵn sàng khi lát cắt backend của nó hoàn tất."
+  "status": {
+    "booked": "Đã đặt",
+    "out": "Đang thuê",
+    "returned": "Đã trả",
+    "cancelled": "Đã huỷ"
+  },
+  "list": {
+    "searchPlaceholder": "Tìm theo tên khách hoặc số điện thoại…",
+    "searchButton": "Tìm",
+    "statusFilterLabel": "Lọc theo trạng thái",
+    "statusAll": "Tất cả trạng thái",
+    "columns": {
+      "customer": "Khách",
+      "phone": "Điện thoại",
+      "dresses": "Váy",
+      "period": "Thời gian thuê",
+      "status": "Trạng thái"
+    },
+    "pagination": {
+      "previous": "Trước",
+      "next": "Sau",
+      "label": "Trang {{page}}/{{totalPages}}"
+    },
+    "empty": {
+      "noRentals": "Chưa có lượt thuê nào",
+      "noRentalsHint": "Tạo lượt thuê đầu tiên cho khách của bạn.",
+      "noMatch": "Không tìm thấy lượt thuê",
+      "noMatchHint": "Thử từ khoá khác hoặc bỏ bộ lọc trạng thái."
+    }
   },
   "form": {
     "fields": {

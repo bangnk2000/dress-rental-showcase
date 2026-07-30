@@ -4,7 +4,7 @@
  * dress-rental API
  * OpenAPI spec version: 0
  */
-import type { TodayBoardDressDto } from './todayBoardDressDto';
+import type { RentalDressDto } from './rentalDressDto';
 import type { TodayBoardRentalDtoStatus } from './todayBoardRentalDtoStatus';
 
 export interface TodayBoardRentalDto {
@@ -16,5 +16,5 @@ export interface TodayBoardRentalDto {
   startDate: string;
   /** Last rental day (inclusive) */
   endDate: string;
-  dresses: TodayBoardDressDto[];
+  dresses: RentalDressDto[];
 }

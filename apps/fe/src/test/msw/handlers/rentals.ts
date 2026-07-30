@@ -11,11 +11,17 @@ import type {
   BookedRangeListResponseDto,
   CreateRentalRequestDto,
   IdResponse,
+  RentalListItemDto,
+  RentalListResponseDto,
   ReturnRentalRequestDto,
   TodayBoardRentalDto,
   TodayBoardResponseDto,
 } from '@/api/generated/model';
-import { BookedRangeDtoStatus, TodayBoardRentalDtoStatus } from '@/api/generated/model';
+import {
+  BookedRangeDtoStatus,
+  RentalListItemDtoStatus,
+  TodayBoardRentalDtoStatus,
+} from '@/api/generated/model';
 
 /** Mirrors the dev CLEANING_BUFFER_DAYS=2 the real API applies. */
 const CLEANING_BUFFER_DAYS = 2;
@@ -32,6 +38,9 @@ let lastTodayBoardDate: string | null = null;
 let lastPickupRentalId: string | null = null;
 let lastReturnRentalId: string | null = null;
 let lastReturnBody: ReturnRentalRequestDto | null = null;
+let rentalList: RentalListItemDto[] = [];
+let rentalListCount: number | null = null;
+let lastRentalListParams: Record<string, string> | null = null;
 
 /** Dresses that already have an overlapping booking — POST /rentals answers 409. */
 export function seedBlockedDresses(dressIds: string[]): void {
@@ -94,6 +103,34 @@ export function getLastReturn(): { rentalId: string | null; body: ReturnRentalRe
   return { rentalId: lastReturnRentalId, body: lastReturnBody };
 }
 
+export function makeRentalListItem(
+  overrides: Partial<RentalListItemDto> = {},
+): RentalListItemDto {
+  return {
+    rentalId: 'rental-1',
+    customerName: 'Nguyễn Thị Hoa',
+    customerPhone: '0903123456',
+    status: RentalListItemDtoStatus.booked,
+    startDate: '2099-08-01',
+    endDate: '2099-08-03',
+    notes: null,
+    createdAt: '2099-07-30T09:00:00.000Z',
+    dresses: [{ dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng' }],
+    ...overrides,
+  };
+}
+
+/** The page served for GET /rentals; count defaults to the seeded length. */
+export function seedRentalList(items: RentalListItemDto[], count?: number): void {
+  rentalList = [...items];
+  rentalListCount = count ?? null;
+}
+
+/** The query params of the most recent GET /rentals — asserts filters/pagination. */
+export function getLastRentalListParams(): Record<string, string> | null {
+  return lastRentalListParams;
+}
+
 /** Reset the in-memory rentals state — call from beforeEach. */
 export function resetRentals(): void {
   blockedDressIds = new Set();
@@ -104,6 +141,9 @@ export function resetRentals(): void {
   lastPickupRentalId = null;
   lastReturnRentalId = null;
   lastReturnBody = null;
+  rentalList = [];
+  rentalListCount = null;
+  lastRentalListParams = null;
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -151,6 +191,20 @@ export const rentalsHandlers: HttpHandler[] = [
       dueOut: todayBoard.dueOut,
       dueBack: todayBoard.dueBack,
       overdue: todayBoard.overdue,
+    };
+    return HttpResponse.json(body);
+  }),
+
+  // GET /api/v1/rentals — the seeded page, capturing the asked filters.
+  http.get('/api/v1/rentals', ({ request }) => {
+    const url = new URL(request.url);
+    lastRentalListParams = Object.fromEntries(url.searchParams.entries());
+    const page = Number(url.searchParams.get('page') ?? '1');
+    const body: RentalListResponseDto = {
+      data: rentalList,
+      count: rentalListCount ?? rentalList.length,
+      limit: 20,
+      page,
     };
     return HttpResponse.json(body);
   }),
