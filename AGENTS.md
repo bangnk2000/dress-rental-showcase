@@ -14,12 +14,14 @@ This file is the ONE harness in this repo — never create another under `apps/*
 
 ## Current state (re-sync at every session end — see Session rules)
 
-Both apps bootstrapped and gated (`infra/be-bootstrap`, `infra/fe-bootstrap` = pass).
-`apps/be`: NestJS hexagonal — identity (JWT + ABAC) + catalog slices, migrations incl. the
-rental_items EXCLUDE constraint, offline `openapi:emit`. `apps/fe`: React SPA — auth + dresses
-slices on the generated client; rentals/today/dress-detail are shells awaiting their BE slices.
-App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`. Next: README step 5 — feature
-rhythm (`rentals/create-rental`) or finish `catalog/list-dresses` (CSV seed import).
+Both apps bootstrapped and gated; first cross-contract feature `rentals/create-rental` = pass
+(BE slice → `pnpm contract` → FE slice, one entry). `apps/be`: NestJS hexagonal — identity
+(JWT + ABAC), catalog, rentals (create-rental command; overlap incl. cleaning buffer rejected
+by the rental_items EXCLUDE constraint, proven via psql bypass), offline `openapi:emit`.
+`apps/fe`: React SPA — auth + dresses slices and the live new-rental form on the generated
+client; rentals LIST, today and dress-detail are still shells awaiting read slices. App-level
+contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`. Next: `rentals/availability-check`
+(unblocks the dress-detail calendar) or finish `catalog/list-dresses` (CSV seed import).
 
 ## Invariants (carry these into every session)
 

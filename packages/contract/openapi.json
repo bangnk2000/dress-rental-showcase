@@ -208,6 +208,49 @@
           "catalog"
         ]
       }
+    },
+    "/api/v1/rentals": {
+      "post": {
+        "operationId": "CreateRentalHttpController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRentalRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A dress in the rental does not exist"
+          },
+          "409": {
+            "description": "A dress is retired, or already booked for an overlapping period (rental + cleaning buffer)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a rental booking 1..n dresses for a date range",
+        "tags": [
+          "rentals"
+        ]
+      }
     }
   },
   "info": {
@@ -451,6 +494,75 @@
           "count",
           "limit",
           "page"
+        ]
+      },
+      "CreateRentalItemRequestDto": {
+        "type": "object",
+        "properties": {
+          "dressId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Dress to book"
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1200000,
+            "description": "Agreed price in VND (integer); omit to use the dress standard price"
+          }
+        },
+        "required": [
+          "dressId"
+        ]
+      },
+      "CreateRentalRequestDto": {
+        "type": "object",
+        "properties": {
+          "customerName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "Nguyễn Thị Hoa"
+          },
+          "customerPhone": {
+            "type": "string",
+            "pattern": "^[0-9+ ().-]{6,20}$",
+            "example": "0903123456"
+          },
+          "startDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "example": "2026-08-01",
+            "description": "First rental day (inclusive)"
+          },
+          "endDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "example": "2026-08-03",
+            "description": "Last rental day (inclusive)"
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "Khách quen, hẹn lấy 9h sáng"
+          },
+          "items": {
+            "uniqueItems": true,
+            "minItems": 1,
+            "description": "Dresses to book (1..n)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateRentalItemRequestDto"
+            }
+          }
+        },
+        "required": [
+          "customerName",
+          "customerPhone",
+          "startDate",
+          "endDate",
+          "items"
         ]
       }
     }

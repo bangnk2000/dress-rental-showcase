@@ -43,8 +43,8 @@ files here.
    vi JSON; `pnpm arch` enforces vi↔en key parity.
 3. **`/dresses/:id` is a shell** until a get-dress/availability endpoint exists — never
    fetch-list-and-find.
-4. **rentals/ and today/ routes are shells** awaiting their BE slices (`rentals/*` entries in
-   `feature_list.json`).
+4. **rentals LIST and today/ routes are shells** awaiting their read slices; `/rentals/new` is
+   live (`rentals/create-rental`) and navigates back to the shell list on success.
 5. **Playwright/e2e deferred** until the first cross-contract feature; root gates exclude fe e2e.
 6. **`customInstance` omits the legacy `promise.cancel` hack** — TanStack Query v5 passes
    AbortSignal in the request config (signal-based cancellation).

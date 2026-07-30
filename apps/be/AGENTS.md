@@ -15,7 +15,7 @@ files here.
 | `pnpm openapi:emit` | build + dump swagger → `packages/contract/openapi.json` (OFFLINE — no DB) |
 | `pnpm --filter be migrate` / `seed` | node-pg-migrate up / seed owner (needs `DATABASE_URL`, `SEED_OWNER_PASSWORD`) |
 | `pnpm --filter be plop slice\|query -- --context <c> --name <kebab>` | deterministic slice scaffold |
-| `bash scripts/smoke.sh` | runtime proof against a running app (login → 401 → 201 → 409 → me) |
+| `bash scripts/smoke.sh` | runtime proof against a running app + FRESH DB (dresses 201/409 → rentals 201, buffer-overlap 409, 404, 400) |
 | `docker compose up -d` (root) | Postgres 16 for dev/tests |
 
 ## Layer rules (dependency-cruiser enforces; `pnpm --filter be arch`)

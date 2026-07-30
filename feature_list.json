@@ -35,8 +35,8 @@
     {
       "id": "rentals/create-rental",
       "title": "Create rental: customer + per-dress date range + cleaning buffer after return; overlapping bookings rejected at the DB level (Postgres daterange exclusion constraint), not only in application code",
-      "status": "todo",
-      "evidence": null
+      "status": "pass",
+      "evidence": "2026-07-30: BE slice modules/rentals — create-rental command over the rentals+rental_items aggregate (RentalPeriod VO, item price defaults to the dress standard price), DressLookupAdapter reads the dresses TABLE (no catalog imports); gates green: build/lint/arch(116 modules, 0 violations)/test(22, incl. buffer + daterange specs). Runtime vs fresh compose DB: smoke.sh extended — rental 08-01..08-03 = 201; 08-04..08-06 = 409 (overlaps ONLY via the 2-day cleaning buffer); 08-06..08-07 = 201 (past buffer); unknown dress 404; end<start 400. psql bypassing the app: overlapping blocking INSERT -> ERROR exclusion constraint rental_items_no_overlap; same row blocking=false accepted (rolled back); stored blocked_period = period + 2 days. Contract: rentals tag emitted, client regenerated (useCreateRentalHttpControllerCreate). FE: features/rentals new-rental form (vi-first schema keys, DressPicker search-add over the catalog list hook, 409 -> unavailable message, success -> toast + navigate /rentals); FE gates green: check/lint/test(20, 5 new)/build; arch 11/11 after this commit (check (d) diffs generated vs committed). Proxy proof :5173->:3000: SPA 200, login 200, rental 201, buffer-overlap 409. Deferred: per-item price override UI (API already accepts price), rentals list/detail read slices."
     },
     {
       "id": "rentals/availability-check",

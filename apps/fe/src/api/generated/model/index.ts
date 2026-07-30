@@ -6,6 +6,8 @@
  */
 
 export * from './createDressRequestDto';
+export * from './createRentalItemRequestDto';
+export * from './createRentalRequestDto';
 export * from './dressListResponseDto';
 export * from './dressResponseDto';
 export * from './dressResponseDtoStatus';

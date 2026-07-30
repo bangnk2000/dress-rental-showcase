@@ -1,7 +1,7 @@
 /**
- * PUBLIC SURFACE of the rentals feature. These are permanent SHELLS: the
- * routes stay guarded and visible, and the pages fill in when the rentals
- * backend slice ships.
+ * PUBLIC SURFACE of the rentals feature. Export names are the contract with
+ * app/router.tsx. NewRentalRoute is live (rentals/create-rental); the LIST
+ * route stays a shell until a rentals read slice ships.
  */
 export { RentalsRoute } from './rentals-route';
 export { NewRentalRoute } from './new-rental-route';

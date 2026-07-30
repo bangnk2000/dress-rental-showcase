@@ -16,11 +16,11 @@ apps/be source ──pnpm openapi:emit──▶ packages/contract/openapi.json �
 
 ## Status
 
-**Steps 1–4 done** — `apps/be` (identity + catalog slices, ABAC, offline contract emit) and
-`apps/fe` (auth + dresses slices, PWA/i18n, Orval client from the real contract) are both live;
-the FE half of CI (`pnpm generate:api`, fe check/lint/arch/test/build) is now green. Next:
-**step 5** — prove `bash init.sh` from a clean checkout, then start features
-(`rentals/create-rental` first: BE slice → `pnpm contract` → FE slice, one entry).
+**Steps 1–5 running** — both apps live, and the first cross-contract feature
+`rentals/create-rental` shipped through the full rhythm (BE slice → `pnpm contract` → FE slice,
+one `feature_list.json` entry): bookings block the rental period + cleaning buffer, overlaps
+rejected by the Postgres EXCLUDE constraint. Next feature: `rentals/availability-check` or the
+`catalog/list-dresses` CSV seed import.
 Dev DB: `docker compose up -d` · seed: `pnpm --filter be migrate && pnpm --filter be seed`.
 
 ## Bootstrap order (do not reorder — FE needs the real contract)

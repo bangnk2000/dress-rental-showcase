@@ -1,0 +1,34 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { DatabasePool, sql } from 'slonik';
+import { z } from 'zod';
+import { DB_POOL } from '../../../libs/db/db.di-tokens';
+import { DressLookupPort, DressSnapshot } from '../application/ports/dress-lookup.port';
+
+const dressLookupSchema = z.object({
+  id: z.string(),
+  status: z.string(),
+  rental_price: z.number().int(),
+});
+
+/**
+ * Reads the catalog-owned dresses TABLE directly (read side may hit the pool;
+ * the rental_items FK already couples the schemas). Importing catalog CODE
+ * would violate the no-cross-module rule — this adapter is the boundary.
+ */
+@Injectable()
+export class DressLookupAdapter implements DressLookupPort {
+  constructor(@Inject(DB_POOL) private readonly pool: DatabasePool) {}
+
+  async findByIds(dressIds: string[]): Promise<DressSnapshot[]> {
+    if (dressIds.length === 0) return [];
+    const rows = await this.pool.any(sql.type(dressLookupSchema)`
+      SELECT id, status, rental_price FROM dresses
+      WHERE id = ANY(${sql.array(dressIds, 'uuid')})
+    `);
+    return rows.map((row) => ({
+      id: row.id,
+      retired: row.status === 'retired',
+      rentalPrice: row.rental_price,
+    }));
+  }
+}

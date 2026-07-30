@@ -2,6 +2,40 @@
   "title": "Rentals",
   "newTitle": "New rental",
   "shell": {
-    "comingSoon": "Rentals will be available once its backend slice ships."
+    "comingSoon": "The rentals list will be available once its backend slice ships."
+  },
+  "form": {
+    "fields": {
+      "customerName": "Customer name",
+      "customerPhone": "Phone number",
+      "startDate": "Pick-up date",
+      "endDate": "Return date",
+      "notes": "Notes"
+    },
+    "bufferHint": "After the return date the dress is held for cleaning before it can be rented again.",
+    "submit": "Create rental",
+    "success": "Rental created",
+    "error": "Could not create the rental. Please try again.",
+    "errors": {
+      "customerNameRequired": "Please enter the customer name",
+      "customerNameTooLong": "Customer name must be at most 200 characters",
+      "phoneRequired": "Please enter the phone number",
+      "phoneInvalid": "Invalid phone number",
+      "startDateRequired": "Please pick the pick-up date",
+      "endDateRequired": "Please pick the return date",
+      "endBeforeStart": "The return date must be on or after the pick-up date",
+      "notesTooLong": "Notes must be at most 2000 characters",
+      "noDresses": "Please select at least one dress",
+      "unavailable": "A dress is already rented in this date range (including cleaning time). Change the dates or pick another dress."
+    }
+  },
+  "picker": {
+    "title": "Dresses",
+    "searchPlaceholder": "Search by dress code or name…",
+    "noResults": "No matching dresses",
+    "add": "Add",
+    "remove": "Remove",
+    "selectedEmpty": "No dresses selected yet",
+    "total": "Rental subtotal"
   }
 }

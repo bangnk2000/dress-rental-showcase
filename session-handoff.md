@@ -1,5 +1,31 @@
 # Session Handoff
 
+## 2026-07-30 (4) — `rentals/create-rental` = pass (first cross-contract feature)
+
+- Done: full README step-5 rhythm in one entry — BE slice `modules/rentals` (RentalPeriod VO,
+  rentals+rental_items two-table aggregate with overridden repo insert/save/findOneById,
+  DressLookupAdapter reading the dresses TABLE — no catalog imports; item price defaults to the
+  dress standard price), `pnpm contract` (rentals tag → `useCreateRentalHttpControllerCreate`),
+  FE `features/rentals` new-rental form (DressPicker search-add, vi-first keys, 409 → unavailable
+  message). ALL gates green both sides; runtime proof: smoke.sh extended (rental 201; 409 when
+  overlapping ONLY via the 2-day cleaning buffer; 201 past the buffer; 404 unknown dress; 400
+  bad range) + psql bypass proof (EXCLUDE fires, blocking=false accepted) + Vite-proxy proof
+  (201/409 through :5173). Evidence in `feature_list.json`.
+- Next: EITHER `rentals/availability-check` (unblocks the dress-detail calendar — `/dresses/:id`
+  is still a fetch-nothing shell) OR finish `catalog/list-dresses` (CSV seed import — the one
+  remaining in-progress entry).
+- Watch out:
+  - `smoke.sh` now assumes a FRESH DB (`docker compose down -v && up -d && migrate && seed`)
+    — fixed codes/dates make reruns 409.
+  - daterange convention: domain uses INCLUSIVE `[start,end]`; Postgres stores half-open
+    `[start,end+1)`; only `modules/rentals/database/daterange.ts` converts — never hand-build
+    range literals elsewhere.
+  - rentals reads catalog data ONLY via `DressLookupAdapter` (SQL on the dresses table);
+    importing catalog code breaks the no-cross-module depcruise rule.
+  - FE arch check (d) diffs `src/api/generated` against the COMMITTED state — it stays red on a
+    dirty tree between `pnpm contract` and the commit; commit spec + client together.
+  - Post-create the form navigates to `/rentals`, which is still a shell list.
+
 ## 2026-07-30 (3) — FE bootstrap (`infra/fe-bootstrap` = pass)
 
 - Done: `apps/fe` complete per init-react + monorepo deltas — foundation (Vite 8/React 19/
