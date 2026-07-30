@@ -1,5 +1,31 @@
 # Session Handoff
 
+## 2026-07-30 (7) — `catalog/list-dresses` = pass (CSV seed import closes the entry)
+
+- Done: `pnpm --filter be import:dresses <file.csv>` — `src/scripts/import-dresses.ts` boots
+  the Nest app context (emit-openapi precedent) and dispatches `CreateDressCommand` per row,
+  so domain rules + the duplicate-code precondition apply exactly as over HTTP; duplicates are
+  SKIPPED (idempotent re-run), failures reported per record, exit 1 when any row failed.
+  Parser `src/modules/catalog/import/dress-csv.ts` (hand-rolled RFC4180 subset: quoted
+  commas/newlines, escaped quotes, BOM, CRLF; header any order/case, fail-fast on wrong
+  shape; vi/en price formats normalized) + 9 specs. Template `apps/be/seed/dresses.sample.csv`.
+  Photos deliberately NOT in the sheet (per user) — pasted later via the edit dialog.
+  No API change → contract untouched, FE untouched. Runtime proof on a fresh DB: sample=3,
+  200-row generated CSV imported (exit 0), re-run all-skipped (exit 0), bad CSV → exit 1 with
+  per-record messages and good rows still imported; API count=204, comma-in-name + formatted
+  prices verified on VD-550. Evidence in `feature_list.json`.
+- Next: `rentals/today-board` or a rentals LIST read slice (post-create navigation still
+  lands on a shell) — the catalog context is now COMPLETE (all its entries pass).
+- Watch out:
+  - The import needs the real DB (.env) and is NOT part of smoke.sh — smoke keeps assuming a
+    fresh, empty catalog (fixed VD-001/VD-900 codes).
+  - The importer sets `LOG_LEVEL ??= 'warn'` pre-boot (an exported LOG_LEVEL wins; the .env
+    debug value is deliberately bypassed) — 200 rows would otherwise print 200 event lines.
+  - Header contract is fail-fast: wrong/unknown columns abort BEFORE any insert; per-row
+    problems (bad code format, non-numeric price) skip only that row.
+  - `parseVndAmount` strips `. , space ₫ đ` — a price given in "1tr5" style is rejected, not
+    guessed.
+
 ## 2026-07-30 (6) — `catalog/manage-dress` = pass (update + retire + photo links)
 
 - Done: the missing write-side of the catalog — BE migration 0003 `photo_urls text[]`

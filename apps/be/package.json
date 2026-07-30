@@ -12,6 +12,7 @@
     "migrate": "node-pg-migrate -m migrations up",
     "migrate:down": "node-pg-migrate -m migrations down",
     "seed": "node scripts/seed-owner.cjs",
+    "import:dresses": "nest build && node dist/scripts/import-dresses.js",
     "openapi:emit": "nest build && node dist/scripts/emit-openapi.js"
   },
   "dependencies": {

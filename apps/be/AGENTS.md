@@ -14,6 +14,7 @@ files here.
 | `pnpm --filter be build` / `lint` / `arch` / `test` | gates (tsc, eslint, dependency-cruiser, jest) |
 | `pnpm openapi:emit` | build + dump swagger → `packages/contract/openapi.json` (OFFLINE — no DB) |
 | `pnpm --filter be migrate` / `seed` | node-pg-migrate up / seed owner (needs `DATABASE_URL`, `SEED_OWNER_PASSWORD`) |
+| `pnpm --filter be import:dresses <file.csv>` | one-time catalog seed from the shop's Sheets CSV (header per `seed/dresses.sample.csv`; duplicates skipped — safe to re-run; exit 1 if rows failed) |
 | `pnpm --filter be plop slice\|query -- --context <c> --name <kebab>` | deterministic slice scaffold |
 | `bash scripts/smoke.sh` | runtime proof against a running app + FRESH DB (dresses 201/409 → rentals 201, buffer-overlap 409, 404, 400) |
 | `docker compose up -d` (root) | Postgres 16 for dev/tests |

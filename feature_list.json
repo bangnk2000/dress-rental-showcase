@@ -23,8 +23,8 @@
     {
       "id": "catalog/list-dresses",
       "title": "Dress catalog: list/search by code, size, status; one-time seed import from the shop's Google Sheets CSV (~200 dresses)",
-      "status": "in-progress",
-      "evidence": "create-dress + list-dresses (q/status/pagination) shipped as the bootstrap proving slice, runtime-proven via smoke.sh; FE list/search/status-filter/pagination/create-dialog surface shipped with fe-bootstrap (2026-07-30, features/dresses); REMAINING: CSV seed import (import-dresses command)"
+      "status": "pass",
+      "evidence": "create-dress + list-dresses (q/status/pagination) shipped as the bootstrap proving slice, runtime-proven via smoke.sh; FE list/search/status-filter/pagination/create-dialog surface shipped with fe-bootstrap (2026-07-30, features/dresses). 2026-07-30 CSV seed import closes the entry: `pnpm --filter be import:dresses <file.csv>` (src/scripts/import-dresses.ts boots the Nest app context and dispatches CreateDressCommand per row — domain rules + duplicate-code precondition apply exactly as over HTTP; photos NOT in the sheet by design, pasted later via edit dialog). Parser src/modules/catalog/import/dress-csv.ts: hand-rolled RFC4180 subset (quoted commas/newlines, escaped quotes, BOM, CRLF), header any order/case with fail-fast on wrong shape, vi/en price formats ('1.500.000', '2,000,000', '900000 ₫') normalized; 9 new jest specs. Template committed at apps/be/seed/dresses.sample.csv. LOG_LEVEL ??= warn keeps the run quiet. Gates: build/lint/arch(139 modules, 0 violations)/test(41). Runtime vs fresh compose DB: sample import = imported=3; generated 200-row CSV (mixed price formats, comma-in-name quoted fields) = imported=200 exit 0; re-run = skipped(duplicate)=200 exit 0 (idempotent); bad CSV (invalid code format, non-numeric price) = imported=1 failed=2 exit 1 with per-record messages, bad rows NOT inserted. API verification: GET /dresses count=204 (3+200+1); VD-550 name 'Đầm dạ hội số 550, màu đỏ' intact, price 800000 from quoted en-US '800,000', deposit 1600000 from vi '1.600.000'; q=701 count=0."
     },
     {
       "id": "catalog/manage-dress",
