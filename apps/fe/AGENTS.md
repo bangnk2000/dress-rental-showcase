@@ -1,8 +1,10 @@
 # AGENTS.md — apps/fe (architecture contract)
 
-React 19 SPA per `docs/spec/init-react/` (authoritative inside this folder) + the monorepo
-deltas in `docs/spec/init-monorepo-contract/01 §4`. **Session harness lives at the repo ROOT**
-(`../../AGENTS.md`, `feature_list.json`, `init.sh`) — never create harness files here.
+React 19 SPA per the init-react set — entry point `docs/spec/init-react/README.md` (open its
+numbered detail files only per the File Map, never the whole folder) + the monorepo deltas in
+`docs/spec/init-monorepo-contract/01-workspace-structure.md` §4. **Session harness lives at
+the repo ROOT** (`../../AGENTS.md`, `feature_list.json`, `init.sh`) — never create harness
+files here.
 
 ## Commands (run from repo root)
 

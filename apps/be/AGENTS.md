@@ -1,9 +1,11 @@
 # AGENTS.md — apps/be (architecture contract)
 
-NestJS 11 hexagonal backend per `docs/spec/init-nestjs-hexagonal/` (authoritative inside this
-folder) + the monorepo deltas in `docs/spec/init-monorepo-contract/01 §4`. **Session harness
-lives at the repo ROOT** (`../../AGENTS.md`, `feature_list.json`, `init.sh`) — never create
-harness files here.
+NestJS 11 hexagonal backend per the init-nestjs-hexagonal set — entry point
+`docs/spec/init-nestjs-hexagonal/README.md` (open its numbered detail files only per the File
+Map, never the whole folder) + the monorepo deltas in
+`docs/spec/init-monorepo-contract/01-workspace-structure.md` §4. **Session harness lives at
+the repo ROOT** (`../../AGENTS.md`, `feature_list.json`, `init.sh`) — never create harness
+files here.
 
 ## Commands (run from repo root)
 

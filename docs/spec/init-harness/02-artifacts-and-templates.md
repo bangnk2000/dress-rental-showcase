@@ -36,12 +36,18 @@ runtime-verified ({{RUNTIME_PROOF}}), evidence recorded, repo restartable via `b
 4. Run `clean-state-checklist.md`; commit when the tree is safe.
 
 ## Where Deep Facts Live
-- Architecture: {{DOCS_POINTERS}}
+- Architecture: {{DOCS_POINTERS}}   <!-- entry FILES (README/index), never bare folders -->
 - Scaffolding: {{SCAFFOLD_COMMAND_OR_NONE}}
 ```
 
 `CLAUDE.md` may simply be this file or `@AGENTS.md`-include it; if both exist, one is the source
 and the other points at it — never two diverging copies.
+
+`{{DOCS_POINTERS}}` values are concrete entry FILES — a doc set's README/index that carries a
+file map — never bare folders. "Read `docs/<set>/`" invites bulk-reading an entire set into
+context every session; the entry file orients cheaply and routes to the one detail file the
+task actually needs. Same rule for any pointer this template emits: cite `file.md §section`,
+not a directory.
 
 An optional `## Current state` section (3–6 lines: what exists, what is next) helps orientation,
 but it is part of the baton: **re-sync it at every session end**, exactly like the handoff. A
