@@ -1,9 +1,16 @@
+import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateRoot } from '../../../libs/ddd/aggregate-root.base';
 import { ArgumentInvalidException } from '../../../libs/exceptions';
 import { RentalItemEntity } from './rental-item.entity';
 import { RentalPeriod } from './rental-period.value-object';
 import { CreateRentalProps, RentalProps, RentalStatus } from './rental.types';
 import { RentalCreatedDomainEvent } from './events/rental-created.domain-event';
+import { RentalPickedUpDomainEvent } from './events/rental-picked-up.domain-event';
+import { RentalReturnedDomainEvent } from './events/rental-returned.domain-event';
+import {
+  RentalPickupNotAllowedError,
+  RentalReturnNotAllowedError,
+} from './rental.errors';
 
 export class RentalEntity extends AggregateRoot<RentalProps> {
   /**
@@ -49,6 +56,32 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
 
   get items(): readonly RentalItemEntity[] {
     return this.props.items;
+  }
+
+  /** Staff hands the dresses to the customer: booked → out. */
+  markPickedUp(now: Date): Result<void, RentalPickupNotAllowedError> {
+    if (this.props.status !== 'booked') {
+      return Err(new RentalPickupNotAllowedError(undefined, { status: this.props.status }));
+    }
+    this.props.status = 'out';
+    this.setUpdatedAt(now);
+    this.addEvent(new RentalPickedUpDomainEvent({ aggregateId: this.id }));
+    return Ok(undefined);
+  }
+
+  /**
+   * Customer brings the dresses back: out → returned. A booked rental may be
+   * returned directly (staff skipped the pickup tap); the items keep blocking
+   * through the cleaning buffer, which IS the derived "cleaning" state.
+   */
+  markReturned(now: Date): Result<void, RentalReturnNotAllowedError> {
+    if (this.props.status !== 'booked' && this.props.status !== 'out') {
+      return Err(new RentalReturnNotAllowedError(undefined, { status: this.props.status }));
+    }
+    this.props.status = 'returned';
+    this.setUpdatedAt(now);
+    this.addEvent(new RentalReturnedDomainEvent({ aggregateId: this.id }));
+    return Ok(undefined);
   }
 
   public validate(): void {

@@ -13,4 +13,6 @@ export interface TodayBoardResponseDto {
   dueOut: TodayBoardRentalDto[];
   /** Not-yet-returned rentals ending on the date — dresses coming back */
   dueBack: TodayBoardRentalDto[];
+  /** Not-yet-returned rentals whose last day is already past */
+  overdue: TodayBoardRentalDto[];
 }

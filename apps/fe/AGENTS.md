@@ -46,8 +46,10 @@ files here.
    endpoints only, never fetch-list-and-find.
 4. **The rentals LIST route is a shell** awaiting its read slice; `/rentals/new` is live
    (`rentals/create-rental`) and navigates back to the shell list on success. The today board
-   at `/` is live (`rentals/today-board`) and ALWAYS sends the device-local date
-   (`features/today/lib/local-date.ts`) — never rely on the server's "today".
+   at `/` is live and ACTIONABLE (`rentals/today-board` + `rentals/return-rental`): three
+   sections (due-out / due-back / overdue), pickup + return-and-settle mutations, and it
+   ALWAYS sends the device-local date (`features/today/lib/local-date.ts`) — never rely on
+   the server's "today".
 5. **Playwright/e2e deferred** until the first cross-contract feature; root gates exclude fe e2e.
 6. **`customInstance` omits the legacy `promise.cancel` hack** — TanStack Query v5 passes
    AbortSignal in the request config (signal-based cancellation).

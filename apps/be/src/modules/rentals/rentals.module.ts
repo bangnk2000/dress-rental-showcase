@@ -1,10 +1,16 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { DRESS_LOOKUP } from './application/ports/dress-lookup.port';
+import { PAYMENT_RECORDER } from './application/ports/payment-recorder.port';
 import { RENTAL_REPOSITORY } from './application/ports/rental.repository.port';
 import { CreateRentalHttpController } from './commands/create-rental/create-rental.http.controller';
 import { CreateRentalService } from './commands/create-rental/create-rental.service';
+import { PickupRentalHttpController } from './commands/pickup-rental/pickup-rental.http.controller';
+import { PickupRentalService } from './commands/pickup-rental/pickup-rental.service';
+import { ReturnRentalHttpController } from './commands/return-rental/return-rental.http.controller';
+import { ReturnRentalService } from './commands/return-rental/return-rental.service';
 import { DressLookupAdapter } from './database/dress-lookup.adapter';
+import { PaymentRecorderAdapter } from './database/payment-recorder.adapter';
 import { RentalMapper } from './database/rental.mapper';
 import { RentalRepository } from './database/rental.repository';
 import { CheckAvailabilityHttpController } from './queries/check-availability/check-availability.http.controller';
@@ -19,6 +25,8 @@ import './rentals.policies';
   imports: [CqrsModule],
   controllers: [
     CreateRentalHttpController,
+    PickupRentalHttpController,
+    ReturnRentalHttpController,
     CheckAvailabilityHttpController,
     GetTodayBoardHttpController,
     ListBookedRangesHttpController,
@@ -26,11 +34,14 @@ import './rentals.policies';
   providers: [
     RentalMapper,
     CreateRentalService,
+    PickupRentalService,
+    ReturnRentalService,
     CheckAvailabilityQueryHandler,
     GetTodayBoardQueryHandler,
     ListBookedRangesQueryHandler,
     { provide: RENTAL_REPOSITORY, useClass: RentalRepository },
     { provide: DRESS_LOOKUP, useClass: DressLookupAdapter },
+    { provide: PAYMENT_RECORDER, useClass: PaymentRecorderAdapter },
   ],
 })
 export class RentalsModule {}

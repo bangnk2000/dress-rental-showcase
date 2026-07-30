@@ -11,6 +11,7 @@ import type {
   BookedRangeListResponseDto,
   CreateRentalRequestDto,
   IdResponse,
+  ReturnRentalRequestDto,
   TodayBoardRentalDto,
   TodayBoardResponseDto,
 } from '@/api/generated/model';
@@ -19,11 +20,18 @@ import { BookedRangeDtoStatus, TodayBoardRentalDtoStatus } from '@/api/generated
 /** Mirrors the dev CLEANING_BUFFER_DAYS=2 the real API applies. */
 const CLEANING_BUFFER_DAYS = 2;
 
+type TodayBoardLists = Pick<TodayBoardResponseDto, 'dueOut' | 'dueBack' | 'overdue'>;
+
+const emptyBoard = (): TodayBoardLists => ({ dueOut: [], dueBack: [], overdue: [] });
+
 let blockedDressIds = new Set<string>();
 let lastCreateRentalBody: CreateRentalRequestDto | null = null;
 let bookedRanges = new Map<string, BookedRangeDto[]>();
-let todayBoard: Pick<TodayBoardResponseDto, 'dueOut' | 'dueBack'> = { dueOut: [], dueBack: [] };
+let todayBoard: TodayBoardLists = emptyBoard();
 let lastTodayBoardDate: string | null = null;
+let lastPickupRentalId: string | null = null;
+let lastReturnRentalId: string | null = null;
+let lastReturnBody: ReturnRentalRequestDto | null = null;
 
 /** Dresses that already have an overlapping booking — POST /rentals answers 409. */
 export function seedBlockedDresses(dressIds: string[]): void {
@@ -67,8 +75,8 @@ export function makeTodayRental(
 }
 
 /** The board served for GET today-board, whatever date is asked. */
-export function seedTodayBoard(board: Pick<TodayBoardResponseDto, 'dueOut' | 'dueBack'>): void {
-  todayBoard = board;
+export function seedTodayBoard(board: Partial<TodayBoardLists>): void {
+  todayBoard = { ...emptyBoard(), ...board };
 }
 
 /** The date param of the most recent GET today-board — asserts the FE sends its own day. */
@@ -76,13 +84,26 @@ export function getLastTodayBoardDate(): string | null {
   return lastTodayBoardDate;
 }
 
+/** The rental id of the most recent POST pickup. */
+export function getLastPickupRentalId(): string | null {
+  return lastPickupRentalId;
+}
+
+/** The id + body of the most recent POST return — asserts the settlement mapping. */
+export function getLastReturn(): { rentalId: string | null; body: ReturnRentalRequestDto | null } {
+  return { rentalId: lastReturnRentalId, body: lastReturnBody };
+}
+
 /** Reset the in-memory rentals state — call from beforeEach. */
 export function resetRentals(): void {
   blockedDressIds = new Set();
   lastCreateRentalBody = null;
   bookedRanges = new Map();
-  todayBoard = { dueOut: [], dueBack: [] };
+  todayBoard = emptyBoard();
   lastTodayBoardDate = null;
+  lastPickupRentalId = null;
+  lastReturnRentalId = null;
+  lastReturnBody = null;
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -129,8 +150,24 @@ export const rentalsHandlers: HttpHandler[] = [
       date: lastTodayBoardDate ?? '2099-01-01',
       dueOut: todayBoard.dueOut,
       dueBack: todayBoard.dueBack,
+      overdue: todayBoard.overdue,
     };
     return HttpResponse.json(body);
+  }),
+
+  // POST /api/v1/rentals/:id/pickup — 200 IdResponse, capturing the id.
+  http.post('/api/v1/rentals/:id/pickup', ({ params }) => {
+    lastPickupRentalId = params.id as string;
+    const response: IdResponse = { id: params.id as string };
+    return HttpResponse.json(response);
+  }),
+
+  // POST /api/v1/rentals/:id/return — 200 IdResponse, capturing id + settlement body.
+  http.post('/api/v1/rentals/:id/return', async ({ params, request }) => {
+    lastReturnRentalId = params.id as string;
+    lastReturnBody = (await request.json()) as ReturnRentalRequestDto;
+    const response: IdResponse = { id: params.id as string };
+    return HttpResponse.json(response);
   }),
 
   // POST /api/v1/rentals — 201 IdResponse, or 409 when a dress is blocked.

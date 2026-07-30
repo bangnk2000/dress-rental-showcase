@@ -51,4 +51,10 @@ export class TodayBoardResponseDto {
     description: 'Not-yet-returned rentals ending on the date — dresses coming back',
   })
   readonly dueBack!: TodayBoardRentalDto[];
+
+  @ApiProperty({
+    type: [TodayBoardRentalDto],
+    description: 'Not-yet-returned rentals whose last day is already past',
+  })
+  readonly overdue!: TodayBoardRentalDto[];
 }

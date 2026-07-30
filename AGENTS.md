@@ -14,22 +14,21 @@ This file is the ONE harness in this repo — never create another under `apps/*
 
 ## Current state (re-sync at every session end — see Session rules)
 
-Both apps bootstrapped and gated; the catalog context is COMPLETE (`catalog/list-dresses`
-incl. CSV seed import, `catalog/manage-dress`) and rentals has `create-rental` +
-`availability-check` + `today-board` = pass (BE slice → `pnpm contract` → FE slice, one
-entry each). `apps/be`: NestJS hexagonal — identity (JWT + ABAC), catalog (create/update/
-owner-only-retire + photo LINKS in `photo_urls text[]`, list/get dress; status stays
-active/retired — renting/cleaning derived from rentals; one-time seed via `pnpm --filter be
-import:dresses <csv>`, template in `seed/dresses.sample.csv`), rentals (create-rental with
-the rental_items EXCLUDE overlap constraint incl. cleaning buffer; availability +
-booked-ranges + today-board read slices — due-out/due-back split by status and inclusive
-period bounds; range columns are always SELECTed as `::text` literals), offline
-`openapi:emit`. `apps/fe`: React SPA — auth + dresses slices (live `/dresses/:id` detail:
-info, photos, booking calendar, availability checker, edit dialog, retire action), the
-new-rental form, and the live today board at `/` (device-local date, due-out/due-back
-sections) on the generated client; the rentals LIST route is the one remaining shell.
-App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`. Next: `rentals/return-rental`
-(last todo entry) or a rentals list slice.
+**Every `feature_list.json` entry is pass** — the MVP scope is complete. `apps/be`: NestJS
+hexagonal — identity (JWT + ABAC), catalog (create/update/owner-only-retire + photo LINKS
+in `photo_urls text[]`, list/get dress; status stays active/retired — renting/cleaning
+derived from rentals; one-time seed via `pnpm --filter be import:dresses <csv>`), rentals
+(create-rental with the rental_items EXCLUDE overlap constraint incl. cleaning buffer;
+pickup booked→out and return booked|out→returned, the return settling deposit/late/damage
+fees into the payments table via `PaymentRecorderPort` — payments context itself is still
+schema-only; availability + booked-ranges + today-board reads, the board carrying
+due-out/due-back/OVERDUE; range columns always SELECTed as `::text` literals), offline
+`openapi:emit`. `apps/fe`: React SPA — auth + dresses slices (live `/dresses/:id` detail),
+the new-rental form, and the ACTIONABLE today board at `/` (device-local date; pickup
+button on due-out, return-and-settle dialog on due-back + overdue); the rentals LIST route
+is the one remaining shell. App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`.
+Next: nothing tracked — candidates: rentals list slice, cancel-rental, payments read
+slice, Playwright e2e (see session-handoff (9)).
 
 ## Invariants (carry these into every session)
 

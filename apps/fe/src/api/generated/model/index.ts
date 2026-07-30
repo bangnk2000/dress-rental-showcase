@@ -24,6 +24,7 @@ export * from './loginRequestDto';
 export * from './meResponseDto';
 export * from './meResponseDtoRole';
 export * from './refreshTokenRequestDto';
+export * from './returnRentalRequestDto';
 export * from './todayBoardDressDto';
 export * from './todayBoardRentalDto';
 export * from './todayBoardRentalDtoStatus';

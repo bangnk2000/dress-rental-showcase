@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
@@ -17,9 +18,16 @@ interface TodayBoardSectionProps {
   title: string;
   emptyText: string;
   rentals: TodayBoardRentalDto[];
+  /** Per-rental action buttons (pickup / return) supplied by the route. */
+  renderActions?: (rental: TodayBoardRentalDto) => ReactNode;
 }
 
-export function TodayBoardSection({ title, emptyText, rentals }: TodayBoardSectionProps) {
+export function TodayBoardSection({
+  title,
+  emptyText,
+  rentals,
+  renderActions,
+}: TodayBoardSectionProps) {
   const { t } = useTranslation('today');
   return (
     <section className="space-y-2">
@@ -57,6 +65,9 @@ export function TodayBoardSection({ title, emptyText, rentals }: TodayBoardSecti
                   </li>
                 ))}
               </ul>
+              {renderActions ? (
+                <div className="flex justify-end">{renderActions(rental)}</div>
+              ) : null}
             </li>
           ))}
         </ul>

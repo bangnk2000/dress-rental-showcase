@@ -1,5 +1,38 @@
 # Session Handoff
 
+## 2026-07-30 (9) — `rentals/return-rental` = pass (FEATURE LIST COMPLETE)
+
+- Done: the last todo entry, full step-5 rhythm — BE status machine (`markPickedUp`
+  booked→out, `markReturned` booked|out→returned; returned/cancelled → 409) behind
+  `POST /rentals/:id/pickup` and `POST /rentals/:id/return`; the return body
+  `{lateFee?, damageFee?, depositRefund?, note?}` becomes payments ROWS via
+  `PaymentRecorderPort` (adapter writes the payments-owned table directly — the payments
+  context is schema-only, same boundary trick as `DressLookupAdapter`; zero/blank amounts
+  are not recorded; the note rides on every row). today-board grew an OVERDUE list
+  (booked|out with end < date) so late returns keep a surface. FE: the board is actionable
+  (pickup button on due-out, return-and-settle dialog on due-back + overdue). All gates
+  green; smoke.sh 43 checks + psql payments proof + proxy proof. Evidence in
+  `feature_list.json`. **Every feature_list entry is now pass.**
+- Next: no tracked entries remain. Natural follow-ups if the shop asks: a rentals LIST
+  read slice (`/rentals` is still a shell — the only one left), cancel-rental (enum +
+  `blocking=false` semantics already exist in the DB), early-return shrinking
+  `blocked_period`, a payments read slice (rows are write-only today), Playwright e2e
+  (still deferred from bootstrap).
+- Watch out:
+  - Return records ONLY what staff typed — no deposit ledger exists (deposit collection
+    was never recorded at create), so `depositRefund` is an entered amount, not a
+    computed one. A future payments read slice should not pretend otherwise.
+  - Settlement ordering: rental flips to returned BEFORE payment rows land; a recorder
+    crash means re-entering fees by hand (re-return is 409 by design). Never reverse the
+    order — fees on a never-returned rental are worse.
+  - Overdue is unbounded history by design (every unreturned past rental, forever) —
+    fine at shop scale; revisit only if the board ever slows.
+  - The 409 toast on pickup/return says "already processed" — the FE cannot tell
+    already-out from already-returned (contract has no typed error body).
+  - smoke.sh mutates state late in the run: the 08-01 rental ends RETURNED, the 08-06
+    rental stays booked, VD-001 is retired. New checks must slot in AFTER the today-board
+    reads (which assume everything still booked) or re-derive their fixtures.
+
 ## 2026-07-30 (8) — `rentals/today-board` = pass (the morning screen is live)
 
 - Done: full README step-5 rhythm in one entry — BE read slice `GET /rentals/today-board?date=`

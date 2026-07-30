@@ -30,7 +30,8 @@ export class GetTodayBoardQueryHandler
   /**
    * The morning board: due OUT = booked rentals starting on the date (already
    * 'out' means the customer has the dress); due BACK = not-yet-returned
-   * rentals whose inclusive last day is the date. Periods are half-open
+   * rentals whose inclusive last day is the date; OVERDUE = not-yet-returned
+   * rentals whose inclusive last day is already past. Periods are half-open
    * [start, end+1), so the inclusive last day is upper - 1.
    */
   async execute(query: GetTodayBoardQuery): Promise<TodayBoardResponseDto> {
@@ -43,11 +44,13 @@ export class GetTodayBoardQueryHandler
              r.period::text AS period, ri.dress_id,
              (r.status = 'booked' AND lower(r.period) = ${date}::date) AS due_out,
              (r.status IN ('booked', 'out')
-               AND upper(r.period) - 1 = ${date}::date) AS due_back
+               AND upper(r.period) - 1 = ${date}::date) AS due_back,
+             (r.status IN ('booked', 'out')
+               AND upper(r.period) - 1 < ${date}::date) AS overdue
       FROM rentals r
       JOIN rental_items ri ON ri.rental_id = r.id
       WHERE (r.status = 'booked' AND lower(r.period) = ${date}::date)
-         OR (r.status IN ('booked', 'out') AND upper(r.period) - 1 = ${date}::date)
+         OR (r.status IN ('booked', 'out') AND upper(r.period) - 1 <= ${date}::date)
       ORDER BY r.created_at, r.id
     `);
 

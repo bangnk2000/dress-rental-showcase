@@ -21,6 +21,7 @@ function makeRow(overrides: Partial<TodayBoardRow>): TodayBoardRow {
     dress_id: DRESS_A,
     due_out: true,
     due_back: false,
+    overdue: false,
     ...overrides,
   };
 }
@@ -62,6 +63,26 @@ test('splits rentals over the two lists by the SQL membership flags', () => {
 
   expect(board.dueOut.map((rental) => rental.rentalId)).toEqual([RENTAL_2]);
   expect(board.dueBack.map((rental) => rental.rentalId)).toEqual([RENTAL_1]);
+});
+
+test('an overdue rental lands on the overdue list only', () => {
+  const board = toTodayBoardDto(
+    '2026-08-10',
+    [
+      makeRow({
+        status: 'out',
+        due_out: false,
+        due_back: false,
+        overdue: true,
+      }),
+    ],
+    dresses,
+  );
+
+  expect(board.dueOut).toEqual([]);
+  expect(board.dueBack).toEqual([]);
+  expect(board.overdue).toHaveLength(1);
+  expect(board.overdue[0]).toMatchObject({ rentalId: RENTAL_1, status: 'out' });
 });
 
 test('a single-day rental appears on BOTH lists (hand out and take back)', () => {

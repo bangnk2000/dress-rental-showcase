@@ -33,6 +33,7 @@ import type {
   CreateRentalRequestDto,
   GetTodayBoardHttpControllerGetParams,
   IdResponse,
+  ReturnRentalRequestDto,
   TodayBoardResponseDto
 } from '../model';
 
@@ -121,6 +122,133 @@ export const useCreateRentalHttpControllerCreate = <TError = void,
         TContext
       > => {
       return useMutation(getCreateRentalHttpControllerCreateMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Mark a booked rental as handed out to the customer
+ */
+export const pickupRentalHttpControllerPickup = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/rentals/${id}/pickup`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getPickupRentalHttpControllerPickupMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['pickupRentalHttpControllerPickup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  pickupRentalHttpControllerPickup(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PickupRentalHttpControllerPickupMutationResult = NonNullable<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>>
+
+    export type PickupRentalHttpControllerPickupMutationError = void
+
+    /**
+ * @summary Mark a booked rental as handed out to the customer
+ */
+export const usePickupRentalHttpControllerPickup = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getPickupRentalHttpControllerPickupMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Return a rental: settle the deposit and record late/damage fees
+ */
+export const returnRentalHttpControllerSettle = (
+    id: string,
+    returnRentalRequestDto: ReturnRentalRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/rentals/${id}/return`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: returnRentalRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getReturnRentalHttpControllerSettleMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>, TError,{id: string;data: ReturnRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>, TError,{id: string;data: ReturnRentalRequestDto}, TContext> => {
+
+const mutationKey = ['returnRentalHttpControllerSettle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>, {id: string;data: ReturnRentalRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  returnRentalHttpControllerSettle(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReturnRentalHttpControllerSettleMutationResult = NonNullable<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>>
+    export type ReturnRentalHttpControllerSettleMutationBody = ReturnRentalRequestDto
+    export type ReturnRentalHttpControllerSettleMutationError = void
+
+    /**
+ * @summary Return a rental: settle the deposit and record late/damage fees
+ */
+export const useReturnRentalHttpControllerSettle = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>, TError,{id: string;data: ReturnRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>,
+        TError,
+        {id: string;data: ReturnRentalRequestDto},
+        TContext
+      > => {
+      return useMutation(getReturnRentalHttpControllerSettleMutationOptions(options), queryClient);
     }
     /**
  * @summary Is the dress free for [startDate, endDate]? (cleaning buffer included)

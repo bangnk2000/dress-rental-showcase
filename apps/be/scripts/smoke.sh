@@ -179,6 +179,58 @@ board_default=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/rentals/today-boar
   -H "Authorization: Bearer $TOKEN")
 echo "today-board without date -> $board_default (expect 200 — server-today default)"
 
+# --- rentals/return-rental (pickup → out, return settles, overdue surfaces) ---
+# State: VD-900 has booked rentals 08-01..08-03, 08-06..08-07, 08-20..08-21, 09-20..09-20.
+
+RID1=$(curl -sf "$BASE/rentals/today-board?date=2026-08-01" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).dueOut[0].rentalId))")
+
+pickup=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID1/pickup" \
+  -H "Authorization: Bearer $TOKEN")
+echo "POST /rentals/:id/pickup -> $pickup (expect 200; booked -> out)"
+
+pickup2=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID1/pickup" \
+  -H "Authorization: Bearer $TOKEN")
+echo "POST pickup again -> $pickup2 (expect 409; already out)"
+
+board_after_pickup=$(curl -sf "$BASE/rentals/today-board?date=2026-08-01" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).dueOut.length))")
+echo "today-board 2026-08-01 after pickup -> dueOut=$board_after_pickup (expect 0; an out rental is with the customer)"
+
+board_back_status=$(curl -sf "$BASE/rentals/today-board?date=2026-08-03" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).dueBack[0].status))")
+echo "today-board 2026-08-03 due-back status -> $board_back_status (expect out)"
+
+board_overdue=$(curl -sf "$BASE/rentals/today-board?date=2026-08-04" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.overdue.length+':'+j.overdue[0].status)})")
+echo "today-board 2026-08-04 overdue -> $board_overdue (expect 1:out — end 08-03 already past)"
+
+ret=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID1/return" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"lateFee":200000,"damageFee":0,"depositRefund":2800000,"note":"Trễ 1 ngày"}')
+echo "POST /rentals/:id/return (fees + refund) -> $ret (expect 200)"
+
+ret2=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID1/return" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{}')
+echo "POST return again -> $ret2 (expect 409; already returned)"
+
+board_after_return=$(curl -sf "$BASE/rentals/today-board?date=2026-08-04" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.overdue.length+':'+j.dueBack.length)})")
+echo "today-board 2026-08-04 after return -> $board_after_return (expect 0:0; returned rentals leave the board)"
+
+badfee=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID1/return" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"lateFee":-5}')
+echo "POST return negative fee -> $badfee (expect 400)"
+
+ghostpick=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+  "$BASE/rentals/00000000-0000-4000-8000-000000000999/pickup" -H "Authorization: Bearer $TOKEN")
+echo "POST pickup unknown rental -> $ghostpick (expect 404)"
+
+ghostret=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+  "$BASE/rentals/00000000-0000-4000-8000-000000000999/return" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{}')
+echo "POST return unknown rental -> $ghostret (expect 404)"
+
 [ "$unauth" = "401" ] && [ "$create" = "201" ] && [ "$dup" = "409" ] && [ "$me" = "owner" ] \
   && [ "$rent" = "201" ] && [ "$buffered" = "409" ] && [ "$free" = "201" ] \
   && [ "$ghost" = "404" ] && [ "$badrange" = "400" ] \
@@ -192,4 +244,8 @@ echo "today-board without date -> $board_default (expect 200 — server-today de
   && [ "$board_out" = "1:0:VD-900" ] && [ "$board_back" = "0:1" ] && [ "$oneday" = "201" ] \
   && [ "$board_both" = "1:1:true" ] && [ "$board_quiet" = "0:0" ] \
   && [ "$board_bad" = "400" ] && [ "$board_default" = "200" ] \
+  && [ "$pickup" = "200" ] && [ "$pickup2" = "409" ] && [ "$board_after_pickup" = "0" ] \
+  && [ "$board_back_status" = "out" ] && [ "$board_overdue" = "1:out" ] \
+  && [ "$ret" = "200" ] && [ "$ret2" = "409" ] && [ "$board_after_return" = "0:0" ] \
+  && [ "$badfee" = "400" ] && [ "$ghostpick" = "404" ] && [ "$ghostret" = "404" ] \
   && echo "SMOKE: ALL PASS" || { echo "SMOKE: FAIL"; exit 1; }

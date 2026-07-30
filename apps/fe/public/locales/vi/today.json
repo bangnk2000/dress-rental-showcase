@@ -9,10 +9,37 @@
     "title": "Nhận váy về",
     "empty": "Không có lượt thuê nào cần nhận về."
   },
+  "overdue": {
+    "title": "Quá hạn trả",
+    "empty": "Không có lượt thuê quá hạn."
+  },
   "status": {
     "booked": "Đã đặt",
     "out": "Đang thuê",
     "returned": "Đã trả",
     "cancelled": "Đã huỷ"
+  },
+  "actions": {
+    "pickup": "Đã giao váy",
+    "return": "Nhận về & tất toán"
+  },
+  "pickupSuccess": "Đã ghi nhận giao váy cho khách.",
+  "alreadyProcessed": "Lượt thuê này đã được xử lý trước đó.",
+  "actionError": "Có lỗi xảy ra, vui lòng thử lại.",
+  "returnDialog": {
+    "title": "Tất toán lượt thuê",
+    "description": "Ghi nhận trả váy của {{customer}} và tất toán cọc, phí.",
+    "fields": {
+      "lateFee": "Phí trễ hạn (VND)",
+      "damageFee": "Phí hư hỏng (VND)",
+      "depositRefund": "Hoàn cọc (VND)",
+      "note": "Ghi chú"
+    },
+    "submit": "Xác nhận trả váy",
+    "success": "Đã tất toán lượt thuê.",
+    "errors": {
+      "amountInvalid": "Số tiền phải là số nguyên không âm",
+      "noteTooLong": "Ghi chú tối đa 2000 ký tự"
+    }
   }
 }

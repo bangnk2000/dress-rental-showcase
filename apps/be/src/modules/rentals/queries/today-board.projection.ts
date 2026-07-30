@@ -19,6 +19,7 @@ export const todayBoardRowSchema = z.object({
   dress_id: z.string(),
   due_out: z.boolean(),
   due_back: z.boolean(),
+  overdue: z.boolean(),
 });
 
 export type TodayBoardRow = z.infer<typeof todayBoardRowSchema>;
@@ -34,7 +35,10 @@ export function toTodayBoardDto(
   dresses: readonly DressSnapshot[],
 ): TodayBoardResponseDto {
   const dressById = new Map(dresses.map((dress) => [dress.id, dress]));
-  const entries = new Map<string, { dto: TodayBoardRentalDto; dueOut: boolean; dueBack: boolean }>();
+  const entries = new Map<
+    string,
+    { dto: TodayBoardRentalDto; dueOut: boolean; dueBack: boolean; overdue: boolean }
+  >();
 
   for (const row of rows) {
     let entry = entries.get(row.rental_id);
@@ -52,6 +56,7 @@ export function toTodayBoardDto(
         }),
         dueOut: row.due_out,
         dueBack: row.due_back,
+        overdue: row.overdue,
       };
       entries.set(row.rental_id, entry);
     }
@@ -72,5 +77,6 @@ export function toTodayBoardDto(
     date,
     dueOut: all.filter((entry) => entry.dueOut).map((entry) => entry.dto),
     dueBack: all.filter((entry) => entry.dueBack).map((entry) => entry.dto),
+    overdue: all.filter((entry) => entry.overdue).map((entry) => entry.dto),
   });
 }

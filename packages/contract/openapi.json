@@ -386,6 +386,100 @@
         ]
       }
     },
+    "/api/v1/rentals/{id}/pickup": {
+      "post": {
+        "operationId": "PickupRentalHttpController_pickup",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rental not found"
+          },
+          "409": {
+            "description": "Rental is not in the booked status"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a booked rental as handed out to the customer",
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/api/v1/rentals/{id}/return": {
+      "post": {
+        "operationId": "ReturnRentalHttpController_settle",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReturnRentalRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rental not found"
+          },
+          "409": {
+            "description": "Rental is already returned or cancelled"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Return a rental: settle the deposit and record late/damage fees",
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
     "/api/v1/dresses/{dressId}/availability": {
       "get": {
         "operationId": "CheckAvailabilityHttpController_check",
@@ -912,6 +1006,35 @@
           "items"
         ]
       },
+      "ReturnRentalRequestDto": {
+        "type": "object",
+        "properties": {
+          "lateFee": {
+            "type": "number",
+            "minimum": 0,
+            "example": 200000,
+            "description": "Late fee in VND (integer)"
+          },
+          "damageFee": {
+            "type": "number",
+            "minimum": 0,
+            "example": 500000,
+            "description": "Damage fee in VND (integer)"
+          },
+          "depositRefund": {
+            "type": "number",
+            "minimum": 0,
+            "example": 3000000,
+            "description": "Deposit amount handed back to the customer, in VND (integer)"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "Rách nhẹ đường viền, đã thoả thuận phí"
+          }
+        }
+      },
       "BookedRangeDto": {
         "type": "object",
         "properties": {
@@ -1085,12 +1208,20 @@
             "items": {
               "$ref": "#/components/schemas/TodayBoardRentalDto"
             }
+          },
+          "overdue": {
+            "description": "Not-yet-returned rentals whose last day is already past",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TodayBoardRentalDto"
+            }
           }
         },
         "required": [
           "date",
           "dueOut",
-          "dueBack"
+          "dueBack",
+          "overdue"
         ]
       },
       "BookedRangeListResponseDto": {

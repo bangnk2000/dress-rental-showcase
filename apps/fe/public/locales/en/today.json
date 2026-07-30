@@ -9,10 +9,37 @@
     "title": "Take back",
     "empty": "No rentals due back."
   },
+  "overdue": {
+    "title": "Overdue",
+    "empty": "No overdue rentals."
+  },
   "status": {
     "booked": "Booked",
     "out": "Out",
     "returned": "Returned",
     "cancelled": "Cancelled"
+  },
+  "actions": {
+    "pickup": "Handed out",
+    "return": "Take back & settle"
+  },
+  "pickupSuccess": "Hand-out recorded.",
+  "alreadyProcessed": "This rental was already processed.",
+  "actionError": "Something went wrong, please retry.",
+  "returnDialog": {
+    "title": "Settle rental",
+    "description": "Record the return of {{customer}}'s rental and settle the deposit and fees.",
+    "fields": {
+      "lateFee": "Late fee (VND)",
+      "damageFee": "Damage fee (VND)",
+      "depositRefund": "Deposit refund (VND)",
+      "note": "Note"
+    },
+    "submit": "Confirm return",
+    "success": "Rental settled.",
+    "errors": {
+      "amountInvalid": "Amount must be a non-negative integer",
+      "noteTooLong": "Note is limited to 2000 characters"
+    }
   }
 }
