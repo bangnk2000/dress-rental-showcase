@@ -41,6 +41,7 @@ let lastReturnBody: ReturnRentalRequestDto | null = null;
 let rentalList: RentalListItemDto[] = [];
 let rentalListCount: number | null = null;
 let lastRentalListParams: Record<string, string> | null = null;
+let lastCancelRentalId: string | null = null;
 
 /** Dresses that already have an overlapping booking — POST /rentals answers 409. */
 export function seedBlockedDresses(dressIds: string[]): void {
@@ -131,6 +132,11 @@ export function getLastRentalListParams(): Record<string, string> | null {
   return lastRentalListParams;
 }
 
+/** The rental id of the most recent POST cancel. */
+export function getLastCancelRentalId(): string | null {
+  return lastCancelRentalId;
+}
+
 /** Reset the in-memory rentals state — call from beforeEach. */
 export function resetRentals(): void {
   blockedDressIds = new Set();
@@ -144,6 +150,7 @@ export function resetRentals(): void {
   rentalList = [];
   rentalListCount = null;
   lastRentalListParams = null;
+  lastCancelRentalId = null;
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -207,6 +214,13 @@ export const rentalsHandlers: HttpHandler[] = [
       page,
     };
     return HttpResponse.json(body);
+  }),
+
+  // POST /api/v1/rentals/:id/cancel — 200 IdResponse, capturing the id.
+  http.post('/api/v1/rentals/:id/cancel', ({ params }) => {
+    lastCancelRentalId = params.id as string;
+    const response: IdResponse = { id: params.id as string };
+    return HttpResponse.json(response);
   }),
 
   // POST /api/v1/rentals/:id/pickup — 200 IdResponse, capturing the id.

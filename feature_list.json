@@ -65,8 +65,8 @@
     {
       "id": "rentals/cancel-rental",
       "title": "Cancel a booked rental: status → cancelled, items flip blocking=false (frees the calendar, keeps history)",
-      "status": "todo",
-      "evidence": null
+      "status": "pass",
+      "evidence": "2026-07-30: BE POST /rentals/:id/cancel (rental:cancel policy, any staff) — RentalEntity.cancel: BOOKED only (an out rental must be RETURNED — cancel → 409; returned/cancelled → 409), sets status=cancelled AND RentalItemEntity.unblock() flips every item blocking=false; the repo's item upsert already writes blocking, so save persists the flip. BE gates: build/lint/arch(167 modules, 0 violations)/test(58, +4: happy incl. all-items-unblocked, out→409 keeps blocking, returned→409, 404). Contract regenerated (useCancelRentalHttpControllerCancel). FE: booked rows in the /rentals table get a Huỷ button (window.confirm like retire; 409 → 'không còn ở trạng thái chờ giao' toast; success invalidates BOTH the list and the today-board via parameterless keys — a cancelled rental must vanish from the board too). FE gates: check/lint/test(46, +2: only-booked-rows-offer-cancel + confirm+toast+captured-id, declined-confirm no-ops)/build; arch 11/11 after commit. Runtime vs fresh compose DB: smoke.sh now 59 checks — the DB-LEVEL freed-calendar proof: 10-01..10-02 booked → availability false → cancel 200 → availability TRUE → rebook of the SAME dress+dates 201 (EXCLUDE ignores non-blocking rows) → re-cancel 409; pickup then cancel of an OUT rental 409; unknown 404; GET /rentals?status=cancelled = 1 (history kept). Proxy proof :5173→:3000: cancel 200, cancelled count reflects. Deferred: no cancel surface on the today-board due-out cards (list only); no un-cancel."
     },
     {
       "id": "payments/list-payments",

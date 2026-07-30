@@ -19,17 +19,18 @@ NestJS hexagonal — identity (JWT + ABAC), catalog (create/update/owner-only-re
 LINKS in `photo_urls text[]`, list/get dress; status stays active/retired — renting/cleaning
 derived from rentals; one-time seed via `pnpm --filter be import:dresses <csv>`), rentals
 (create-rental with the rental_items EXCLUDE overlap constraint incl. cleaning buffer;
-pickup booked→out and return booked|out→returned, the return settling deposit/late/damage
-fees into the payments table via `PaymentRecorderPort` — payments context itself is still
-schema-only; availability + booked-ranges + today-board + list-rentals reads — the board
+pickup booked→out, return booked|out→returned settling deposit/late/damage fees into the
+payments table via `PaymentRecorderPort` — payments context itself is still schema-only —
+and cancel booked→cancelled flipping items to `blocking=false` so the calendar frees;
+availability + booked-ranges + today-board + list-rentals reads — the board
 carries due-out/due-back/OVERDUE, the list searches customer name/phone with status filter
 and pagination; range columns always SELECTed as `::text` literals), offline `openapi:emit`.
 `apps/fe`: React SPA — auth + dresses slices (live `/dresses/:id` detail), the new-rental
 form, the ACTIONABLE today board at `/` (device-local date; pickup button on due-out,
 return-and-settle dialog on due-back + overdue), and the real `/rentals` list (URL-owned
 q/status/page filters). App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`.
-Next (tracked todos): `rentals/cancel-rental`, `payments/list-payments`,
-`infra/e2e-playwright` — see session-handoff (10) for the suggested order.
+The `/rentals` list also carries the cancel action (booked rows only). Next (tracked
+todos): `payments/list-payments`, then `infra/e2e-playwright`.
 
 ## Invariants (carry these into every session)
 

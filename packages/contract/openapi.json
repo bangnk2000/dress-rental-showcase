@@ -459,6 +459,48 @@
         ]
       }
     },
+    "/api/v1/rentals/{id}/cancel": {
+      "post": {
+        "operationId": "CancelRentalHttpController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rental not found"
+          },
+          "409": {
+            "description": "Rental is not in the booked status"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a booked rental — frees the calendar, keeps history",
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
     "/api/v1/rentals/{id}/pickup": {
       "post": {
         "operationId": "PickupRentalHttpController_pickup",

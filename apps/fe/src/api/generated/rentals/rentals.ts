@@ -274,6 +274,68 @@ export function useListRentalsHttpControllerListSuspense<TData = Awaited<ReturnT
 
 
 /**
+ * @summary Cancel a booked rental — frees the calendar, keeps history
+ */
+export const cancelRentalHttpControllerCancel = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/rentals/${id}/cancel`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getCancelRentalHttpControllerCancelMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['cancelRentalHttpControllerCancel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  cancelRentalHttpControllerCancel(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelRentalHttpControllerCancelMutationResult = NonNullable<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>>
+
+    export type CancelRentalHttpControllerCancelMutationError = void
+
+    /**
+ * @summary Cancel a booked rental — frees the calendar, keeps history
+ */
+export const useCancelRentalHttpControllerCancel = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getCancelRentalHttpControllerCancelMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Mark a booked rental as handed out to the customer
  */
 export const pickupRentalHttpControllerPickup = (

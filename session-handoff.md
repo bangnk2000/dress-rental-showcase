@@ -1,5 +1,21 @@
 # Session Handoff
 
+## 2026-07-30 (11) — `rentals/cancel-rental` = pass (calendar frees at the DB level)
+
+- Done: `POST /rentals/:id/cancel` — booked ONLY (out → 409, it must be returned;
+  returned/cancelled → 409); `RentalEntity.cancel` flips every item to
+  `blocking=false` via `RentalItemEntity.unblock()`, and the repo's existing item
+  upsert persists it. FE: Huỷ button on booked rows of `/rentals` (confirm → mutate →
+  invalidate list + board). smoke.sh 59 checks — the star proof: cancel → availability
+  flips false→TRUE → REBOOK of the same dress+dates 201 (EXCLUDE ignores non-blocking
+  rows) — plus proxy proof. Evidence in `feature_list.json`.
+- Next: `payments/list-payments`, then `infra/e2e-playwright`.
+- Watch out:
+  - Cancel from the BOARD was deliberately left out (list only) — due-out cards offer
+    pickup, not cancel; add it there only if staff ask.
+  - smoke.sh now leaves TWO 10-01..10-02 rentals on VD-900 (one cancelled, one booked)
+    and the 08-20 rental OUT — later fixture additions must account for that.
+
 ## 2026-07-30 (10) — `rentals/list-rentals` = pass (no shells left)
 
 - Done: the follow-up backlog became 4 tracked entries (list-rentals, cancel-rental,

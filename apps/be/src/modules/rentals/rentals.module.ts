@@ -3,6 +3,8 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { DRESS_LOOKUP } from './application/ports/dress-lookup.port';
 import { PAYMENT_RECORDER } from './application/ports/payment-recorder.port';
 import { RENTAL_REPOSITORY } from './application/ports/rental.repository.port';
+import { CancelRentalHttpController } from './commands/cancel-rental/cancel-rental.http.controller';
+import { CancelRentalService } from './commands/cancel-rental/cancel-rental.service';
 import { CreateRentalHttpController } from './commands/create-rental/create-rental.http.controller';
 import { CreateRentalService } from './commands/create-rental/create-rental.service';
 import { PickupRentalHttpController } from './commands/pickup-rental/pickup-rental.http.controller';
@@ -27,6 +29,7 @@ import './rentals.policies';
   imports: [CqrsModule],
   controllers: [
     CreateRentalHttpController,
+    CancelRentalHttpController,
     PickupRentalHttpController,
     ReturnRentalHttpController,
     CheckAvailabilityHttpController,
@@ -37,6 +40,7 @@ import './rentals.policies';
   providers: [
     RentalMapper,
     CreateRentalService,
+    CancelRentalService,
     PickupRentalService,
     ReturnRentalService,
     CheckAvailabilityQueryHandler,

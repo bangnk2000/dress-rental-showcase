@@ -24,12 +24,21 @@
       "next": "Sau",
       "label": "Trang {{page}}/{{totalPages}}"
     },
+    "actions": {
+      "cancel": "Huỷ"
+    },
     "empty": {
       "noRentals": "Chưa có lượt thuê nào",
       "noRentalsHint": "Tạo lượt thuê đầu tiên cho khách của bạn.",
       "noMatch": "Không tìm thấy lượt thuê",
       "noMatchHint": "Thử từ khoá khác hoặc bỏ bộ lọc trạng thái."
     }
+  },
+  "cancel": {
+    "confirm": "Huỷ lượt thuê này? Lịch của váy sẽ được giải phóng để khách khác đặt.",
+    "success": "Đã huỷ lượt thuê.",
+    "alreadyProcessed": "Lượt thuê này không còn ở trạng thái chờ giao.",
+    "error": "Có lỗi xảy ra, vui lòng thử lại."
   },
   "form": {
     "fields": {

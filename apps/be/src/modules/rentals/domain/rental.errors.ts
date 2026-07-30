@@ -54,3 +54,12 @@ export class RentalReturnNotAllowedError extends ExceptionBase {
     super(RentalReturnNotAllowedError.message, cause, metadata);
   }
 }
+
+export class RentalCancelNotAllowedError extends ExceptionBase {
+  static readonly message = 'Only a booked rental can be cancelled';
+  public readonly code = 'RENTALS.CANCEL_NOT_ALLOWED';
+
+  constructor(cause?: Error, metadata?: unknown) {
+    super(RentalCancelNotAllowedError.message, cause, metadata);
+  }
+}

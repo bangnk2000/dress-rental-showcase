@@ -46,6 +46,12 @@ export class RentalItemEntity extends Entity<RentalItemProps> {
     return this.props.blocking;
   }
 
+  /** Frees the dress's calendar (cancelled rental) while keeping the row. */
+  unblock(now: Date): void {
+    this.props.blocking = false;
+    this.setUpdatedAt(now);
+  }
+
   public validate(): void {
     this.guardAgainstEmpty(this.props.dressId, 'dressId');
     this.guardAgainstEmpty(this.props.price, 'price');

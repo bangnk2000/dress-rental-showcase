@@ -4,10 +4,12 @@ import { ArgumentInvalidException } from '../../../libs/exceptions';
 import { RentalItemEntity } from './rental-item.entity';
 import { RentalPeriod } from './rental-period.value-object';
 import { CreateRentalProps, RentalProps, RentalStatus } from './rental.types';
+import { RentalCancelledDomainEvent } from './events/rental-cancelled.domain-event';
 import { RentalCreatedDomainEvent } from './events/rental-created.domain-event';
 import { RentalPickedUpDomainEvent } from './events/rental-picked-up.domain-event';
 import { RentalReturnedDomainEvent } from './events/rental-returned.domain-event';
 import {
+  RentalCancelNotAllowedError,
   RentalPickupNotAllowedError,
   RentalReturnNotAllowedError,
 } from './rental.errors';
@@ -81,6 +83,24 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
     this.props.status = 'returned';
     this.setUpdatedAt(now);
     this.addEvent(new RentalReturnedDomainEvent({ aggregateId: this.id }));
+    return Ok(undefined);
+  }
+
+  /**
+   * Cancel a booking that never went out: booked → cancelled, and every item
+   * stops blocking — the calendar frees for re-booking while the rows stay
+   * as history. An 'out' rental must be RETURNED, not cancelled.
+   */
+  cancel(now: Date): Result<void, RentalCancelNotAllowedError> {
+    if (this.props.status !== 'booked') {
+      return Err(new RentalCancelNotAllowedError(undefined, { status: this.props.status }));
+    }
+    this.props.status = 'cancelled';
+    for (const item of this.props.items) {
+      item.unblock(now);
+    }
+    this.setUpdatedAt(now);
+    this.addEvent(new RentalCancelledDomainEvent({ aggregateId: this.id }));
     return Ok(undefined);
   }
 

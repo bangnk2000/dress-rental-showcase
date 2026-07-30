@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import type { RentalListItemDto } from '@/api/generated/model';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -15,7 +16,13 @@ import { formatDate } from '@/lib/format';
 
 import { RentalStatusBadge } from './rental-status-badge';
 
-export function RentalTable({ rentals }: { rentals: RentalListItemDto[] }) {
+interface RentalTableProps {
+  rentals: RentalListItemDto[];
+  /** When set, booked rows get a cancel action (the route owns the mutation). */
+  onCancel?: (rental: RentalListItemDto) => void;
+}
+
+export function RentalTable({ rentals, onCancel }: RentalTableProps) {
   const { t } = useTranslation('rentals');
 
   return (
@@ -27,6 +34,7 @@ export function RentalTable({ rentals }: { rentals: RentalListItemDto[] }) {
           <TableHead>{t('list.columns.dresses')}</TableHead>
           <TableHead>{t('list.columns.period')}</TableHead>
           <TableHead>{t('list.columns.status')}</TableHead>
+          {onCancel ? <TableHead /> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -55,6 +63,15 @@ export function RentalTable({ rentals }: { rentals: RentalListItemDto[] }) {
             <TableCell>
               <RentalStatusBadge status={rental.status} />
             </TableCell>
+            {onCancel ? (
+              <TableCell className="text-right">
+                {rental.status === 'booked' ? (
+                  <Button variant="outline" size="sm" onClick={() => onCancel(rental)}>
+                    {t('list.actions.cancel')}
+                  </Button>
+                ) : null}
+              </TableCell>
+            ) : null}
           </TableRow>
         ))}
       </TableBody>

@@ -2,9 +2,11 @@ import { screen, waitFor } from '@testing-library/react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, expect, test } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
+import { Toaster } from '@/components/ui/sonner';
 import {
+  getLastCancelRentalId,
   getLastRentalListParams,
   makeRentalListItem,
   resetRentals,
@@ -16,13 +18,16 @@ import { RentalsRoute } from './rentals-route';
 
 function renderList(route = '/rentals') {
   return renderWithProviders(
-    <Suspense fallback={<output>loading</output>}>
-      <Routes>
-        <Route path="/rentals" element={<RentalsRoute />} />
-        <Route path="/dresses/:id" element={<output>dress-detail-stub</output>} />
-        <Route path="/rentals/new" element={<output>new-rental-stub</output>} />
-      </Routes>
-    </Suspense>,
+    <>
+      <Suspense fallback={<output>loading</output>}>
+        <Routes>
+          <Route path="/rentals" element={<RentalsRoute />} />
+          <Route path="/dresses/:id" element={<output>dress-detail-stub</output>} />
+          <Route path="/rentals/new" element={<output>new-rental-stub</output>} />
+        </Routes>
+      </Suspense>
+      <Toaster />
+    </>,
     { route },
   );
 }
@@ -84,6 +89,38 @@ test('pagination requests the next page', async () => {
   await user.click(await screen.findByRole('button', { name: 'Sau' }));
 
   await waitFor(() => expect(getLastRentalListParams()).toEqual({ page: '2' }));
+});
+
+test('cancelling a booked rental confirms, calls the API, and toasts', async () => {
+  seedRentalList([
+    makeRentalListItem(),
+    makeRentalListItem({ rentalId: 'rental-2', customerName: 'Trần Văn B', status: 'returned' }),
+  ]);
+  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const user = userEvent.setup();
+  renderList();
+
+  // only the BOOKED row offers cancel — one button despite two rows
+  const cancelButtons = await screen.findAllByRole('button', { name: 'Huỷ' });
+  expect(cancelButtons).toHaveLength(1);
+  await user.click(cancelButtons[0]!);
+
+  expect(confirmSpy).toHaveBeenCalled();
+  expect(await screen.findByText('Đã huỷ lượt thuê.')).toBeInTheDocument();
+  expect(getLastCancelRentalId()).toBe('rental-1');
+  confirmSpy.mockRestore();
+});
+
+test('declining the confirm leaves the rental alone', async () => {
+  seedRentalList([makeRentalListItem()]);
+  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(await screen.findByRole('button', { name: 'Huỷ' }));
+
+  expect(getLastCancelRentalId()).toBeNull();
+  confirmSpy.mockRestore();
 });
 
 test('a status filter from the URL narrows the request', async () => {

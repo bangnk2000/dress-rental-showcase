@@ -1,7 +1,14 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { toast } from 'sonner';
 
-import { useListRentalsHttpControllerListSuspense } from '@/api/generated/rentals/rentals';
+import {
+  getGetTodayBoardHttpControllerGetQueryKey,
+  getListRentalsHttpControllerListQueryKey,
+  useCancelRentalHttpControllerCancel,
+  useListRentalsHttpControllerListSuspense,
+} from '@/api/generated/rentals/rentals';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
@@ -10,6 +17,7 @@ import { RentalFiltersBar } from './components/rental-filters-bar';
 import { RentalListPagination } from './components/rental-list-pagination';
 import { RentalTable } from './components/rental-table';
 import { useRentalFilters } from './hooks/use-rental-filters';
+import { isConflictError } from './lib/is-conflict-error';
 
 /**
  * Rentals list — the post-create landing. Loading/error surfaces belong to
@@ -18,9 +26,33 @@ import { useRentalFilters } from './hooks/use-rental-filters';
  */
 export function RentalsRoute() {
   const { t } = useTranslation('rentals');
+  const queryClient = useQueryClient();
   const { q, status, listParams, hasActiveFilters, setSearch, setStatus, setPage } =
     useRentalFilters();
   const { data } = useListRentalsHttpControllerListSuspense(listParams);
+
+  // Cancel is booked-only on the server (409 otherwise); frees the calendar.
+  const cancelRental = useCancelRentalHttpControllerCancel<unknown>({
+    mutation: {
+      onSuccess: async () => {
+        // Parameterless keys prefix every filtered list / dated board query.
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: getListRentalsHttpControllerListQueryKey(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
+          }),
+        ]);
+        toast.success(t('cancel.success'));
+      },
+      onError: (error) => {
+        toast.error(
+          isConflictError(error) ? t('cancel.alreadyProcessed') : t('cancel.error'),
+        );
+      },
+    },
+  });
 
   const totalPages = data.limit > 0 ? Math.max(1, Math.ceil(data.count / data.limit)) : 1;
 
@@ -60,7 +92,14 @@ export function RentalsRoute() {
           )
         ) : (
           <>
-            <RentalTable rentals={data.data} />
+            <RentalTable
+              rentals={data.data}
+              onCancel={(rental) => {
+                if (window.confirm(t('cancel.confirm'))) {
+                  cancelRental.mutate({ id: rental.rentalId });
+                }
+              }}
+            />
             {totalPages > 1 ? (
               <RentalListPagination
                 page={data.page}

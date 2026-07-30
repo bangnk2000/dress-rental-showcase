@@ -24,12 +24,21 @@
       "next": "Next",
       "label": "Page {{page}}/{{totalPages}}"
     },
+    "actions": {
+      "cancel": "Cancel"
+    },
     "empty": {
       "noRentals": "No rentals yet",
       "noRentalsHint": "Create the first rental for your customer.",
       "noMatch": "No rentals found",
       "noMatchHint": "Try another search term or clear the status filter."
     }
+  },
+  "cancel": {
+    "confirm": "Cancel this rental? The dresses' calendar will be freed for other bookings.",
+    "success": "Rental cancelled.",
+    "alreadyProcessed": "This rental is no longer waiting to be handed out.",
+    "error": "Something went wrong, please retry."
   },
   "form": {
     "fields": {

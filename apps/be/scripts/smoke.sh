@@ -259,6 +259,53 @@ list_badstatus=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/rentals?status=we
   -H "Authorization: Bearer $TOKEN")
 echo "GET /rentals?status=weird -> $list_badstatus (expect 400)"
 
+# --- rentals/cancel-rental (cancelled frees the calendar AT THE DB LEVEL) ---
+
+RID5=$(curl -sf -X POST "$BASE/rentals" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"customerName\":\"Võ Thị E\",\"customerPhone\":\"0966000222\",\"startDate\":\"2026-10-01\",\"endDate\":\"2026-10-02\",\"items\":[{\"dressId\":\"$RENTAL_DRESS_ID\"}]}" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).id))")
+echo "POST /rentals 10-01..10-02 (cancel fixture) -> id=$RID5"
+
+avail_before=$(curl -sf "$BASE/dresses/$RENTAL_DRESS_ID/availability?startDate=2026-10-01&endDate=2026-10-02" \
+  -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).available))")
+echo "availability 10-01..10-02 before cancel -> $avail_before (expect false)"
+
+cancel=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID5/cancel" \
+  -H "Authorization: Bearer $TOKEN")
+echo "POST /rentals/:id/cancel -> $cancel (expect 200)"
+
+cancel2=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID5/cancel" \
+  -H "Authorization: Bearer $TOKEN")
+echo "POST cancel again -> $cancel2 (expect 409; already cancelled)"
+
+avail_after=$(curl -sf "$BASE/dresses/$RENTAL_DRESS_ID/availability?startDate=2026-10-01&endDate=2026-10-02" \
+  -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).available))")
+echo "availability 10-01..10-02 after cancel -> $avail_after (expect true — calendar freed)"
+
+rebook=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"customerName\":\"Đỗ Thị G\",\"customerPhone\":\"0955000333\",\"startDate\":\"2026-10-01\",\"endDate\":\"2026-10-02\",\"items\":[{\"dressId\":\"$RENTAL_DRESS_ID\"}]}")
+echo "POST /rentals SAME dates after cancel -> $rebook (expect 201 — EXCLUDE ignores non-blocking rows)"
+
+RID6=$(curl -sf "$BASE/rentals/today-board?date=2026-08-20" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).dueOut[0].rentalId))")
+pickup3=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID6/pickup" \
+  -H "Authorization: Bearer $TOKEN")
+cancel_out=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID6/cancel" \
+  -H "Authorization: Bearer $TOKEN")
+echo "cancel an OUT rental -> $cancel_out (expect 409 after pickup=$pickup3 — out must be returned)"
+
+cancel404=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+  "$BASE/rentals/00000000-0000-4000-8000-000000000999/cancel" -H "Authorization: Bearer $TOKEN")
+echo "cancel unknown rental -> $cancel404 (expect 404)"
+
+list_cancelled=$(curl -sf "$BASE/rentals?status=cancelled" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).count))")
+echo "GET /rentals?status=cancelled -> $list_cancelled (expect 1 — history kept)"
+
 [ "$unauth" = "401" ] && [ "$create" = "201" ] && [ "$dup" = "409" ] && [ "$me" = "owner" ] \
   && [ "$rent" = "201" ] && [ "$buffered" = "409" ] && [ "$free" = "201" ] \
   && [ "$ghost" = "404" ] && [ "$badrange" = "400" ] \
@@ -279,4 +326,8 @@ echo "GET /rentals?status=weird -> $list_badstatus (expect 400)"
   && [ "$list_all" = "4:4:Phạm Thị D" ] && [ "$list_q" = "1:Nguyễn Thị Hoa" ] \
   && [ "$list_phone" = "1" ] && [ "$list_status" = "1:VD-900" ] \
   && [ "$list_page" = "2:2:4" ] && [ "$list_badstatus" = "400" ] \
+  && [ -n "$RID5" ] && [ "$avail_before" = "false" ] && [ "$cancel" = "200" ] \
+  && [ "$cancel2" = "409" ] && [ "$avail_after" = "true" ] && [ "$rebook" = "201" ] \
+  && [ "$pickup3" = "200" ] && [ "$cancel_out" = "409" ] && [ "$cancel404" = "404" ] \
+  && [ "$list_cancelled" = "1" ] \
   && echo "SMOKE: ALL PASS" || { echo "SMOKE: FAIL"; exit 1; }
