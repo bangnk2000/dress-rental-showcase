@@ -15,5 +15,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Unit tests live in src; e2e/ belongs to Playwright (pnpm --filter fe e2e).
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 });

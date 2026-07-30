@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
+  getListRentalsHttpControllerListQueryKey,
   useReturnRentalHttpControllerSettle,
 } from '@/api/generated/rentals/rentals';
 import type { ReturnRentalRequestDto, TodayBoardRentalDto } from '@/api/generated/model';
@@ -66,10 +67,17 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
   const returnRental = useReturnRentalHttpControllerSettle<unknown>({
     mutation: {
       onSuccess: async () => {
-        // The parameterless key prefixes every dated board query.
-        await queryClient.invalidateQueries({
-          queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
-        });
+        // Parameterless keys prefix every dated board / filtered list query —
+        // the rentals LIST may still be FRESH (staleTime 60s) and must not
+        // keep showing the old status.
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getListRentalsHttpControllerListQueryKey(),
+          }),
+        ]);
         toast.success(t('returnDialog.success'));
         onClose();
       },

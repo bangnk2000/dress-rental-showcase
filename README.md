@@ -16,12 +16,13 @@ apps/be source ──pnpm openapi:emit──▶ packages/contract/openapi.json �
 
 ## Status
 
-**MVP COMPLETE + first backlog item shipped** (2026-07-30) — catalog (list/search,
-create/update/retire, photo links, CSV seed import), rentals (create with the DB-level
-EXCLUDE overlap constraint + cleaning buffer, availability + booking calendar,
-pickup/return with deposit & fee settlement into `payments`, searchable paginated list),
-and the actionable today board (due out / due back / overdue). No shell routes remain.
-Tracked follow-ups in `feature_list.json`: cancel-rental, payments read slice, Playwright e2e.
+**EVERYTHING TRACKED IS DONE** (2026-07-30) — catalog (list/search, create/update/retire,
+photo links, CSV seed import), rentals (create with the DB-level EXCLUDE overlap
+constraint + cleaning buffer, availability + booking calendar, pickup/return with deposit
+& fee settlement, cancel that frees the calendar, searchable paginated list), payments
+read slice, the actionable today board (due out / due back / overdue), and a Playwright
+e2e happy path over the real stack (`pnpm --filter fe e2e`). smoke.sh proves 62 checks
+on a fresh DB. Follow-up candidates live in `session-handoff.md` (13).
 Dev DB: `docker compose up -d` · seed: `pnpm --filter be migrate && pnpm --filter be seed`.
 
 ## Bootstrap order (do not reorder — FE needs the real contract)

@@ -1,5 +1,32 @@
 # Session Handoff
 
+## 2026-07-30 (13) — `infra/e2e-playwright` = pass (BACKLOG EMPTY — everything tracked is done)
+
+- Done: Playwright in `apps/fe/e2e` — ONE serial vi-locale happy path against the real
+  stack (sign in → create dress → single-day rental for today → board pickup → return
+  with settled deposit → list shows Đã trả + payments dialog), green in ~5s. Config pins
+  `locale: 'vi-VN'` (headless chromium defaults to en; the i18n detector follows it).
+  **The e2e caught two real stale-cache bugs** (staleTime 60s): post-create landing
+  missed the new rental, and pickup/return left the list showing the old status — the
+  create/pickup/return mutations now invalidate the rentals LIST (parameterless key)
+  alongside the board. vitest include narrowed to `src/**` (it was swallowing
+  e2e/*.spec.ts); tsc guards e2e via tsconfig include. Root gates/init.sh still exclude
+  e2e (needs browsers + running stack) — run recipe in `apps/fe/AGENTS.md` deviation 5.
+  Evidence in `feature_list.json`.
+- Next: nothing tracked. If the shop asks: wire e2e into CI (compose service +
+  `playwright install --with-deps`), deposit COLLECTION recording at create (the
+  payments read slice shows settlements only), reactivate-dress, per-item price
+  override UI.
+- Watch out:
+  - The invalidate-after-mutation rule is now LOAD-BEARING: any new rentals mutation
+    must invalidate BOTH the board and the list parameterless keys, or the 60s
+    staleTime shows stale status — the e2e will catch it.
+  - Playwright fills that race the lazy-route swap silently vanish — wait for the
+    route heading, then fill (the happy path guards the first fill with toPass).
+  - e2e assumes a FRESH DB only for determinism of the board counts; the unique
+    E2E-<run> dress code lets reruns pass on a dirty DB too (counts are scoped to the
+    run's customer string).
+
 ## 2026-07-30 (12) — `payments/list-payments` = pass (payments context gets its first code)
 
 - Done: `modules/payments` born — GET `/rentals/:rentalId/payments` (@ApiTags payments

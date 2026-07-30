@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
+  getListRentalsHttpControllerListQueryKey,
   useGetTodayBoardHttpControllerGetSuspense,
   usePickupRentalHttpControllerPickup,
 } from '@/api/generated/rentals/rentals';
@@ -29,10 +30,17 @@ export function TodayRoute() {
   const pickupRental = usePickupRentalHttpControllerPickup<unknown>({
     mutation: {
       onSuccess: async () => {
-        // The parameterless key prefixes every dated board query.
-        await queryClient.invalidateQueries({
-          queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
-        });
+        // Parameterless keys prefix every dated board / filtered list query —
+        // the rentals LIST may still be FRESH (staleTime 60s) and must not
+        // keep showing the old status.
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getListRentalsHttpControllerListQueryKey(),
+          }),
+        ]);
         toast.success(t('pickupSuccess'));
       },
       onError: (error) => {

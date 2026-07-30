@@ -51,7 +51,11 @@ files here.
    return-and-settle mutations, and it ALWAYS sends the device-local date
    (`features/today/lib/local-date.ts`) — never rely on the server's "today". jsdom cannot
    open the Radix Select popover — drive status filters via the URL in tests.
-5. **Playwright/e2e deferred** until the first cross-contract feature; root gates exclude fe e2e.
+5. **Playwright e2e lives in `e2e/`** (`infra/e2e-playwright`): `pnpm --filter fe e2e` runs
+   the vi-locale happy path against the REAL stack (fresh compose DB + BE :3000 + Vite
+   :5173 — start them first; browsers via `pnpm --filter fe exec playwright install
+   chromium`). Root gates and init.sh still EXCLUDE e2e (needs browsers + running stack);
+   vitest excludes `e2e/` via its include glob.
 6. **`customInstance` omits the legacy `promise.cancel` hack** — TanStack Query v5 passes
    AbortSignal in the request config (signal-based cancellation).
 7. **Unified `radix-ui` package** (not per-primitive `@radix-ui/react-*`); shadcn `sonner.tsx` is

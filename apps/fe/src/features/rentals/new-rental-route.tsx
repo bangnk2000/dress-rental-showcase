@@ -1,11 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
-import { useCreateRentalHttpControllerCreate } from '@/api/generated/rentals/rentals';
+import {
+  getGetTodayBoardHttpControllerGetQueryKey,
+  getListRentalsHttpControllerListQueryKey,
+  useCreateRentalHttpControllerCreate,
+} from '@/api/generated/rentals/rentals';
 import type { CreateRentalRequestDto } from '@/api/generated/model';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
@@ -41,6 +46,7 @@ export function NewRentalRoute() {
   const { t } = useTranslation('rentals');
   const { t: tCommon } = useTranslation('common'); // shared verbs only
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const form = useForm<RentalFormValues>({
     resolver: zodResolver(rentalFormSchema),
@@ -55,7 +61,17 @@ export function NewRentalRoute() {
   // overrides the global "mutation failed" toast for this mutation.
   const createRental = useCreateRentalHttpControllerCreate<unknown>({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
+        // The cached list/board may still be FRESH (staleTime 60s) — without
+        // this, the post-create landing shows a list missing the new rental.
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: getListRentalsHttpControllerListQueryKey(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
+          }),
+        ]);
         toast.success(t('form.success'));
         void navigate('/rentals');
       },

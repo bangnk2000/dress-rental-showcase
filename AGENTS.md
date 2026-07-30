@@ -32,7 +32,10 @@ form, the ACTIONABLE today board at `/` (device-local date; pickup button on due
 return-and-settle dialog on due-back + overdue), and the real `/rentals` list (URL-owned
 q/status/page filters). App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`.
 The `/rentals` list also carries the cancel action (booked rows) and the payments dialog
-(returned rows). Next (tracked todos): `infra/e2e-playwright` only.
+(returned rows). Playwright e2e (`apps/fe/e2e`, vi-locale happy path vs the real stack)
+runs via `pnpm --filter fe e2e` — excluded from root gates/init.sh. Rentals mutations
+MUST invalidate both the board and list parameterless query keys (staleTime 60s).
+Next: nothing tracked — the backlog is empty; candidates in session-handoff (13).
 
 ## Invariants (carry these into every session)
 

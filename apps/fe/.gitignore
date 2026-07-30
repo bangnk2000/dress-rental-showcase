@@ -1,2 +1,6 @@
 # vite-plugin-pwa dev artifacts (devOptions.enabled is false, but keep this safe)
 dev-dist/
+
+# playwright e2e artifacts
+test-results/
+playwright-report/
