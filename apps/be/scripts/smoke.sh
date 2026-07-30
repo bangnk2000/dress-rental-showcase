@@ -147,6 +147,38 @@ retired_avail=$(curl -sf "$BASE/dresses/$DRESS1_ID/availability?startDate=2026-1
   | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).available))")
 echo "availability of a RETIRED dress -> available=$retired_avail (expect false even with a free calendar)"
 
+# --- rentals/today-board (bookings on VD-900: 08-01..08-03, 08-06..08-07, 08-20..08-21) ---
+
+board_out=$(curl -sf "$BASE/rentals/today-board?date=2026-08-01" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.dueOut.length+':'+j.dueBack.length+':'+j.dueOut[0].dresses[0].code)})")
+echo "today-board 2026-08-01 -> $board_out (expect 1:0:VD-900 — the 08-01 rental goes out)"
+
+board_back=$(curl -sf "$BASE/rentals/today-board?date=2026-08-03" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.dueOut.length+':'+j.dueBack.length)})")
+echo "today-board 2026-08-03 -> $board_back (expect 0:1 — the 08-01..08-03 rental comes back)"
+
+# A single-day rental must show on BOTH lists. 09-20 clears every earlier buffer.
+oneday=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals" \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"customerName\":\"Phạm Thị D\",\"customerPhone\":\"0977000111\",\"startDate\":\"2026-09-20\",\"endDate\":\"2026-09-20\",\"items\":[{\"dressId\":\"$RENTAL_DRESS_ID\"}]}")
+echo "POST /rentals 09-20..09-20 (single day) -> $oneday (expect 201)"
+
+board_both=$(curl -sf "$BASE/rentals/today-board?date=2026-09-20" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);const same=j.dueOut.length===1&&j.dueBack.length===1&&j.dueOut[0].rentalId===j.dueBack[0].rentalId;console.log(j.dueOut.length+':'+j.dueBack.length+':'+same)})")
+echo "today-board 2026-09-20 -> $board_both (expect 1:1:true — single-day rental on both lists, same rental)"
+
+board_quiet=$(curl -sf "$BASE/rentals/today-board?date=2026-08-10" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.dueOut.length+':'+j.dueBack.length)})")
+echo "today-board 2026-08-10 (quiet day) -> $board_quiet (expect 0:0)"
+
+board_bad=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/rentals/today-board?date=2026-02-30" \
+  -H "Authorization: Bearer $TOKEN")
+echo "today-board 2026-02-30 (no such day) -> $board_bad (expect 400, not a 500 from the ::date cast)"
+
+board_default=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/rentals/today-board" \
+  -H "Authorization: Bearer $TOKEN")
+echo "today-board without date -> $board_default (expect 200 — server-today default)"
+
 [ "$unauth" = "401" ] && [ "$create" = "201" ] && [ "$dup" = "409" ] && [ "$me" = "owner" ] \
   && [ "$rent" = "201" ] && [ "$buffered" = "409" ] && [ "$free" = "201" ] \
   && [ "$ghost" = "404" ] && [ "$badrange" = "400" ] \
@@ -157,4 +189,7 @@ echo "availability of a RETIRED dress -> available=$retired_avail (expect false 
   && [ "$patch" = "200" ] && [ "$patched" = "Váy cưới ren trắng (sửa):2:1800000" ] \
   && [ "$dupcode" = "409" ] && [ "$patch404" = "404" ] \
   && [ "$retire" = "200" ] && [ "$retire2" = "409" ] && [ "$retired_avail" = "false" ] \
+  && [ "$board_out" = "1:0:VD-900" ] && [ "$board_back" = "0:1" ] && [ "$oneday" = "201" ] \
+  && [ "$board_both" = "1:1:true" ] && [ "$board_quiet" = "0:0" ] \
+  && [ "$board_bad" = "400" ] && [ "$board_default" = "200" ] \
   && echo "SMOKE: ALL PASS" || { echo "SMOKE: FAIL"; exit 1; }

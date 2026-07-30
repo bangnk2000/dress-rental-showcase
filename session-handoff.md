@@ -1,5 +1,37 @@
 # Session Handoff
 
+## 2026-07-30 (8) — `rentals/today-board` = pass (the morning screen is live)
+
+- Done: full README step-5 rhythm in one entry — BE read slice `GET /rentals/today-board?date=`
+  (auth-only read; due OUT = booked rentals starting on the date, due BACK = booked/out rentals
+  whose INCLUSIVE last day is the date, i.e. `upper(period) - 1`; membership computed as SQL
+  flags, `today-board.projection` groups item rows per rental — a single-day rental lands on
+  BOTH lists). `DressSnapshot` grew `code`+`name` (adapter SELECT widened) so the board names
+  dresses without touching catalog code. `pnpm contract`; FE `/` (index) is the real board:
+  two sections with counts, tel: links, status badges, dress codes linking to `/dresses/:id`,
+  and a date input that ALWAYS sends the device-local day. All gates green both sides;
+  smoke.sh now 33 checks (due-out 1:0:VD-900 / due-back 0:1 / single-day 1:1:same-rental /
+  quiet 0:0 / 2026-02-30 → 400 / no-date → 200) + proxy proof through :5173.
+  Evidence in `feature_list.json`.
+- Next: `rentals/return-rental` (the LAST todo entry: settle deposit, late/damage fees,
+  status transitions booked→out→returned — the board's status badges start earning their
+  keep once 'out' exists), or a rentals LIST read slice (post-create navigation still lands
+  on a shell at `/rentals`).
+- Watch out:
+  - Board semantics are status-aware ON PURPOSE: due-out only `booked` (an 'out' rental is
+    already with the customer), due-back `booked|out` (a 'booked' rental on the due-back list
+    means the customer never picked up). 'returned'/'cancelled' never appear.
+  - The FE always sends `?date=` (device-local via `localDateIso`) — the server default
+    exists for curl convenience only; a UTC server flips dates at 7am Hanoi.
+  - `GetTodayBoardRequestDto` pairs @Matches with @IsISO8601 strict: calendar nonsense like
+    2026-02-30 must 400 BEFORE the `::date` cast (which would 500). Copy that pairing for
+    future date query params.
+  - Background processes started inside a `wsl.exe` call die when the session exits — for
+    runtime proofs, run start-app + smoke + kill in ONE script file invoked as
+    `wsl.exe -- bash /tmp/script.sh` (a file dodges the fish-wrapper $-mangling too).
+  - smoke.sh (FRESH DB as always) now books VD-900 on 2026-09-20 (single-day) — steps added
+    later must not assume 09-20..09-22 is free on VD-900.
+
 ## 2026-07-30 (7) — `catalog/list-dresses` = pass (CSV seed import closes the entry)
 
 - Done: `pnpm --filter be import:dresses <file.csv>` — `src/scripts/import-dresses.ts` boots

@@ -1,6 +1,18 @@
 {
   "title": "Hôm nay",
-  "shell": {
-    "comingSoon": "Bảng công việc hôm nay sẽ sẵn sàng khi lát cắt backend của nó hoàn tất."
+  "dateLabel": "Ngày của bảng",
+  "dueOut": {
+    "title": "Giao váy cho khách",
+    "empty": "Không có lượt thuê nào cần giao."
+  },
+  "dueBack": {
+    "title": "Nhận váy về",
+    "empty": "Không có lượt thuê nào cần nhận về."
+  },
+  "status": {
+    "booked": "Đã đặt",
+    "out": "Đang thuê",
+    "returned": "Đã trả",
+    "cancelled": "Đã huỷ"
   }
 }

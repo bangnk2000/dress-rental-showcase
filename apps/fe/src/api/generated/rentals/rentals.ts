@@ -31,7 +31,9 @@ import type {
   BookedRangeListResponseDto,
   CheckAvailabilityHttpControllerCheckParams,
   CreateRentalRequestDto,
-  IdResponse
+  GetTodayBoardHttpControllerGetParams,
+  IdResponse,
+  TodayBoardResponseDto
 } from '../model';
 
 import { customInstance } from '../../mutator/custom-instance';
@@ -269,6 +271,154 @@ export function useCheckAvailabilityHttpControllerCheckSuspense<TData = Awaited<
  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCheckAvailabilityHttpControllerCheckSuspenseQueryOptions(dressId,params,options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Rentals due out and due back on a date (default: today)
+ */
+export const getTodayBoardHttpControllerGet = (
+    params?: GetTodayBoardHttpControllerGetParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<TodayBoardResponseDto>(
+      {url: `/api/v1/rentals/today-board`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getGetTodayBoardHttpControllerGetQueryKey = (params?: GetTodayBoardHttpControllerGetParams,) => {
+    return [
+    `/api/v1/rentals/today-board`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTodayBoardHttpControllerGetQueryOptions = <TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(params?: GetTodayBoardHttpControllerGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTodayBoardHttpControllerGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>> = ({ signal }) => getTodayBoardHttpControllerGet(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetTodayBoardHttpControllerGetQueryResult = NonNullable<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>>
+export type GetTodayBoardHttpControllerGetQueryError = unknown
+
+
+export function useGetTodayBoardHttpControllerGet<TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(
+ params: undefined |  GetTodayBoardHttpControllerGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>,
+          TError,
+          Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTodayBoardHttpControllerGet<TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(
+ params?: GetTodayBoardHttpControllerGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>,
+          TError,
+          Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTodayBoardHttpControllerGet<TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(
+ params?: GetTodayBoardHttpControllerGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Rentals due out and due back on a date (default: today)
+ */
+
+export function useGetTodayBoardHttpControllerGet<TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(
+ params?: GetTodayBoardHttpControllerGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetTodayBoardHttpControllerGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetTodayBoardHttpControllerGetSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(params?: GetTodayBoardHttpControllerGetParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTodayBoardHttpControllerGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>> = ({ signal }) => getTodayBoardHttpControllerGet(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseSuspenseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetTodayBoardHttpControllerGetSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>>
+export type GetTodayBoardHttpControllerGetSuspenseQueryError = unknown
+
+
+export function useGetTodayBoardHttpControllerGetSuspense<TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(
+ params: undefined |  GetTodayBoardHttpControllerGetParams, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTodayBoardHttpControllerGetSuspense<TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(
+ params?: GetTodayBoardHttpControllerGetParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTodayBoardHttpControllerGetSuspense<TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(
+ params?: GetTodayBoardHttpControllerGetParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Rentals due out and due back on a date (default: today)
+ */
+
+export function useGetTodayBoardHttpControllerGetSuspense<TData = Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError = unknown>(
+ params?: GetTodayBoardHttpControllerGetParams, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof getTodayBoardHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetTodayBoardHttpControllerGetSuspenseQueryOptions(params,options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

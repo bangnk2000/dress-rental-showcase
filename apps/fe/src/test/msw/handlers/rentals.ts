@@ -11,8 +11,10 @@ import type {
   BookedRangeListResponseDto,
   CreateRentalRequestDto,
   IdResponse,
+  TodayBoardRentalDto,
+  TodayBoardResponseDto,
 } from '@/api/generated/model';
-import { BookedRangeDtoStatus } from '@/api/generated/model';
+import { BookedRangeDtoStatus, TodayBoardRentalDtoStatus } from '@/api/generated/model';
 
 /** Mirrors the dev CLEANING_BUFFER_DAYS=2 the real API applies. */
 const CLEANING_BUFFER_DAYS = 2;
@@ -20,6 +22,8 @@ const CLEANING_BUFFER_DAYS = 2;
 let blockedDressIds = new Set<string>();
 let lastCreateRentalBody: CreateRentalRequestDto | null = null;
 let bookedRanges = new Map<string, BookedRangeDto[]>();
+let todayBoard: Pick<TodayBoardResponseDto, 'dueOut' | 'dueBack'> = { dueOut: [], dueBack: [] };
+let lastTodayBoardDate: string | null = null;
 
 /** Dresses that already have an overlapping booking — POST /rentals answers 409. */
 export function seedBlockedDresses(dressIds: string[]): void {
@@ -47,11 +51,38 @@ export function seedBookedRanges(dressId: string, ranges: BookedRangeDto[]): voi
   bookedRanges.set(dressId, [...ranges]);
 }
 
+export function makeTodayRental(
+  overrides: Partial<TodayBoardRentalDto> = {},
+): TodayBoardRentalDto {
+  return {
+    rentalId: 'rental-1',
+    customerName: 'Nguyễn Thị Hoa',
+    customerPhone: '0903123456',
+    status: TodayBoardRentalDtoStatus.booked,
+    startDate: '2099-08-01',
+    endDate: '2099-08-03',
+    dresses: [{ dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng' }],
+    ...overrides,
+  };
+}
+
+/** The board served for GET today-board, whatever date is asked. */
+export function seedTodayBoard(board: Pick<TodayBoardResponseDto, 'dueOut' | 'dueBack'>): void {
+  todayBoard = board;
+}
+
+/** The date param of the most recent GET today-board — asserts the FE sends its own day. */
+export function getLastTodayBoardDate(): string | null {
+  return lastTodayBoardDate;
+}
+
 /** Reset the in-memory rentals state — call from beforeEach. */
 export function resetRentals(): void {
   blockedDressIds = new Set();
   lastCreateRentalBody = null;
   bookedRanges = new Map();
+  todayBoard = { dueOut: [], dueBack: [] };
+  lastTodayBoardDate = null;
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -86,6 +117,18 @@ export const rentalsHandlers: HttpHandler[] = [
       endDate,
       available: conflicts.length === 0,
       conflicts,
+    };
+    return HttpResponse.json(body);
+  }),
+
+  // GET /api/v1/rentals/today-board — the seeded board, echoing the asked date.
+  http.get('/api/v1/rentals/today-board', ({ request }) => {
+    const url = new URL(request.url);
+    lastTodayBoardDate = url.searchParams.get('date');
+    const body: TodayBoardResponseDto = {
+      date: lastTodayBoardDate ?? '2099-01-01',
+      dueOut: todayBoard.dueOut,
+      dueBack: todayBoard.dueBack,
     };
     return HttpResponse.json(body);
   }),

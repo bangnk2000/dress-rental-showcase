@@ -6,6 +6,8 @@ import { DressLookupPort, DressSnapshot } from '../application/ports/dress-looku
 
 const dressLookupSchema = z.object({
   id: z.string(),
+  code: z.string(),
+  name: z.string(),
   status: z.string(),
   rental_price: z.number().int(),
 });
@@ -22,11 +24,13 @@ export class DressLookupAdapter implements DressLookupPort {
   async findByIds(dressIds: string[]): Promise<DressSnapshot[]> {
     if (dressIds.length === 0) return [];
     const rows = await this.pool.any(sql.type(dressLookupSchema)`
-      SELECT id, status, rental_price FROM dresses
+      SELECT id, code, name, status, rental_price FROM dresses
       WHERE id = ANY(${sql.array(dressIds, 'uuid')})
     `);
     return rows.map((row) => ({
       id: row.id,
+      code: row.code,
+      name: row.name,
       retired: row.status === 'retired',
       rentalPrice: row.rental_price,
     }));

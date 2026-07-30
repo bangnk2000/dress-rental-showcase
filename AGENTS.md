@@ -16,18 +16,20 @@ This file is the ONE harness in this repo — never create another under `apps/*
 
 Both apps bootstrapped and gated; the catalog context is COMPLETE (`catalog/list-dresses`
 incl. CSV seed import, `catalog/manage-dress`) and rentals has `create-rental` +
-`availability-check` = pass (BE slice → `pnpm contract` → FE slice, one entry each).
-`apps/be`: NestJS hexagonal — identity (JWT + ABAC), catalog (create/update/owner-only-retire
-+ photo LINKS in `photo_urls text[]`, list/get dress; status stays active/retired —
-renting/cleaning derived from rentals; one-time seed via `pnpm --filter be import:dresses
-<csv>`, template in `seed/dresses.sample.csv`), rentals (create-rental with the rental_items
-EXCLUDE overlap constraint incl. cleaning buffer; availability + booked-ranges read slices —
-range columns are always SELECTed as `::text` literals), offline `openapi:emit`. `apps/fe`:
-React SPA — auth + dresses slices (live `/dresses/:id` detail: info, photos, booking
-calendar, availability checker, edit dialog, retire action) and the new-rental form on the
-generated client; rentals LIST and today are still shells awaiting read slices. App-level
-contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`. Next: `rentals/today-board` or a rentals
-list slice.
+`availability-check` + `today-board` = pass (BE slice → `pnpm contract` → FE slice, one
+entry each). `apps/be`: NestJS hexagonal — identity (JWT + ABAC), catalog (create/update/
+owner-only-retire + photo LINKS in `photo_urls text[]`, list/get dress; status stays
+active/retired — renting/cleaning derived from rentals; one-time seed via `pnpm --filter be
+import:dresses <csv>`, template in `seed/dresses.sample.csv`), rentals (create-rental with
+the rental_items EXCLUDE overlap constraint incl. cleaning buffer; availability +
+booked-ranges + today-board read slices — due-out/due-back split by status and inclusive
+period bounds; range columns are always SELECTed as `::text` literals), offline
+`openapi:emit`. `apps/fe`: React SPA — auth + dresses slices (live `/dresses/:id` detail:
+info, photos, booking calendar, availability checker, edit dialog, retire action), the
+new-rental form, and the live today board at `/` (device-local date, due-out/due-back
+sections) on the generated client; the rentals LIST route is the one remaining shell.
+App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`. Next: `rentals/return-rental`
+(last todo entry) or a rentals list slice.
 
 ## Invariants (carry these into every session)
 

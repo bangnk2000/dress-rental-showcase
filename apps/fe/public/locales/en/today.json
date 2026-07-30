@@ -1,6 +1,18 @@
 {
   "title": "Today",
-  "shell": {
-    "comingSoon": "The today board will be available once its backend slice ships."
+  "dateLabel": "Board date",
+  "dueOut": {
+    "title": "Hand out to customers",
+    "empty": "No rentals to hand out."
+  },
+  "dueBack": {
+    "title": "Take back",
+    "empty": "No rentals due back."
+  },
+  "status": {
+    "booked": "Booked",
+    "out": "Out",
+    "returned": "Returned",
+    "cancelled": "Cancelled"
   }
 }

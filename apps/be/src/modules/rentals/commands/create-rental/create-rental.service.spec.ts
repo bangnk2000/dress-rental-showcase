@@ -44,8 +44,20 @@ const baseCommand = new CreateRentalCommand({
   ],
 });
 
-const snapshotA: DressSnapshot = { id: DRESS_A, retired: false, rentalPrice: 1_500_000 };
-const snapshotB: DressSnapshot = { id: DRESS_B, retired: false, rentalPrice: 1_200_000 };
+const snapshotA: DressSnapshot = {
+  id: DRESS_A,
+  code: 'VD-001',
+  name: 'Váy cưới ren trắng',
+  retired: false,
+  rentalPrice: 1_500_000,
+};
+const snapshotB: DressSnapshot = {
+  id: DRESS_B,
+  code: 'VD-002',
+  name: 'Đầm dạ hội đỏ',
+  retired: false,
+  rentalPrice: 1_200_000,
+};
 const bothDresses: DressSnapshot[] = [snapshotA, snapshotB];
 
 describe('CreateRentalService', () => {

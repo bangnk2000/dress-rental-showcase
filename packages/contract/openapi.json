@@ -447,6 +447,45 @@
         ]
       }
     },
+    "/api/v1/rentals/today-board": {
+      "get": {
+        "operationId": "GetTodayBoardHttpController_get",
+        "parameters": [
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "Board date; defaults to the server's current date",
+            "schema": {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2026-08-01",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayBoardResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rentals due out and due back on a date (default: today)",
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
     "/api/v1/dresses/{dressId}/booked-ranges": {
       "get": {
         "operationId": "ListBookedRangesHttpController_list",
@@ -949,6 +988,109 @@
           "endDate",
           "available",
           "conflicts"
+        ]
+      },
+      "TodayBoardDressDto": {
+        "type": "object",
+        "properties": {
+          "dressId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "example": "VD-001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Váy cưới ren trắng"
+          }
+        },
+        "required": [
+          "dressId",
+          "code",
+          "name"
+        ]
+      },
+      "TodayBoardRentalDto": {
+        "type": "object",
+        "properties": {
+          "rentalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Nguyễn Thị Hoa"
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "0903123456"
+          },
+          "status": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string",
+            "example": "booked"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-08-01",
+            "description": "First rental day (inclusive)"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2026-08-03",
+            "description": "Last rental day (inclusive)"
+          },
+          "dresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TodayBoardDressDto"
+            }
+          }
+        },
+        "required": [
+          "rentalId",
+          "customerName",
+          "customerPhone",
+          "status",
+          "startDate",
+          "endDate",
+          "dresses"
+        ]
+      },
+      "TodayBoardResponseDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-08-01",
+            "description": "The date the board was computed for"
+          },
+          "dueOut": {
+            "description": "Booked rentals starting on the date — dresses to hand out",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TodayBoardRentalDto"
+            }
+          },
+          "dueBack": {
+            "description": "Not-yet-returned rentals ending on the date — dresses coming back",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TodayBoardRentalDto"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "dueOut",
+          "dueBack"
         ]
       },
       "BookedRangeListResponseDto": {

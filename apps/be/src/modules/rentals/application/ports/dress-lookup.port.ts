@@ -3,6 +3,8 @@ export const DRESS_LOOKUP = Symbol('DRESS_LOOKUP');
 /** The little rentals needs to know about a dress, expressed in its own terms. */
 export interface DressSnapshot {
   id: string;
+  code: string;
+  name: string;
   retired: boolean;
   rentalPrice: number;
 }
