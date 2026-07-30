@@ -14,6 +14,7 @@ WORK   → pick THE ONE in-progress feature (or promote exactly one todo)
 FINISH → feature_list.json: status + evidence + testedAt
        → progress.md: append session block
        → session-handoff.md: rewrite
+       → AGENTS.md: re-sync `Current state` (if present)
        → clean-state-checklist.md: pass → commit
 ```
 
@@ -60,8 +61,11 @@ never leave a feature `in-progress` across a session boundary without saying so 
 1. `feature_list.json` — statuses reflect reality, evidence updated.
 2. `progress.md` — append the session block (goal, done, decisions + why, issues).
 3. `session-handoff.md` — rewrite for the next session: smallest-first next steps.
-4. `clean-state-checklist.md` — run it; fix or explicitly defer (stated, not silent).
-5. Commit with a descriptive message once the tree is safe. Uncommitted work at session end is a
+4. `AGENTS.md` — re-sync its `Current state` section (if present): it must describe the repo
+   as-committed. A stale current-state misroutes the next session, which reads AGENTS.md before
+   anything else in the startup order.
+5. `clean-state-checklist.md` — run it; fix or explicitly defer (stated, not silent).
+6. Commit with a descriptive message once the tree is safe. Uncommitted work at session end is a
    dropped baton unless the handoff says exactly what is uncommitted and why.
 
 ## 3.6 Multi-Agent Note

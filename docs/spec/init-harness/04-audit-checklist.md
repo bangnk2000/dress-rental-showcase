@@ -15,6 +15,8 @@ Run every check; classify CRITICAL (harness doesn't function without it) vs RECO
 - [ ] **CRITICAL** — Verification commands are named explicitly (no "run the tests").
 - [ ] REC — ≤ ~150 lines; deep facts pointed to, not duplicated.
 - [ ] REC — If both `AGENTS.md` and `CLAUDE.md` exist, one sources the other (no divergence).
+- [ ] REC — If it carries a `Current state` section, that section matches ledger/git reality
+      (no more than one session stale).
 
 ### State
 - [ ] **CRITICAL** — A feature/state ledger exists (`feature_list.json` or equivalent) and is

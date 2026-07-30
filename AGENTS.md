@@ -6,11 +6,14 @@ Monorepo per `docs/spec/init-monorepo-contract/` — read that set first; the st
 `apps/be` and `apps/fe` respectively. This file is the ONE harness in this repo — never
 create another under `apps/*`.
 
-## Current state
+## Current state (re-sync at every session end — see Session rules)
 
-Skeleton only. `apps/be` and `apps/fe` are NOT bootstrapped yet — `README.md` carries the
-exact next kickoff prompts (steps 2 and 4). `packages/contract/openapi.json` appears with the
-first `pnpm openapi:emit`.
+Both apps bootstrapped and gated (`infra/be-bootstrap`, `infra/fe-bootstrap` = pass).
+`apps/be`: NestJS hexagonal — identity (JWT + ABAC) + catalog slices, migrations incl. the
+rental_items EXCLUDE constraint, offline `openapi:emit`. `apps/fe`: React SPA — auth + dresses
+slices on the generated client; rentals/today/dress-detail are shells awaiting their BE slices.
+App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`. Next: README step 5 — feature
+rhythm (`rentals/create-rental`) or finish `catalog/list-dresses` (CSV seed import).
 
 ## Invariants (carry these into every session)
 
@@ -44,6 +47,7 @@ pnpm --filter fe build
   to the same entry. Single-side work: prefix `be:` / `fe:`.
 - Scaffold order for an API-touching feature: BE slice → `pnpm contract` → FE slice. The
   contract step is part of the scaffold, not optional glue.
-- End of session: update `feature_list.json` + `session-handoff.md`; run
-  `clean-state-checklist.md`; no unintended diff under `packages/contract` or
-  `apps/fe/src/api/generated`.
+- End of session: update `feature_list.json` + `session-handoff.md`; **re-sync the Current
+  state section of this file to the repo as-committed** (a stale current-state misroutes the
+  next session — init-harness 03 §3.5); run `clean-state-checklist.md`; no unintended diff
+  under `packages/contract` or `apps/fe/src/api/generated`.

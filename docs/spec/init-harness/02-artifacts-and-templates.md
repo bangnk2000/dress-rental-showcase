@@ -32,7 +32,8 @@ runtime-verified ({{RUNTIME_PROOF}}), evidence recorded, repo restartable via `b
 ## End of Session
 1. Update `feature_list.json` (status + evidence + timestamp).
 2. Append to `progress.md`; rewrite `session-handoff.md`.
-3. Run `clean-state-checklist.md`; commit when the tree is safe.
+3. Re-sync the `Current state` section of this file (if present) to the repo as-committed.
+4. Run `clean-state-checklist.md`; commit when the tree is safe.
 
 ## Where Deep Facts Live
 - Architecture: {{DOCS_POINTERS}}
@@ -41,6 +42,12 @@ runtime-verified ({{RUNTIME_PROOF}}), evidence recorded, repo restartable via `b
 
 `CLAUDE.md` may simply be this file or `@AGENTS.md`-include it; if both exist, one is the source
 and the other points at it — never two diverging copies.
+
+An optional `## Current state` section (3–6 lines: what exists, what is next) helps orientation,
+but it is part of the baton: **re-sync it at every session end**, exactly like the handoff. A
+stale current-state actively misroutes the next session — it reads "apps not bootstrapped yet"
+and re-plans work that already shipped. If it will not be maintained, omit it and point at
+`session-handoff.md` instead.
 
 ## 2.2 `feature_list.json` (State) — the ledger
 
@@ -132,6 +139,7 @@ sections present even when "None":
 - [ ] No unintended/stray files staged; no secrets; generated code in sync
 - [ ] feature_list.json reflects REALITY (status + evidence + testedAt)
 - [ ] progress.md appended; session-handoff.md rewritten
+- [ ] AGENTS.md `Current state` (if present) matches the repo as-committed
 - [ ] Committed with a descriptive message once the tree is safe
 ```
 
