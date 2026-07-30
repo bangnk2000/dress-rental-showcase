@@ -306,6 +306,20 @@ list_cancelled=$(curl -sf "$BASE/rentals?status=cancelled" -H "Authorization: Be
   | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).count))")
 echo "GET /rentals?status=cancelled -> $list_cancelled (expect 1 — history kept)"
 
+# --- payments/list-payments (read side of the return settlement) ---
+
+pay_list=$(curl -sf "$BASE/rentals/$RID1/payments" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.data.length+':'+j.data[0].kind+':'+j.data[0].amount+':'+j.data[1].kind+':'+j.data[1].amount)})")
+echo "GET /rentals/:id/payments (returned rental) -> $pay_list (expect 2:deposit_refund:2800000:late_fee:200000 — same-transaction rows tie-break on kind)"
+
+pay_empty=$(curl -sf "$BASE/rentals/$RID6/payments" -H "Authorization: Bearer $TOKEN" \
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).data.length))")
+echo "GET payments of an unsettled rental -> $pay_empty (expect 0)"
+
+pay404=$(curl -s -o /dev/null -w '%{http_code}' \
+  "$BASE/rentals/00000000-0000-4000-8000-000000000999/payments" -H "Authorization: Bearer $TOKEN")
+echo "GET payments of unknown rental -> $pay404 (expect 404)"
+
 [ "$unauth" = "401" ] && [ "$create" = "201" ] && [ "$dup" = "409" ] && [ "$me" = "owner" ] \
   && [ "$rent" = "201" ] && [ "$buffered" = "409" ] && [ "$free" = "201" ] \
   && [ "$ghost" = "404" ] && [ "$badrange" = "400" ] \
@@ -330,4 +344,6 @@ echo "GET /rentals?status=cancelled -> $list_cancelled (expect 1 — history kep
   && [ "$cancel2" = "409" ] && [ "$avail_after" = "true" ] && [ "$rebook" = "201" ] \
   && [ "$pickup3" = "200" ] && [ "$cancel_out" = "409" ] && [ "$cancel404" = "404" ] \
   && [ "$list_cancelled" = "1" ] \
+  && [ "$pay_list" = "2:deposit_refund:2800000:late_fee:200000" ] \
+  && [ "$pay_empty" = "0" ] && [ "$pay404" = "404" ] \
   && echo "SMOKE: ALL PASS" || { echo "SMOKE: FAIL"; exit 1; }

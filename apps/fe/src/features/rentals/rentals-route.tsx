@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
@@ -9,12 +10,14 @@ import {
   useCancelRentalHttpControllerCancel,
   useListRentalsHttpControllerListSuspense,
 } from '@/api/generated/rentals/rentals';
+import type { RentalListItemDto } from '@/api/generated/model';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 
 import { RentalFiltersBar } from './components/rental-filters-bar';
 import { RentalListPagination } from './components/rental-list-pagination';
+import { RentalPaymentsDialog } from './components/rental-payments-dialog';
 import { RentalTable } from './components/rental-table';
 import { useRentalFilters } from './hooks/use-rental-filters';
 import { isConflictError } from './lib/is-conflict-error';
@@ -30,6 +33,7 @@ export function RentalsRoute() {
   const { q, status, listParams, hasActiveFilters, setSearch, setStatus, setPage } =
     useRentalFilters();
   const { data } = useListRentalsHttpControllerListSuspense(listParams);
+  const [paymentsTarget, setPaymentsTarget] = useState<RentalListItemDto | null>(null);
 
   // Cancel is booked-only on the server (409 otherwise); frees the calendar.
   const cancelRental = useCancelRentalHttpControllerCancel<unknown>({
@@ -99,6 +103,7 @@ export function RentalsRoute() {
                   cancelRental.mutate({ id: rental.rentalId });
                 }
               }}
+              onShowPayments={setPaymentsTarget}
             />
             {totalPages > 1 ? (
               <RentalListPagination
@@ -110,6 +115,7 @@ export function RentalsRoute() {
           </>
         )}
       </div>
+      <RentalPaymentsDialog rental={paymentsTarget} onClose={() => setPaymentsTarget(null)} />
     </>
   );
 }

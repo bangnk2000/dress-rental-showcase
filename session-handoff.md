@@ -1,5 +1,24 @@
 # Session Handoff
 
+## 2026-07-30 (12) — `payments/list-payments` = pass (payments context gets its first code)
+
+- Done: `modules/payments` born — GET `/rentals/:rentalId/payments` (@ApiTags payments
+  nested under the rental path; RentalLookupAdapter existence check → 404; rows ordered
+  `created_at, kind, id` because a settlement's rows share one transaction timestamp).
+  FE: Thanh toán button on RETURNED rows of `/rentals` → RentalPaymentsDialog (lazy
+  query while open, kind labels, formatVnd, empty state). smoke.sh 62 checks
+  (2:deposit_refund:2800000:late_fee:200000 deterministic; unsettled 0; unknown 404) +
+  proxy proof. Evidence in `feature_list.json`.
+- Next: `infra/e2e-playwright` — the last tracked todo.
+- Watch out:
+  - The write side of payments DELIBERATELY stays in rentals (PaymentRecorderAdapter);
+    move it only when payments grows real use cases (deposit collection at create would
+    be the trigger).
+  - Payment rows within one settlement share created_at — any new ordering must keep a
+    deterministic tie-break (kind today).
+  - formatVnd in vitest reads the APP i18n instance (not the test instance) — currency
+    assertions must accept both vi and en digit grouping.
+
 ## 2026-07-30 (11) — `rentals/cancel-rental` = pass (calendar frees at the DB level)
 
 - Done: `POST /rentals/:id/cancel` — booked ONLY (out → 409, it must be returned;

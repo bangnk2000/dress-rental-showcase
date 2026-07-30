@@ -733,6 +733,45 @@
           "rentals"
         ]
       }
+    },
+    "/api/v1/rentals/{rentalId}/payments": {
+      "get": {
+        "operationId": "ListPaymentsHttpController_list",
+        "parameters": [
+          {
+            "name": "rentalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentListResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rental not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The money movements of a rental (deposit refund, fees)",
+        "tags": [
+          "payments"
+        ]
+      }
     }
   },
   "info": {
@@ -1444,6 +1483,62 @@
           "count",
           "limit",
           "page"
+        ]
+      },
+      "PaymentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "enum": [
+              "deposit",
+              "deposit_refund",
+              "rental_fee",
+              "late_fee",
+              "damage_fee"
+            ],
+            "type": "string",
+            "example": "deposit_refund"
+          },
+          "amount": {
+            "type": "number",
+            "example": 2800000,
+            "description": "VND, integer"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "example": "Trễ 1 ngày"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-08-04T10:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "amount",
+          "note",
+          "createdAt"
+        ]
+      },
+      "PaymentListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "Movements, oldest first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentDto"
+            }
+          }
+        },
+        "required": [
+          "data"
         ]
       }
     }

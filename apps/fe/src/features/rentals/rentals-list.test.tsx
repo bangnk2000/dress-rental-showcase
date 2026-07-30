@@ -8,9 +8,11 @@ import { Toaster } from '@/components/ui/sonner';
 import {
   getLastCancelRentalId,
   getLastRentalListParams,
+  makePayment,
   makeRentalListItem,
   resetRentals,
   seedRentalList,
+  seedRentalPayments,
 } from '@/test/msw/handlers/rentals';
 import { renderWithProviders } from '@/test/render';
 
@@ -121,6 +123,40 @@ test('declining the confirm leaves the rental alone', async () => {
 
   expect(getLastCancelRentalId()).toBeNull();
   confirmSpy.mockRestore();
+});
+
+test('the payments dialog lists the settled movements of a returned rental', async () => {
+  seedRentalList([
+    makeRentalListItem({ rentalId: 'rental-9', customerName: 'Trần Văn B', status: 'returned' }),
+  ]);
+  seedRentalPayments('rental-9', [
+    makePayment({ id: 'p1', kind: 'deposit_refund', amount: 2_800_000, note: 'Trễ 1 ngày' }),
+    makePayment({ id: 'p2', kind: 'late_fee', amount: 200_000 }),
+  ]);
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(await screen.findByRole('button', { name: 'Thanh toán' }));
+
+  expect(await screen.findByText('Hoàn cọc')).toBeInTheDocument();
+  expect(screen.getByText('Phí trễ hạn')).toBeInTheDocument();
+  expect(screen.getByText('Trễ 1 ngày')).toBeInTheDocument();
+  // formatVnd reads the APP i18n instance (not the test one), so the separator
+  // depends on its detected language — accept vi (.) and en (,) grouping.
+  expect(screen.getByText(/2[.,]800[.,]000/)).toBeInTheDocument();
+  expect(screen.getByText(/(^|[^.,\d])200[.,]000/)).toBeInTheDocument();
+});
+
+test('a returned rental without payments shows the empty message', async () => {
+  seedRentalList([makeRentalListItem({ status: 'returned' })]);
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(await screen.findByRole('button', { name: 'Thanh toán' }));
+
+  expect(
+    await screen.findByText('Chưa có khoản thanh toán nào được ghi nhận.'),
+  ).toBeInTheDocument();
 });
 
 test('a status filter from the URL narrows the request', async () => {

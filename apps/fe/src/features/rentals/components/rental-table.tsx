@@ -20,9 +20,11 @@ interface RentalTableProps {
   rentals: RentalListItemDto[];
   /** When set, booked rows get a cancel action (the route owns the mutation). */
   onCancel?: (rental: RentalListItemDto) => void;
+  /** When set, returned rows get a payments action (settled movements). */
+  onShowPayments?: (rental: RentalListItemDto) => void;
 }
 
-export function RentalTable({ rentals, onCancel }: RentalTableProps) {
+export function RentalTable({ rentals, onCancel, onShowPayments }: RentalTableProps) {
   const { t } = useTranslation('rentals');
 
   return (
@@ -34,7 +36,7 @@ export function RentalTable({ rentals, onCancel }: RentalTableProps) {
           <TableHead>{t('list.columns.dresses')}</TableHead>
           <TableHead>{t('list.columns.period')}</TableHead>
           <TableHead>{t('list.columns.status')}</TableHead>
-          {onCancel ? <TableHead /> : null}
+          {onCancel || onShowPayments ? <TableHead /> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -63,9 +65,14 @@ export function RentalTable({ rentals, onCancel }: RentalTableProps) {
             <TableCell>
               <RentalStatusBadge status={rental.status} />
             </TableCell>
-            {onCancel ? (
-              <TableCell className="text-right">
-                {rental.status === 'booked' ? (
+            {onCancel || onShowPayments ? (
+              <TableCell className="space-x-2 text-right">
+                {onShowPayments && rental.status === 'returned' ? (
+                  <Button variant="outline" size="sm" onClick={() => onShowPayments(rental)}>
+                    {t('list.actions.payments')}
+                  </Button>
+                ) : null}
+                {onCancel && rental.status === 'booked' ? (
                   <Button variant="outline" size="sm" onClick={() => onCancel(rental)}>
                     {t('list.actions.cancel')}
                   </Button>

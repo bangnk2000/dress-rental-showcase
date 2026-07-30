@@ -25,7 +25,8 @@
       "label": "Page {{page}}/{{totalPages}}"
     },
     "actions": {
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "payments": "Payments"
     },
     "empty": {
       "noRentals": "No rentals yet",
@@ -39,6 +40,19 @@
     "success": "Rental cancelled.",
     "alreadyProcessed": "This rental is no longer waiting to be handed out.",
     "error": "Something went wrong, please retry."
+  },
+  "payments": {
+    "title": "Rental payments",
+    "description": "Movements recorded when settling for {{customer}}.",
+    "loading": "Loading…",
+    "empty": "No payments recorded yet.",
+    "kinds": {
+      "deposit": "Deposit",
+      "deposit_refund": "Deposit refund",
+      "rental_fee": "Rental fee",
+      "late_fee": "Late fee",
+      "damage_fee": "Damage fee"
+    }
   },
   "form": {
     "fields": {

@@ -6,6 +6,7 @@ import { DatabaseModule } from './libs/db/database.module';
 import { LoggingModule } from './libs/logging/logging.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { RentalsModule } from './modules/rentals/rentals.module';
 
 @Module({
@@ -17,6 +18,7 @@ import { RentalsModule } from './modules/rentals/rentals.module';
     IdentityModule,
     CatalogModule,
     RentalsModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

@@ -20,17 +20,19 @@ LINKS in `photo_urls text[]`, list/get dress; status stays active/retired — re
 derived from rentals; one-time seed via `pnpm --filter be import:dresses <csv>`), rentals
 (create-rental with the rental_items EXCLUDE overlap constraint incl. cleaning buffer;
 pickup booked→out, return booked|out→returned settling deposit/late/damage fees into the
-payments table via `PaymentRecorderPort` — payments context itself is still schema-only —
-and cancel booked→cancelled flipping items to `blocking=false` so the calendar frees;
+payments table via `PaymentRecorderPort`, and cancel booked→cancelled flipping items to
+`blocking=false` so the calendar frees;
 availability + booked-ranges + today-board + list-rentals reads — the board
 carries due-out/due-back/OVERDUE, the list searches customer name/phone with status filter
-and pagination; range columns always SELECTed as `::text` literals), offline `openapi:emit`.
+and pagination; range columns always SELECTed as `::text` literals), payments (first code:
+the GET /rentals/:rentalId/payments read slice; the WRITE side deliberately stays in
+rentals' return flow), offline `openapi:emit`.
 `apps/fe`: React SPA — auth + dresses slices (live `/dresses/:id` detail), the new-rental
 form, the ACTIONABLE today board at `/` (device-local date; pickup button on due-out,
 return-and-settle dialog on due-back + overdue), and the real `/rentals` list (URL-owned
 q/status/page filters). App-level contracts: `apps/be/AGENTS.md`, `apps/fe/AGENTS.md`.
-The `/rentals` list also carries the cancel action (booked rows only). Next (tracked
-todos): `payments/list-payments`, then `infra/e2e-playwright`.
+The `/rentals` list also carries the cancel action (booked rows) and the payments dialog
+(returned rows). Next (tracked todos): `infra/e2e-playwright` only.
 
 ## Invariants (carry these into every session)
 

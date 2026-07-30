@@ -71,8 +71,8 @@
     {
       "id": "payments/list-payments",
       "title": "Payments read slice: the money movements of a rental (deposit refund, late/damage fees) — first read surface for the payments context",
-      "status": "todo",
-      "evidence": null
+      "status": "pass",
+      "evidence": "2026-07-30: FIRST CODE in the payments context (schema existed since bootstrap) — modules/payments with GET /rentals/:rentalId/payments (@ApiTags payments nested under the rental path, the same cross-context URL trick as rentals' reads under /dresses; auth-only read). RentalLookupPort/Adapter checks existence via SQL on the rentals table (no rentals code import) → 404; rows ORDER BY created_at, kind, id — kind breaks the tie because a settlement inserts its rows in ONE transaction (same created_at). payment.projection maps to PaymentDto {id, kind, amount, note, createdAt ISO} (+2 specs). Write side deliberately stays in rentals' return flow (PaymentRecorderAdapter) until payments grows its own use cases. BE gates: build/lint/arch(175 modules, 0 violations)/test(60, +2). Contract regenerated — NEW payments tag (useListPaymentsHttpControllerList, PaymentDto/PaymentListResponseDto; FE api/generated/payments/ appears). FE: returned rows of /rentals get a Thanh toán button opening RentalPaymentsDialog (lazy query enabled only while open; kind labels vi/en incl. the 3 not-yet-written kinds, formatVnd amounts, note + formatted date; empty state). FE gates: check/lint/test(48, +2: movements+note+both amounts render, empty message)/build; arch 11/11 after commit. Runtime vs fresh compose DB: smoke.sh now 62 checks — payments of the returned rental = 2:deposit_refund:2800000:late_fee:200000 (deterministic order), unsettled rental = 0, unknown rental = 404. Proxy proof :5173→:3000: payments = 2:deposit_refund. Deferred: deposit COLLECTION is still never recorded at create (list shows settlement rows only); payments button only on returned rows; formatVnd in vitest reads the app i18n instance so amount assertions accept both vi/en grouping."
     },
     {
       "id": "infra/e2e-playwright",

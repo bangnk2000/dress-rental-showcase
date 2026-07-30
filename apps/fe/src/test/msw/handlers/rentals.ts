@@ -11,6 +11,8 @@ import type {
   BookedRangeListResponseDto,
   CreateRentalRequestDto,
   IdResponse,
+  PaymentDto,
+  PaymentListResponseDto,
   RentalListItemDto,
   RentalListResponseDto,
   ReturnRentalRequestDto,
@@ -42,6 +44,7 @@ let rentalList: RentalListItemDto[] = [];
 let rentalListCount: number | null = null;
 let lastRentalListParams: Record<string, string> | null = null;
 let lastCancelRentalId: string | null = null;
+let rentalPayments = new Map<string, PaymentDto[]>();
 
 /** Dresses that already have an overlapping booking — POST /rentals answers 409. */
 export function seedBlockedDresses(dressIds: string[]): void {
@@ -137,6 +140,22 @@ export function getLastCancelRentalId(): string | null {
   return lastCancelRentalId;
 }
 
+export function makePayment(overrides: Partial<PaymentDto> = {}): PaymentDto {
+  return {
+    id: 'payment-1',
+    kind: 'deposit_refund',
+    amount: 2_800_000,
+    note: null,
+    createdAt: '2099-08-04T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** Movements served for GET /rentals/:id/payments. */
+export function seedRentalPayments(rentalId: string, payments: PaymentDto[]): void {
+  rentalPayments.set(rentalId, [...payments]);
+}
+
 /** Reset the in-memory rentals state — call from beforeEach. */
 export function resetRentals(): void {
   blockedDressIds = new Set();
@@ -151,6 +170,7 @@ export function resetRentals(): void {
   rentalListCount = null;
   lastRentalListParams = null;
   lastCancelRentalId = null;
+  rentalPayments = new Map();
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -212,6 +232,14 @@ export const rentalsHandlers: HttpHandler[] = [
       count: rentalListCount ?? rentalList.length,
       limit: 20,
       page,
+    };
+    return HttpResponse.json(body);
+  }),
+
+  // GET /api/v1/rentals/:id/payments — the seeded movements (payments tag).
+  http.get('/api/v1/rentals/:id/payments', ({ params }) => {
+    const body: PaymentListResponseDto = {
+      data: rentalPayments.get(params.id as string) ?? [],
     };
     return HttpResponse.json(body);
   }),

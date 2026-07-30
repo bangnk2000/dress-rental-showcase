@@ -25,7 +25,8 @@
       "label": "Trang {{page}}/{{totalPages}}"
     },
     "actions": {
-      "cancel": "Huỷ"
+      "cancel": "Huỷ",
+      "payments": "Thanh toán"
     },
     "empty": {
       "noRentals": "Chưa có lượt thuê nào",
@@ -39,6 +40,19 @@
     "success": "Đã huỷ lượt thuê.",
     "alreadyProcessed": "Lượt thuê này không còn ở trạng thái chờ giao.",
     "error": "Có lỗi xảy ra, vui lòng thử lại."
+  },
+  "payments": {
+    "title": "Thanh toán của lượt thuê",
+    "description": "Các khoản đã ghi nhận khi tất toán cho {{customer}}.",
+    "loading": "Đang tải…",
+    "empty": "Chưa có khoản thanh toán nào được ghi nhận.",
+    "kinds": {
+      "deposit": "Tiền cọc",
+      "deposit_refund": "Hoàn cọc",
+      "rental_fee": "Tiền thuê",
+      "late_fee": "Phí trễ hạn",
+      "damage_fee": "Phí hư hỏng"
+    }
   },
   "form": {
     "fields": {
