@@ -1,6 +1,6 @@
 # SRS — QR URL Admin (phase ship-first)
 
-> **Status: approved 2026-08-04.** Đây là phase độc lập, được ưu tiên ship trước các backlog khác.
+> **Status: implemented 2026-08-04.** Đây là phase độc lập, được ưu tiên ship trước các backlog khác.
 > Quyết định thiết kế chi tiết nằm ở [design/qr-aggregate.md](./design/qr-aggregate.md) và
 > [design/qr-admin.md](./design/qr-admin.md). Bootstrap app được triển khai trước API/UI slice.
 
@@ -90,5 +90,4 @@ bằng endpoint SVG có bearer-aware request/blob URL; download dùng cùng blob
 | FR-QR-01..04 | `qr/create-url-code` | [qr-aggregate.md](./design/qr-aggregate.md) | BE → contract → QR admin |
 | FR-QR-05, NFR-QR-02..03 | `infra/qr-admin-bootstrap` | [qr-admin.md](./design/qr-admin.md) | Bootstrap app trước UI feature |
 
-`infra/qr-admin-bootstrap` và `qr/create-url-code` được theo dõi trong `feature_list.json`.
-Chỉ một entry được promote `in-progress` tại một thời điểm.
+`infra/qr-admin-bootstrap` và `qr/create-url-code` đã được giao trong `feature_list.json`.

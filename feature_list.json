@@ -90,8 +90,8 @@
     {
       "id": "qr/create-url-code",
       "title": "Owner creates, lists, previews and downloads direct-URL QR SVGs (FR-QR-01..05)",
-      "status": "todo",
-      "evidence": "Design approved 2026-08-04: docs/SRS-qr-url.md, docs/design/qr-aggregate.md and docs/design/qr-admin.md. Depends on completed infra/qr-admin-bootstrap; BE -> contract -> qr-admin in one feature entry.",
+      "status": "pass",
+      "evidence": "2026-08-04: `modules/qr` ships immutable `QrLinkEntity`/`TargetUrl`, Slonik `qr_links` repository + FK migration/index, owner-only qr:create/list/read policies and POST/GET list/GET detail/GET authenticated SVG endpoints. Target URL allows absolute http(s) only, forbids credentials/relative/data/javascript and caps 2048; `qrcode` SVG adapter receives only persisted target URL and never fetches it. Contract emitted then both Orval clients regenerated. Standalone qr-admin now has owner sign-in, Vietnamese create validation, TanStack history query/invalidation, selected blob preview and SVG download; it imports no apps/fe source. BE build/lint/arch/test = 70 Jest tests, QR-admin check/lint/test/build green; no live Postgres/browser proof run in this environment.",
       "dependencies": ["infra/qr-admin-bootstrap"]
     }
   ]

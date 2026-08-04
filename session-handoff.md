@@ -1,5 +1,20 @@
 # Session Handoff
 
+## 2026-08-04 (16) — `qr/create-url-code` = pass
+
+- Done: BE `qr` supporting context owns immutable `qr_links` records (`target_url`, optional
+  label, creator FK and created timestamp), strict `TargetUrl` validation, a `qrcode` SVG renderer
+  adapter, and owner-only create/list/get/render endpoints. It never resolves or fetches a target
+  URL. The API contract was emitted and both generated clients regenerated.
+- Done: standalone `apps/qr-admin` now signs an owner in, validates and creates QR URLs, lists
+  history newest-first, fetches protected SVGs as bearer-authenticated Blobs for preview/download,
+  and keeps QR server data in TanStack Query. It does not import `apps/fe`.
+- Verification: BE build/lint/arch/test (70 Jest tests); qr-admin check/lint/test/build. Contract
+  freshness/root gates run after committing generated artifacts. No compose/live-browser proof was
+  run; the existing BE real-Postgres `test:e2e` gap remains.
+- Next: close spec gap #5 — real-Postgres invariant proof plus CI postgres service and a real
+  `pnpm --filter be test:e2e` script.
+
 ## 2026-08-04 (15) — `infra/qr-admin-bootstrap` = pass
 
 - Done: `apps/qr-admin/` is a separate Vite + React + TypeScript workspace, with no source

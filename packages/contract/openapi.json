@@ -772,6 +772,172 @@
           "payments"
         ]
       }
+    },
+    "/api/v1/qr-links": {
+      "post": {
+        "operationId": "CreateUrlCodeHttpController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUrlCodeRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrLinkResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Target URL is invalid"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create an immutable QR code for a target URL",
+        "tags": [
+          "qr-links"
+        ]
+      },
+      "get": {
+        "operationId": "ListQrLinksHttpController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrLinkListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List QR links newest first",
+        "tags": [
+          "qr-links"
+        ]
+      }
+    },
+    "/api/v1/qr-links/{id}": {
+      "get": {
+        "operationId": "GetQrLinkHttpController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrLinkResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "QR link not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get QR link metadata",
+        "tags": [
+          "qr-links"
+        ]
+      }
+    },
+    "/api/v1/qr-links/{id}/image.svg": {
+      "get": {
+        "operationId": "RenderQrLinkSvgHttpController_render",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SVG image",
+            "content": {
+              "image/svg+xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "QR link not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Render the persisted target URL as QR SVG",
+        "tags": [
+          "qr-links"
+        ]
+      }
     }
   },
   "info": {
@@ -1539,6 +1705,92 @@
         },
         "required": [
           "data"
+        ]
+      },
+      "CreateUrlCodeRequestDto": {
+        "type": "object",
+        "properties": {
+          "targetUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "example": "https://example.com/lookbook"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "Lookbook August"
+          }
+        },
+        "required": [
+          "targetUrl"
+        ]
+      },
+      "QrLinkResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "targetUrl": {
+            "type": "string",
+            "example": "https://example.com/lookbook"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "example": "Lookbook August"
+          },
+          "createdByStaffId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "/api/v1/qr-links/00000000-0000-4000-8000-000000000001/image.svg"
+          }
+        },
+        "required": [
+          "id",
+          "targetUrl",
+          "createdByStaffId",
+          "createdAt",
+          "imageUrl"
+        ]
+      },
+      "QrLinkListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QrLinkResponseDto"
+            }
+          },
+          "count": {
+            "type": "number",
+            "example": 200
+          },
+          "limit": {
+            "type": "number",
+            "example": 20
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "data",
+          "count",
+          "limit",
+          "page"
         ]
       }
     }

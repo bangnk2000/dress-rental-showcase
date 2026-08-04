@@ -1,6 +1,6 @@
 # qr — Tactical Design
 
-> Status: **approved 2026-08-04** · SRS: FR-QR-01..04, BR-QR-01..05 · Context Supporting
+> Status: **implemented 2026-08-04** · SRS: FR-QR-01..04, BR-QR-01..05 · Context Supporting
 
 ## Vai trò & ranh giới
 
