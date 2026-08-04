@@ -293,6 +293,29 @@ npm run migration:down                        # roll back last
 
 A migration is never edited after it ships; correct a mistake with a new migration. The persistence model and the migration must agree — the row schema (`userSchema`) is the contract both honour.
 
+## Database-enforced invariants (MUST)
+
+Every **critical** invariant — one whose violation corrupts business state: uniqueness,
+non-overlap, capacity, balance bounds — is enforced by a **constraint in the migration**, not
+only by application code (the full rule and the design-doc table it traces to live in
+`14-design-first.md` §3.1):
+
+- `UNIQUE` for one-of invariants (one active registration per user per event — a partial unique
+  index with a `WHERE` clause covers "active only").
+- `CHECK` for value bounds; foreign keys for referential rules.
+- `EXCLUDE USING gist` (+ `btree_gist`) for range non-overlap — the double-booking class of
+  invariant that a read-then-write check can never close, because two concurrent requests both
+  pass the read.
+- A **version column** (optimistic locking) or `SELECT ... FOR UPDATE` where two requests may
+  save the same aggregate — mandatory when an aggregate is stored as single-row JSONB, where
+  concurrent saves are silent lost updates.
+
+Division of labour: the **handler pre-checks** the rule to return a precise domain error; the
+**constraint enforces** it; the **repository catches the constraint violation** (unique/exclusion
+error codes) and maps it to the same domain error / `ConflictException` the pre-check produces —
+so the race path and the friendly path are indistinguishable to clients. Each constraint gets an
+integration/e2e test that provokes it (`09-testing-strategy.md`).
+
 ## Transactions and unit-of-work
 
 A single command must commit atomically. `SqlRepositoryBase` exposes the transaction; for use cases that touch more than one repository within one aggregate boundary, inject a unit-of-work that hands the same transaction to each repository:
@@ -349,3 +372,5 @@ The handler then injects with `@Inject(USER_REPOSITORY)`. Swapping Slonik for Pr
 - Domain events publish **inside** the DB transaction.
 - External systems are reached only through adapters behind ports (anti-corruption); the SDK import is confined to the adapter file.
 - DI binds port tokens to implementations in `<context>.module.ts`; cross-module imports are forbidden (modules talk via command/query bus or events).
+- A repository/adapter touches only **its own context's tables** — reading a sibling context's schema is the cross-module import rule evaded at the SQL layer (`01-architecture-principles.md` §4, `14-design-first.md` §3.2).
+- Critical invariants live in **constraints**; the repository maps their violations to domain errors (see "Database-enforced invariants").

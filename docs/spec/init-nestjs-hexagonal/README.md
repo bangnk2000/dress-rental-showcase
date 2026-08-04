@@ -32,12 +32,13 @@ Read top-to-bottom for a full bootstrap; jump directly for a targeted task.
 | [11-example-output.md](./11-example-output.md) | A full worked example slice (anchors depth and tone) | When you need a concrete reference |
 | [12-implementation-checklist.md](./12-implementation-checklist.md) | Ordered checklist to scaffold and verify the repo | Before declaring a milestone done |
 | [13-harness-engineering.md](./13-harness-engineering.md) | The session harness: `feature_list.json`, `init.sh`, session handoff, clean-state checklist, benchmark/cleanup scripts. NestJS binding of the standalone [`../init-harness/`](../init-harness/) set | When setting up or auditing multi-session agent work |
+| [14-design-first.md](./14-design-first.md) | Tactical design before code: SRS + per-context design docs, the invariant-enforcement table (DB constraints + proof tests), contract-only cross-context rule, generated truth docs. NestJS binding of [`../init-harness/06-design-first.md`](../init-harness/06-design-first.md) | Before a new context, aggregate, invariant, or cross-context contract |
 
 ## Usage Flow 1 — Bootstrap a Brand-New Project
 
 1. Give the agent [00-system-prompt.md](./00-system-prompt.md) as the master instruction.
 2. Attach the layer docs it needs as context: [01-architecture-principles.md](./01-architecture-principles.md), [02-folder-structure.md](./02-folder-structure.md), then the relevant [03-domain-layer.md](./03-domain-layer.md) → [06-interface-layer.md](./06-interface-layer.md), plus [07-cross-cutting.md](./07-cross-cutting.md) and [09-testing-strategy.md](./09-testing-strategy.md).
-3. If the product needs LLM features, also attach [08-ai-agent-first.md](./08-ai-agent-first.md). For multi-session agent work, attach [13-harness-engineering.md](./13-harness-engineering.md).
+3. If the product needs LLM features, also attach [08-ai-agent-first.md](./08-ai-agent-first.md). For multi-session agent work, attach [13-harness-engineering.md](./13-harness-engineering.md). For anything beyond a trivial domain, attach [14-design-first.md](./14-design-first.md) and write the SRS + context design docs (with the invariant-enforcement table) **before** approving the scaffold plan.
 4. State your bounded contexts and first use case; let the agent generate the tree, `libs/` shared kernel, `AGENTS.md`/`CLAUDE.md`, CI guardrails, and the session harness (`feature_list.json`, `init.sh`, handoff/checklist files).
 5. Verify against [12-implementation-checklist.md](./12-implementation-checklist.md). Use [11-example-output.md](./11-example-output.md) as the depth/tone benchmark.
 
@@ -55,7 +56,7 @@ pnpm plop            # plop / nest schematics: generate a vertical slice
 ## Usage Flow 2 — Add a Feature to an Existing Project
 
 1. Give the agent [10-module-scaffold-prompt.md](./10-module-scaffold-prompt.md) — the deterministic slice generator.
-2. Provide the bounded context, the use case (command **or** query), and the entities/value objects involved.
+2. Provide the bounded context, the use case (command **or** query), and the entities/value objects involved. If the feature is design-tier (new aggregate, new invariant, new cross-context contract — [14-design-first.md](./14-design-first.md) §tiers), the context design doc must exist and be approved first; a standard CRUD slice uses the filled input contract of `10` as its mini design doc.
 3. The agent generates a single vertical slice under `modules/<context>/commands/<use-case>/` or `queries/<use-case>/`: command/query + handler, controllers, request/response DTOs, ports, repository wiring, and tests — following Common Closure (files that change together live together).
 4. Remember the orchestration rule: **Command → Event → Command**, never command-calls-command directly; cross-module communication goes through the command/query bus or events only.
 5. Confirm guardrails still pass (`pnpm arch && pnpm lint`) and the relevant items in [12-implementation-checklist.md](./12-implementation-checklist.md).

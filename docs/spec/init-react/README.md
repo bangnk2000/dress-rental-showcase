@@ -47,6 +47,7 @@ Read top-to-bottom for a full bootstrap; jump directly for a targeted task.
 | [11-example-output.md](./11-example-output.md) | A full worked `invoices` slice (anchors depth and tone) | When you need a concrete reference |
 | [12-implementation-checklist.md](./12-implementation-checklist.md) | Ordered phases to scaffold and verify the repo | Before declaring a milestone done |
 | [13-harness-engineering.md](./13-harness-engineering.md) | The five harness subsystems: feature_list.json, init.sh, handoff, checklists, scripts. React binding of the standalone [`../init-harness/`](../init-harness/) set | When setting up or auditing the session harness |
+| [14-design-first.md](./14-design-first.md) | Design before code: the bootstrap brief, per-slice design docs (UX flow, URL state, data/invalidation map, interaction state machine), the UI Foundation, the visual polish pass. React binding of [`../init-harness/06-design-first.md`](../init-harness/06-design-first.md) | Before the bootstrap brief; before any design-tier slice |
 
 ## Usage Flow 1 — Bootstrap a Brand-New Project
 
@@ -55,7 +56,9 @@ Read top-to-bottom for a full bootstrap; jump directly for a targeted task.
    then the relevant layer guides [03](./03-ui-layer.md)–[07](./07-pwa.md), plus
    [08](./08-ai-agent-first.md), [09](./09-testing-strategy.md), and [13](./13-harness-engineering.md).
 3. Provide the product idea, the `openapi.json` (or where to get it), auth model, languages, and
-   whether PWA is in scope.
+   whether PWA is in scope — ideally as the Level-1 bootstrap brief from
+   [14-design-first.md](./14-design-first.md) §1, which also surfaces contract gaps before any
+   code exists.
 4. The agent outputs the 9-section scaffold plan; review it, then let it generate files.
 5. Verify against [12-implementation-checklist.md](./12-implementation-checklist.md);
    use [11-example-output.md](./11-example-output.md) as the depth/tone benchmark.

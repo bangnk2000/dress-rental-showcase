@@ -26,6 +26,9 @@ Lock these before writing code; they shape every later phase.
       **Orval 8.20** · **@react-oauth/google 0.13** · **i18next 26 / react-i18next 17** ·
       **vite-plugin-pwa 1.3** · **Vitest 4 / MSW 2 / Playwright 1.6x** ·
       **eslint-plugin-boundaries 7** (or pin 6.x — record the choice, `08-ai-agent-first.md` §3a).
+- [ ] Write the **Level-1 bootstrap brief** (`docs/BOOTSTRAP.md`, per `14-design-first.md` §1):
+      product paragraph, slice table (SRS ↔ API tags ↔ phases — it seeds `feature_list.json`),
+      Phase-0 decisions, and **contract gaps** with a decision each (block / stub / BE request).
 - [ ] Obtain or commit **`openapi.json`** (the data layer's input). No spec → decide the §6-of-04
       fallback consciously.
 - [ ] Decide the **auth model**: credential (ID token) vs auth-code flow; cookie session vs
@@ -59,6 +62,10 @@ Per `03-ui-layer.md`.
 - [ ] `pnpm dlx shadcn@latest add button input form dialog table badge toast` (what the first
       feature needs — not the whole registry).
 - [ ] Build the kernel feedback set: `spinner.tsx`, `empty-state.tsx`, `error-fallback.tsx`.
+- [ ] Write `docs/design/ui-foundation.md` (`14-design-first.md` §3): density & device context
+      (which screens are mobile-first), navigation model (ADR-worthy), shared patterns
+      (table/form/confirm/toast/skeleton policies), i18n layout constraints. Slices assemble
+      these patterns; they never invent their own.
 
 ## Phase 3 — Data layer: Orval → TanStack Query (Required)
 
@@ -132,11 +139,18 @@ Per `07-pwa.md`.
 
 Per `10-feature-scaffold-prompt.md`, benchmarked against `11-example-output.md`.
 
+- [ ] Tier check (`14-design-first.md`): standard slice → filled `10` input contract; design-tier
+      slice → `docs/design/<slice>.md` (UX flow + wireframe/prototype, URL state, data &
+      invalidation map, interaction state machine, screen states) approved BEFORE scaffolding.
 - [ ] `pnpm plop feature -- --name <first-feature>`.
 - [ ] Fill the slice: Suspense list view + validated form + generated-mutation wiring +
       status/empty/error surfaces + namespace JSONs.
 - [ ] Wire the route (lazy, guarded); verify the three states and the invalidation in `pnpm dev`.
-- [ ] Move its `feature_list.json` entry to `"pass"` WITH runtime evidence.
+- [ ] **Visual polish pass** after the slice works (`14-design-first.md` §4): spacing/responsive/
+      dark/focus on the real app, then the UX checklist (locales render, keyboard flow, mobile
+      overflow, empty/error seen with eyes).
+- [ ] Move its `feature_list.json` entry to `"pass"` WITH runtime evidence — including the
+      Playwright screenshot(s) of the finished screens.
 
 ## Phase 9 — Tests + coverage gate (Required)
 
@@ -178,3 +192,5 @@ Per `09-testing-strategy.md`.
 - [ ] Every user-facing string resolves through a namespace; locale key parity holds.
 - [ ] `feature_list.json` reflects reality (statuses have evidence); `session-handoff.md` and
       `claude-progress.md` describe the current state; `clean-state-checklist.md` passes.
+- [ ] Design docs carry an approved/as-built status; no design-tier slice shipped without one
+      (`14-design-first.md`).

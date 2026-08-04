@@ -16,9 +16,11 @@ apps/fe/src/api/generated/             ← generated, committed, never hand-edit
 ```
 
 One feature = one PR that carries the BE change, the regenerated contract, and the regenerated
-FE client **together** — CI rejects any PR where the three are not in sync (03). The 2-repo
-alternative (spec synced as a CI artifact, [init-react 04 §7](../init-react/04-data-layer.md))
-only approximates this; the monorepo makes the desync state unrepresentable.
+FE client **together** — CI rejects any PR where the three are not in sync (03). When the two
+sides genuinely cannot share a repo, the same one-way contract runs across two repos with
+pinning + a breaking-change gate replacing that atomicity — that is
+[05-polyrepo-variant.md](./05-polyrepo-variant.md), and it is strictly more machinery: default
+to the monorepo.
 
 These are spec/prompt documents — not runnable code. This set does NOT restate either stack's
 architecture: each app keeps its own set's rules verbatim. It only owns what emerges from
@@ -29,8 +31,8 @@ runtime, and the single merged harness.
 
 | Situation | Verdict |
 | --- | --- |
-| One product, one team (or solo), NestJS API + React SPA | **Use this set** |
-| BE and FE owned by separate teams with separate release trains | Two repos + artifact sync ([init-react 04 §7](../init-react/04-data-layer.md)) — don't force the monorepo |
+| One product, one team (or solo), NestJS API + React SPA | **Use this set** (00–04) |
+| BE and FE owned by separate teams with separate release trains, or the repos are already split and merging is off the table | **Use [05-polyrepo-variant.md](./05-polyrepo-variant.md)**: pinned contract + `contract:pull` + oasdiff breaking gate + drift notification |
 | Multiple frontends consuming one API | Still fits — add `apps/` entries; the contract stays the single source |
 | Backend is not the OpenAPI source of truth (3rd-party API) | Out of scope — use init-react alone with its §6 fallback |
 
@@ -44,6 +46,7 @@ runtime, and the single merged harness.
 | [02-contract-pipeline.md](./02-contract-pipeline.md) | The offline `openapi:emit` script, Orval wiring, BE spec-quality discipline | When wiring or debugging the pipeline |
 | [03-ci-and-runtime.md](./03-ci-and-runtime.md) | The three drift gates in CI, ship-together deploy (one artifact, no version skew) | When setting up CI/CD |
 | [04-harness-binding.md](./04-harness-binding.md) | The ONE root harness binding (merges both stack bindings per [init-harness 05](../init-harness/05-composition-contract.md)) | When creating the session harness |
+| [05-polyrepo-variant.md](./05-polyrepo-variant.md) | The same contract across TWO repos: pinned `openapi.json` + `.contract-version`, `contract:pull`, oasdiff breaking gate, drift notification, pinned-image e2e | Only when BE and FE cannot share a repo |
 
 ## Usage Flow — Bootstrap a New Full-Stack Product
 

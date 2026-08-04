@@ -21,7 +21,10 @@ A binding MUST fill these seven slots:
 
 Optional slots: `RUNTIME_SETUP` (DB up, migrations, codegen drift check for `init.sh`),
 `EXTRA_CHECKLIST` (stack lines for `clean-state-checklist.md`), `BENCHMARKS` (budgeted perf
-gates), `OWNERSHIP_BOUNDARIES` (multi-agent partitioning).
+gates), `OWNERSHIP_BOUNDARIES` (multi-agent partitioning), `DESIGN_TEMPLATE` (the stack's
+design-doc template + what counts as design-tier, per [06-design-first.md](./06-design-first.md);
+both current stack sets ship it as `14-design-first.md`), `TRUTH_DOCS` (the generated inventory /
+contract files and their `*:check` CI gates).
 
 ## 5.2 Precedence Rules
 
@@ -50,7 +53,8 @@ When `init-harness` and a stack init are loaded together:
 | `RUNTIME_PROOF` | endpoint exercised on the compose stack: status codes, persisted row, domain event observed |
 | `SCAFFOLD` | `pnpm plop slice -- --context <ctx> --name <verb-noun>` |
 | `STACK_INVARIANTS` | inward deps only; no cross-module imports; SDK only in `*.adapter.ts`; Result-vs-throw |
-| `DOCS_POINTERS` | `docs/spec/00–12` + `docs/ARCHITECTURE.md` (enterprise tier) |
+| `DOCS_POINTERS` | `docs/spec/00–14` + `docs/design/` (intent docs, 06-design-first.md) + `docs/ARCHITECTURE.md` (enterprise tier) |
+| `DESIGN_TEMPLATE` (opt.) | [`14-design-first.md`](../init-nestjs-hexagonal/14-design-first.md): context design doc + invariant-enforcement table; design-tier = new context/aggregate/invariant/contract |
 
 ### B — `init-react` → [13-harness-engineering.md](../init-react/13-harness-engineering.md)
 
@@ -62,7 +66,8 @@ When `init-harness` and a stack init are loaded together:
 | `RUNTIME_PROOF` | behavior exercised in `pnpm dev` / `pnpm preview`: three states render (data/empty/error); PWA update prompt if touched |
 | `SCAFFOLD` | feature scaffold per `10-feature-scaffold-prompt.md` |
 | `STACK_INVARIANTS` | no cross-feature imports; generated API code untouched by hand; app/ boundaries |
-| `DOCS_POINTERS` | `docs/spec/00–12` of `init-react` |
+| `DOCS_POINTERS` | `docs/spec/00–14` of `init-react` + `docs/design/` (intent docs, 06-design-first.md) |
+| `DESIGN_TEMPLATE` (opt.) | [`14-design-first.md`](../init-react/14-design-first.md): bootstrap brief + slice design doc (UX flow, URL state, data/invalidation map) + UI Foundation; design-tier = new interaction/navigation pattern |
 
 ## 5.4 Binding Template — for the NEXT init
 

@@ -232,6 +232,30 @@ contract test) so CI is deterministic and offline — assert it maps the SDK res
 `LlmPort` shape and defaults to `claude-sonnet-4-6`. Keep live-API calls out of the main suite;
 gate them behind an opt-in flag.
 
+### Invariant proof tests (Required)
+
+Every **DB-enforced invariant** in the design doc's enforcement table (`14-design-first.md` §3.1)
+gets a test that **provokes the constraint** and asserts the mapped outcome — the duplicate
+insert, the overlapping range, the double registration. This is the only test that proves the
+system's strongest promise; a migration adding a constraint that no test provokes is an unproven
+claim.
+
+```ts
+it('rejects an overlapping booking with the same 409 the pre-check produces', async () => {
+  await repo.insert(bookingFor('dress-1', '2026-08-01', '2026-08-05'));
+  // Bypass the handler pre-check on purpose: this exercises the CONSTRAINT path.
+  await expect(
+    repo.insert(bookingFor('dress-1', '2026-08-03', '2026-08-07')),
+  ).rejects.toThrow(ConflictException); // exclusion violation → mapped domain error
+});
+```
+
+When the invariant is race-sensitive, the sequential version above is not enough — fire the two
+writes **concurrently** (`Promise.allSettled` of two inserts) and assert exactly one wins. And
+these tests MUST run against real Postgres **in CI** (testcontainers locally, a `postgres:16`
+service container in the workflow): a pipeline whose tests never touch the database proves
+nothing about the invariants the design doc promises, no matter how green it is.
+
 ## Acceptance / e2e: Gherkin + supertest
 
 Acceptance tests express **use cases in ubiquitous language** so domain experts can read them. Each

@@ -27,6 +27,7 @@ Lock these before writing code; they shape every later phase.
 - [ ] Choose **Result library**: `oxide.ts` (`Ok`/`Err`/`Result<T,E>`) or `@badrap/result`. Pick ONE repo-wide.
 - [ ] Choose **transport(s)** for the first slice: HTTP (`*.http.controller.ts`) is the default; add CLI / message / GraphQL only if needed (`06-interface-layer.md`).
 - [ ] Confirm **bounded contexts** to start with — one real domain context + the `ai-agent` context (`08-ai-agent-first.md`).
+- [ ] **Design first** (`14-design-first.md`): write the SRS/brief and a context design doc for every design-tier context — aggregates, state machine, **invariant-enforcement table** (invariant → DB mechanism → proof test), cross-context contracts, concurrency strategy. Review it BEFORE Phase 5; the first migration (Phase 7) implements its constraints.
 - [ ] Decide **config validation** lib: `zod` (default here) or `joi`, behind `@nestjs/config`.
 - [ ] Set the **default LLM model**: `claude-sonnet-4-6` (see `08-ai-agent-first.md`). Never hardcode legacy `claude-3-*` ids.
 
@@ -148,6 +149,8 @@ Per `05-infrastructure-layer.md`.
 - [ ] Implement `<aggregate>.repository.ts implements <aggregate>.repository.port.ts`, extending `SqlRepositoryBase`.
 - [ ] Ensure the repository calls `publishEvents()` INSIDE the DB transaction so events and state commit atomically.
 - [ ] Create the **first migration** (Slonik raw SQL migration or TypeORM/Prisma migration) and a repeatable migrate script.
+- [ ] The migration carries the **constraints from the invariant-enforcement table** (`14-design-first.md` §3.1): `UNIQUE` / `CHECK` / `EXCLUDE USING gist` for every critical invariant, plus the chosen concurrency mechanism (version column / `FOR UPDATE`) where concurrent saves are possible.
+- [ ] The repository **maps each constraint violation** to the same domain error / 409 its pre-check produces — race path and friendly path are indistinguishable to clients.
 - [ ] Add a local stack (`docker-compose.yml` with the SQL engine) so dev and CI run against the same DB version.
 - [ ] Smoke-test: create an aggregate through the command, read it back through the query side.
 
@@ -157,6 +160,7 @@ Per `09-testing-strategy.md`.
 
 - [ ] **Unit** (Jest): domain entities/value-objects/services, command handlers with mocked ports — assert `Ok`/`Err` outcomes and invariant violations.
 - [ ] **Integration** (Jest): repository + mapper against a real test DB; verify events publish in-transaction.
+- [ ] **Invariant proof tests** (`09-testing-strategy.md`): one test per row of the invariant-enforcement table that provokes the constraint (duplicate / overlap / concurrent double-write) and asserts the mapped error. CI runs them against a real Postgres service container — not mocks.
 - [ ] **Acceptance / e2e**: Cucumber/Gherkin features driving `supertest` against the HTTP controller; assert mapped status codes (409 / 400 / 404).
 - [ ] Add a **coverage gate** in CI (fail under threshold) so agents cannot merge untested slices.
 - [ ] Add a test that asserts the **dependency-cruiser** rules pass — layering is part of the test suite, not just a lint nicety.
@@ -190,7 +194,8 @@ A first-class `modules/ai-agent/` context; the LLM is ALWAYS an adapter behind a
 
 - [ ] One command (`plop ...`) regenerates an identical, correct vertical slice.
 - [ ] `depcruise`, `eslint` (boundaries + naming), `tsc --noEmit`, and tests are green in CI.
-- [ ] No domain or application file imports a framework, IO, or SDK; cross-module calls go through bus/events only.
+- [ ] No domain or application file imports a framework, IO, or SDK; cross-module calls go through bus/events only — and no module queries another module's tables (`14-design-first.md` §3.2).
+- [ ] Every critical invariant has its DB constraint in a migration AND a CI-run test that provokes it; design docs carry an approved/as-built status (`14-design-first.md`).
 - [ ] Business errors are returned as `Result<T,E>`; technical failures are thrown and mapped by the global filter.
 - [ ] `AGENTS.md` + `CLAUDE.md` accurately describe the commands, file map, and "where do I add a new use case".
 - [ ] The AI agent context talks to Claude only through `LlmPort` / `ClaudeLlmAdapter` with model `claude-sonnet-4-6` by default.

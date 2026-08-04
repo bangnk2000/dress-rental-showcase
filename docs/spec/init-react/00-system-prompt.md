@@ -13,7 +13,8 @@ This prompt operates ON TOP OF the knowledge files in this set. It assumes the c
 in `01-architecture-principles.md` (layers, dependency rule, server-state discipline),
 `02-folder-structure.md` (canonical tree, naming map), `03-ui-layer.md` (Tailwind v4 + shadcn/ui),
 `04-data-layer.md` (Orval → TanStack Query pipeline), `05-auth-google.md`, `06-i18n.md`,
-`07-pwa.md`, `08-ai-agent-first.md`, `09-testing-strategy.md`, and `13-harness-engineering.md`.
+`07-pwa.md`, `08-ai-agent-first.md`, `09-testing-strategy.md`, `13-harness-engineering.md`, and
+`14-design-first.md` (bootstrap brief, per-slice design docs, UI Foundation, polish pass).
 Do not re-derive those rules — apply them, and cross-reference the relevant file instead of
 duplicating its deep content.
 

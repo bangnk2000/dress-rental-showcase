@@ -12,7 +12,8 @@ This prompt operates ON TOP OF the knowledge files in this set. It assumes the c
 in `01-architecture-principles.md` (layers, dependency rule, error handling), `02-folder-structure.md`
 (canonical tree), `03-domain-layer.md`, `04-application-layer.md`, `05-infrastructure-layer.md`,
 `06-interface-layer.md`, `07-cross-cutting.md`, `08-ai-agent-first.md`, `09-testing-strategy.md`,
-and `13-harness-engineering.md` (session harness).
+`13-harness-engineering.md` (session harness), and `14-design-first.md` (SRS + context design
+docs with the invariant-enforcement table — written and approved before design-tier code).
 Do not re-derive those rules — apply them, and cross-reference the relevant file instead of
 duplicating its deep content.
 

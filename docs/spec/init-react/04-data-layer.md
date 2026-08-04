@@ -221,7 +221,10 @@ Never let features bypass the layer "temporarily".
   `13-harness-engineering.md`).
 - Backend spec drift: prefer a CI artifact/URL sync step (`curl $API/openapi.json > openapi.json`)
   reviewed as a normal PR — API changes should be visible in the frontend diff, not discovered at
-  runtime.
+  runtime. The full two-repo discipline (pinned SHA + `.contract-version` + `contract:pull` +
+  breaking-change gate) is specified in
+  [`../init-monorepo-contract/05-polyrepo-variant.md`](../init-monorepo-contract/05-polyrepo-variant.md);
+  in a monorepo the whole problem disappears (`../init-monorepo-contract/`).
 
 ## 8. Smells — agent self-check
 

@@ -74,9 +74,15 @@ Key forbidden edges, all **[CI]**-enforced:
 A module is a **closed bounded context**. Modules NEVER import each other's domain, application, or infrastructure code. This is **[CI]**-enforced by dependency-cruiser.
 
 Modules communicate only through:
-1. **Command / Query bus** — one module dispatches another's use case via `commandBus.execute(...)` / `queryBus.execute(...)` (loose, contract-only coupling through shared command/query classes where deliberately exposed).
+1. **Command / Query bus with shared contract classes** — one module dispatches another's use case via `commandBus.execute(...)` / `queryBus.execute(...)`. The deliberately exposed command/query classes live in `libs/contracts/<owner-context>/`: the owner implements the handler, consumers dispatch the class, **both sides import `libs/`, neither imports the other** (see `14-design-first.md` §3.2). The contract is named, typed, and greppable.
 2. **Domain / integration events** — a module publishes an event (`EventBus` / `@nestjs/event-emitter`); other modules subscribe with their own handlers.
-3. **Anti-Corruption Layer (ACL)** — when integrating an external system or another context's model, an **adapter** translates the foreign model into this module's terms (e.g. `ClaudeLlmAdapter implements LlmPort`). The foreign shape never leaks inward.
+3. **Anti-Corruption Layer (ACL)** — when integrating an **external** system, an **adapter** translates the foreign model into this module's terms (e.g. `ClaudeLlmAdapter implements LlmPort`). The foreign shape never leaks inward.
+
+> MUST NOT: an adapter or query handler in one module reading **another module's database
+> tables**. That is cross-context coupling moved to the schema layer, where dependency-cruiser
+> cannot see it — a column rename in the owning context silently breaks the reader. If a module
+> needs another context's data, that is channel 1 (a contract query) — not a `SELECT` across the
+> boundary. See `14-design-first.md` §3.2.
 
 > RULE: **Command → Event → Command.** A command handler MUST NOT call another command handler directly. It changes state, emits a domain event, and a domain-event handler (in `application/event-handlers/`) issues the next command. This keeps each use case atomic and traceable. See `04-application-layer.md`.
 
@@ -128,6 +134,7 @@ The architecture is a ceiling. **Do not over-engineer small projects.** Apply th
 - **CQRS split:** keep commands and queries separate, but a simple read MAY bypass the domain/repository and hit the DB directly in the query handler for performance. That is by design, not a violation.
 - **Layers:** a trivial CRUD context can collapse to a thin slice; you still keep domain logic out of controllers, but you don't manufacture aggregates, domain services, and event handlers it doesn't need.
 - **Events:** use domain events when there is real cross-aggregate or cross-module reaction. For a single atomic write, skip the ceremony.
+- **Infrastructure earns its keep:** build an outbox/relay only when an event has a real consumer; build a policy/permission registry only when there are more than two roles with different rights. Publishing 20 events nobody consumes, or a full ABAC engine for two roles, is cost with no buyer — wire the seam when the need arrives, not before.
 
 The one rule you NEVER skip, at any size: **the Dependency Rule and module privacy** — they are CI-enforced. Everything else scales with the domain.
 
@@ -140,6 +147,8 @@ Before finishing a change, an agent should confirm NONE of these are present:
 - A controller or resolver importing a repository/adapter, or doing business logic instead of dispatching through the bus.
 - A `*.command.service.ts` calling another command handler directly (should be Command → Event → Command).
 - A module importing another module's `domain/`, `application/`, or `database/` files (cross-module import).
+- A `SELECT`/query in one module naming **another module's table** — schema-level cross-context coupling (§4 MUST NOT); route it through a contract query in `libs/contracts/`.
+- A critical uniqueness/overlap/capacity invariant enforced only by a read-then-write check in a handler, with **no DB constraint** backing it — the race window is open (`14-design-first.md` §3.1).
 - A domain entity exposing **public setters** or mutable state instead of behavior methods + `validate()`.
 - Persistence/ORM model shape leaking into the domain (entity and persistence model must stay separate, bridged by a `*.mapper.ts`).
 - Throwing for an expected business-rule failure instead of returning `Result` with a domain error (or vice-versa).

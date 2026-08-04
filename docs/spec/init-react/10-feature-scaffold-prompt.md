@@ -24,6 +24,11 @@ that fill — or to scaffold by hand when no generator exists yet.
 
 ## INPUT CONTRACT (fill every field, then paste below the prompt)
 
+> Tier check first (`14-design-first.md`): for a **standard** slice this filled block IS the
+> design doc — link it from the `feature_list.json` entry. A **design-tier** slice (new
+> interaction pattern, lifecycle-driven UI, new navigation area) needs its
+> `docs/design/<slice>.md` approved BEFORE this prompt runs; fill this block FROM that doc.
+
 ```yaml
 feature:            # feature name, kebab-case, e.g. invoices
 capability:         # what this task adds, e.g. "list + create invoice"

@@ -9,6 +9,8 @@ concrete commands come from the binding's slots
 ```
 START  → read AGENTS.md → session-handoff.md → feature_list.json → bash init.sh
 WORK   → pick THE ONE in-progress feature (or promote exactly one todo)
+       → design gate: if the feature is design-tier (06-design-first.md), its design doc
+         exists and is approved BEFORE implementation starts
        → implement inside scope; run the gates continuously, not just at the end
        → verify at runtime ({{RUNTIME_PROOF}})
 FINISH → feature_list.json: status + evidence + testedAt
@@ -50,7 +52,9 @@ A feature moves to `pass` only when ALL hold:
 4. New behavior has tests at the level the binding demands; changed persistence/codegen verified
    from zero (fresh DB migration, clean regeneration diff).
 5. `feature_list.json` updated: `pass` + evidence naming commands AND observations + `testedAt`.
-6. Docs touched if behavior or commands changed (`AGENTS.md` if the rules changed).
+6. Docs touched if behavior or commands changed (`AGENTS.md` if the rules changed). For a
+   design-tier feature, the design doc got its as-built re-sync note
+   ([06-design-first.md](./06-design-first.md) §6.4).
 7. `clean-state-checklist.md` passes.
 
 `fail` and `blocked` are honest states — record the failing command or blocker and move on;

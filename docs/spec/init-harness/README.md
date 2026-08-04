@@ -32,6 +32,7 @@ and that course's five-subsystem model, converted into the prompt-set idiom of t
 | [03-session-loop.md](./03-session-loop.md) | Startup path, one-feature rule, Definition of Done, end-of-session routine | When running or specifying a session |
 | [04-audit-checklist.md](./04-audit-checklist.md) | Critical/recommended checks, five-subsystem scoring, report format | When auditing an existing repo |
 | [05-composition-contract.md](./05-composition-contract.md) | The binding contract: slots a stack init fills, precedence rules, worked bindings | When combining with another `init-*` set |
+| [06-design-first.md](./06-design-first.md) | The design-first loop: intent vs truth docs, design tiers, the invariant rule, re-sync | Before starting any design-tier feature; when setting up `docs/design/` |
 
 ## Usage Flow 1 — Standalone: Add a Harness to Any Repo
 
@@ -86,6 +87,11 @@ curl -fsSL https://raw.githubusercontent.com/walkinglabs/learn-harness-engineeri
 - [`../init-react/13-harness-engineering.md`](../init-react/13-harness-engineering.md)
   — the **React SPA binding** (pnpm check/lint/arch/test/build gates, feature-route unit of work,
   dev/preview runtime proof).
+- [`../init-nestjs-hexagonal/14-design-first.md`](../init-nestjs-hexagonal/14-design-first.md) and
+  [`../init-react/14-design-first.md`](../init-react/14-design-first.md)
+  — the stack **design templates** that fill [06-design-first.md](./06-design-first.md)'s
+  `DESIGN_TEMPLATE` slot (context/aggregate design for the backend, slice + UX design for the
+  frontend).
 - Future `init-*` sets get a binding for free via the template in
   [05-composition-contract.md](./05-composition-contract.md).
 
