@@ -1,5 +1,19 @@
 # Session Handoff
 
+## 2026-08-04 (14) — QR URL phase = design draft (awaiting approval)
+
+- Done: SRS/design gate only — `docs/SRS-qr-url.md`, `docs/design/qr-aggregate.md`, and
+  `docs/design/qr-admin.md`. QR encodes a direct http(s) target URL; no redirect, analytics,
+  public endpoint, logo/custom style, or relation to dress/rental. `qr` is a new BE supporting
+  context; `apps/qr-admin/` will be an independent Vite/React workspace sibling, not code inside
+  `apps/fe`. It uses the same JWT/OpenAPI pipeline but owns its generated client and gates.
+- Tracked, not started: `infra/qr-admin-bootstrap` then `qr/create-url-code`. Do **not** promote
+  either to `in-progress` until the user approves the draft. Feature implementation remains one
+  BE → contract → QR-admin entry after bootstrap.
+- Watch out: SVG needs bearer-authenticated blob fetching; do not use `<img src>` with a token or
+  put tokens in URL query parameters. `TargetUrl` permits direct http(s) only, forbids credentials,
+  and BE must never fetch it (no SSRF surface).
+
 ## 2026-07-30 (13) — `infra/e2e-playwright` = pass (BACKLOG EMPTY — everything tracked is done)
 
 - Done: Playwright in `apps/fe/e2e` — ONE serial vi-locale happy path against the real

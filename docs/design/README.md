@@ -14,6 +14,10 @@
 | `catalog` | Supporting | `DressEntity` | [catalog-aggregate.md](./catalog-aggregate.md) |
 | `rentals` | **Core** | `RentalEntity` (+ child `RentalItemEntity`) | [rentals-aggregate.md](./rentals-aggregate.md) |
 | `payments` | Supporting | (chưa có aggregate — bảng `payments` + read slice) | [payments-aggregate.md](./payments-aggregate.md) |
+| `qr` | Supporting, planned | `QrLinkEntity` | [qr-aggregate.md](./qr-aggregate.md) |
+
+QR admin được ship độc lập tại `apps/qr-admin/` (không phải feature của `apps/fe`); bootstrap + UX
+design của nó ở [qr-admin.md](./qr-admin.md). SRS phase QR: [../SRS-qr-url.md](../SRS-qr-url.md).
 
 Yêu cầu sản phẩm: [../SRS-dress-rental.md](../SRS-dress-rental.md) (FR/BR/NFR + bảng truy vết).
 
