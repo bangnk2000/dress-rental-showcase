@@ -15,7 +15,7 @@ jobs:
       - run: pnpm openapi:emit
       - run: git diff --exit-code packages/contract
       - run: pnpm generate:api
-      - run: git diff --exit-code apps/fe/src/api/generated
+      - run: git diff --exit-code apps/fe/src/api/generated apps/qr-admin/src/api/generated
       - run: pnpm check
 
   be:
@@ -42,3 +42,15 @@ jobs:
       - run: pnpm --filter fe lint && pnpm --filter fe arch
       - run: pnpm --filter fe test
       - run: pnpm --filter fe build
+
+  qr-admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter qr-admin lint && pnpm --filter qr-admin arch
+      - run: pnpm --filter qr-admin test
+      - run: pnpm --filter qr-admin build

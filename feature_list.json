@@ -83,15 +83,15 @@
     {
       "id": "infra/qr-admin-bootstrap",
       "title": "Bootstrap standalone apps/qr-admin with its own generated API client and gates (SRS-QR NFR-QR-01..03)",
-      "status": "todo",
-      "evidence": "Design draft 2026-08-04: docs/SRS-qr-url.md and docs/design/qr-admin.md. Awaiting design approval; no code or generated artifact yet.",
+      "status": "pass",
+      "evidence": "2026-08-04: standalone qr-admin workspace (no apps/fe source imports), own Vite/React TypeScript, local generated-client mutator/token boundary and lint/arch/test/build gates. Root contract/check/init/CI cover both generated clients. Verified pnpm contract:check, pnpm --filter qr-admin check/lint/arch/test/build, root check/lint/arch/test/build, and bash init.sh.",
       "dependencies": []
     },
     {
       "id": "qr/create-url-code",
       "title": "Owner creates, lists, previews and downloads direct-URL QR SVGs (FR-QR-01..05)",
       "status": "todo",
-      "evidence": "Design draft 2026-08-04: docs/SRS-qr-url.md, docs/design/qr-aggregate.md and docs/design/qr-admin.md. Awaiting design approval; BE -> contract -> qr-admin in one feature entry.",
+      "evidence": "Design approved 2026-08-04: docs/SRS-qr-url.md, docs/design/qr-aggregate.md and docs/design/qr-admin.md. Depends on completed infra/qr-admin-bootstrap; BE -> contract -> qr-admin in one feature entry.",
       "dependencies": ["infra/qr-admin-bootstrap"]
     }
   ]

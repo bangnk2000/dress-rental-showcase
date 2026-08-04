@@ -1,6 +1,6 @@
 # qr-admin — Bootstrap & Slice Design
 
-> Status: **draft 2026-08-04** · SRS: FR-QR-01..05, NFR-QR-01..03 · API tags: `qr-links`
+> Status: **approved 2026-08-04** · SRS: FR-QR-01..05, NFR-QR-01..03 · API tags: `qr-links`
 
 ## 0. Bootstrap brief và UX flow
 

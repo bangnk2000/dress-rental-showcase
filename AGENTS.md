@@ -50,13 +50,13 @@ repo are recorded as `apps/be/AGENTS.md` Deviations #4 (table-read adapters — 
 Intent docs backfilled 2026-08-02 (as-built, from code + feature_list): `docs/SRS-dress-rental.md`
 (FR/BR/NFR + traceability) and `docs/design/` (four per-context tactical designs with
 invariant-enforcement tables, plus the SRS → design → feature → task process in its README).
-QR URL phase is now **design draft only**: `docs/SRS-qr-url.md` + `docs/design/qr-aggregate.md`
-and `qr-admin.md` prescribe a new BE `qr` context plus standalone sibling app `apps/qr-admin/`
-(not under `apps/fe`); `infra/qr-admin-bootstrap` and `qr/create-url-code` are `todo` pending
-design approval. Next after approval: bootstrap the QR admin, then ship the BE → contract →
-QR-admin slice. The existing top candidate remains closing spec gap #5 (invariant-proof e2e
-against real Postgres + CI postgres service + missing `test:e2e` script); more candidates in
-session-handoff (13).
+QR URL phase has an independent `apps/qr-admin/` Vite/React workspace (not under or importing
+`apps/fe`), with its own generated client, mutator/token boundary and check/lint/arch/test/build
+gates. Root contract generation/check now covers both clients. The QR BE context and actual
+owner login/create/history/preview UI are deliberately NOT implemented yet: next is the one
+`qr/create-url-code` feature (BE → contract → QR-admin). The existing top candidate remains
+closing spec gap #5 (invariant-proof e2e against real Postgres + CI postgres service + missing
+`test:e2e` script); more candidates in session-handoff (15).
 
 ## Invariants (carry these into every session)
 
@@ -80,6 +80,7 @@ pnpm lint && pnpm arch
 pnpm test
 pnpm --filter be test:e2e   # compose stack
 pnpm --filter fe build
+pnpm --filter qr-admin build
 ```
 
 ## Session rules

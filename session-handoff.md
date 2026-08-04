@@ -1,5 +1,24 @@
 # Session Handoff
 
+## 2026-08-04 (15) — `infra/qr-admin-bootstrap` = pass
+
+- Done: `apps/qr-admin/` is a separate Vite + React + TypeScript workspace, with no source
+  import from `apps/fe`. It owns its `orval.config.ts`, generated client at
+  `src/api/generated/`, bearer-aware API mutator and token-storage module, lightweight vi-first
+  bootstrap shell, and check/lint/architecture/test/build scripts. It intentionally omits PWA,
+  routing and feature UI until the QR endpoint contract exists.
+- Done: root `generate:api`, `contract:check` and `check`, `init.sh`, and CI now cover BOTH
+  frontend generated clients; CI adds an independent `qr-admin` quality job. Design/SRS status
+  is approved. Evidence is recorded in `feature_list.json`.
+- Next: promote **only** `qr/create-url-code`, then implement it as one BE `qr` context →
+  `pnpm contract` → QR admin login/create/list/authenticated SVG-blob preview slice. Do not
+  hand-edit either generated client, add a shell page as a substitute, or import `apps/fe`.
+- Watch out: the current OpenAPI contract has no `qr-links` tag yet, so generated output only
+  mirrors existing identity/catalog/rentals operations. The next feature must add BE endpoints
+  first, then regenerate both clients. The QR admin refresh protocol and authenticated blob
+  retrieval are deferred to that feature; its local token storage key is intentionally distinct
+  from `apps/fe`.
+
 ## 2026-08-04 (14) — QR URL phase = design draft (awaiting approval)
 
 - Done: SRS/design gate only — `docs/SRS-qr-url.md`, `docs/design/qr-aggregate.md`, and
