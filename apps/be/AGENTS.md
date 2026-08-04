@@ -58,9 +58,27 @@ files here.
 2. **Concrete list DTOs** (`DressListResponseDto`) instead of a generic `Paginated<T>` swagger
    envelope — keeps Orval output clean without `ApiExtraModels` ceremony.
 3. **Command handler files named `*.service.ts`** (per spec §02 naming) — no `*.command-handler.ts`.
+4. **Cross-context table-read adapters** (`rentals/database/dress-lookup.adapter.ts`,
+   `rentals/database/payment-recorder.adapter.ts`, `payments/database/rental-lookup.adapter.ts`)
+   — the 2026-07-31 spec re-sync forbids reading a sibling context's tables (spec 01 §4 MUST NOT,
+   14-design-first §3.2; sanctioned channel = contract query on the QueryBus via
+   `libs/contracts/`). Kept as a deliberate deviation for this 4-context app: the adapters are
+   few, commented as boundaries, and a QueryBus layer earns nothing at this size. The cost is
+   schema-level coupling no guardrail sees — if a shared table's columns change, grep these
+   adapters. Migration path when it bites: one contract query per adapter.
+5. **GAP (to close, not deliberate): no invariant-proof tests against real Postgres.** Spec 09
+   ("Invariant proof tests — Required") + 12 now require a CI test that PROVOKES the
+   `rental_items_no_overlap` EXCLUDE constraint (and the race path → 409). Today its only
+   evidence is manual (`scripts/smoke.sh` + psql notes in `feature_list.json`), and the root
+   gate list names `pnpm --filter be test:e2e` which does not exist. Closing this = an e2e/integration
+   suite on a real Postgres (compose/testcontainers) + a CI postgres service + the missing script.
 
 ## Where do I add a new use case?
 
+0. Trace it to an FR-id in `docs/SRS-dress-rental.md` and tier it per `docs/design/README.md`
+   §Quy trình: design-tier (new aggregate/invariant/state transition/cross-context contract) →
+   update `docs/design/<ctx>-aggregate.md` (incl. the invariant-enforcement table) and get it
+   approved BEFORE scaffolding; standard CRUD → the filled scaffold input contract is enough.
 1. `pnpm --filter be plop slice -- --context <ctx> --name <verb-noun>` (or `query`).
 2. Domain first (entity method/VO/error in `modules/<ctx>/domain/`), then fill the service,
    then the controller's error→HTTP mapping + swagger decorators, then the spec file.

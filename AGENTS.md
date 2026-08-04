@@ -10,6 +10,12 @@ to open when the task actually needs it:
 - `docs/spec/init-react/README.md` — authoritative INSIDE `apps/fe`
 - `docs/spec/init-harness/README.md` — session lifecycle rules behind this file
 
+Product intent docs (this product, not the reusable spec):
+
+- `docs/SRS-dress-rental.md` — requirements: FR/BR/NFR ids + the FR ↔ feature traceability table
+- `docs/design/README.md` — tactical design per context (invariant-enforcement tables) + the
+  SRS → design → feature → task process; new features derive from an FR-id, per its §Quy trình
+
 This file is the ONE harness in this repo — never create another under `apps/*`.
 
 ## Current state (re-sync at every session end — see Session rules)
@@ -35,7 +41,18 @@ The `/rentals` list also carries the cancel action (booked rows) and the payment
 (returned rows). Playwright e2e (`apps/fe/e2e`, vi-locale happy path vs the real stack)
 runs via `pnpm --filter fe e2e` — excluded from root gates/init.sh. Rentals mutations
 MUST invalidate both the board and list parameterless query keys (staleTime 60s).
-Next: nothing tracked — the backlog is empty; candidates in session-handoff (13).
+`docs/spec` re-synced 2026-07-31 from the upstream prompt sets: adds design-first files
+(init-harness/06, init-nestjs-hexagonal/14, init-react/14) and the polyrepo contract variant
+(init-monorepo-contract/05), and upgrades three BE rules to MUST (DB-constraint invariants +
+proof tests on real Postgres in CI; no cross-context table reads). The resulting gaps for THIS
+repo are recorded as `apps/be/AGENTS.md` Deviations #4 (table-read adapters — deliberate) and
+#5 (missing invariant-proof e2e + the phantom `test:e2e` gate — to close).
+Intent docs backfilled 2026-08-02 (as-built, from code + feature_list): `docs/SRS-dress-rental.md`
+(FR/BR/NFR + traceability) and `docs/design/` (four per-context tactical designs with
+invariant-enforcement tables, plus the SRS → design → feature → task process in its README).
+Next: nothing tracked — top candidate: close spec gap #5 (invariant-proof e2e provoking the
+EXCLUDE constraint on real Postgres + CI postgres service + the missing `test:e2e` script);
+more candidates in session-handoff (13).
 
 ## Invariants (carry these into every session)
 
