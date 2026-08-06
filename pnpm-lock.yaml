@@ -95,9 +95,6 @@ importers:
       '@types/node':
         specifier: ^26.1.2
         version: 26.1.2
-      '@types/qrcode':
-        specifier: ^1.5.6
-        version: 1.5.6
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.18.0
         version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1)(typescript@5.9.3)
@@ -3198,9 +3195,6 @@ packages:
 
   '@types/picomatch@4.0.3':
     resolution: {integrity: sha512-iG0T6+nYJ9FAPmx9SsUlnwcq1ZVRuCXcVEvWnntoPlrOpwtSTKNDC9uVAxTsC3PUvJ+99n4RpAcNgBbHX3JSnQ==}
-
-  '@types/qrcode@1.5.6':
-    resolution: {integrity: sha512-te7NQcV2BOvdj2b1hCAHzAoMNuj65kNBMz0KBaxM6c3VGBOhU0dURQKOtH8CFNI/dsKkwlv32p26qYQTWoB5bw==}
 
   '@types/qs@6.15.1':
     resolution: {integrity: sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==}
@@ -10719,10 +10713,6 @@ snapshots:
       undici-types: 8.3.0
 
   '@types/picomatch@4.0.3': {}
-
-  '@types/qrcode@1.5.6':
-    dependencies:
-      '@types/node': 26.1.2
 
   '@types/qs@6.15.1': {}
 

@@ -1,95 +1,149 @@
 # dress-rental
 
-Internal management app for a dress-rental shop (**~200 dresses**), replacing the current
-Google Sheets workflow. Staff-facing, Vietnamese-first. MVP scope (see `feature_list.json`):
-dress catalog, rentals with per-dress booking calendar + cleaning buffer (overlaps rejected at
-the DB level), deposits/fees, and a "today" board (due out / due back). The public marketing
-site is a separate concern (WordPress/Haravan) — NOT this repo.
+Ứng dụng nội bộ cho tiệm cho thuê váy (khoảng 200 váy), thay thế quy trình Google
+Sheets. Giao diện chính dành cho nhân viên, tiếng Việt là ngôn ngữ ưu tiên.
 
-**Architecture:** pnpm monorepo per [docs/spec/init-monorepo-contract/](docs/spec/init-monorepo-contract/README.md)
-— NestJS hexagonal backend (`apps/be`), React SPA (`apps/fe`), one generated OpenAPI contract
-in `packages/contract/` with CI drift gates. Agents: read [AGENTS.md](AGENTS.md) first.
+Chức năng hiện có: quản lý danh mục váy, lịch và lượt thuê (bao gồm khoảng đệm
+giặt), đặt cọc/phí, bảng việc trong ngày, và QR URL Admin cho chủ tiệm.
 
-```
-apps/be source ──pnpm openapi:emit──▶ packages/contract/openapi.json ──pnpm generate:api──▶ apps/fe/src/api/generated/
-```
+## Kiến trúc
 
-## Status
-
-**EVERYTHING TRACKED IS DONE** (2026-07-30) — catalog (list/search, create/update/retire,
-photo links, CSV seed import), rentals (create with the DB-level EXCLUDE overlap
-constraint + cleaning buffer, availability + booking calendar, pickup/return with deposit
-& fee settlement, cancel that frees the calendar, searchable paginated list), payments
-read slice, the actionable today board (due out / due back / overdue), and a Playwright
-e2e happy path over the real stack (`pnpm --filter fe e2e`). smoke.sh proves 62 checks
-on a fresh DB. Follow-up candidates live in `session-handoff.md` (13).
-Dev DB: `docker compose up -d` · seed: `pnpm --filter be migrate && pnpm --filter be seed`.
-
-## Bootstrap order (do not reorder — FE needs the real contract)
-
-### 1. Skeleton — DONE
-
-### 2. Backend — DONE (see `apps/be/AGENTS.md`). Original kickoff prompt kept for reference:
+- `apps/be` — NestJS API, PostgreSQL và OpenAPI là nguồn hợp đồng duy nhất.
+- `apps/fe` — React SPA cho vận hành cửa hàng.
+- `apps/qr-admin` — React SPA độc lập để owner tạo, xem lại và tải QR URL dạng SVG.
+- `packages/contract` — OpenAPI được sinh từ backend; không chỉnh sửa thủ công.
 
 ```text
-You are bootstrapping the BACKEND of this monorepo, inside apps/be/ only.
-Specs, in precedence order:
-- docs/spec/init-monorepo-contract/ — monorepo rules; its 01 §4 deltas WIN over stack defaults.
-- docs/spec/init-nestjs-hexagonal/ — your architecture spec; adopt its 00-system-prompt.md.
-
-1. Product idea: internal management app for a dress-rental shop (~200 dresses), replacing
-   Google Sheets. Bounded contexts: catalog (dresses), rentals (bookings/returns/today board),
-   payments (deposits, late/damage fees). Persistence: Postgres. Transports: http only.
-   AI features: none. Domain rule: per-dress booking overlap (rental range + cleaning buffer)
-   must be rejected by a Postgres daterange EXCLUSION CONSTRAINT, not only in code.
-2. Package name MUST be "be". Add scripts/emit-openapi.ts + the "openapi:emit" script per
-   docs/spec/init-monorepo-contract/02-contract-pipeline.md §2, and the spec-discipline rules
-   from its §3 (swagger CLI plugin, @ApiOkResponse everywhere, @ApiTags per context,
-   pinned operationIdFactory).
-3. HARNESS ALREADY EXISTS at repo root (AGENTS.md, feature_list.json, init.sh) — do NOT create
-   harness files under apps/be; update the root ones (infra/be-bootstrap entry) instead.
-4. Infer missing details, state assumptions, ask AT MOST 1–2 questions.
-5. Output the 9-section scaffold from 00-system-prompt.md and STOP for my approval.
+apps/be ── pnpm openapi:emit ──> packages/contract/openapi.json
+                                      │
+                                      └── pnpm generate:api ──> apps/fe và apps/qr-admin
 ```
 
-Gate: `pnpm openapi:emit` writes `packages/contract/openapi.json` with tags
-`catalog`/`rentals`/`payments`, offline (no DB running — 02 §2's offline-boot rule).
+## Yêu cầu
 
-### 3. Contract: `pnpm contract` at root (after FE exists this regenerates both stages; right
-after step 2 run just `pnpm openapi:emit`).
+- Node.js `>= 22.18`
+- pnpm
+- Docker Desktop hoặc Docker Engine có Docker Compose
 
-### 4. Frontend — kickoff prompt:
+## Chạy toàn bộ project ở máy local
 
-```text
-You are bootstrapping the FRONTEND of this monorepo, inside apps/fe/ only.
-Specs, in precedence order:
-- docs/spec/init-monorepo-contract/ — monorepo rules; its 01 §4 deltas WIN over stack defaults.
-- docs/spec/init-react/ — your architecture spec; adopt its 00-system-prompt.md.
+Các lệnh dưới đây chạy từ thư mục gốc của repository.
 
-1. Product idea: staff-facing admin for a dress-rental shop. Feature routes mirror
-   feature_list.json: dresses (catalog + detail with booked-ranges calendar), rentals
-   (create/return + availability check), today (due out / due back board).
-   - openapi.json: ../../packages/contract/openapi.json (REAL, from step 2 — set orval input
-     to this path per init-monorepo-contract 01 §4.1)
-   - Auth: <bearer+refresh | cookie — match what apps/be shipped>
-   - Languages: vi (primary), en. PWA: yes — staff install it on the shop tablet/phone.
-2. Package name MUST be "fe". VITE_API_BASE_URL: dev http://localhost:3000 (or Vite proxy),
-   prod same-origin '' (init-monorepo-contract 03 §3).
-3. HARNESS ALREADY EXISTS at repo root — do NOT create harness files under apps/fe; update
-   the root ones (infra/fe-bootstrap entry) instead.
-4. Output the 9-section scaffold and STOP for my approval.
-```
+1. Cài dependencies và tạo cấu hình backend. Chỉ sao chép file `.env` nếu máy
+   chưa có `apps/be/.env`, để không ghi đè cấu hình hoặc bí mật hiện có.
 
-### 5. Prove it: `bash init.sh` from a clean checkout — all gates green, then start features
-(`rentals/create-rental` first; each feature = BE slice → `pnpm contract` → FE slice, one
-`feature_list.json` entry).
+   ```bash
+   pnpm install
+   test -f apps/be/.env || cp apps/be/.env.example apps/be/.env
+   ```
 
-## Root commands
+2. Mở `apps/be/.env` và đặt các giá trị bí mật phù hợp, tối thiểu:
 
-| Command | What it does |
+   ```dotenv
+   JWT_SECRET=<mot-chuoi-bi-mat-dai>
+   JWT_REFRESH_SECRET=<mot-chuoi-bi-mat-khac-dai>
+   SEED_OWNER_PASSWORD=<mat-khau-owner>
+   ```
+
+   Có thể giữ nguyên `DATABASE_URL` mặc định khi dùng PostgreSQL từ Compose.
+
+3. Khởi động database, áp dụng migration, rồi tạo tài khoản owner ban đầu:
+
+   ```bash
+   docker compose up -d
+   pnpm --filter be migrate
+   pnpm --filter be seed
+   ```
+
+   Lệnh seed dùng `SEED_OWNER_EMAIL` và `SEED_OWNER_PASSWORD` trong `.env`; mặc
+   định email là `owner@example.com`. Lệnh này an toàn khi chạy lại, nhưng không
+   đổi mật khẩu của owner đã tồn tại.
+
+4. Mở ba terminal riêng và chạy:
+
+   ```bash
+   pnpm --filter be start:dev
+   ```
+
+   ```bash
+   pnpm --filter fe dev
+   ```
+
+   ```bash
+   pnpm --filter qr-admin dev -- --port 5174
+   ```
+
+Sau đó truy cập:
+
+| Dịch vụ | URL |
 | --- | --- |
-| `pnpm contract` | emit spec from BE + regenerate FE client (run after ANY BE API change) |
-| `pnpm contract:check` | same + `git diff --exit-code` — the drift gate; run before push |
-| `pnpm check` | BE build + FE tsc — catches FE code stale against changed types |
-| `pnpm lint` / `pnpm arch` / `pnpm test` / `pnpm build` | fan out to both apps |
-| `bash init.sh` | full resume verification (harness) |
+| API và Swagger (development) | `http://localhost:3000` · `http://localhost:3000/docs` |
+| Ứng dụng vận hành cửa hàng | `http://localhost:5173` |
+| QR URL Admin | `http://localhost:5174` |
+
+Hai ứng dụng Vite chuyển tiếp các request `/api` đến backend ở cổng `3000`, nên
+không cần đặt `VITE_API_BASE_URL` khi chạy theo các lệnh trên.
+
+## Chạy QR URL Admin
+
+QR Admin cần backend, database và tài khoản có vai trò `owner` đang hoạt động.
+Sau khi thực hiện phần khởi động ở trên, mở `http://localhost:5174` và đăng nhập
+bằng `SEED_OWNER_EMAIL` / `SEED_OWNER_PASSWORD`. Tại đây owner có thể:
+
+- tạo QR cho một URL tuyệt đối `http://` hoặc `https://`;
+- xem lịch sử QR mới nhất trước;
+- xem trước hoặc tải QR SVG.
+
+Mỗi QR URL là một bản ghi bất biến: cần thay URL đã in thì tạo một QR mới. Tài
+khoản `staff` không có quyền truy cập QR Admin.
+
+### Database cho QR
+
+Không có database riêng cho QR Admin. QR dùng cùng PostgreSQL của backend; migration
+`apps/be/migrations/1754300000000_qr_links.js` được chạy bởi lệnh
+`pnpm --filter be migrate` ở bước 3 và tạo bảng `qr_links`.
+
+| Bảng | Dữ liệu lưu |
+| --- | --- |
+| `qr_links` | URL đích, nhãn tùy chọn, owner đã tạo và thời gian tạo/cập nhật của mỗi QR. |
+
+Kiểm tra nhanh migration đã tạo bảng sau khi khởi động Compose:
+
+```bash
+docker compose exec db psql -U dress -d dress_rental -c '\d qr_links'
+```
+
+Nếu chỉ cần chạy QR Admin sau khi backend đã sẵn sàng:
+
+```bash
+pnpm --filter qr-admin dev -- --port 5174
+```
+
+Tùy chọn, nếu không dùng Vite proxy, tạo `apps/qr-admin/.env` với:
+
+```dotenv
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+## Lệnh thường dùng
+
+| Lệnh | Mục đích |
+| --- | --- |
+| `pnpm contract` | Sinh OpenAPI từ backend và sinh lại client cho cả hai frontend sau thay đổi API. |
+| `pnpm contract:check` | Kiểm tra contract/client không bị lệch với Git. |
+| `pnpm check` | Build backend và kiểm tra TypeScript cho hai frontend. |
+| `pnpm lint` / `pnpm arch` / `pnpm test` | Chạy lint, kiểm tra kiến trúc và test toàn workspace. |
+| `pnpm build` | Tạo production build cho tất cả workspace. |
+| `pnpm --filter fe e2e` | Chạy Playwright cho luồng chính; cần DB, backend và FE đang chạy. |
+| `bash init.sh` | Chạy chuỗi kiểm tra đầy đủ của harness. |
+
+Khi thay đổi API, luôn chạy `pnpm contract`; không chỉnh sửa trực tiếp
+`packages/contract/openapi.json`, `apps/fe/src/api/generated/` hoặc
+`apps/qr-admin/src/api/generated/`.
+
+## Tài liệu dự án
+
+- [Hướng dẫn làm việc cho agent](AGENTS.md)
+- [Yêu cầu sản phẩm](docs/SRS-dress-rental.md)
+- [Tactical design](docs/design/README.md)
+- [Hợp đồng monorepo](docs/spec/init-monorepo-contract/README.md)
