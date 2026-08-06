@@ -1,6 +1,6 @@
 # qr — Tactical Design
 
-> Status: **implemented 2026-08-04** · SRS: FR-QR-01..04, BR-QR-01..05 · Context Supporting
+> Status: **as-built 2026-08-06** · SRS: FR-QR-01..04, FR-QR-06, BR-QR-01..05 · Context Supporting
 
 ## Vai trò & ranh giới
 
@@ -29,6 +29,7 @@ Không có lifecycle MVP: `create → persisted`; không có update, revoke hay 
 | Record luôn có người tạo hợp lệ | Command lấy `subject.staffId`, không nhận từ body | `created_by_staff_id NOT NULL REFERENCES staff_users(id)` | 401/500 nếu bypass DB | migration/integration FK test |
 | Chỉ owner tạo/đọc/render | `@RequirePermission('qr:*')` | N/A — authorization là boundary, không row invariant | 401/403 | controller/policy tests |
 | SVG phản ánh target URL đã persist | renderer chỉ nhận `QrLinkEntity.targetUrl` | N/A — deterministic pure adapter output | 200 SVG, không phải URL request body | controller/renderer unit test |
+| Nhận diện QR không làm giảm vùng quét | renderer sinh QR với quiet zone và chỉ vẽ khung/trái tim/text ở ngoài SVG QR lồng bên trong | N/A — presentation không là persisted invariant | SVG đỏ hồng có khung/trang trí; QR modules không bị sửa | Renderer unit test kiểm outer SVG + nested QR SVG |
 
 Không có critical concurrency invariant; UUID PK loại bỏ collision thực tế. Nếu sau này thêm
 short-code/public redirect, uniqueness của short-code và expiry/revocation state machine sẽ là design-tier
@@ -52,7 +53,9 @@ consumer event, nên không dựng outbox/relay.
 
 ## Ports và API
 
-`QrLinkRepositoryPort` owns persistence; `QrRendererPort` wraps QR SVG library in an adapter. Slices:
+`QrLinkRepositoryPort` owns persistence; `QrRendererPort` wraps QR SVG library in an adapter. Adapter
+dùng error correction `H`, module đỏ hồng trên nền trắng và bọc output thư viện bằng một khung/trái tim
+tĩnh ở ngoài quiet zone; không có style được lưu hay chọn theo từng record. Slices:
 `create-url-code`, `list-qr-links`, `get-qr-link`, `render-qr-link-svg`. HTTP tag `qr-links`; image
 controller sets `Content-Type: image/svg+xml`; client download blob thay vì token trên URL.
 

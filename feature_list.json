@@ -93,6 +93,13 @@
       "status": "pass",
       "evidence": "2026-08-04: `modules/qr` ships immutable `QrLinkEntity`/`TargetUrl`, Slonik `qr_links` repository + FK migration/index, owner-only qr:create/list/read policies and POST/GET list/GET detail/GET authenticated SVG endpoints. Target URL allows absolute http(s) only, forbids credentials/relative/data/javascript and caps 2048; `qrcode` SVG adapter receives only persisted target URL and never fetches it. Contract emitted then both Orval clients regenerated. Standalone qr-admin now has owner sign-in, Vietnamese create validation, TanStack history query/invalidation, selected blob preview and SVG download; it imports no apps/fe source. BE build/lint/arch/test = 70 Jest tests, QR-admin check/lint/test/build green; no live Postgres/browser proof run in this environment.",
       "dependencies": ["infra/qr-admin-bootstrap"]
+    },
+    {
+      "id": "qr/styled-svg-rendering",
+      "title": "Render QR SVG in the shop's pink-red style with a decorative thank-you frame (FR-QR-06)",
+      "status": "pass",
+      "evidence": "2026-08-06: QR-library output now uses high error correction, red-pink modules and a white quiet zone. The adapter nests that untouched QR inside a fixed pale-pink rounded frame with five hearts and the Vietnamese thank-you caption, all outside the QR area. Verified focused Jest renderer test plus BE lint, build and architecture gate.",
+      "dependencies": ["qr/create-url-code"]
     }
   ]
 }

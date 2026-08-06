@@ -1,5 +1,17 @@
 # Session Handoff
 
+## 2026-08-06 (17) — `qr/styled-svg-rendering` = pass
+
+- Done: downloaded and previewed QR SVGs now use the shop's fixed red-pink styling: red-pink QR
+  modules, pale-pink rounded frame, five hanging hearts and “Cảm ơn quý khách”. The QR library's
+  output is nested unchanged inside the framed SVG, with its own white quiet zone; decorations
+  therefore do not cover modules or alter the encoded direct URL. Error correction is `H`.
+- Verification: focused renderer Jest test, `pnpm --filter be lint`, `pnpm --filter be build`, and
+  `pnpm --filter be arch` all pass. No API contract changed; the existing authenticated Blob preview
+  and SVG download automatically receive the new rendering.
+- Next: close spec gap #5 — real-Postgres invariant proof plus CI postgres service and a real
+  `pnpm --filter be test:e2e` script.
+
 ## 2026-08-04 (16) — `qr/create-url-code` = pass
 
 - Done: BE `qr` supporting context owns immutable `qr_links` records (`target_url`, optional

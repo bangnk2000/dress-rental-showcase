@@ -55,10 +55,11 @@ QR URL phase has an independent `apps/qr-admin/` Vite/React workspace (not under
 gates. Root contract generation/check covers both clients. `apps/be` now has the owner-only `qr`
 context: immutable URL records in `qr_links`, strict direct http(s) URL validation, newest-first
 list/detail, and authenticated deterministic SVG rendering through a QR-library adapter (never
-fetching the target URL). QR admin implements owner login, create, history, bearer Blob preview and
-SVG download. The existing top candidate remains closing spec gap #5 (invariant-proof e2e against
+fetching the target URL). Downloaded QR SVGs use the shop's fixed red-pink frame, hearts and thank-you
+decoration outside the QR quiet zone. QR admin implements owner login, create, history, bearer Blob
+preview and SVG download. The existing top candidate remains closing spec gap #5 (invariant-proof e2e against
 real Postgres + CI postgres service + missing `test:e2e` script); more candidates in
-session-handoff (16).
+session-handoff (17).
 
 ## Invariants (carry these into every session)
 

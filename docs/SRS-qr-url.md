@@ -35,6 +35,9 @@ Admin dùng JWT bearer + refresh flow đang có ở `identity`; không thêm h�
   `targetUrl` đã lưu, không phải một redirect URL của hệ thống.
 - **FR-QR-05** Admin tối giản có một màn hình: form tạo ở trên, preview QR + tải SVG sau khi tạo,
   và danh sách lịch sử bên dưới. Refresh trang vẫn thấy lịch sử.
+- **FR-QR-06** SVG QR dùng nhận diện cố định của cửa hàng: mã đỏ hồng trên nền trắng, khung bo góc
+  hồng nhạt, dải trái tim và dòng cảm ơn. Phần trang trí nằm ngoài quiet zone của QR và không làm
+  thay đổi URL được mã hoá.
 
 ## 4. Business rules
 
@@ -79,7 +82,7 @@ bằng endpoint SVG có bearer-aware request/blob URL; download dùng cùng blob
 ## 7. Ngoài phạm vi MVP
 
 - Short URL / redirect domain, public landing page, scan analytics, expiry/revocation, UTM builder.
-- QR có logo, màu tuỳ chỉnh, PNG/PDF/batch export, upload file, import CSV.
+- Logo hoặc màu tuỳ chỉnh theo từng QR, PNG/PDF/batch export, upload file, import CSV.
 - Liên kết QR với dress/rental hoặc hiển thị trong `apps/fe`; có thể thêm contract query sau nếu
   một nhu cầu cụ thể xuất hiện.
 
@@ -89,5 +92,6 @@ bằng endpoint SVG có bearer-aware request/blob URL; download dùng cùng blob
 | --- | --- | --- | --- |
 | FR-QR-01..04 | `qr/create-url-code` | [qr-aggregate.md](./design/qr-aggregate.md) | BE → contract → QR admin |
 | FR-QR-05, NFR-QR-02..03 | `infra/qr-admin-bootstrap` | [qr-admin.md](./design/qr-admin.md) | Bootstrap app trước UI feature |
+| FR-QR-06 | `qr/styled-svg-rendering` | [qr-aggregate.md](./design/qr-aggregate.md) | Renderer SVG |
 
 `infra/qr-admin-bootstrap` và `qr/create-url-code` đã được giao trong `feature_list.json`.
