@@ -317,7 +317,7 @@ test('FR-RENT-09: a slow quote never erases what staff already typed', async () 
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
   // The dialog is usable before the quote lands, so staff starts working: settling is a
   // conversation with a customer, not a wait for a spinner.
   await user.type(screen.getByLabelText('Ghi chú'), 'Váy dính bùn');
@@ -350,7 +350,7 @@ test('FR-RENT-09: a late fee staff already edited is not overwritten by the quot
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
   await user.type(screen.getByLabelText('Phí trễ hạn (VND)'), '300000');
 
   // A deliberate amount survives; the server's suggestion is still on the banner to read from.
