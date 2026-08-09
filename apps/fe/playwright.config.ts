@@ -16,6 +16,10 @@ export default defineConfig({
     // vi is the primary UI language and the specs assert vi strings — pin the
     // browser locale so the i18n detector resolves vi, not headless-default en.
     locale: 'vi-VN',
+    // Pin the clock to the shop's timezone, like the tablet on the counter. The today board takes
+    // its date from the DEVICE while the late fee uses the SHOP day (FR-RENT-09): a browser left on
+    // UTC books "today" as yesterday in Hanoi and the rental is born one day late.
+    timezoneId: 'Asia/Ho_Chi_Minh',
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],

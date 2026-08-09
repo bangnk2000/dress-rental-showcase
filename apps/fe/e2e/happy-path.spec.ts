@@ -11,11 +11,14 @@ const RUN = Date.now().toString(36);
 const DRESS_CODE = `E2E-${RUN}`;
 const CUSTOMER = `Khách E2E ${RUN}`;
 
+/**
+ * The shop's calendar day — the SAME day the browser sees (playwright.config pins its timezone)
+ * and the same day the API prices a late fee with (FR-RENT-09 `shopToday()`). Computing it from the
+ * test process clock instead would book "today" in UTC: on a UTC-evening run the rental lands on
+ * yesterday, shows up as overdue, and is born one day late.
+ */
 function todayIso(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
 test('happy path: create dress → rent today → pickup → return → settled list', async ({
@@ -97,6 +100,8 @@ test('happy path: create dress → rent today → pickup → return → settled 
     await expect(row).toContainText('Đã trả');
     await row.getByRole('button', { name: 'Thanh toán' }).click();
     await expect(page.getByText('Hoàn cọc', { exact: true })).toBeVisible();
-    await expect(page.getByText('Trả đủ, cọc hoàn nguyên')).toBeVisible();
+    // The note rides on EVERY movement row, so match the first — a settlement with a late fee
+    // legitimately repeats it.
+    await expect(page.getByText('Trả đủ, cọc hoàn nguyên').first()).toBeVisible();
   });
 });
