@@ -21,6 +21,15 @@ design của nó ở [qr-admin.md](./qr-admin.md). SRS phase QR: [../SRS-qr-url.
 
 Yêu cầu sản phẩm: [../SRS-dress-rental.md](../SRS-dress-rental.md) (FR/BR/NFR + bảng truy vết).
 
+## Spec use-case (capability có rejection — lane B2.1)
+
+| Use case | Status | Spec |
+| --- | --- | --- |
+| `rentals/settle-late-fee` (FR-RENT-09) | **as-built 2026-08-10** — spec duyệt trước khi code, §6 ghi 4 quyết định của chủ tiệm | [rentals/settle-late-fee.md](./rentals/settle-late-fee.md) |
+
+Chỉ spec `approved` mới được feed scaffold prompt. Spec ở đây là **intent**: nó nói cái SẼ xây và
+outcome catalog mà cả hai phía cùng dùng, không phải mô tả lại code đã có.
+
 ## Quyết định cross-cutting (ADR)
 
 | ADR | Quyết định | Phạm vi |

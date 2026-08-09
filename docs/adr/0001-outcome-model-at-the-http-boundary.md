@@ -91,12 +91,19 @@ FE cần đủ dữ liệu để hành động, không phải GET thêm lần n�
 | `rentals/pickup-rental` | `RentalPickupNotAllowedError` | `rejected_pickup_not_allowed` | `currentStatus` | FR-RENT-04, BR-3 |
 | `rentals/return-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-05 |
 | `rentals/return-rental` | `RentalReturnNotAllowedError` | `rejected_return_not_allowed` | `currentStatus` | FR-RENT-05, BR-3 |
+| `rentals/return-rental` | `LateFeeWaiverNotAllowedError` | `forbidden` (**403**) + `reason: 'late_fee_waiver_requires_owner'` | `suggestedLateFee`, `submittedLateFee` | FR-RENT-09 |
+| `rentals/return-rental` | `LateFeeWaiverNoteRequiredError` | `rejected_waiver_note_required` | `suggestedLateFee`, `submittedLateFee` | FR-RENT-09 |
 | `rentals/cancel-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-06 |
 | `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` | `currentStatus` | FR-RENT-06, BR-3 |
 
 `dressIds[]` là các váy VI PHẠM (không phải toàn bộ giỏ) — metadata đã có sẵn trong domain error
 (`create-rental.service.ts` truyền `{ dressIds }`). `currentStatus` cho FE nói được "đơn đang ở
 trạng thái X" và refresh đúng bảng.
+
+Bổ sung 2026-08-10 (FR-RENT-09, spec [rentals/settle-late-fee.md](../design/rentals/settle-late-fee.md)):
+hai mã cuối bảng là **outcome 403 có tên đầu tiên** của repo và mã đi kèm nó. Chúng chứng minh luật
+arbitration ở §2 hoạt động: `PoliciesGuard` chặn `rental:return` thì vẫn là 403 **envelope**, còn
+"staff không được giảm phí" là denial nằm trong spec nên là 403 **outcome body**.
 
 ### Không có outcome (cố ý)
 
@@ -126,6 +133,8 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_rental_not_found` | toast + invalidate board/list (đơn đã bị người khác xử lý) | `rentals:errors.rentalNotFound` / `today:errors.rentalNotFound` |
 | `rejected_pickup_not_allowed` | toast nêu `currentStatus` + invalidate board | `today:errors.pickupNotAllowed` |
 | `rejected_return_not_allowed` | đóng dialog, toast nêu `currentStatus` + invalidate | `today:errors.returnNotAllowed` |
+| `forbidden` (`late_fee_waiver_requires_owner`) | GIỮ dialog, field error dưới phí trễ; số đề xuất vẫn hiển thị ở banner phía trên (message form là i18n key, không nội suy tham số) | `today:errors.lateFeeWaiverForbidden` |
+| `rejected_waiver_note_required` | GIỮ dialog, focus field Ghi chú + message bắt buộc lý do | `today:errors.waiverNoteRequired` |
 | `rejected_cancel_not_allowed` | toast nêu `currentStatus` + invalidate list | `rentals:cancel.notAllowed` |
 | *fault* `GENERIC.VALIDATION` (400 + `details[]`) | `form.setError` theo `details[].field` | (message từ server) |
 | *fault* còn lại trên mutation | toast lỗi chung + cho bấm lại | `common:errors.generic` |

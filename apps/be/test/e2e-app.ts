@@ -13,11 +13,16 @@ export interface ApiResponse {
   body: unknown;
 }
 
+export const STAFF_EMAIL = 'staff.e2e@tiemvay.vn';
+export const STAFF_PASSWORD = 'e2e-staff-password';
+
 export interface E2eContext {
   db: E2eDb;
   baseUrl: string;
   /** Bearer token of a seeded owner (holds every write permission). */
   token: string;
+  /** Bearer token of a seeded staff member — for rules that depend on NOT being the owner. */
+  staffToken: string;
   request: (
     path: string,
     init?: { method?: string; body?: unknown; token?: string | null },
@@ -105,23 +110,32 @@ export async function startE2eApp(): Promise<E2eContext> {
     return { status: response.status, body: text ? JSON.parse(text) : null };
   }
 
-  const passwordHash = hashSync(OWNER_PASSWORD, 10);
+  const ownerHash = hashSync(OWNER_PASSWORD, 10);
+  const staffHash = hashSync(STAFF_PASSWORD, 10);
+
+  async function signIn(email: string, password: string): Promise<string> {
+    const login = await request('/api/v1/auth/login', {
+      method: 'POST',
+      body: { email, password },
+    });
+    if (login.status !== 200) {
+      throw new Error(`e2e login failed for ${email}: ${login.status} ${JSON.stringify(login.body)}`);
+    }
+    return (login.body as { accessToken: string }).accessToken;
+  }
+
   const context: E2eContext = {
     db,
     baseUrl,
     token: '',
+    staffToken: '',
     request,
     reset: async () => {
       await db.truncate();
-      await db.seedStaff(OWNER_EMAIL, 'owner', passwordHash);
-      const login = await request('/api/v1/auth/login', {
-        method: 'POST',
-        body: { email: OWNER_EMAIL, password: OWNER_PASSWORD },
-      });
-      if (login.status !== 200) {
-        throw new Error(`e2e owner login failed: ${login.status} ${JSON.stringify(login.body)}`);
-      }
-      context.token = (login.body as { accessToken: string }).accessToken;
+      await db.seedStaff(OWNER_EMAIL, 'owner', ownerHash);
+      await db.seedStaff(STAFF_EMAIL, 'staff', staffHash);
+      context.token = await signIn(OWNER_EMAIL, OWNER_PASSWORD);
+      context.staffToken = await signIn(STAFF_EMAIL, STAFF_PASSWORD);
     },
     close: async () => {
       await db.close();

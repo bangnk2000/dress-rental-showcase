@@ -11,4 +11,6 @@ export type ReturnRentalOutcomeDtoStatus = typeof ReturnRentalOutcomeDtoStatus[k
 export const ReturnRentalOutcomeDtoStatus = {
   rejected_rental_not_found: 'rejected_rental_not_found',
   rejected_return_not_allowed: 'rejected_return_not_allowed',
+  rejected_waiver_note_required: 'rejected_waiver_note_required',
+  forbidden: 'forbidden',
 } as const;

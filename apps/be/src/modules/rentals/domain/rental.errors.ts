@@ -76,6 +76,34 @@ export class RentalReturnNotAllowedError extends ExceptionBase {
   }
 }
 
+/** FR-RENT-09: staff may charge the suggested late fee or more — only the owner may charge less. */
+export class LateFeeWaiverNotAllowedError extends ExceptionBase {
+  static readonly message = 'Only the shop owner may charge less than the suggested late fee';
+  public readonly code = 'RENTALS.LATE_FEE_WAIVER_NOT_ALLOWED';
+
+  constructor(
+    readonly suggestedLateFee: number,
+    readonly submittedLateFee: number,
+    cause?: Error,
+  ) {
+    super(LateFeeWaiverNotAllowedError.message, cause, { suggestedLateFee, submittedLateFee });
+  }
+}
+
+/** FR-RENT-09: a waiver is auditable or it does not happen — the note carries the reason. */
+export class LateFeeWaiverNoteRequiredError extends ExceptionBase {
+  static readonly message = 'Charging less than the suggested late fee requires a note';
+  public readonly code = 'RENTALS.LATE_FEE_WAIVER_NOTE_REQUIRED';
+
+  constructor(
+    readonly suggestedLateFee: number,
+    readonly submittedLateFee: number,
+    cause?: Error,
+  ) {
+    super(LateFeeWaiverNoteRequiredError.message, cause, { suggestedLateFee, submittedLateFee });
+  }
+}
+
 export class RentalCancelNotAllowedError extends ExceptionBase {
   static readonly message = 'Only a booked rental can be cancelled';
   public readonly code = 'RENTALS.CANCEL_NOT_ALLOWED';

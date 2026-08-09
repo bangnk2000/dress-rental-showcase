@@ -675,8 +675,18 @@
               }
             }
           },
+          "403": {
+            "description": "Named denial: forbidden + reason late_fee_waiver_requires_owner — staff may not charge less than the suggested late fee",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReturnRentalOutcomeDto"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "Business rejection: rejected_rental_not_found | rejected_return_not_allowed (carries currentStatus)",
+            "description": "Business rejection: rejected_rental_not_found | rejected_return_not_allowed (carries currentStatus) | rejected_waiver_note_required (carries suggested + submitted late fee)",
             "content": {
               "application/json": {
                 "schema": {
@@ -691,7 +701,7 @@
             "bearer": []
           }
         ],
-        "summary": "Return a rental: settle the deposit and record late/damage fees",
+        "summary": "Return a rental: settle the deposit and record late/damage fees. Omitting lateFee charges the suggested late fee (FR-RENT-09)",
         "tags": [
           "rentals"
         ]
@@ -831,6 +841,52 @@
           }
         ],
         "summary": "List the blocking bookings of a dress (rental + cleaning buffer)",
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
+    "/api/v1/rentals/{id}/late-fee": {
+      "get": {
+        "operationId": "QuoteLateFeeHttpController_quote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LateFeeQuoteResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rental not found — a read that finds nothing is a fault, not an outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Late fee the shop should charge if the dresses come back today (FR-RENT-09) — read before settling",
         "tags": [
           "rentals"
         ]
@@ -1673,7 +1729,9 @@
           "status": {
             "enum": [
               "rejected_rental_not_found",
-              "rejected_return_not_allowed"
+              "rejected_return_not_allowed",
+              "rejected_waiver_note_required",
+              "forbidden"
             ],
             "type": "string"
           },
@@ -1685,6 +1743,21 @@
               "cancelled"
             ],
             "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "late_fee_waiver_requires_owner"
+            ],
+            "description": "Why the denial happened — only set for status=forbidden"
+          },
+          "suggestedLateFee": {
+            "type": "number",
+            "description": "Late fee the shop should charge, so the UI can state the number (FR-RENT-09)"
+          },
+          "submittedLateFee": {
+            "type": "number",
+            "description": "Late fee the client tried to charge"
           }
         },
         "required": [
@@ -1985,6 +2058,54 @@
           "count",
           "limit",
           "page"
+        ]
+      },
+      "LateFeeQuoteResponseDto": {
+        "type": "object",
+        "properties": {
+          "rentalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": "string",
+            "example": "2026-08-07",
+            "description": "Last rental day (inclusive)"
+          },
+          "referenceDate": {
+            "type": "string",
+            "example": "2026-08-10",
+            "description": "The shop's calendar day used for the quote"
+          },
+          "daysLate": {
+            "type": "number",
+            "example": 3,
+            "description": "Calendar days after dueDate; 0 when on time"
+          },
+          "dressCount": {
+            "type": "number",
+            "example": 2,
+            "description": "Dresses in the rental — the fee is per dress"
+          },
+          "dailyRateAmount": {
+            "type": "number",
+            "example": 200000,
+            "description": "VND per dress per day (shop configuration)"
+          },
+          "suggestedLateFee": {
+            "type": "number",
+            "example": 1200000,
+            "description": "daysLate × dressCount × dailyRateAmount"
+          }
+        },
+        "required": [
+          "rentalId",
+          "dueDate",
+          "referenceDate",
+          "daysLate",
+          "dressCount",
+          "dailyRateAmount",
+          "suggestedLateFee"
         ]
       },
       "PaymentDto": {

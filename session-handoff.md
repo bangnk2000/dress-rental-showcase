@@ -1,5 +1,39 @@
 # Session Handoff
 
+## 2026-08-10 (20) — `rentals/settle-late-fee` = pass (first capability through the spec-before-code lane)
+
+- Done (the point of the exercise): the `init-feature-spec` lane was used for real. The spec
+  ([docs/design/rentals/settle-late-fee.md](docs/design/rentals/settle-late-fee.md)) was written
+  FIRST at status `draft` with the fee formula and waiver authority left as **blocker questions** —
+  the lane forbids inventing business rules — and the contract check on the draft shape found 2
+  blockers, 2 major, 2 minor. The shop owner answered (§6): **200.000₫/ngày/váy flat**, no grace, no
+  cap; the **cleaning buffer does not count as late**; **only the owner may charge less, and must
+  give a reason**; the meaning change of `lateFee` is accepted in place. Then, and only then, code.
+- Done (BE): the rule is a pure value object (`domain/late-fee.value-object.ts`) reached through
+  `RentalEntity.lateFeeQuote()`; the read side (`GET /rentals/:id/late-fee`) calls the SAME domain
+  method rather than growing a second copy in SQL. `shopToday()` (`Asia/Ho_Chi_Minh`) is the
+  reference day — money must not depend on the VPS clock, which is why the fee does NOT take the
+  device date the way the today board does. Waiver rules land in `return-rental.service.ts` AFTER
+  the state machine decides, so an already-returned rental still answers
+  `rejected_return_not_allowed` rather than a fee complaint.
+- Done (contract + FE): the repo's **first 403 outcome** — `{ status: 'forbidden', reason:
+  'late_fee_waiver_requires_owner', suggestedLateFee, submittedLateFee }` — plus
+  `rejected_waiver_note_required` (422), both added to [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md)
+  §3–§4 before implementation. The return dialog reads the quote, states it in an `aria-live`
+  banner, pre-fills the field, disables submit until the number is known, and keeps both waiver
+  rejections in place instead of closing.
+- Verification: be **95 unit + 30 e2e** (8 new in `test/late-fee.e2e-spec.ts` proving the 403 leaves
+  the rental `out` with no payments row), fe **57** (4 new dialog states), qr-admin 13, root
+  check/lint/arch/builds green, Playwright happy path still green against the real stack.
+- Side fix (found by the first failing test, worth knowing): `lib/format.ts` read the i18n
+  singleton, so under test money formatted `₫1,200,000` (en) while every label was Vietnamese. It
+  now reads `<html lang>` — one source for text and numbers. No test had asserted formatted currency
+  before, which is why it hid for so long.
+- Next: the ledger is 19/19 `pass` again. Strongest candidates — (1) a first release record through
+  `docs/spec/init-release/` into `docs/releases/<id>/` (the VPS/PM2 deploy is manual today, so the
+  readiness checklist + rollback plan is the missing half); (2) CI job for Playwright so the browser
+  proof stops being manual; (3) `qr` context still has no invariant proof spec.
+
 ## 2026-08-09 (19) — `infra/outcome-model` + `infra/invariant-proof-e2e` = pass (both MUST gaps closed)
 
 - Done (design gate first, per the process): [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md)

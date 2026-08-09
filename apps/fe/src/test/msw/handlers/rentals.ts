@@ -12,6 +12,7 @@ import type {
   BookedRangeListResponseDto,
   CreateRentalRequestDto,
   IdResponse,
+  LateFeeQuoteResponseDto,
   PaymentDto,
   PaymentListResponseDto,
   RentalListItemDto,
@@ -46,6 +47,7 @@ let rentalListCount: number | null = null;
 let lastRentalListParams: Record<string, string> | null = null;
 let lastCancelRentalId: string | null = null;
 let rentalPayments = new Map<string, PaymentDto[]>();
+let lateFeeQuotes = new Map<string, LateFeeQuoteResponseDto>();
 
 /** Dresses that already have an overlapping booking — POST /rentals answers 409. */
 export function seedBlockedDresses(dressIds: string[]): void {
@@ -91,6 +93,23 @@ export function makeTodayRental(
 /** The board served for GET today-board, whatever date is asked. */
 export function seedTodayBoard(board: Partial<TodayBoardLists>): void {
   todayBoard = { ...emptyBoard(), ...board };
+}
+
+/** The late-fee suggestion the server would answer for a rental (FR-RENT-09). */
+export function seedLateFeeQuote(
+  rentalId: string,
+  overrides: Partial<LateFeeQuoteResponseDto> = {},
+): void {
+  lateFeeQuotes.set(rentalId, {
+    rentalId,
+    dueDate: '2026-08-03',
+    referenceDate: '2026-08-06',
+    daysLate: 3,
+    dressCount: 1,
+    dailyRateAmount: 200_000,
+    suggestedLateFee: 600_000,
+    ...overrides,
+  });
 }
 
 /** The date param of the most recent GET today-board — asserts the FE sends its own day. */
@@ -167,6 +186,7 @@ export function resetRentals(): void {
   lastPickupRentalId = null;
   lastReturnRentalId = null;
   lastReturnBody = null;
+  lateFeeQuotes = new Map();
   rentalList = [];
   rentalListCount = null;
   lastRentalListParams = null;
@@ -233,6 +253,23 @@ export const rentalsHandlers: HttpHandler[] = [
       count: rentalListCount ?? rentalList.length,
       limit: 20,
       page,
+    };
+    return HttpResponse.json(body);
+  }),
+
+  // GET /api/v1/rentals/:id/late-fee — the server-owned suggestion the return dialog reads
+  // (FR-RENT-09). Tests seed it with seedLateFeeQuote; default = returned on time.
+  http.get('/api/v1/rentals/:id/late-fee', ({ params }) => {
+    const rentalId = params.id as string;
+    const seeded = lateFeeQuotes.get(rentalId);
+    const body: LateFeeQuoteResponseDto = seeded ?? {
+      rentalId,
+      dueDate: '2026-08-03',
+      referenceDate: '2026-08-03',
+      daysLate: 0,
+      dressCount: 1,
+      dailyRateAmount: 200_000,
+      suggestedLateFee: 0,
     };
     return HttpResponse.json(body);
   }),

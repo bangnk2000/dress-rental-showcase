@@ -3,6 +3,14 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-08-10 (20) — `rentals/settle-late-fee` (FR-RENT-09) = pass — the first capability driven
+  through the `init-feature-spec` lane: spec `draft` with the business rules left as blocker
+  questions, contract check on the draft, owner decisions recorded in §6, THEN code, then an as-built
+  re-sync (§7). Late fee = days late × dresses × 200.000₫ (buffer excluded), computed by a pure
+  domain value object that both the read and the write path call; waiver is owner-only and needs a
+  reason, surfacing the repo's first 403 outcome. be 95 unit + 30 e2e, fe 57, qr-admin 13, all root
+  gates + Playwright green. Side fix: `lib/format.ts` no longer reads the i18n singleton (money
+  formatted en-style under test while the UI was vi).
 - 2026-08-09 (19) — Process-conformance refactor, docs AND code. Design gate first: ADR 0001
   (outcome model + full outcome catalog + UI state matrix) approved, SRS/design docs re-synced to it,
   `docs/design/README.md` gained the B2.1 outcome-catalog lane and an ADR index. Then the two MUST

@@ -9,6 +9,7 @@ import { mapApiError } from '@/api/errors';
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
+  useQuoteLateFeeHttpControllerQuote,
   useReturnRentalHttpControllerSettle,
 } from '@/api/generated/rentals/rentals';
 import type { ReturnRentalRequestDto, TodayBoardRentalDto } from '@/api/generated/model';
@@ -24,6 +25,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { formatVnd } from '@/lib/format';
 
 import {
   returnFormDefaults,
@@ -58,11 +60,26 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
     defaultValues: returnFormDefaults,
   });
 
-  // Re-prime per open: the dialog instance is reused across rentals.
+  /**
+   * FR-RENT-09: the server owns the late-fee number, so the dialog ASKS for it and pre-fills the
+   * field. Staff reads the amount to the customer before confirming; only the owner may charge
+   * less (the mutation answers `forbidden` otherwise).
+   */
+  const lateFee = useQuoteLateFeeHttpControllerQuote(rental?.rentalId ?? '', {
+    query: { enabled: rental !== null, staleTime: 0 },
+  });
+  const quote = lateFee.data ?? null;
+
+  // Re-prime per open: the dialog instance is reused across rentals. The suggested fee arrives
+  // asynchronously, so re-prime again when it lands (staff has not typed yet at that point).
   const { reset } = form;
   useEffect(() => {
-    if (rental) reset(returnFormDefaults);
-  }, [rental, reset]);
+    if (!rental) return;
+    reset({
+      ...returnFormDefaults,
+      lateFee: quote && quote.suggestedLateFee > 0 ? String(quote.suggestedLateFee) : '',
+    });
+  }, [rental, quote, reset]);
 
   async function refreshBoardAndList(): Promise<void> {
     await Promise.all([
@@ -91,7 +108,18 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
       onError: async (error) => {
         const mapped = mapApiError(error);
         if (mapped.kind === 'outcome') {
-          // Nothing left to settle in this dialog — close it and refresh the board.
+          // The two waiver rejections are FIXABLE in place — keep the dialog open so staff can
+          // put the suggested number back, or the owner can type the reason (ADR 0001 §4).
+          if (mapped.status === 'forbidden') {
+            form.setError('lateFee', { message: 'errors.lateFeeWaiverForbidden' });
+            return;
+          }
+          if (mapped.status === 'rejected_waiver_note_required') {
+            form.setError('note', { message: 'errors.waiverNoteRequired' });
+            form.setFocus('note');
+            return;
+          }
+          // Anything else means the rental moved on — nothing left to settle here.
           toast.error(
             mapped.status === 'rejected_return_not_allowed'
               ? t('errors.returnNotAllowed', {
@@ -132,6 +160,24 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={(event) => void onSubmit(event)} className="grid gap-4" noValidate>
+            {/* FR-RENT-09 banner: the number staff reads to the customer, before confirming. */}
+            <div aria-live="polite" className="text-sm">
+              {lateFee.isPending ? (
+                <span className="text-muted-foreground">{t('returnDialog.lateFee.loading')}</span>
+              ) : lateFee.isError ? (
+                <span className="text-destructive">{t('returnDialog.lateFee.unavailable')}</span>
+              ) : quote && quote.daysLate > 0 ? (
+                <span className="font-medium text-destructive">
+                  {t('returnDialog.lateFee.late', {
+                    days: quote.daysLate,
+                    dresses: quote.dressCount,
+                    amount: formatVnd(quote.suggestedLateFee),
+                  })}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">{t('returnDialog.lateFee.onTime')}</span>
+              )}
+            </div>
             {amountFields.map(({ name, label }) => (
               <FormField
                 key={name}
@@ -165,7 +211,9 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
               <Button type="button" variant="outline" onClick={onClose}>
                 {tCommon('actions.cancel')}
               </Button>
-              <Button type="submit" disabled={returnRental.isPending}>
+              {/* Never submit before the suggested fee is known: a blind submit would charge
+                  whatever the empty field means and could trip the waiver rule. */}
+              <Button type="submit" disabled={returnRental.isPending || lateFee.isPending}>
                 {t('returnDialog.submit')}
               </Button>
             </DialogFooter>

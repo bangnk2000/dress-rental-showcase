@@ -1,11 +1,14 @@
 /**
- * Intl helpers, fed with the active i18n language (vi by default).
- * Never hand-format currency or dates — word order and separators differ per locale.
+ * Intl helpers. Never hand-format currency or dates — word order and separators differ per locale.
+ *
+ * The locale comes from `<html lang>`, which `lib/i18n.ts` keeps in sync on every language change
+ * and `index.html` seeds with `vi`. Deliberately NOT the i18next singleton: a kernel helper that
+ * imports the app instance formats with a different language than the text around it whenever the
+ * two instances disagree — which is exactly what happened under test (vi text, en money).
  */
-import i18n from '@/lib/i18n';
-
 function currentLocale(): string {
-  return i18n.language || 'vi';
+  const lang = typeof document === 'undefined' ? '' : document.documentElement.lang;
+  return lang || 'vi';
 }
 
 /** VND is an integer currency — no decimals, e.g. 1.500.000 ₫ */

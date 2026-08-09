@@ -33,6 +33,7 @@ import type {
   CreateRentalRequestDto,
   GetTodayBoardHttpControllerGetParams,
   IdResponse,
+  LateFeeQuoteResponseDto,
   ListRentalsHttpControllerListParams,
   PickupRentalOutcomeDto,
   RentalListResponseDto,
@@ -345,7 +346,7 @@ export const usePickupRentalHttpControllerPickup = <TError = PickupRentalOutcome
       return useMutation(getPickupRentalHttpControllerPickupMutationOptions(options), queryClient);
     }
     /**
- * @summary Return a rental: settle the deposit and record late/damage fees
+ * @summary Return a rental: settle the deposit and record late/damage fees. Omitting lateFee charges the suggested late fee (FR-RENT-09)
  */
 export const returnRentalHttpControllerSettle = (
     id: string,
@@ -397,7 +398,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ReturnRentalHttpControllerSettleMutationError = ApiErrorResponseDto | ReturnRentalOutcomeDto
 
     /**
- * @summary Return a rental: settle the deposit and record late/damage fees
+ * @summary Return a rental: settle the deposit and record late/damage fees. Omitting lateFee charges the suggested late fee (FR-RENT-09)
  */
 export const useReturnRentalHttpControllerSettle = <TError = ApiErrorResponseDto | ReturnRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>, TError,{id: string;data: ReturnRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
@@ -683,6 +684,98 @@ export function useListBookedRangesHttpControllerList<TData = Awaited<ReturnType
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListBookedRangesHttpControllerListQueryOptions(dressId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Late fee the shop should charge if the dresses come back today (FR-RENT-09) — read before settling
+ */
+export const quoteLateFeeHttpControllerQuote = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<LateFeeQuoteResponseDto>(
+      {url: `/api/v1/rentals/${id}/late-fee`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getQuoteLateFeeHttpControllerQuoteQueryKey = (id: string,) => {
+    return [
+    `/api/v1/rentals/${id}/late-fee`
+    ] as const;
+    }
+
+
+export const getQuoteLateFeeHttpControllerQuoteQueryOptions = <TData = Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError = ApiErrorResponseDto>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getQuoteLateFeeHttpControllerQuoteQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>> = ({ signal }) => quoteLateFeeHttpControllerQuote(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type QuoteLateFeeHttpControllerQuoteQueryResult = NonNullable<Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>>
+export type QuoteLateFeeHttpControllerQuoteQueryError = ApiErrorResponseDto
+
+
+export function useQuoteLateFeeHttpControllerQuote<TData = Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError = ApiErrorResponseDto>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>,
+          TError,
+          Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useQuoteLateFeeHttpControllerQuote<TData = Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError = ApiErrorResponseDto>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>,
+          TError,
+          Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useQuoteLateFeeHttpControllerQuote<TData = Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError = ApiErrorResponseDto>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Late fee the shop should charge if the dresses come back today (FR-RENT-09) — read before settling
+ */
+
+export function useQuoteLateFeeHttpControllerQuote<TData = Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError = ApiErrorResponseDto>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof quoteLateFeeHttpControllerQuote>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getQuoteLateFeeHttpControllerQuoteQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

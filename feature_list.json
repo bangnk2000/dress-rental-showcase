@@ -130,6 +130,20 @@
         "AC4: pnpm --filter be test:e2e exists and runs the suite against a fresh compose/CI Postgres; CI has a postgres service and runs it"
       ],
       "dependencies": ["infra/outcome-model"]
+    },
+    {
+      "id": "rentals/settle-late-fee",
+      "title": "Auto-computed late fee at return, with owner-only waiver (FR-RENT-09)",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "2026-08-09: design gate — use-case spec drafted at docs/design/rentals/settle-late-fee.md + contract check on the draft shape (2 blockers, 2 major, 2 minor); held at todo because the fee formula and waiver authority are business rules the lane forbids inventing. 2026-08-10: the shop owner answered (spec §6) — 200,000 VND per dress per day flat, no grace, no cap; the cleaning buffer does NOT count as late; only owner may charge less and must give a reason; the meaning change of `lateFee` accepted in place. Spec flipped to approved, then implemented and re-synced to as-built (§7). AC1: the rule is a pure value object (domain/late-fee.value-object.ts, 8 unit tests incl. buffer-irrelevance and month boundaries) reached through RentalEntity.lateFeeQuote; reference day is shopToday() in Asia/Ho_Chi_Minh so money never depends on the VPS clock. AC2: omitting lateFee charges the suggestion — proven by unit test and by e2e (payments row = 400,000 for 2 days × 1 dress). AC3: a staff waiver answers 403 { status: forbidden, reason: late_fee_waiver_requires_owner, suggestedLateFee, submittedLateFee } with the rental still `out` and no payments row; an owner waiver without a note answers 422 rejected_waiver_note_required; with a note it records the reduced amount — all three over real HTTP in test/late-fee.e2e-spec.ts, plus staff charging exactly or more still succeeds. AC4: the dialog reads GET /rentals/:id/late-fee, shows 'Trễ 3 ngày · 2 váy → đề xuất 1.200.000 ₫' in an aria-live banner, pre-fills the field, disables submit until the quote lands, keeps both waiver rejections in place (field errors, note focused), and falls back to manual entry when the quote fails — 4 new vitest cases. Gates: be 95 unit + 30 e2e, fe 57, qr-admin 13, root check/lint/arch/build green; contract regenerated for both clients in the same commit. Side fix found while testing: lib/format.ts read the app i18n singleton, so money formatted en-style under test while the text was vi — it now reads <html lang>.",
+      "acceptance": [
+        "AC1: daysLate and the suggested fee follow the formula approved in spec §6 Q1-Q3 (cleaning buffer excluded), computed as a pure function - same inputs, same result",
+        "AC2: submitting the return without lateFee charges the suggested fee; payments records the amount actually charged",
+        "AC3: charging LESS than suggested is refused for staff with the named 403 outcome forbidden + reason late_fee_waiver_requires_owner (payload carries suggested + submitted), and accepted for owner",
+        "AC4: the return dialog shows days late and the suggested amount BEFORE submit, pre-filled and editable, with a fallback when the quote call fails"
+      ],
+      "dependencies": ["infra/outcome-model"]
     }
   ]
 }

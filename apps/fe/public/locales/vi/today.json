@@ -39,11 +39,19 @@
     "errors": {
       "amountInvalid": "Số tiền phải là số nguyên không âm",
       "noteTooLong": "Ghi chú tối đa 2000 ký tự"
+    },
+    "lateFee": {
+      "loading": "Đang tính phí trễ hạn…",
+      "onTime": "Trả đúng hạn — không có phí trễ.",
+      "late": "Trễ {{days}} ngày · {{dresses}} váy → đề xuất {{amount}}",
+      "unavailable": "Không tính được phí trễ hạn. Vui lòng nhập tay."
     }
   },
   "errors": {
     "pickupNotAllowed": "Không giao được: lượt thuê đang ở trạng thái \"{{status}}\".",
     "returnNotAllowed": "Không nhận về được: lượt thuê đang ở trạng thái \"{{status}}\".",
-    "rentalNotFound": "Lượt thuê này không còn tồn tại. Bảng đã được làm mới."
+    "rentalNotFound": "Lượt thuê này không còn tồn tại. Bảng đã được làm mới.",
+    "lateFeeWaiverForbidden": "Chỉ chủ tiệm được giảm phí trễ so với số đề xuất.",
+    "waiverNoteRequired": "Giảm phí trễ thì phải ghi lý do."
   }
 }

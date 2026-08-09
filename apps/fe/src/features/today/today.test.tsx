@@ -12,6 +12,7 @@ import {
   getLastTodayBoardDate,
   makeTodayRental,
   resetRentals,
+  seedLateFeeQuote,
   seedTodayBoard,
 } from '@/test/msw/handlers/rentals';
 import { server } from '@/test/msw/server';
@@ -178,6 +179,103 @@ test('a rejected_rental_not_found outcome on return closes the dialog', async ()
   ).toBeInTheDocument();
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Xác nhận trả váy' })).not.toBeInTheDocument(),
+  );
+});
+
+test('FR-RENT-09: the dialog states the late fee and pre-fills the suggested amount', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  seedLateFeeQuote('rental-9', { daysLate: 3, dressCount: 2, suggestedLateFee: 1_200_000 });
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+
+  // Intl puts a non-breaking space before ₫, so match the digits, not the exact spacing.
+  expect(
+    await screen.findByText(/Trễ 3 ngày · 2 váy → đề xuất 1\.200\.000/),
+  ).toBeInTheDocument();
+  // staff reads that number to the customer, so it must already be in the field
+  await waitFor(() =>
+    expect(screen.getByLabelText('Phí trễ hạn (VND)')).toHaveValue('1200000'),
+  );
+});
+
+test('FR-RENT-09: a staff waiver keeps the dialog open with the field error', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  seedLateFeeQuote('rental-9', { suggestedLateFee: 600_000 });
+  server.use(
+    http.post('/api/v1/rentals/:id/return', () =>
+      HttpResponse.json(
+        {
+          status: 'forbidden',
+          reason: 'late_fee_waiver_requires_owner',
+          suggestedLateFee: 600_000,
+          submittedLateFee: 100_000,
+        },
+        { status: 403 },
+      ),
+    ),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  const lateFeeField = await screen.findByLabelText('Phí trễ hạn (VND)');
+  await user.clear(lateFeeField);
+  await user.type(lateFeeField, '100000');
+  await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
+
+  expect(
+    await screen.findByText('Chỉ chủ tiệm được giảm phí trễ so với số đề xuất.'),
+  ).toBeInTheDocument();
+  // fixable in place: the dialog stays open so the number can be put back
+  expect(screen.getByRole('button', { name: 'Xác nhận trả váy' })).toBeInTheDocument();
+});
+
+test('FR-RENT-09: a waiver without a reason points at the note field', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  seedLateFeeQuote('rental-9');
+  server.use(
+    http.post('/api/v1/rentals/:id/return', () =>
+      HttpResponse.json(
+        {
+          status: 'rejected_waiver_note_required',
+          suggestedLateFee: 600_000,
+          submittedLateFee: 0,
+        },
+        { status: 422 },
+      ),
+    ),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: 'Xác nhận trả váy' }));
+
+  expect(await screen.findByText('Giảm phí trễ thì phải ghi lý do.')).toBeInTheDocument();
+});
+
+test('FR-RENT-09: a failing quote warns but never blocks the settlement', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  server.use(
+    http.get('/api/v1/rentals/:id/late-fee', () =>
+      HttpResponse.json(
+        { error: { code: 'GENERIC.INTERNAL', message: 'Server error' } },
+        { status: 500 },
+      ),
+    ),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+
+  expect(
+    await screen.findByText('Không tính được phí trễ hạn. Vui lòng nhập tay.'),
+  ).toBeInTheDocument();
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Xác nhận trả váy' })).toBeEnabled(),
   );
 });
 

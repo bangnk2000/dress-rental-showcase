@@ -63,6 +63,11 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   (due back), và **OVERDUE** — màn hình nhân viên mở mỗi sáng, có nút thao tác trực tiếp.
 - **FR-RENT-08** Danh sách đơn: search tên/điện thoại khách, filter status, phân trang;
   mang action cancel (hàng booked) và dialog payments (hàng returned).
+- **FR-RENT-09** Phí trễ hạn **tự tính**: `số ngày trễ × số váy × 200.000₫` (đơn giá cố định ở env
+  `LATE_FEE_PER_DRESS_PER_DAY`; đệm giặt KHÔNG tính là trễ). Dialog tất toán đọc số này từ
+  `GET /rentals/:id/late-fee` và pre-fill để nhân viên nói với khách trước khi xác nhận. Thu **ít
+  hơn** số đề xuất chỉ chủ tiệm được làm và **phải ghi lý do**; thu nhiều hơn thì tự do. Quyết định
+  + lý do: [design/rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) §6.
 
 ### payments
 - **FR-PAY-01** Xem các dòng tiền của một đơn (`GET /rentals/:id/payments`). Write side nằm
@@ -108,6 +113,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-RENT-06 | `rentals/cancel-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-RENT-08 | `rentals/list-rentals` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-PAY-01 | `payments/list-payments` | [payments-aggregate.md](./design/payments-aggregate.md) | pass |
+| FR-RENT-09 | `rentals/settle-late-fee` | [rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Phí trễ hạn | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

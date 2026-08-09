@@ -1,6 +1,7 @@
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateRoot } from '../../../libs/ddd/aggregate-root.base';
 import { ArgumentInvalidException } from '../../../libs/exceptions';
+import { LateFeeQuote } from './late-fee.value-object';
 import { RentalItemEntity } from './rental-item.entity';
 import { RentalPeriod } from './rental-period.value-object';
 import { CreateRentalProps, RentalProps, RentalStatus } from './rental.types';
@@ -58,6 +59,20 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
 
   get items(): readonly RentalItemEntity[] {
     return this.props.items;
+  }
+
+  /**
+   * FR-RENT-09: what the shop should charge if the dresses come back on `referenceDate`.
+   * The rule lives in the domain (LateFeeQuote) and is priced per DRESS, so it belongs to the
+   * aggregate that knows how many dresses the rental holds.
+   */
+  lateFeeQuote(referenceDate: string, dailyRateAmount: number): LateFeeQuote {
+    return LateFeeQuote.compute({
+      dueDate: this.props.period.end,
+      referenceDate,
+      dressCount: this.props.items.length,
+      dailyRateAmount,
+    });
   }
 
   /** Staff hands the dresses to the customer: booked → out. */

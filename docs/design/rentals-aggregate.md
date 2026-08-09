@@ -1,6 +1,6 @@
 # rentals — Tactical Design
 
-> Status: **as-built 2026-08-09** (re-synced with ADR 0001 + BR-1/2/3 proof tests on real Postgres) · SRS: FR-RENT-01..08, BR-1..3, BR-5..6 · Context **Core**
+> Status: **as-built 2026-08-10** (ADR 0001 + BR-1/2/3 proof tests trên Postgres thật + FR-RENT-09 phí trễ hạn) · SRS: FR-RENT-01..09, BR-1..3, BR-5..6 · Context **Core**
 
 ## Vai trò & ranh giới
 
@@ -39,6 +39,20 @@ Mọi transition khác → `Err(...NotAllowedError)` → controller render outco
 | BR-3: status hợp lệ | State machine trong entity | `CHECK (status IN (...))` | outcome `rejected_*_not_allowed` (422) qua state machine; `CHECK` chỉ là lưới cuối | unit test entity (có) + e2e: UPDATE status rác bị `CHECK` chặn |
 | Giá item ≥ 0 | `Money` VO | `CHECK (price >= 0)` | 400 envelope | unit VO (có) |
 
+## Phí trễ hạn (FR-RENT-09)
+
+| Mục | Chốt |
+| --- | --- |
+| Quy tắc | `daysLate` = số ngày dương lịch **sau** `period.end` (đệm giặt không tính); `suggestedLateFee = daysLate × số item × LATE_FEE_PER_DRESS_PER_DAY` (200.000₫, env) |
+| Nơi sống | `domain/late-fee.value-object.ts` (hàm thuần) + `RentalEntity.lateFeeQuote()` — read side gọi chính nó, **không** có bản copy SQL thứ hai |
+| Ngày tham chiếu | `shopToday()` (`Asia/Ho_Chi_Minh`) — tiền không được phụ thuộc đồng hồ UTC của VPS. Khác với today-board (lấy ngày từ thiết bị, vì nhân viên có thể cố ý xem ngày khác) |
+| Miễn/giảm | thu ít hơn đề xuất: chỉ `owner` (outcome 403 `forbidden`) và **bắt buộc note** (422 `rejected_waiver_note_required`); thu nhiều hơn thì tự do |
+| Ghi nhận | `payments` luôn ghi số THỰC THU, không phải số đề xuất |
+| Proof | unit `late-fee.value-object.spec.ts` + `return-rental.service.spec.ts`; provider `test:e2e` → `late-fee.e2e-spec.ts` (8 ca) |
+
+Chi tiết + lý do: [rentals/settle-late-fee.md](./rentals/settle-late-fee.md) · outcome catalog:
+[ADR 0001](../adr/0001-outcome-model-at-the-http-boundary.md) §3.
+
 Concurrency: KHÔNG cần version column — invariant race-sensitive duy nhất (BR-1) đã được
 EXCLUDE đóng; hai staff cùng thao tác một đơn là kịch bản chấp nhận last-write cho MVP
 (quyết định falsifiable — xét lại nếu tiệm thêm thiết bị).
@@ -66,4 +80,6 @@ Quy ước daterange: domain dùng inclusive `[start,end]`; Postgres normalize h
 
 - ~~Proof test cho BR-1/BR-2 (gap #5)~~ — **đã đóng 2026-08-09**: `apps/be/test/rentals-overlap.e2e-spec.ts`
   chạy trên Postgres thật (`pnpm --filter be test:e2e`), CI có postgres service.
-- Phí trễ hạn hiện nhập tay lúc return; nếu muốn tự tính theo ngày trễ → FR mới + design-tier.
+- ~~Phí trễ hạn nhập tay~~ — **đã làm 2026-08-10** (tự tính + miễn giảm có kiểm soát quyền):
+  **FR-RENT-09** → [rentals/settle-late-fee.md](./rentals/settle-late-fee.md) (status `as-built`);
+  xem mục §Phí trễ hạn ở trên.

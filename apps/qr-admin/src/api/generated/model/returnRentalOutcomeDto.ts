@@ -5,9 +5,16 @@
  * OpenAPI spec version: 0
  */
 import type { ReturnRentalOutcomeDtoCurrentStatus } from './returnRentalOutcomeDtoCurrentStatus';
+import type { ReturnRentalOutcomeDtoReason } from './returnRentalOutcomeDtoReason';
 import type { ReturnRentalOutcomeDtoStatus } from './returnRentalOutcomeDtoStatus';
 
 export interface ReturnRentalOutcomeDto {
   status: ReturnRentalOutcomeDtoStatus;
   currentStatus?: ReturnRentalOutcomeDtoCurrentStatus;
+  /** Why the denial happened — only set for status=forbidden */
+  reason?: ReturnRentalOutcomeDtoReason;
+  /** Late fee the shop should charge, so the UI can state the number (FR-RENT-09) */
+  suggestedLateFee?: number;
+  /** Late fee the client tried to charge */
+  submittedLateFee?: number;
 }
