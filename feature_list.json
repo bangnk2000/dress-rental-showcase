@@ -186,6 +186,19 @@
         "AC4: a rejection is cleared as soon as the dates or the selection change"
       ],
       "dependencies": ["infra/outcome-model"]
+    },
+    {
+      "id": "catalog/dress-thumbnails",
+      "title": "Dress photos appear where staff choose dresses — catalog list and the rental picker",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "UI/UX review finding #6: a dress shop recognises stock by sight, and `photoUrls` (shipped with catalog/manage-dress) was visible only on the detail page — the catalog list and the picker where dresses are actually CHOSEN were text-only. FE-only, no API change: the list DTO already carries the links. AC1: new kernel component `components/media/photo-thumbnail.tsx` renders the first photo at row size or a neutral icon; it is decorative (`alt=\"\"`) because the dress code sits next to it in every caller, so announcing it again is noise. AC2: a dead link degrades to the placeholder instead of a broken-image glyph — the links are staff-pasted third-party URLs, so that is an ordinary state; the failed URL is remembered rather than a boolean flag, so a row that later receives a different photo tries again. AC3: wired into the catalog table (leading column, `sr-only` header) and into BOTH picker lists (search results and the chosen dresses, the latter through a new optional `photoUrl` on `SelectedDress`). Gates: fe 64 tests (+1 asserting the img src for a dress with a photo and its absence for one without — asserted on the DOM, since a decorative image has no `img` role), check/lint/arch green.",
+      "acceptance": [
+        "AC1: the catalog list and both picker lists show the dress photo at row size, or a neutral placeholder",
+        "AC2: a broken photo link renders the placeholder, never a broken image",
+        "AC3: the thumbnail adds nothing for a screen reader, since the dress code is already text next to it"
+      ],
+      "dependencies": ["catalog/manage-dress"]
     }
   ]
 }

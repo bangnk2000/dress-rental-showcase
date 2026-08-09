@@ -75,6 +75,21 @@ test('renders dress rows from the API through Suspense', async () => {
   );
 });
 
+test('a dress with a photo shows it in the list; one without falls back to the placeholder', async () => {
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001', photoUrls: ['https://example.test/a.jpg'] }),
+    makeDress({ id: 'd2', code: 'DR-002', photoUrls: [] }),
+  ]);
+  const { container } = renderList();
+  await screen.findByText('DR-001');
+
+  // The photo is decorative (alt=""): the code next to it is what a screen reader reads, so this
+  // asserts the DOM rather than an accessible role.
+  const images = container.querySelectorAll('img');
+  expect(images).toHaveLength(1);
+  expect(images[0]).toHaveAttribute('src', 'https://example.test/a.jpg');
+});
+
 test('shows the no-dresses empty state when the catalog is empty', async () => {
   renderList();
 

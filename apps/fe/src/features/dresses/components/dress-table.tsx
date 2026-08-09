@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import type { DressResponseDto } from '@/api/generated/model';
+import { PhotoThumbnail } from '@/components/media/photo-thumbnail';
 import {
   Table,
   TableBody,
@@ -21,6 +22,10 @@ export function DressTable({ dresses }: { dresses: DressResponseDto[] }) {
     <Table>
       <TableHeader>
         <TableRow>
+          {/* A dress shop recognises stock by sight; the header would only add noise. */}
+          <TableHead className="w-14">
+            <span className="sr-only">{t('list.columns.photo')}</span>
+          </TableHead>
           <TableHead>{t('list.columns.code')}</TableHead>
           <TableHead>{t('list.columns.name')}</TableHead>
           <TableHead>{t('list.columns.size')}</TableHead>
@@ -32,6 +37,9 @@ export function DressTable({ dresses }: { dresses: DressResponseDto[] }) {
       <TableBody>
         {dresses.map((dress) => (
           <TableRow key={dress.id}>
+            <TableCell>
+              <PhotoThumbnail src={dress.photoUrls[0]} />
+            </TableCell>
             <TableCell>
               <Link
                 to={`/dresses/${dress.id}`}

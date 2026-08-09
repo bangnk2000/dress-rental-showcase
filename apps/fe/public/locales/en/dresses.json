@@ -7,6 +7,7 @@
     "statusAll": "All statuses",
     "createButton": "Add dress",
     "columns": {
+      "photo": "Photo",
       "code": "Code",
       "name": "Name",
       "size": "Size",

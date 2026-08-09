@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useListDressesHttpControllerList } from '@/api/generated/catalog/catalog';
 import { useCheckAvailabilityHttpControllerCheck } from '@/api/generated/rentals/rentals';
+import { PhotoThumbnail } from '@/components/media/photo-thumbnail';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,8 @@ export interface SelectedDress {
   code: string;
   name: string;
   rentalPrice: number;
+  /** First catalog photo, so the chosen row stays recognisable by sight. */
+  photoUrl?: string;
 }
 
 /** The rental period, once both dates are filled and the range makes sense. */
@@ -88,8 +91,9 @@ export function DressPicker({
         results.length > 0 ? (
           <ul className="divide-y rounded-md border">
             {results.map((dress) => (
-              <li key={dress.id} className="flex items-center justify-between gap-2 p-2">
-                <span className="min-w-0 truncate">
+              <li key={dress.id} className="flex items-center gap-2 p-2">
+                <PhotoThumbnail src={dress.photoUrls[0]} />
+                <span className="min-w-0 flex-1 truncate">
                   <span className="font-medium">{dress.code}</span>{' '}
                   <span className="text-muted-foreground">{dress.name}</span>{' '}
                   <span className="whitespace-nowrap">{formatVnd(dress.rentalPrice)}</span>
@@ -104,6 +108,7 @@ export function DressPicker({
                       code: dress.code,
                       name: dress.name,
                       rentalPrice: dress.rentalPrice,
+                      ...(dress.photoUrls[0] ? { photoUrl: dress.photoUrls[0] } : {}),
                     });
                     setSearch('');
                   }}
@@ -169,8 +174,9 @@ function SelectedDressRow({
 
   return (
     <li className={cn('space-y-1 p-2', rejected && 'bg-destructive/5')}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="min-w-0 truncate">
+      <div className="flex items-center gap-2">
+        <PhotoThumbnail src={dress.photoUrl} />
+        <span className="min-w-0 flex-1 truncate">
           <span className="font-medium">{dress.code}</span>{' '}
           <span className="text-muted-foreground">{dress.name}</span>{' '}
           <span className="whitespace-nowrap">{formatVnd(dress.rentalPrice)}</span>
