@@ -60,7 +60,8 @@
     "totals": {
       "collected": "Tổng đã thu",
       "refunded": "Đã hoàn khách"
-    }
+    },
+    "unavailable": "Không đọc được sổ tiền của lượt thuê này. Thử lại — chưa chắc là chưa ghi nhận khoản nào."
   },
   "form": {
     "fields": {

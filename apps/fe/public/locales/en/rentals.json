@@ -60,7 +60,8 @@
     "totals": {
       "collected": "Total collected",
       "refunded": "Returned to the customer"
-    }
+    },
+    "unavailable": "The ledger for this rental could not be read. Retry — this does not mean nothing was recorded."
   },
   "form": {
     "fields": {

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useListPaymentsHttpControllerList } from '@/api/generated/payments/payments';
 import { getListRentalsHttpControllerListQueryKey } from '@/api/generated/rentals/rentals';
 import type { RentalListItemDto } from '@/api/generated/model';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -34,12 +35,14 @@ function isOpenRental(status: RentalListItemDto['status']): boolean {
  */
 export function RentalPaymentsDialog({ rental, onClose }: RentalPaymentsDialogProps) {
   const { t } = useTranslation('rentals');
+  const { t: tCommon } = useTranslation('common'); // shared verbs only
   const queryClient = useQueryClient();
 
   // Hooks run unconditionally — the query only fires while the dialog is open.
-  const { data, isPending } = useListPaymentsHttpControllerList(rental?.rentalId ?? '', {
-    query: { enabled: rental !== null },
-  });
+  const { data, isPending, isError, isFetching, refetch } = useListPaymentsHttpControllerList(
+    rental?.rentalId ?? '',
+    { query: { enabled: rental !== null } },
+  );
 
   async function refreshRentals(): Promise<void> {
     await queryClient.invalidateQueries({
@@ -62,6 +65,21 @@ export function RentalPaymentsDialog({ rental, onClose }: RentalPaymentsDialogPr
         </DialogHeader>
         {isPending ? (
           <p className="text-sm text-muted-foreground">{t('payments.loading')}</p>
+        ) : isError ? (
+          /* "Could not read the ledger" is not "nothing was recorded". Saying the second when the
+             first is true tells staff this rental has taken no money — the one thing this screen
+             exists to answer — so the failure states itself and offers a retry. */
+          <div className="space-y-2">
+            <p className="text-sm text-destructive">{t('payments.unavailable')}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              disabled={isFetching}
+            >
+              {tCommon('actions.retry')}
+            </Button>
+          </div>
         ) : data && data.data.length > 0 ? (
           <>
             <ul className="space-y-2">

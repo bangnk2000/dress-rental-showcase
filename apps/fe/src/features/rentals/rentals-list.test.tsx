@@ -177,6 +177,27 @@ test('a returned rental without payments shows the empty message', async () => {
   expect(await screen.findByText('Chưa ghi nhận khoản tiền nào.')).toBeInTheDocument();
 });
 
+test('FR-PAY-02: a ledger that fails to load says so instead of reading as an empty one', async () => {
+  seedRentalList([makeRentalListItem()]);
+  server.use(
+    http.get('/api/v1/rentals/:id/payments', () =>
+      HttpResponse.json({ error: { code: 'GENERIC.INTERNAL', message: 'boom' } }, { status: 500 }),
+    ),
+  );
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
+
+  // "Chưa ghi nhận khoản tiền nào" here would answer the screen's only question — has this rental
+  // taken money? — with a confident and possibly wrong no.
+  expect(await screen.findByText(/Không đọc được sổ tiền/)).toBeInTheDocument();
+  expect(screen.queryByText('Chưa ghi nhận khoản tiền nào.')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Thử lại' })).toBeInTheDocument();
+  // No form either: recording against an unknown ledger is how a deposit gets entered twice.
+  expect(screen.queryByLabelText('Tiền cọc')).not.toBeInTheDocument();
+});
+
 test('FR-PAY-02: an open rental offers the collect form, pre-filled from catalog + agreement', async () => {
   seedRentalList([makeRentalListItem()]); // booked, one dress: 3.000.000 deposit / 1.500.000 agreed
   const user = userEvent.setup();
