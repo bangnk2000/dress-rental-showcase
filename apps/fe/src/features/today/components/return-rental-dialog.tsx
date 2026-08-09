@@ -385,13 +385,18 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
               {/* Never submit before the suggested fee AND the collected deposit are known: a
                   blind submit would charge whatever the empty field means (tripping the waiver
                   rule) or hand back a refund computed from the catalog instead of the till. A
-                  ledger that FAILED to load is the same unknown, which is why it blocks too. */}
+                  ledger that FAILED to load is the same unknown, which is why it blocks too.
+
+                  `isFetching`, not `isPending`: this dialog is reopened all day, so the query
+                  usually has a CACHED value it serves instantly while it refetches. If another
+                  device recorded a deposit meanwhile, that cached summary is already wrong, and
+                  `isPending` is false — the number on screen must be the one just fetched. */}
               <Button
                 type="submit"
                 disabled={
                   returnRental.isPending ||
-                  lateFee.isPending ||
-                  payments.isPending ||
+                  lateFee.isFetching ||
+                  payments.isFetching ||
                   ledgerUnavailable
                 }
               >

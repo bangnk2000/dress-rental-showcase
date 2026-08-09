@@ -458,6 +458,44 @@ test('no refund suggestion at all while the late fee is unknown', async () => {
   expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('');
 });
 
+test('FR-PAY-02: a CACHED ledger cannot be settled against until its refetch lands', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  seedLateFeeQuote('rental-9', { daysLate: 0, dressCount: 1, suggestedLateFee: 0 });
+  seedRentalPayments('rental-9', [
+    makePayment({ id: 'p1', kind: 'deposit', amount: 2_000_000, note: null }),
+  ]);
+  const user = userEvent.setup();
+  renderToday();
+
+  // First open primes the query cache with 2.000.000.
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
+  await waitFor(() =>
+    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('2000000'),
+  );
+  await user.click(screen.getByRole('button', { name: 'Hủy' }));
+
+  // Meanwhile another device recorded a different deposit, and the refetch is slow.
+  server.use(
+    http.get('/api/v1/rentals/:id/payments', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      return HttpResponse.json({
+        data: [],
+        summary: { deposit: 1_000_000, rentalFee: 0, depositRefund: 0, lateFee: 0, damageFee: 0 },
+      });
+    }),
+  );
+
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
+
+  // The cached 2.000.000 is served instantly with isPending false — settling here would refund
+  // a million đồng more than the shop is now recorded as holding.
+  expect(screen.getByRole('button', { name: 'Xác nhận trả váy' })).toBeDisabled();
+  await waitFor(() =>
+    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('1000000'),
+  );
+  expect(screen.getByRole('button', { name: 'Xác nhận trả váy' })).toBeEnabled();
+});
+
 test('FR-PAY-02: a ledger that fails to load blocks settlement instead of falling back to the catalog', async () => {
   seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
   seedLateFeeQuote('rental-9', { daysLate: 0, dressCount: 1, suggestedLateFee: 0 });
