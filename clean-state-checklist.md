@@ -2,8 +2,8 @@
 
 ## Verification
 
-- [ ] `bash init.sh` passes (or degrades with only the expected WARNs — see the note in the script
-      about `test:e2e` / Playwright)
+- [ ] `bash init.sh` passes — it now includes the real invariant-proof gate, so start Postgres
+      (`docker compose up -d`) or accept its explicit skip WARN. Playwright stays outside it.
 - [ ] Design-tier work: its design doc under `docs/design/` was approved BEFORE the code, and now
       carries the dated as-built note (`docs/spec/init-harness/06-design-first.md` §6.4)
 
