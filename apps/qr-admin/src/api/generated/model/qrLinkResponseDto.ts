@@ -11,6 +11,11 @@ export interface QrLinkResponseDto {
   /** @nullable */
   label?: string | null;
   createdByStaffId: string;
+  /**
+     * Name of the staff member who created it, resolved at read time (FR-QR-03). Null when that account no longer exists.
+     * @nullable
+     */
+  createdByName: string | null;
   createdAt: string;
   imageUrl: string;
 }

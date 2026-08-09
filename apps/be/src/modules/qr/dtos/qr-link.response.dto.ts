@@ -13,6 +13,15 @@ export class QrLinkResponseDto {
   @ApiProperty({ format: 'uuid' })
   readonly createdByStaffId!: string;
 
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    example: 'Chủ tiệm',
+    description:
+      'Name of the staff member who created it, resolved at read time (FR-QR-03). Null when that account no longer exists.',
+  })
+  readonly createdByName!: string | null;
+
   @ApiProperty({ format: 'date-time' })
   readonly createdAt!: string;
 

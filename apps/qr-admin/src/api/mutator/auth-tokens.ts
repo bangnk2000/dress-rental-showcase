@@ -27,6 +27,25 @@ export function clearTokens(): void {
   localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
 }
 
+type SessionClearedListener = () => void;
+const sessionClearedListeners = new Set<SessionClearedListener>();
+
+/**
+ * Subscribe to a hard sign-out (refresh failed → tokens cleared). Without this the shell keeps
+ * rendering the protected screen after the session dies, and every request on it fails until the
+ * owner thinks to reload. Returns an unsubscribe function.
+ */
+export function subscribeSessionCleared(listener: SessionClearedListener): () => void {
+  sessionClearedListeners.add(listener);
+  return () => {
+    sessionClearedListeners.delete(listener);
+  };
+}
+
+export function notifySessionCleared(): void {
+  for (const listener of sessionClearedListeners) listener();
+}
+
 /**
  * Deliberate exemption, same as apps/fe: the refresh call uses a BARE axios instance with no
  * interceptors, so a 401 from /auth/refresh can never recurse into the refresh-and-retry flow.

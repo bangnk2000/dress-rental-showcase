@@ -1747,6 +1747,12 @@
             "type": "string",
             "format": "uuid"
           },
+          "createdByName": {
+            "type": "string",
+            "nullable": true,
+            "example": "Chủ tiệm",
+            "description": "Name of the staff member who created it, resolved at read time (FR-QR-03). Null when that account no longer exists."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -1760,6 +1766,7 @@
           "id",
           "targetUrl",
           "createdByStaffId",
+          "createdByName",
           "createdAt",
           "imageUrl"
         ]

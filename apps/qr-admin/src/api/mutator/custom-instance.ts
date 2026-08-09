@@ -4,7 +4,12 @@ import Axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 
-import { clearTokens, getAccessToken, refreshSession } from './auth-tokens';
+import {
+  clearTokens,
+  getAccessToken,
+  notifySessionCleared,
+  refreshSession,
+} from './auth-tokens';
 
 export const AXIOS_INSTANCE = Axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL });
 
@@ -33,7 +38,10 @@ AXIOS_INSTANCE.interceptors.response.use(undefined, async (error: AxiosError) =>
   ) {
     original._retried = true;
     if (await refreshSession()) return AXIOS_INSTANCE(original);
+    // The session is really gone. Clearing tokens alone would leave the shell on the protected
+    // screen with every request failing, so the shell is told to fall back to the login form.
     clearTokens();
+    notifySessionCleared();
   }
   throw error;
 });

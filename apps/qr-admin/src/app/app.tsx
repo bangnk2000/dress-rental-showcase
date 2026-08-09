@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 import { meHttpControllerMe } from '@/api/generated/identity/identity';
-import { clearTokens, getRefreshToken } from '@/api/mutator/auth-tokens';
+import { clearTokens, getRefreshToken, subscribeSessionCleared } from '@/api/mutator/auth-tokens';
 import { LoginPage } from '@/features/auth';
 import { QrUrlPage } from '@/features/qr-url';
 
@@ -19,8 +19,18 @@ export function App() {
 function AppShell() {
   const [role, setRole] = useState<'loading' | 'anonymous' | 'owner' | 'staff'>('loading');
   useEffect(() => {
+    // A stored refresh token is enough to start: the access token lives in memory only, so after a
+    // reload this /me arrives without one, takes a 401, and the mutator refreshes and retries it.
     if (!getRefreshToken()) { setRole('anonymous'); return; }
     void meHttpControllerMe().then((me) => setRole(me.role)).catch(() => { clearTokens(); setRole('anonymous'); });
+  }, []);
+  useEffect(() => {
+    // The session can die while this screen is open (refresh token revoked or expired). Falling
+    // back to the login form beats leaving the owner on a page where nothing works.
+    return subscribeSessionCleared(() => {
+      queryClient.clear();
+      setRole('anonymous');
+    });
   }, []);
   if (role === 'loading') return <main className="p-10">Đang kiểm tra phiên đăng nhập…</main>;
   if (role === 'anonymous') return <LoginPage onSignedIn={setRole} />;
