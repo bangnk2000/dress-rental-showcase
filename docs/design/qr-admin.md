@@ -42,6 +42,13 @@ Selected QR, form fields, preview blob URL, modal/toast state là component stat
 lives only in TanStack Query; token follows the existing bearer + refresh protocol but is implemented
 locally in `apps/qr-admin/src/api/mutator/`, never imported from `apps/fe`.
 
+**"Bearer + refresh" nghĩa là đủ CẢ HAI VẾ.** Access token chỉ nằm trong bộ nhớ, nên sau khi
+reload trang thứ duy nhất còn lại là refresh token trong localStorage: thiếu vế refresh thì mọi lần
+F5 đều đá chủ tiệm ra màn hình đăng nhập dù phiên vẫn còn hạn. `custom-instance.ts` vì thế có
+interceptor 401 → refresh → retry MỘT lần, `/auth/login` và `/auth/refresh` được miễn (401 ở đó là
+sai mật khẩu / hết phiên, không phải access token cũ), và `refreshSession()` gộp các lời gọi đồng
+thời thành một request. Giống hệt `apps/fe`, chỉ khác key lưu trữ.
+
 ## 2. Data & contract map
 
 The app gets a second generated client at `apps/qr-admin/src/api/generated/` from the same
