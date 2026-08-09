@@ -537,6 +537,34 @@ test('FR-PAY-02: a deposit recorded elsewhere while the dialog sits open stops t
   expect(getLastReturn().body).toMatchObject({ depositRefund: 1_500_000, damageFee: 500_000 });
 });
 
+test('FR-PAY-02: no refund suggestion while the ledger is still in flight', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  seedLateFeeQuote('rental-9', { daysLate: 0, dressCount: 1, suggestedLateFee: 0 });
+  // The quote answers immediately, the ledger does not. A zero read here would mean "no deposit
+  // on file" and offer the catalog's 3.000.000 — and a tapped suggestion is deliberately never
+  // corrected afterwards, so the real 2.000.000 arriving later would not save it.
+  server.use(
+    http.get('/api/v1/rentals/:id/payments', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      return HttpResponse.json({
+        data: [],
+        summary: { deposit: 2_000_000, rentalFee: 0, depositRefund: 0, lateFee: 0, damageFee: 0 },
+      });
+    }),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
+  expect(screen.queryByRole('button', { name: /Điền/ })).not.toBeInTheDocument();
+
+  // Once it lands, the basis is the collected deposit and the field follows it.
+  await waitFor(() =>
+    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('2000000'),
+  );
+  expect(screen.getByText(/Đã thu cọc: 2\.000\.000/)).toBeInTheDocument();
+});
+
 test('FR-PAY-02: the server refusing the basis corrects the screen rather than settling', async () => {
   seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
   seedLateFeeQuote('rental-9', { daysLate: 0, dressCount: 1, suggestedLateFee: 0 });

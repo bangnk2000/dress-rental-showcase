@@ -108,13 +108,20 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
    * blocking costs nothing that was going to work.
    */
   const ledgerUnavailable = payments.isError;
+  /**
+   * "No deposit on file" is a CONCLUSION, and it needs the answer to have arrived. While the query
+   * is still in flight the ledger reads as zero, which would offer the catalog refund — and once
+   * staff taps it the field is dirty, so the real (smaller) deposit landing a moment later
+   * deliberately does not correct it. Nothing derived from the ledger exists until it is loaded.
+   */
+  const ledgerLoaded = payments.data !== undefined;
   const collectedDeposit = payments.data?.summary.deposit ?? 0;
   const standardDeposit = rental
     ? rental.dresses.reduce((sum, dress) => sum + dress.depositAmount, 0)
     : 0;
   const depositIsCollected = collectedDeposit > 0;
-  // An unreadable ledger is an UNKNOWN basis, not a zero one, so nothing is derived from it.
-  const depositTotal = ledgerUnavailable
+  // An unread or unreadable ledger is an UNKNOWN basis, not a zero one: nothing is derived from it.
+  const depositTotal = !ledgerLoaded
     ? 0
     : depositIsCollected
       ? collectedDeposit
