@@ -256,10 +256,16 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
     const freshDeposit = fresh.data.summary.deposit;
     if (freshDeposit !== collectedDeposit) {
       // Do NOT settle on this click: re-derive the refund from what the shop is now recorded as
-      // holding and let staff confirm the corrected number deliberately.
+      // holding and let staff confirm the corrected number deliberately. The fees come from the
+      // form, not from the quote — staff may have entered a damage fee or agreed a different late
+      // fee, and a correction that ignored those would hand back money the shop is charging for.
+      const enteredFees = (parseAmount(values.lateFee) ?? 0) + (parseAmount(values.damageFee) ?? 0);
       if (freshDeposit > 0) {
-        setValue('depositRefund', String(Math.max(0, freshDeposit - (suggestedLateFee ?? 0))), {
+        // shouldDirty: this value is a deliberate correction, and the seeding effect must not
+        // treat the field as untouched and overwrite it with the bare deposit again.
+        setValue('depositRefund', String(Math.max(0, freshDeposit - enteredFees)), {
           shouldValidate: true,
+          shouldDirty: true,
         });
       }
       toast.error(t('returnDialog.deposit.changed', { amount: formatVnd(freshDeposit) }));
@@ -354,8 +360,11 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
                   size="sm"
                   className="mt-2"
                   onClick={() =>
+                    // shouldDirty: a tapped suggestion is staff's choice, not a default, so the
+                    // seeding effect leaves it alone from here on.
                     form.setValue('depositRefund', String(refundAfterFees), {
                       shouldValidate: true,
+                      shouldDirty: true,
                     })
                   }
                 >
