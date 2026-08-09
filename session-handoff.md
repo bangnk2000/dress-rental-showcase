@@ -1,5 +1,54 @@
 # Session Handoff
 
+## 2026-08-10 (23) — `payments/record-collection` = pass (the deposit gap is closed)
+
+- Done: the gap three features and the readiness pass all pointed at — **money coming IN was never
+  recorded** — is closed as one design-tier feature through the spec-before-code lane. Ledger is
+  25/25 `pass`.
+- The lane worked as designed: [record-collection.md](docs/design/payments/record-collection.md) was
+  written FIRST with the business rules as **blocker questions**, and the shop owner answered four
+  (§6): (1) a **standalone action, usable any time** — not folded into create or pickup, because
+  some customers transfer the deposit days early; (2) amounts **pre-filled** (Σ catalog deposit,
+  Σ agreed price) but **editable**, and the ledger records what was actually TAKEN; (3) **fees are
+  deducted from the deposit** — this closes the open question `rentals/settlement-clarity` left
+  behind, and it upgrades a guess into an approved rule; (4) **rental fee is in scope** with the
+  deposit, so cash reconciliation has both halves.
+- BE: `payments` grew its **first aggregate + command** — exactly the trigger its own design doc
+  predicted. `POST /rentals/:rentalId/payments/collect` writes 1..2 rows in one transaction;
+  `payment:collect` is open to staff on purpose (the person holding the cash is at the counter,
+  unlike the owner-only late-fee waiver).
+- The rule with teeth is **BR-7: one deposit and one rental fee per rental**, enforced by two
+  partial UNIQUE indexes, not by app code. `payments-collection.e2e-spec.ts` provokes it three ways:
+  a second call, TWO CONCURRENT calls that both read an empty ledger ([200, 422], exactly one row),
+  and a raw INSERT that bypasses the app. The race is translated to `CollectionConflictError` at the
+  adapter edge and answered with the SAME outcome as the pre-check — the create-rental pattern.
+- Read side: `GET /rentals/:id/payments` now carries `summary` (per-kind totals, computed in the
+  projection), and `RentalDressDto` gained `agreedPrice` from `rental_items.price`. FE: the payments
+  dialog became THE money screen of a rental (ledger + totals + collect form), reachable from every
+  row — the button is `Tiền` now, since "Thanh toán" on a rental booked five minutes ago read wrong.
+- **Watch out — the browser caught what no unit test could:** the return dialog did not invalidate
+  the rental's payments query, so after settling, the money screen showed a pre-settlement ledger for
+  the full 60s `staleTime`. The repo's invalidate rule now has a third vee: *a mutation that moves
+  money also invalidates that rental's payments key* (recorded in `apps/fe/AGENTS.md` §Screen rules).
+- **Watch out — the migration is the first one that is genuinely reversible**: `down` is DROP INDEX,
+  no data lost, unlike 0001–0003 whose down is DROP TABLE. Release risk #3 stays true for the others.
+- Verification: be **109 unit** (+14) · **42 e2e** (+12) · fe **71** vitest (+5) · qr-admin 13 ·
+  `contract:check` / `check` / `lint` / `arch` / both builds green · `pnpm --filter fe e2e`
+  **1 passed (15.6s)** against the real stack — the happy path now records 2.000.000₫ of deposit
+  against a 3.000.000₫ standard and proves the refund follows the money, not the catalog.
+- Deliberately left open (in the spec §6 and payments-aggregate.md, both need an owner decision):
+  **correcting a wrongly recorded amount** (append-only + `amount ≥ 0` means no compensating row is
+  possible — a real operational hole once the shop is live), and **collecting a deposit in
+  instalments** (BR-7 forbids it today).
+- Next, in the order I would take them: (1) rental `notes` are captured at booking and displayed
+  nowhere; (2) no rental detail route — it is the natural home for notes, the ledger, and a money
+  button reachable from the board (the board cannot open today's dialog: `features/today` importing
+  `features/rentals` would break the no-cross-feature rule); (3) `payments/correct-movement` if the
+  owner wants it before go-live; (4) the remaining P2/P3 UI items (overdue card showing days late,
+  one search model instead of two, `EmptyState` heading level, language switcher out of the primary
+  header, shorter Vietnamese date format, offline indicator); (5) the release lane still stops at
+  go/no-go with P1–P7 missing, and r1 now lists FIVE features it does not cover.
+
 ## 2026-08-10 (22) — UI/UX review of `apps/fe`, then its top four findings shipped
 
 - Done: read the whole FE (~4.9k lines of TSX) and wrote up 22 improvement points, then implemented

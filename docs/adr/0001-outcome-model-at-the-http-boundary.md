@@ -96,6 +96,16 @@ FE cần đủ dữ liệu để hành động, không phải GET thêm lần n�
 | `rentals/cancel-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-06 |
 | `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` | `currentStatus` | FR-RENT-06, BR-3 |
 
+### payments
+
+| Use case | Domain error (returned) | Outcome code | Payload | FR |
+| --- | --- | --- | --- | --- |
+| `payments/record-collection` | `CollectionRentalNotFoundError` | `rejected_rental_not_found` | — | FR-PAY-02 |
+| `payments/record-collection` | `RentalClosedError` | `rejected_rental_closed` | `currentStatus` (`returned`\|`cancelled`) | FR-PAY-02, BR-3 |
+| `payments/record-collection` | `NothingToRecordError` | `rejected_nothing_to_record` | — | FR-PAY-02 |
+| `payments/record-collection` | `CollectionAlreadyRecordedError` (kind `deposit`) | `rejected_deposit_already_recorded` | `recordedAmount` | FR-PAY-02, BR-7 |
+| `payments/record-collection` | `CollectionAlreadyRecordedError` (kind `rental_fee`) | `rejected_rental_fee_already_recorded` | `recordedAmount` | FR-PAY-02, BR-7 |
+
 **Luật race (áp dụng cho MỌI precondition có ràng buộc DB đứng sau):** pre-check ở service và ràng
 buộc ở DB là HAI NGƯỜI GÁC CÙNG MỘT LUẬT, nên client không được phép phân biệt ai bắt. Adapter dịch
 lỗi ràng buộc thành exception của port (`RentalItemsOverlapError`, `DressCodeConflictError`), service
@@ -111,6 +121,13 @@ Bổ sung 2026-08-10 (FR-RENT-09, spec [rentals/settle-late-fee.md](../design/re
 hai mã cuối bảng là **outcome 403 có tên đầu tiên** của repo và mã đi kèm nó. Chúng chứng minh luật
 arbitration ở §2 hoạt động: `PoliciesGuard` chặn `rental:return` thì vẫn là 403 **envelope**, còn
 "staff không được giảm phí" là denial nằm trong spec nên là 403 **outcome body**.
+
+Bổ sung 2026-08-10 (FR-PAY-02, spec [payments/record-collection.md](../design/payments/record-collection.md)):
+`rejected_*_already_recorded` là mã đầu tiên được sinh ra từ **hai nguồn**: pre-check của service
+VÀ partial UNIQUE index khi thua race. Cùng một luật thì cùng một mã (§2) — repository dịch lỗi
+UNIQUE thành `CollectionConflictError`, service đọc lại sổ rồi trả đúng outcome kèm số đang có.
+`rejected_nothing_to_record` là ranh giới ngược lại: từng field hợp lệ khi đứng riêng, cái sai nằm
+ở mức use case, nên nó là outcome chứ không phải 400.
 
 ### Không có outcome (cố ý)
 
@@ -143,6 +160,9 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `forbidden` (`late_fee_waiver_requires_owner`) | GIỮ dialog, field error dưới phí trễ; số đề xuất vẫn hiển thị ở banner phía trên (message form là i18n key, không nội suy tham số) | `today:errors.lateFeeWaiverForbidden` |
 | `rejected_waiver_note_required` | GIỮ dialog, focus field Ghi chú + message bắt buộc lý do | `today:errors.waiverNoteRequired` |
 | `rejected_cancel_not_allowed` | toast nêu `currentStatus` + invalidate list | `rentals:cancel.notAllowed` |
+| `rejected_deposit_already_recorded` / `rejected_rental_fee_already_recorded` | GIỮ dialog, field error trên ô tương ứng + invalidate sổ của đơn (danh sách phía trên hiện ngay dòng đã có) | `rentals:collect.errors.alreadyRecorded` |
+| `rejected_nothing_to_record` | message trên ô Tiền cọc; thực tế nút đã disabled khi cả hai ô trống | `rentals:collect.errors.nothingToRecord` |
+| `rejected_rental_closed` | đóng dialog, toast nêu `currentStatus` + invalidate list | `rentals:collect.rentalClosed` |
 | *fault* `GENERIC.VALIDATION` (400 + `details[]`) | `form.setError` theo `details[].field` | (message từ server) |
 | *fault* còn lại trên mutation | toast lỗi chung + cho bấm lại | `common:errors.generic` |
 | *fault* còn lại trên query | route error boundary | — |

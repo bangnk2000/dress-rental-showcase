@@ -10,9 +10,11 @@ import {
   getLastPickupRentalId,
   getLastReturn,
   getLastTodayBoardDate,
+  makePayment,
   makeTodayRental,
   resetRentals,
   seedLateFeeQuote,
+  seedRentalPayments,
   seedTodayBoard,
 } from '@/test/msw/handlers/rentals';
 import { server } from '@/test/msw/server';
@@ -50,7 +52,13 @@ test('renders both lists and asks the API for the DEVICE-local day', async () =>
         customerPhone: '0912345678',
         status: 'out',
         dresses: [
-          { dressId: 'd2', code: 'VD-900', name: 'Đầm dạ hội đỏ', depositAmount: 2_000_000 },
+          {
+            dressId: 'd2',
+            code: 'VD-900',
+            name: 'Đầm dạ hội đỏ',
+            depositAmount: 2_000_000,
+            agreedPrice: 1_200_000,
+          },
         ],
       }),
     ],
@@ -383,15 +391,27 @@ test('FR-RENT-09: a failing quote warns but never blocks the settlement', async 
   );
 });
 
-test('the refund suggestion states deposit MINUS late fee, and fills the field only when tapped', async () => {
+test('FR-PAY-02: with no deposit on file the block falls back to the catalog, says so, and only SUGGESTS', async () => {
   seedTodayBoard({
     dueBack: [
       makeTodayRental({
         rentalId: 'rental-9',
         status: 'out',
         dresses: [
-          { dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng', depositAmount: 3_000_000 },
-          { dressId: 'd2', code: 'VD-900', name: 'Đầm dạ hội đỏ', depositAmount: 2_000_000 },
+          {
+            dressId: 'd1',
+            code: 'VD-001',
+            name: 'Váy cưới ren trắng',
+            depositAmount: 3_000_000,
+            agreedPrice: 1_500_000,
+          },
+          {
+            dressId: 'd2',
+            code: 'VD-900',
+            name: 'Đầm dạ hội đỏ',
+            depositAmount: 2_000_000,
+            agreedPrice: 1_200_000,
+          },
         ],
       }),
     ],
@@ -404,7 +424,10 @@ test('the refund suggestion states deposit MINUS late fee, and fills the field o
 
   // 5.000.000 standard deposit − 1.200.000 late fee: the number staff would otherwise
   // reconstruct from memory while the customer waits. Stated, not assumed.
-  expect(await screen.findByText(/Cọc chuẩn 2 váy: 5\.000\.000/)).toBeInTheDocument();
+  // No `deposit` movement exists for this rental, so the block must not pretend the shop holds
+  // 5.000.000 — it names the figure as the catalog standard and leaves the field empty.
+  expect(await screen.findByText(/Chưa ghi nhận tiền cọc/)).toBeInTheDocument();
+  expect(screen.getByText(/cọc chuẩn 2 váy: 5.000.000/)).toBeInTheDocument();
   expect(screen.getByText(/hoàn lại khách 3\.800\.000/)).toBeInTheDocument();
   expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('');
 
@@ -433,6 +456,42 @@ test('no refund suggestion at all while the late fee is unknown', async () => {
   ).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /Điền/ })).not.toBeInTheDocument();
   expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('');
+});
+
+test('FR-PAY-02: the refund is computed from the deposit ACTUALLY collected, not the catalog', async () => {
+  seedTodayBoard({
+    dueBack: [
+      makeTodayRental({
+        rentalId: 'rental-9',
+        status: 'out',
+        dresses: [
+          {
+            dressId: 'd1',
+            code: 'VD-001',
+            name: 'Váy cưới ren trắng',
+            depositAmount: 3_000_000,
+            agreedPrice: 1_500_000,
+          },
+        ],
+      }),
+    ],
+  });
+  // The shop took 2.000.000, not the catalog's 3.000.000 — refunding the standard would hand the
+  // customer a million đồng the shop never received.
+  seedRentalPayments('rental-9', [
+    makePayment({ id: 'p1', kind: 'deposit', amount: 2_000_000, note: null }),
+  ]);
+  seedLateFeeQuote('rental-9', { daysLate: 1, dressCount: 1, suggestedLateFee: 200_000 });
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
+
+  await waitFor(() =>
+    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('1800000'),
+  );
+  expect(screen.getByText(/Đã thu cọc: 2\.000\.000/)).toBeInTheDocument();
+  expect(screen.getByText(/hoàn lại khách 1\.800\.000/)).toBeInTheDocument();
 });
 
 test('the deposit block recomputes while fees are typed and flags a manual refund', async () => {

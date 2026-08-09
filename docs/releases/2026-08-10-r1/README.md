@@ -44,9 +44,9 @@ executed by a person.
 
 ## Landed AFTER this readiness pass — not covered here
 
-Four UI/UX features shipped later the same day, from a review of `apps/fe`. They are **not** part of
-this release's evidence: no readiness checklist was filled for them, and the lane forbids stretching
-a checklist over features it did not examine.
+Five features shipped later the same day — four from a UI review of `apps/fe`, then FR-PAY-02. They
+are **not** part of this release's evidence: no readiness checklist was filled for them, and the lane
+forbids stretching a checklist over features it did not examine.
 
 | Feature | Commit | Touches |
 | --- | --- | --- |
@@ -54,10 +54,13 @@ a checklist over features it did not examine.
 | `rentals/dress-availability-in-picker` | `03bf04e` | new-rental form only |
 | `catalog/dress-thumbnails` | `13273d1` | catalog list + picker |
 | `fe:board-and-confirm-ergonomics` | `1eaba2f` | today board, cancel + retire confirmations |
+| `payments/record-collection` | (this session) | **new migration + new endpoint + new outcomes**; the deposit taken is finally recorded, and the refund is computed from it |
 
-Before go/no-go, pick one: ship r1 at the SHA this pass examined, or add the four readiness files
-and re-read the compatibility matrix — the first one carries a contract change and a recorded
-business assumption ([payments-aggregate.md §Open questions](../../design/payments-aggregate.md)).
+Before go/no-go, pick one: ship r1 at the SHA this pass examined, or add the five readiness files and
+re-read the compatibility matrix. Two of them need real attention: `rentals/settlement-clarity`
+carries a contract change, and `payments/record-collection` is the first feature whose migration
+must run on a database that may already hold data — its `down` is a DROP INDEX, so unlike risk #3
+below it IS reversible without a restore.
 
 ## What the readiness pass actually found
 

@@ -20,6 +20,7 @@ export const rentalListRowSchema = z.object({
 export const rentalListItemRowSchema = z.object({
   rental_id: z.string(),
   dress_id: z.string(),
+  price: z.number().int(),
 });
 
 export type RentalListRow = z.infer<typeof rentalListRowSchema>;
@@ -55,6 +56,9 @@ export function toRentalListItemDtos(
         code: dress.code,
         name: dress.name,
         depositAmount: dress.depositAmount,
+        // The agreed price lives on the ITEM row, not on the dress: the catalog price may have
+        // moved since this rental was booked.
+        agreedPrice: item.price,
       };
     });
     rentalDresses.sort((a, b) => a.code.localeCompare(b.code));

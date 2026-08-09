@@ -98,6 +98,14 @@ files here.
   their accessible name, since the visible label repeats down the list.
 - **One mutation object serves every row**: gate the spinner on `mutation.variables`, not on
   `isPending`, or the whole list looks busy and none of it looks specific.
+- **A mutation that moves MONEY invalidates the rental's ledger too**, not only the board and list
+  parameterless keys: `getListPaymentsHttpControllerListQueryKey(rentalId)`. Two screens read that
+  query now (the money dialog on `/rentals`, the return dialog's refund basis), so a settlement that
+  skips it leaves the reconciliation screen showing a pre-settlement ledger for the whole 60s
+  `staleTime`. Playwright caught this; no unit test would have.
+- **A reference figure must say it is one.** The refund is computed from the deposit ACTUALLY
+  collected (`summary.deposit`); the catalog standard is a fallback and the banner then reads
+  "Chưa ghi nhận tiền cọc" rather than quietly presenting it as money the shop holds.
 
 Two things that are NOT deviations but bite if missed: the three former
 `features/*/lib/is-conflict-error.ts` files are deleted — never recreate that shape; and rejection

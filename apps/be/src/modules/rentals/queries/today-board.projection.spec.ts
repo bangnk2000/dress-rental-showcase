@@ -33,6 +33,7 @@ function makeRow(overrides: Partial<TodayBoardRow>): TodayBoardRow {
     status: 'booked',
     period: '[2026-08-01,2026-08-04)',
     dress_id: DRESS_A,
+    price: 1_200_000,
     due_out: true,
     due_back: false,
     overdue: false,
@@ -43,7 +44,10 @@ function makeRow(overrides: Partial<TodayBoardRow>): TodayBoardRow {
 test('groups item rows into one entry per rental, dresses sorted by code', () => {
   const board = toTodayBoardDto(
     '2026-08-01',
-    [makeRow({ dress_id: DRESS_A }), makeRow({ dress_id: DRESS_B })],
+    [
+      makeRow({ dress_id: DRESS_A }),
+      makeRow({ dress_id: DRESS_B, price: 1_400_000 }),
+    ],
     dresses,
   );
 
@@ -61,6 +65,11 @@ test('groups item rows into one entry per rental, dresses sorted by code', () =>
   // and no other read gives the board that number.
   expect(board.dueOut[0]!.dresses.map((dress) => dress.depositAmount)).toEqual([
     3_000_000, 2_000_000,
+  ]);
+  // The agreed price comes from the ITEM row (1.400.000 for VD-001 here), not from the dress
+  // snapshot's catalog price (1.500.000).
+  expect(board.dueOut[0]!.dresses.map((dress) => dress.agreedPrice)).toEqual([
+    1_400_000, 1_200_000,
   ]);
 });
 

@@ -54,10 +54,11 @@
       "unavailable": "Could not calculate the late fee. Please enter it manually."
     },
     "deposit": {
-      "standard": "Standard deposit for {{count}} dress(es): {{amount}}",
+      "standard": "No deposit recorded — the standard deposit for {{count}} dress(es) is {{amount}}",
       "afterFees": "Less {{fees}} in fees → {{amount}} back to the customer",
       "manual": "You entered {{amount}} — different from the amount above.",
-      "use": "Put {{amount}} in the refund field"
+      "use": "Put {{amount}} in the refund field",
+      "collected": "Deposit collected: {{amount}}"
     }
   },
   "errors": {

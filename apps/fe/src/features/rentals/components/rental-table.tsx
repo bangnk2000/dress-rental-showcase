@@ -20,7 +20,10 @@ interface RentalTableProps {
   rentals: RentalListItemDto[];
   /** When set, booked rows get a cancel action (the route owns the mutation). */
   onCancel?: (rental: RentalListItemDto) => void;
-  /** When set, returned rows get a payments action (settled movements). */
+  /**
+   * When set, EVERY row gets a money action. Not only settled rentals: since FR-PAY-02 the
+   * deposit is recorded while the rental is still running, which is the point of the screen.
+   */
   onShowPayments?: (rental: RentalListItemDto) => void;
 }
 
@@ -67,8 +70,13 @@ export function RentalTable({ rentals, onCancel, onShowPayments }: RentalTablePr
             </TableCell>
             {onCancel || onShowPayments ? (
               <TableCell className="space-x-2 text-right">
-                {onShowPayments && rental.status === 'returned' ? (
-                  <Button variant="outline" size="sm" onClick={() => onShowPayments(rental)}>
+                {onShowPayments ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onShowPayments(rental)}
+                    aria-label={t('list.actions.paymentsFor', { customer: rental.customerName })}
+                  >
                     {t('list.actions.payments')}
                   </Button>
                 ) : null}

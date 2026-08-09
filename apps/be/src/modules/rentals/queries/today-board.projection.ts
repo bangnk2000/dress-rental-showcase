@@ -17,6 +17,7 @@ export const todayBoardRowSchema = z.object({
   status: z.enum(['booked', 'out', 'returned', 'cancelled']),
   period: z.string(),
   dress_id: z.string(),
+  price: z.number().int(),
   due_out: z.boolean(),
   due_back: z.boolean(),
   overdue: z.boolean(),
@@ -70,6 +71,9 @@ export function toTodayBoardDto(
       code: dress.code,
       name: dress.name,
       depositAmount: dress.depositAmount,
+      // The agreed price lives on the ITEM row, not on the dress: the catalog price may have
+      // moved since this rental was booked.
+      agreedPrice: row.price,
     });
   }
 

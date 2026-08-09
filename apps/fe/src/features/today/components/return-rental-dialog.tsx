@@ -7,6 +7,10 @@ import { toast } from 'sonner';
 
 import { mapApiError } from '@/api/errors';
 import {
+  getListPaymentsHttpControllerListQueryKey,
+  useListPaymentsHttpControllerList,
+} from '@/api/generated/payments/payments';
+import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
   useQuoteLateFeeHttpControllerQuote,
@@ -88,19 +92,25 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
   const quote = lateFee.data ?? null;
 
   /**
-   * The catalog's STANDARD deposit for the dresses in this rental — today's catalog figure, which
-   * may not be what was taken when the rental was booked, and no deposit is recorded anywhere yet.
-   * So it is a SUGGESTION, never a default: the money actually handed back has to be an amount
-   * staff chose. Auto-filling it would submit a guess that reads as authoritative.
+   * FR-PAY-02: the refund is computed from the deposit the shop ACTUALLY took, which lives in the
+   * rental's ledger. That number is recorded money, so it may fill the field; the catalog figure
+   * is only a fallback for rentals booked before deposits were recorded, and it stays a
+   * SUGGESTION staff has to accept, because refunding a reference figure is a guess.
    */
-  const depositTotal = rental
+  const payments = useListPaymentsHttpControllerList(rental?.rentalId ?? '', {
+    query: { enabled: rental !== null, staleTime: 0 },
+  });
+  const collectedDeposit = payments.data?.summary.deposit ?? 0;
+  const standardDeposit = rental
     ? rental.dresses.reduce((sum, dress) => sum + dress.depositAmount, 0)
     : 0;
+  const depositIsCollected = collectedDeposit > 0;
+  const depositTotal = depositIsCollected ? collectedDeposit : standardDeposit;
   const suggestedLateFee = quote?.suggestedLateFee ?? null;
   /**
    * Without the quote the late fee is unknown, NOT zero — and omitting `lateFee` makes the server
-   * charge its own computed fee. Suggesting the full deposit here would hand back the fee the
-   * shop is about to charge, so no suggestion is offered until the number is known.
+   * charge its own computed fee. Offering the full deposit here would hand back the fee the
+   * shop is about to charge, so nothing is offered until the number is known.
    */
   const suggestionAvailable = depositTotal > 0 && quote !== null;
 
@@ -116,13 +126,27 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
 
   // The quote arrives after the dialog is already usable, so seeding must not be a reset: on a
   // slow connection staff has often typed the waiver note or a fee by then, and losing that
-  // silently is worse than an empty field. Only an UNTOUCHED late-fee field takes the server's
-  // number; the refund stays blank until staff taps the suggestion below.
+  // silently is worse than an empty field. Only UNTOUCHED fields are seeded.
+  //
+  // The refund is filled ONLY when the deposit is recorded money (FR-PAY-02): `collected − fee` is
+  // then arithmetic over amounts the shop actually holds. With no deposit on file the basis is the
+  // catalog's figure, which is a guess — it stays a suggestion staff has to tap.
   useEffect(() => {
     if (!rentalId || suggestedLateFee === null) return;
-    if (getFieldState('lateFee').isDirty) return;
-    setValue('lateFee', suggestedLateFee > 0 ? String(suggestedLateFee) : '');
-  }, [rentalId, suggestedLateFee, setValue, getFieldState]);
+    if (!getFieldState('lateFee').isDirty) {
+      setValue('lateFee', suggestedLateFee > 0 ? String(suggestedLateFee) : '');
+    }
+    if (depositIsCollected && !getFieldState('depositRefund').isDirty) {
+      setValue('depositRefund', String(Math.max(0, collectedDeposit - suggestedLateFee)));
+    }
+  }, [
+    rentalId,
+    suggestedLateFee,
+    depositIsCollected,
+    collectedDeposit,
+    setValue,
+    getFieldState,
+  ]);
 
   // Live arithmetic for the reference block: what is left of the deposit once the amounts
   // currently in the two fee fields are taken out.
@@ -140,6 +164,18 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
     ]);
   }
 
+  /**
+   * A settlement WRITES movements, so the rental's ledger must be invalidated as well — the money
+   * screen on /rentals reads the same query and would otherwise show a pre-settlement ledger for
+   * up to the 60s staleTime. The Playwright happy path caught exactly that.
+   */
+  async function refreshPayments(): Promise<void> {
+    if (!rental) return;
+    await queryClient.invalidateQueries({
+      queryKey: getListPaymentsHttpControllerListQueryKey(rental.rentalId),
+    });
+  }
+
   const returnRental = useReturnRentalHttpControllerSettle({
     mutation: {
       onSuccess: async () => {
@@ -153,6 +189,7 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
           queryClient.invalidateQueries({
             queryKey: getListRentalsHttpControllerListQueryKey(),
           }),
+          refreshPayments(),
         ]);
         toast.success(t('returnDialog.success'));
         onClose();
@@ -238,10 +275,12 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
             {suggestionAvailable ? (
               <div aria-live="polite" className="rounded-md border bg-muted/40 p-3 text-sm">
                 <p className="text-muted-foreground">
-                  {t('returnDialog.deposit.standard', {
-                    count: rental?.dresses.length ?? 0,
-                    amount: formatVnd(depositTotal),
-                  })}
+                  {depositIsCollected
+                    ? t('returnDialog.deposit.collected', { amount: formatVnd(depositTotal) })
+                    : t('returnDialog.deposit.standard', {
+                        count: rental?.dresses.length ?? 0,
+                        amount: formatVnd(depositTotal),
+                      })}
                 </p>
                 <p className="font-medium">
                   {t('returnDialog.deposit.afterFees', {
@@ -312,9 +351,13 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
               <Button type="button" variant="outline" onClick={onClose}>
                 {tCommon('actions.cancel')}
               </Button>
-              {/* Never submit before the suggested fee is known: a blind submit would charge
-                  whatever the empty field means and could trip the waiver rule. */}
-              <Button type="submit" disabled={returnRental.isPending || lateFee.isPending}>
+              {/* Never submit before the suggested fee AND the collected deposit are known: a
+                  blind submit would charge whatever the empty field means (tripping the waiver
+                  rule) or hand back a refund computed from the catalog instead of the till. */}
+              <Button
+                type="submit"
+                disabled={returnRental.isPending || lateFee.isPending || payments.isPending}
+              >
                 {t('returnDialog.submit')}
               </Button>
             </DialogFooter>

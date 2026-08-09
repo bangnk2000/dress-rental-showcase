@@ -3,6 +3,17 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-08-10 (23) — `payments/record-collection` = pass (FR-PAY-02), ledger 25/25. The deposit the
+  shop TAKES is finally written down, and the refund at return is computed from it instead of from
+  the catalog. Spec-before-code again: the rules went to the owner as blocker questions and came back
+  as four decisions (standalone action usable any time · pre-filled but editable amounts, ledger
+  records what was taken · fees ARE deducted from the deposit — closing the assumption session 22
+  recorded · rental fee in scope too). The `payments` context grew its first aggregate + command, and
+  BR-7 ("one deposit and one rental fee per rental") is enforced by two partial UNIQUE indexes, with
+  the concurrent race, the repeat call and a raw INSERT all provoked on real Postgres. Read side
+  gained `summary`; `RentalDressDto` gained `agreedPrice`. be 109 unit + 42 e2e, fe 71, qr-admin 13,
+  all root gates and Playwright green — the browser run is what caught the return dialog serving a
+  stale ledger, now a recorded invalidation rule.
 - 2026-08-10 (22) — UI/UX review of `apps/fe` (22 findings across the whole SPA), then its top four
   groups shipped as four features, ledger now 24/24 `pass`. `rentals/settlement-clarity`
   (cross-contract: `RentalDressDto.depositAmount` → the return dialog pre-fills the refund with

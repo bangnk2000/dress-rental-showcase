@@ -215,6 +215,21 @@
         "AC6: cancelling a rental and retiring a dress confirm through the app's own dialog, in Vietnamese, with a confirm button that states the action"
       ],
       "dependencies": ["rentals/today-board", "rentals/cancel-rental"]
+    },
+    {
+      "id": "payments/record-collection",
+      "title": "Money COLLECTED is written down: deposit and rental fee recorded on an open rental, and the return dialog refunds what was actually taken (FR-PAY-02)",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "Design-tier, spec-before-code through docs/spec/init-feature-spec → docs/design/payments/record-collection.md, written at `draft` with the business rules as BLOCKER questions; the shop owner answered four (§6): a standalone action usable any time, amounts pre-filled from the catalog standard + the agreed price but editable, fees ARE deducted from the deposit, and rental fee is in scope alongside the deposit. Only then code. The payments context grew its first aggregate + command, which is exactly the trigger its own design doc had predicted. AC1 (unit + e2e): `POST /rentals/:rentalId/payments/collect` writes 1..2 rows in ONE transaction with the note on each, and any staff may do it (`payment:collect`) because the person holding the cash is the one at the counter. AC2 is the one that earned a real-Postgres test: 'one deposit and one rental fee per rental' is enforced by two partial UNIQUE indexes (migration 1754900000000), and `payments-collection.e2e-spec.ts` provokes them three ways — a second call, TWO CONCURRENT calls that both read an empty ledger ([200, 422] with exactly one row), and a raw INSERT that bypasses the app entirely. The race is translated at the adapter edge into `CollectionConflictError`, then answered with the SAME outcome as the pre-check plus the amount now on file (ADR 0001 §2, the create-rental pattern). AC3: a returned or cancelled rental answers `rejected_rental_closed` + currentStatus and writes nothing. AC4: an empty call is `rejected_nothing_to_record` — a business outcome, since each field is valid alone and only the use case is wrong — while a 0₫ amount stays a 400 envelope. AC5 (vitest + Playwright): the return dialog now reads the ledger and refunds `deposit collected − suggested late fee`; with no deposit on file it falls back to the catalog and SAYS so instead of presenting a reference figure as money the shop holds. Read side gained `summary` (per-kind totals, computed in the projection so two screens spend one number) and `RentalDressDto.agreedPrice` from `rental_items.price`. Gates: be 109 unit (+14) · 42 e2e (+12) · fe 71 vitest (+5) · qr-admin 13 · contract:check, check, lint, arch, both builds green after the commit that carries BE + contract + both clients together · `pnpm --filter fe e2e` 1 passed (15.6s) against the real stack, exercising record-then-refund end to end.",
+      "acceptance": [
+        "AC1: staff record the deposit and/or the rental fee of an open rental in one action; the ledger shows exactly the amounts entered, with the note on every row",
+        "AC2: a second recording of the same kind is refused and states the amount already on file — including when two devices submit at the same time",
+        "AC3: a returned or cancelled rental refuses money with its current status",
+        "AC4: calling the action with nothing to record is refused as a business outcome, not a 500",
+        "AC5: the return dialog computes the refund from the deposit ACTUALLY collected, and says so when no deposit was ever recorded"
+      ],
+      "dependencies": ["payments/list-payments", "rentals/return-rental", "rentals/list-rentals"]
     }
   ]
 }

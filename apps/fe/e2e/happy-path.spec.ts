@@ -69,6 +69,26 @@ test('happy path: create dress → rent today → pickup → return → settled 
     );
   });
 
+  await test.step('record the money taken at the counter (FR-PAY-02)', async () => {
+    const row = page.getByRole('row', { name: new RegExp(CUSTOMER) });
+    await row.getByRole('button', { name: /^Tiền/ }).click();
+    // Pre-filled from the catalog standard and the agreed price…
+    await expect(page.getByLabel('Tiền cọc')).toHaveValue('3000000');
+    await expect(page.getByLabel('Tiền thuê')).toHaveValue('1500000');
+    // …but the shop took less deposit than the standard, and the ledger records what was TAKEN.
+    await page.getByLabel('Tiền cọc').fill('2000000');
+    await page.getByRole('button', { name: 'Ghi nhận' }).click();
+    await expect(page.getByText('Đã ghi nhận tiền.')).toBeVisible();
+    // Both kinds are now on file, so the form gives way to the ledger it just wrote.
+    await expect(
+      page.getByText('Đã ghi nhận đủ tiền cọc và tiền thuê của lượt thuê này.'),
+    ).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: 'Tiền cọc' })).toContainText(
+      '2.000.000 ₫',
+    );
+    await page.keyboard.press('Escape');
+  });
+
   // Board rows of THIS run only: the board also shows whatever else the target database holds
   // (leftover or overdue rentals), so page-wide button lookups would be ambiguous.
   const ownRows = page.getByRole('listitem').filter({ hasText: CUSTOMER });
@@ -86,7 +106,10 @@ test('happy path: create dress → rent today → pickup → return → settled 
 
   await test.step('take back and settle the deposit', async () => {
     await ownRows.getByRole('button', { name: 'Nhận về & tất toán' }).click();
-    await page.getByLabel('Hoàn cọc (VND)').fill('3000000');
+    // The refund is pre-filled from the deposit the shop ACTUALLY collected (2.000.000), not from
+    // the catalog's 3.000.000 — refunding the standard would give away money never received.
+    await expect(page.getByText('Đã thu cọc: 2.000.000 ₫')).toBeVisible();
+    await expect(page.getByLabel('Hoàn cọc (VND)')).toHaveValue('2000000');
     await page.getByLabel('Ghi chú').fill('Trả đủ, cọc hoàn nguyên');
     await page.getByRole('button', { name: 'Xác nhận trả váy' }).click();
     await expect(page.getByText('Đã tất toán lượt thuê.')).toBeVisible();
@@ -98,10 +121,14 @@ test('happy path: create dress → rent today → pickup → return → settled 
     await page.getByRole('link', { name: 'Thuê', exact: true }).click();
     const row = page.getByRole('row', { name: new RegExp(CUSTOMER) });
     await expect(row).toContainText('Đã trả');
-    await row.getByRole('button', { name: 'Thanh toán' }).click();
+    await row.getByRole('button', { name: /^Tiền/ }).click();
     await expect(page.getByText('Hoàn cọc', { exact: true })).toBeVisible();
     // The note rides on EVERY movement row, so match the first — a settlement with a late fee
     // legitimately repeats it.
     await expect(page.getByText('Trả đủ, cọc hoàn nguyên').first()).toBeVisible();
+    // Money in and money out are both on the ledger now: 2.000.000 + 1.500.000 collected,
+    // 2.000.000 handed back. Before FR-PAY-02 the "in" half did not exist at all.
+    await expect(page.getByText('Tổng đã thu')).toBeVisible();
+    await expect(page.getByText('3.500.000 ₫')).toBeVisible();
   });
 });

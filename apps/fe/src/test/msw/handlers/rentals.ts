@@ -15,6 +15,7 @@ import type {
   LateFeeQuoteResponseDto,
   PaymentDto,
   PaymentListResponseDto,
+  RecordCollectionRequestDto,
   RentalListItemDto,
   RentalListResponseDto,
   ReturnRentalRequestDto,
@@ -48,6 +49,8 @@ let lastRentalListParams: Record<string, string> | null = null;
 let lastCancelRentalId: string | null = null;
 let rentalPayments = new Map<string, PaymentDto[]>();
 let lateFeeQuotes = new Map<string, LateFeeQuoteResponseDto>();
+let lastCollectBody: RecordCollectionRequestDto | null = null;
+let lastCollectRentalId: string | null = null;
 
 /** Dresses that already have an overlapping booking — POST /rentals answers 409. */
 export function seedBlockedDresses(dressIds: string[]): void {
@@ -86,7 +89,13 @@ export function makeTodayRental(
     startDate: '2099-08-01',
     endDate: '2099-08-03',
     dresses: [
-      { dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng', depositAmount: 3_000_000 },
+      {
+        dressId: 'd1',
+        code: 'VD-001',
+        name: 'Váy cưới ren trắng',
+        depositAmount: 3_000_000,
+        agreedPrice: 1_500_000,
+      },
     ],
     ...overrides,
   };
@@ -142,7 +151,13 @@ export function makeRentalListItem(
     notes: null,
     createdAt: '2099-07-30T09:00:00.000Z',
     dresses: [
-      { dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng', depositAmount: 3_000_000 },
+      {
+        dressId: 'd1',
+        code: 'VD-001',
+        name: 'Váy cưới ren trắng',
+        depositAmount: 3_000_000,
+        agreedPrice: 1_500_000,
+      },
     ],
     ...overrides,
   };
@@ -180,6 +195,28 @@ export function seedRentalPayments(rentalId: string, payments: PaymentDto[]): vo
   rentalPayments.set(rentalId, [...payments]);
 }
 
+/** The body of the most recent POST /rentals/:id/payments/collect. */
+export function getLastCollectBody(): RecordCollectionRequestDto | null {
+  return lastCollectBody;
+}
+
+export function getLastCollectRentalId(): string | null {
+  return lastCollectRentalId;
+}
+
+/** The same arithmetic the API projection does, so a seeded ledger and its summary agree. */
+function summaryOf(payments: readonly PaymentDto[]): PaymentListResponseDto['summary'] {
+  const total = (kind: PaymentDto['kind']): number =>
+    payments.reduce((sum, payment) => (payment.kind === kind ? sum + payment.amount : sum), 0);
+  return {
+    deposit: total('deposit'),
+    rentalFee: total('rental_fee'),
+    depositRefund: total('deposit_refund'),
+    lateFee: total('late_fee'),
+    damageFee: total('damage_fee'),
+  };
+}
+
 /** Reset the in-memory rentals state — call from beforeEach. */
 export function resetRentals(): void {
   blockedDressIds = new Set();
@@ -196,6 +233,8 @@ export function resetRentals(): void {
   lastRentalListParams = null;
   lastCancelRentalId = null;
   rentalPayments = new Map();
+  lastCollectBody = null;
+  lastCollectRentalId = null;
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -280,10 +319,17 @@ export const rentalsHandlers: HttpHandler[] = [
 
   // GET /api/v1/rentals/:id/payments — the seeded movements (payments tag).
   http.get('/api/v1/rentals/:id/payments', ({ params }) => {
-    const body: PaymentListResponseDto = {
-      data: rentalPayments.get(params.id as string) ?? [],
-    };
+    const data = rentalPayments.get(params.id as string) ?? [];
+    const body: PaymentListResponseDto = { data, summary: summaryOf(data) };
     return HttpResponse.json(body);
+  }),
+
+  // POST /api/v1/rentals/:id/payments/collect — 200 IdResponse, capturing what was sent.
+  http.post('/api/v1/rentals/:id/payments/collect', async ({ params, request }) => {
+    lastCollectRentalId = params.id as string;
+    lastCollectBody = (await request.json()) as RecordCollectionRequestDto;
+    const response: IdResponse = { id: params.id as string };
+    return HttpResponse.json(response);
   }),
 
   // POST /api/v1/rentals/:id/cancel — 200 IdResponse, capturing the id.

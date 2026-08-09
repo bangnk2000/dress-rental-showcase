@@ -26,7 +26,8 @@
     },
     "actions": {
       "cancel": "Huỷ",
-      "payments": "Thanh toán"
+      "payments": "Tiền",
+      "paymentsFor": "Tiền của lượt thuê — {{customer}}"
     },
     "empty": {
       "noRentals": "Chưa có lượt thuê nào",
@@ -45,16 +46,20 @@
     "notAllowed": "Không huỷ được: lượt thuê đang ở trạng thái \"{{status}}\"."
   },
   "payments": {
-    "title": "Thanh toán của lượt thuê",
-    "description": "Các khoản đã ghi nhận khi tất toán cho {{customer}}.",
+    "title": "Tiền của lượt thuê",
+    "description": "Các khoản đã ghi nhận cho {{customer}}.",
     "loading": "Đang tải…",
-    "empty": "Chưa có khoản thanh toán nào được ghi nhận.",
+    "empty": "Chưa ghi nhận khoản tiền nào.",
     "kinds": {
       "deposit": "Tiền cọc",
       "deposit_refund": "Hoàn cọc",
       "rental_fee": "Tiền thuê",
       "late_fee": "Phí trễ hạn",
       "damage_fee": "Phí hư hỏng"
+    },
+    "totals": {
+      "collected": "Tổng đã thu",
+      "refunded": "Đã hoàn khách"
     }
   },
   "form": {
@@ -105,5 +110,29 @@
   },
   "errors": {
     "rentalNotFound": "Lượt thuê này không còn tồn tại. Danh sách đã được làm mới."
+  },
+  "collect": {
+    "title": "Ghi nhận tiền đã thu",
+    "submit": "Ghi nhận",
+    "success": "Đã ghi nhận tiền.",
+    "error": "Không ghi được. Vui lòng thử lại.",
+    "allRecorded": "Đã ghi nhận đủ tiền cọc và tiền thuê của lượt thuê này.",
+    "alreadyRecorded": "{{label}}: đã ghi nhận {{amount}}.",
+    "rentalClosed": "Không ghi được: lượt thuê đang ở trạng thái \"{{status}}\".",
+    "fields": {
+      "deposit": "Tiền cọc",
+      "rentalFee": "Tiền thuê",
+      "note": "Ghi chú"
+    },
+    "hints": {
+      "standardDeposit": "Cọc chuẩn của các váy trong đơn: {{amount}}",
+      "agreedTotal": "Tiền thuê đã thoả thuận: {{amount}}"
+    },
+    "errors": {
+      "amountInvalid": "Chỉ nhập chữ số (VND)",
+      "noteTooLong": "Ghi chú tối đa 2000 ký tự",
+      "alreadyRecorded": "Khoản này đã được ghi nhận trước đó — xem danh sách ở trên.",
+      "nothingToRecord": "Nhập ít nhất một khoản để ghi nhận."
+    }
   }
 }

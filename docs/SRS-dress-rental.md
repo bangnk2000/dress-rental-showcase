@@ -70,9 +70,16 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   + lý do: [design/rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) §6.
 
 ### payments
-- **FR-PAY-01** Xem các dòng tiền của một đơn (`GET /rentals/:id/payments`). Write side nằm
-  trong return flow của rentals qua `PaymentRecorderPort` — quyết định thiết kế, xem
+- **FR-PAY-01** Xem các dòng tiền của một đơn (`GET /rentals/:id/payments`), kèm `summary` cộng
+  sẵn theo từng kind. Write side của TẤT TOÁN nằm trong return flow của rentals qua
+  `PaymentRecorderPort` — quyết định thiết kế, xem
   [design/payments-aggregate.md](./design/payments-aggregate.md).
+- **FR-PAY-02** Ghi nhận **tiền đã thu** của một đơn: tiền cọc và/hoặc tiền thuê, bằng một hành
+  động đứng riêng dùng được bất cứ lúc nào khi đơn còn MỞ (`booked|out`). Gợi ý số tiền từ Σ cọc
+  chuẩn và Σ giá thoả thuận, nhân viên sửa được; sổ ghi số **thực thu**. Mỗi đơn tối đa MỘT dòng
+  cọc và MỘT dòng tiền thuê (chặn ở DB). Kể từ đây, hoàn cọc lúc trả váy tính trên **cọc đã thu**;
+  cọc chuẩn chỉ là số tham chiếu khi đơn chưa ghi nhận cọc. Quyết định + lý do:
+  [design/payments/record-collection.md](./design/payments/record-collection.md) §6.
 
 ## 4. Business rules (BR — bảng enforce chi tiết nằm trong design docs)
 
@@ -84,6 +91,7 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 | BR-4 | Tiền là VND integer ≥ 0 (không thập phân) | `Money` VO + DB CHECK |
 | BR-5 | "Đang vệ sinh" = váy còn trong buffer sau return; KHÔNG phải cột status | Suy diễn từ `blocked_period` |
 | BR-6 | Settlement ghi SAU khi flip status returned; nếu ghi lỗi thì nhập tay lại | Trade-off MVP có chủ ý (comment trong `return-rental.service.ts`) |
+| BR-7 | Mỗi đơn tối đa MỘT dòng `deposit` và MỘT dòng `rental_fee`; chỉ ghi được khi đơn còn mở | Partial `UNIQUE INDEX` trên `payments` (+ proof test trên Postgres thật) + pre-check → outcome `rejected_*_already_recorded` / `rejected_rental_closed` (422) |
 
 ## 5. Yêu cầu phi chức năng (NFR)
 
@@ -113,6 +121,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-RENT-06 | `rentals/cancel-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-RENT-08 | `rentals/list-rentals` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-PAY-01 | `payments/list-payments` | [payments-aggregate.md](./design/payments-aggregate.md) | pass |
+| FR-PAY-02 | `payments/record-collection` | [payments/record-collection.md](./design/payments/record-collection.md) (spec `as-built`), [payments-aggregate.md](./design/payments-aggregate.md) | pass |
 | FR-RENT-09 | `rentals/settle-late-fee` | [rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Phí trễ hạn | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 

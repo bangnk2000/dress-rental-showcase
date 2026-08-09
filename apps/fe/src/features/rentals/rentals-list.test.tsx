@@ -1,12 +1,16 @@
 import { screen, waitFor, within } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
+import { server } from '@/test/msw/server';
 import {
   getLastCancelRentalId,
+  getLastCollectBody,
+  getLastCollectRentalId,
   getLastRentalListParams,
   makePayment,
   makeRentalListItem,
@@ -46,7 +50,13 @@ test('renders the rentals page with status badges and dress links', async () => 
       customerName: 'Trần Văn B',
       status: 'returned',
       dresses: [
-        { dressId: 'd2', code: 'VD-900', name: 'Đầm dạ hội đỏ', depositAmount: 2_000_000 },
+        {
+          dressId: 'd2',
+          code: 'VD-900',
+          name: 'Đầm dạ hội đỏ',
+          depositAmount: 2_000_000,
+          agreedPrice: 1_200_000,
+        },
       ],
     }),
   ]);
@@ -142,15 +152,19 @@ test('the payments dialog lists the settled movements of a returned rental', asy
   const user = userEvent.setup();
   renderList();
 
-  await user.click(await screen.findByRole('button', { name: 'Thanh toán' }));
+  await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
 
   expect(await screen.findByText('Hoàn cọc')).toBeInTheDocument();
   expect(screen.getByText('Phí trễ hạn')).toBeInTheDocument();
   expect(screen.getByText('Trễ 1 ngày')).toBeInTheDocument();
-  // formatVnd reads the APP i18n instance (not the test one), so the separator
+  // Scoped to the movement list: the same amount now legitimately appears again in the totals
+  // block below it. formatVnd reads the APP i18n instance (not the test one), so the separator
   // depends on its detected language — accept vi (.) and en (,) grouping.
-  expect(screen.getByText(/2[.,]800[.,]000/)).toBeInTheDocument();
-  expect(screen.getByText(/(^|[^.,\d])200[.,]000/)).toBeInTheDocument();
+  const movements = within(screen.getByRole('list'));
+  expect(movements.getByText(/2[.,]800[.,]000/)).toBeInTheDocument();
+  expect(movements.getByText(/(^|[^.,\d])200[.,]000/)).toBeInTheDocument();
+  // A settled rental takes no more money (FR-PAY-02 R4) — no form, only the record.
+  expect(screen.queryByLabelText('Tiền cọc')).not.toBeInTheDocument();
 });
 
 test('a returned rental without payments shows the empty message', async () => {
@@ -158,11 +172,90 @@ test('a returned rental without payments shows the empty message', async () => {
   const user = userEvent.setup();
   renderList();
 
-  await user.click(await screen.findByRole('button', { name: 'Thanh toán' }));
+  await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
+
+  expect(await screen.findByText('Chưa ghi nhận khoản tiền nào.')).toBeInTheDocument();
+});
+
+test('FR-PAY-02: an open rental offers the collect form, pre-filled from catalog + agreement', async () => {
+  seedRentalList([makeRentalListItem()]); // booked, one dress: 3.000.000 deposit / 1.500.000 agreed
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
+
+  const deposit = await screen.findByLabelText('Tiền cọc');
+  const rentalFee = screen.getByLabelText('Tiền thuê');
+  expect(deposit).toHaveValue('3000000');
+  expect(rentalFee).toHaveValue('1500000');
+
+  await user.clear(deposit);
+  await user.type(deposit, '2500000'); // the shop took less than the standard
+  await user.click(screen.getByRole('button', { name: 'Ghi nhận' }));
+
+  await waitFor(() => expect(getLastCollectRentalId()).toBe('rental-1'));
+  // The ledger records what was TAKEN, and blank fields are omitted rather than sent as 0.
+  expect(getLastCollectBody()).toEqual({ deposit: 2_500_000, rentalFee: 1_500_000 });
+  expect(await screen.findByText('Đã ghi nhận tiền.')).toBeInTheDocument();
+});
+
+test('FR-PAY-02: a kind already on file is stated, not offered for entry again', async () => {
+  seedRentalList([makeRentalListItem({ rentalId: 'rental-5', status: 'out' })]);
+  seedRentalPayments('rental-5', [
+    makePayment({ id: 'p1', kind: 'deposit', amount: 3_000_000, note: null }),
+  ]);
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
+
+  expect(await screen.findByText(/Tiền cọc: đã ghi nhận/)).toBeInTheDocument();
+  expect(screen.queryByLabelText('Tiền cọc')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Tiền thuê')).toBeInTheDocument();
+  // The totals row is the API's arithmetic, not a sum computed in the dialog.
+  expect(screen.getByText('Tổng đã thu')).toBeInTheDocument();
+});
+
+test('FR-PAY-02: rejected_deposit_already_recorded keeps the dialog and marks the field', async () => {
+  seedRentalList([makeRentalListItem()]);
+  server.use(
+    http.post('/api/v1/rentals/:id/payments/collect', () =>
+      HttpResponse.json(
+        { status: 'rejected_deposit_already_recorded', recordedAmount: 3_000_000 },
+        { status: 422 },
+      ),
+    ),
+  );
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
+  await user.click(await screen.findByRole('button', { name: 'Ghi nhận' }));
 
   expect(
-    await screen.findByText('Chưa có khoản thanh toán nào được ghi nhận.'),
+    await screen.findByText('Khoản này đã được ghi nhận trước đó — xem danh sách ở trên.'),
   ).toBeInTheDocument();
+  expect(screen.getByLabelText('Tiền thuê')).toBeInTheDocument(); // dialog still open
+});
+
+test('FR-PAY-02: rejected_rental_closed closes the dialog and says which status blocked it', async () => {
+  seedRentalList([makeRentalListItem()]);
+  server.use(
+    http.post('/api/v1/rentals/:id/payments/collect', () =>
+      HttpResponse.json(
+        { status: 'rejected_rental_closed', currentStatus: 'cancelled' },
+        { status: 422 },
+      ),
+    ),
+  );
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
+  await user.click(await screen.findByRole('button', { name: 'Ghi nhận' }));
+
+  expect(await screen.findByText(/đang ở trạng thái "Đã huỷ"/)).toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 });
 
 test('a status filter from the URL narrows the request', async () => {

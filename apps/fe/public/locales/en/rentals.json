@@ -26,7 +26,8 @@
     },
     "actions": {
       "cancel": "Cancel",
-      "payments": "Payments"
+      "payments": "Money",
+      "paymentsFor": "Money for the rental of {{customer}}"
     },
     "empty": {
       "noRentals": "No rentals yet",
@@ -45,16 +46,20 @@
     "notAllowed": "Cannot cancel: the rental is \"{{status}}\"."
   },
   "payments": {
-    "title": "Rental payments",
-    "description": "Movements recorded when settling for {{customer}}.",
+    "title": "Money of the rental",
+    "description": "What has been recorded for {{customer}}.",
     "loading": "Loading…",
-    "empty": "No payments recorded yet.",
+    "empty": "No money recorded yet.",
     "kinds": {
       "deposit": "Deposit",
       "deposit_refund": "Deposit refund",
       "rental_fee": "Rental fee",
       "late_fee": "Late fee",
       "damage_fee": "Damage fee"
+    },
+    "totals": {
+      "collected": "Total collected",
+      "refunded": "Returned to the customer"
     }
   },
   "form": {
@@ -105,5 +110,29 @@
   },
   "errors": {
     "rentalNotFound": "This rental no longer exists. The list has been refreshed."
+  },
+  "collect": {
+    "title": "Record money collected",
+    "submit": "Record",
+    "success": "Money recorded.",
+    "error": "Could not record it. Please try again.",
+    "allRecorded": "Deposit and rental fee are both recorded for this rental.",
+    "alreadyRecorded": "{{label}}: {{amount}} already recorded.",
+    "rentalClosed": "Cannot record: the rental is \"{{status}}\".",
+    "fields": {
+      "deposit": "Deposit",
+      "rentalFee": "Rental fee",
+      "note": "Note"
+    },
+    "hints": {
+      "standardDeposit": "Standard deposit for the dresses in this rental: {{amount}}",
+      "agreedTotal": "Agreed rental fee: {{amount}}"
+    },
+    "errors": {
+      "amountInvalid": "Digits only (VND)",
+      "noteTooLong": "The note may be at most 2000 characters",
+      "alreadyRecorded": "This amount was already recorded — see the list above.",
+      "nothingToRecord": "Enter at least one amount to record."
+    }
   }
 }

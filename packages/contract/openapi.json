@@ -931,6 +931,63 @@
         ]
       }
     },
+    "/api/v1/rentals/{rentalId}/payments/collect": {
+      "post": {
+        "description": "Writes 1..2 movements in one transaction. Returns the RENTAL id — the call creates several rows, so there is no single movement id.",
+        "operationId": "RecordCollectionHttpController_collect",
+        "parameters": [
+          {
+            "name": "rentalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordCollectionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_rental_not_found | rejected_rental_closed (currentStatus) | rejected_nothing_to_record | rejected_deposit_already_recorded (recordedAmount) | rejected_rental_fee_already_recorded (recordedAmount)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordCollectionOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record money COLLECTED for a rental: deposit and/or rental fee (FR-PAY-02)",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
     "/api/v1/qr-links": {
       "post": {
         "operationId": "CreateUrlCodeHttpController_create",
@@ -1860,14 +1917,20 @@
           "depositAmount": {
             "type": "number",
             "example": 3000000,
-            "description": "The catalog STANDARD deposit for this dress in VND — a reference, not what was collected: no deposit is recorded at booking time"
+            "description": "The catalog STANDARD deposit for this dress in VND — a reference figure. What was actually collected is the `deposit` total of GET /rentals/:id/payments (FR-PAY-02)"
+          },
+          "agreedPrice": {
+            "type": "number",
+            "example": 1500000,
+            "description": "The price agreed with THIS customer for this dress in VND (rental_items.price), which may differ from the catalog price"
           }
         },
         "required": [
           "dressId",
           "code",
           "name",
-          "depositAmount"
+          "depositAmount",
+          "agreedPrice"
         ]
       },
       "TodayBoardRentalDto": {
@@ -2155,6 +2218,43 @@
           "createdAt"
         ]
       },
+      "PaymentSummaryDto": {
+        "type": "object",
+        "properties": {
+          "deposit": {
+            "type": "number",
+            "example": 3000000,
+            "description": "Deposit collected, VND"
+          },
+          "rentalFee": {
+            "type": "number",
+            "example": 1500000,
+            "description": "Rental fee collected, VND"
+          },
+          "depositRefund": {
+            "type": "number",
+            "example": 2800000,
+            "description": "Deposit handed back, VND"
+          },
+          "lateFee": {
+            "type": "number",
+            "example": 200000,
+            "description": "Late fees charged, VND"
+          },
+          "damageFee": {
+            "type": "number",
+            "example": 0,
+            "description": "Damage fees charged, VND"
+          }
+        },
+        "required": [
+          "deposit",
+          "rentalFee",
+          "depositRefund",
+          "lateFee",
+          "damageFee"
+        ]
+      },
       "PaymentListResponseDto": {
         "type": "object",
         "properties": {
@@ -2164,10 +2264,69 @@
             "items": {
               "$ref": "#/components/schemas/PaymentDto"
             }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PaymentSummaryDto"
           }
         },
         "required": [
-          "data"
+          "data",
+          "summary"
+        ]
+      },
+      "RecordCollectionRequestDto": {
+        "type": "object",
+        "properties": {
+          "deposit": {
+            "type": "number",
+            "minimum": 1,
+            "example": 3000000,
+            "description": "Deposit actually collected, in VND (integer ≥ 1)"
+          },
+          "rentalFee": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1500000,
+            "description": "Rental fee actually collected, in VND (integer ≥ 1)"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "Khách chuyển khoản trước",
+            "description": "Written onto every movement this call records"
+          }
+        }
+      },
+      "RecordCollectionOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_rental_not_found",
+              "rejected_rental_closed",
+              "rejected_nothing_to_record",
+              "rejected_deposit_already_recorded",
+              "rejected_rental_fee_already_recorded"
+            ],
+            "type": "string"
+          },
+          "currentStatus": {
+            "enum": [
+              "returned",
+              "cancelled"
+            ],
+            "type": "string",
+            "description": "Why the rental is closed (rejected_rental_closed)"
+          },
+          "recordedAmount": {
+            "type": "number",
+            "example": 3000000,
+            "description": "The amount already on file for that kind (rejected_*_already_recorded)"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "CreateUrlCodeRequestDto": {

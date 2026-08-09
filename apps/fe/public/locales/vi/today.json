@@ -54,10 +54,11 @@
       "unavailable": "Không tính được phí trễ hạn. Vui lòng nhập tay."
     },
     "deposit": {
-      "standard": "Cọc chuẩn {{count}} váy: {{amount}}",
+      "standard": "Chưa ghi nhận tiền cọc — dưới đây là cọc chuẩn {{count}} váy: {{amount}}",
       "afterFees": "Trừ phí {{fees}} → hoàn lại khách {{amount}}",
       "manual": "Bạn đang nhập {{amount}} — khác số tính ở trên.",
-      "use": "Điền {{amount}} vào ô hoàn cọc"
+      "use": "Điền {{amount}} vào ô hoàn cọc",
+      "collected": "Đã thu cọc: {{amount}}"
     }
   },
   "errors": {
