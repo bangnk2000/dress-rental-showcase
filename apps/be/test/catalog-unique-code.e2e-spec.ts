@@ -46,6 +46,34 @@ describe('catalog invariants (real Postgres)', () => {
     expect(duplicate.body).toEqual({ status: 'rejected_dress_code_taken', dressCode: 'VD-100' });
   });
 
+  it('two concurrent creates of the same code: one wins, the other gets the SAME named outcome', async () => {
+    // Both requests pass the uniqueness pre-check before either inserts, so only the UNIQUE index
+    // can decide this. The loser must be indistinguishable from a pre-check rejection — a generic
+    // 409 envelope here would leave the form without its field error (ADR 0001 §2).
+    const responses = await Promise.all([
+      context.request('/api/v1/dresses', {
+        method: 'POST',
+        body: dressBody('VD-150'),
+        token: context.token,
+      }),
+      context.request('/api/v1/dresses', {
+        method: 'POST',
+        body: dressBody('VD-150'),
+        token: context.token,
+      }),
+    ]);
+
+    expect(responses.map((response) => response.status).sort()).toEqual([201, 422]);
+    const refused = responses.find((response) => response.status === 422)!;
+    expect(refused.body).toEqual({ status: 'rejected_dress_code_taken', dressCode: 'VD-150' });
+
+    const rows = await context.db.query<{ count: string }>(
+      'SELECT count(*) AS count FROM dresses WHERE code = $1',
+      ['VD-150'],
+    );
+    expect(rows.rows[0]!.count).toBe('1');
+  });
+
   it('the DB refuses a duplicate code when the application is bypassed', async () => {
     await context.db.seedDress('VD-200');
 

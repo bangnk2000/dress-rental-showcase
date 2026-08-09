@@ -3,6 +3,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateID } from '../../../../libs/ddd/entity.base';
 import { Money } from '../../../../libs/ddd/money.value-object';
+import { DressCodeConflictError } from '../../application/ports/dress-code-conflict.error';
 import {
   DRESS_REPOSITORY,
   DressRepositoryPort,
@@ -57,7 +58,16 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
       now,
     );
 
-    await this.dressRepo.save(dress);
+    try {
+      await this.dressRepo.save(dress);
+    } catch (error) {
+      if (error instanceof DressCodeConflictError) {
+        // A concurrent write took the new code after the pre-check above — same rule, same
+        // outcome as that check would have produced (ADR 0001 §2).
+        return Err(new DressCodeAlreadyExistsError(dress.getProps().code.unpack(), error));
+      }
+      throw error;
+    }
     return Ok(dress.id);
   }
 }

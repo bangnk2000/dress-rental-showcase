@@ -96,6 +96,13 @@ FE cần đủ dữ liệu để hành động, không phải GET thêm lần n�
 | `rentals/cancel-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-06 |
 | `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` | `currentStatus` | FR-RENT-06, BR-3 |
 
+**Luật race (áp dụng cho MỌI precondition có ràng buộc DB đứng sau):** pre-check ở service và ràng
+buộc ở DB là HAI NGƯỜI GÁC CÙNG MỘT LUẬT, nên client không được phép phân biệt ai bắt. Adapter dịch
+lỗi ràng buộc thành exception của port (`RentalItemsOverlapError`, `DressCodeConflictError`), service
+bắt lại và trả **đúng outcome mà pre-check sẽ trả**. Không làm vậy thì cùng một nghiệp vụ lúc ra 422
+outcome (form hiện field error), lúc ra 409 envelope (form chỉ còn toast chung) — tuỳ vào việc có ai
+chen ngang hay không. Mỗi luật loại này phải có một ca `test:e2e` bắn hai request đồng thời.
+
 `dressIds[]` là các váy VI PHẠM (không phải toàn bộ giỏ) — metadata đã có sẵn trong domain error
 (`create-rental.service.ts` truyền `{ dressIds }`). `currentStatus` cho FE nói được "đơn đang ở
 trạng thái X" và refresh đúng bảng.
