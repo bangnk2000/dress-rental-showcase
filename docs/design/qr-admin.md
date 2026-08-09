@@ -81,8 +81,11 @@ strings or localStorage.
 - History: skeleton while loading; “Chưa có mã QR nào” empty; retry button for 5xx/network failure.
 - Form: exact Vietnamese copy for invalid URL, forbidden, server failure. 400 is local form error;
   401 invokes one refresh then `/login`; 403 is terminal access denied.
-- SVG: loading placeholder; a failed blob fetch never discards the last good preview. Download link
-  is enabled only when a blob exists.
+- SVG: loading placeholder; download is enabled only when a blob exists. **A preview always belongs
+  to the row currently selected** — changing the selection revokes and clears the old blob before
+  fetching, rather than leaving the previous QR on screen (it would download under the new row's
+  URL and filename, and a wrong QR that looks right ends up printed on a poster). A failed fetch of
+  the CURRENT selection shows the error and no image; it never falls back to another row's QR.
 
 ## 5. Form ↔ DTO mapping
 
