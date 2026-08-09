@@ -83,6 +83,22 @@ files here.
    constraint has proof tests (`pnpm --filter be test:e2e`). It needs a BE store first, so closing
    it is an ADR, not a FE tweak.
 
+## Screen rules learned the hard way (2026-08-10 UI review)
+
+- **No `window.confirm`.** An irreversible action uses `components/feedback/confirm-dialog.tsx`:
+  its buttons stay in the app's language, it does not block the thread, and it does not render as
+  browser chrome inside the installed PWA. Its dismiss button is `Quay lại`, never `Hủy` — on the
+  rentals list the confirmed action is itself a cancel.
+- **A number the user did not type gets its arithmetic shown**, not just its result: the return
+  dialog states deposit, fees and the resulting refund (`rentals/settlement-clarity`), and every
+  amount field reads its digits back grouped through `FormDescription`.
+- **An outcome payload is a UI affordance.** `dressIds` exists so the form can point at the exact
+  rows; a rejection that only sets a form-level message throws that away.
+- **Actions on the today board are thumb targets** (`h-11`, not `sm`) and carry the customer in
+  their accessible name, since the visible label repeats down the list.
+- **One mutation object serves every row**: gate the spinner on `mutation.variables`, not on
+  `isPending`, or the whole list looks busy and none of it looks specific.
+
 Two things that are NOT deviations but bite if missed: the three former
 `features/*/lib/is-conflict-error.ts` files are deleted — never recreate that shape; and rejection
 copy is per feature namespace, where `t('status.<value>')` renders the `currentStatus` payload, so a

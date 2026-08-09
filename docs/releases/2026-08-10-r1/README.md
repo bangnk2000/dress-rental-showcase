@@ -42,6 +42,23 @@ executed by a person.
 | `rentals/settle-late-fee` | [readiness](./readiness-rentals-settle-late-fee.md) | FR-RENT-09; 4 ACs; full spec-before-code lane |
 | `infra/e2e-ci` | [readiness](./readiness-infra-e2e-ci.md) | landed this session; no production surface |
 
+## Landed AFTER this readiness pass — not covered here
+
+Four UI/UX features shipped later the same day, from a review of `apps/fe`. They are **not** part of
+this release's evidence: no readiness checklist was filled for them, and the lane forbids stretching
+a checklist over features it did not examine.
+
+| Feature | Commit | Touches |
+| --- | --- | --- |
+| `rentals/settlement-clarity` | `8283e11` | BE `RentalDressDto.depositAmount` + the return dialog — **changes what the money screen shows** |
+| `rentals/dress-availability-in-picker` | `03bf04e` | new-rental form only |
+| `catalog/dress-thumbnails` | `13273d1` | catalog list + picker |
+| `fe:board-and-confirm-ergonomics` | `1eaba2f` | today board, cancel + retire confirmations |
+
+Before go/no-go, pick one: ship r1 at the SHA this pass examined, or add the four readiness files
+and re-read the compatibility matrix — the first one carries a contract change and a recorded
+business assumption ([payments-aggregate.md §Open questions](../../design/payments-aggregate.md)).
+
 ## What the readiness pass actually found
 
 1. **Nothing about deploying this product exists in the repo.** No PM2 definition, no Nginx conf, no

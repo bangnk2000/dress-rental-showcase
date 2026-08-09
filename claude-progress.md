@@ -3,6 +3,20 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-08-10 (22) — UI/UX review of `apps/fe` (22 findings across the whole SPA), then its top four
+  groups shipped as four features, ledger now 24/24 `pass`. `rentals/settlement-clarity`
+  (cross-contract: `RentalDressDto.depositAmount` → the return dialog pre-fills the refund with
+  `deposit − suggested late fee`, states the arithmetic live and reads every amount back grouped —
+  the only screen that moves cash was asking for a seven-digit number from memory; the deduction
+  convention is a RECORDED ASSUMPTION, not an owner decision). `rentals/dress-availability-in-picker`
+  (each chosen dress checks itself against the form's dates; a rejection marks the exact dresses
+  `dressIds` names, which ADR 0001 designed for and the form was discarding).
+  `catalog/dress-thumbnails` (photos where dresses are CHOSEN, not only on the detail page).
+  `fe:board-and-confirm-ergonomics` (day stepping in a transition so the board stops blanking, ±day
+  + `Hôm nay`, 44px actions, per-row spinner from `mutation.variables`, customer in the accessible
+  name, and `window.confirm` replaced by an in-app AlertDialog whose dismiss says `Quay lại`).
+  fe 66 tests, be 95 + 30 e2e, qr-admin 13, all root gates and the Playwright happy path green.
+  `docs/releases/2026-08-10-r1/` now names these four as explicitly NOT covered by its readiness pass.
 - 2026-08-10 (21) — `infra/e2e-ci` = pass, and the repo's FIRST release record. The browser proof
   stopped being manual: `playwright.config.ts` starts the BE and the FE **production build**
   (`vite preview` :4173, `preview.proxy` added to `vite.config.ts`) itself, so `pnpm --filter fe e2e`

@@ -42,3 +42,15 @@ projection-tách-khỏi-SQL của repo).
 
 - Tổng hợp doanh thu/báo cáo (candidate session-handoff) sẽ là read slice mới ở đây —
   standard-tier nếu chỉ SELECT aggregate, design-tier nếu thêm khái niệm kỳ đối soát.
+- **Tiền cọc THU vào không được ghi ở đâu cả.** `payments` chỉ có các dòng lúc tất toán, nên một
+  `deposit_refund` không có dòng `deposit` đối ứng — tiệm không đối soát được tiền mặt từ màn hình
+  này. Đây là gap chức năng lớn nhất còn lại (readiness r1 nêu ở ba feature khác nhau).
+- **Cần chủ tiệm xác nhận: phí có được trừ thẳng vào cọc không?** `rentals/settlement-clarity`
+  (2026-08-10) pre-fill ô "Hoàn cọc" bằng `tổng cọc chuẩn − phí trễ đề xuất`, tức là ĐANG giả định
+  tiệm trừ phí vào cọc rồi hoàn phần còn lại. Bằng chứng cho giả định đó là `smoke.sh` (phí 200.000
+  + hoàn 2.800.000 trên cọc 3.000.000) và happy path Playwright — **không phải** một quyết định
+  nghiệp vụ được duyệt bằng văn bản như quy tắc phí trễ ở
+  [rentals/settle-late-fee.md §6](./rentals/settle-late-fee.md). Ô này sửa được và phép tính hiện
+  trên màn hình, nên nếu tiệm thu phí riêng bằng tiền mặt thì chỉ tốn một lần sửa; vẫn nên hỏi.
+- `RentalDressDto.depositAmount` là **cọc chuẩn trong danh mục**, không phải số đã thu. Mọi chỗ
+  hiển thị nó phải nói rõ là số tham chiếu — chừng nào câu hỏi đầu tiên ở trên chưa được đóng.

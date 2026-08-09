@@ -1,5 +1,50 @@
 # Session Handoff
 
+## 2026-08-10 (22) — UI/UX review of `apps/fe`, then its top four findings shipped
+
+- Done: read the whole FE (~4.9k lines of TSX) and wrote up 22 improvement points, then implemented
+  the four highest-value groups as four tracked features. Ledger is 24/24 `pass`.
+- `rentals/settlement-clarity` (`8283e11`, cross-contract): the only screen that moves cash asked
+  staff to type a seven-digit refund from memory — no separators, no sum, no statement of what was
+  taken. `RentalDressDto` gained `depositAmount` through the existing `DressLookupPort`; the dialog
+  pre-fills the refund with `deposit − suggested late fee`, states the arithmetic live, flags a
+  refund that disagrees with it, and reads every amount field back grouped via `FormDescription`
+  (already wired to `aria-describedby`). **Watch out:** pre-filling `deposit − fees` encodes a
+  deduction convention taken from `smoke.sh` and the Playwright happy path, NOT an owner decision
+  like the late-fee rules — recorded as an open question in
+  [payments-aggregate.md](docs/design/payments-aggregate.md) and in the commit.
+- `rentals/dress-availability-in-picker` (`03bf04e`, FE-only): every chosen dress now checks itself
+  against the form's dates (`Còn trống` / `Vướng lịch` + the `blockedUntilDate` the staff cannot
+  deduce), and a rejection marks exactly the dresses the server named — `dressIds` was designed for
+  this in ADR 0001 and the form was throwing it away. Search results are deliberately NOT checked
+  (a query per keystroke per row). The flag clears when the dates or the selection change.
+- `catalog/dress-thumbnails` (`13273d1`, FE-only): photos existed since `catalog/manage-dress` and
+  showed up only on the detail page — not on the two screens where dresses are CHOSEN. New kernel
+  `PhotoThumbnail` (decorative `alt=""`, dead links degrade to a placeholder) in the catalog table
+  and both picker lists.
+- `fe:board-and-confirm-ergonomics` (`1eaba2f`, FE-only): day stepping inside `useTransition` (the
+  board no longer blanks), ± day + `Hôm nay`, 44px board actions, per-row spinner gated on
+  `mutation.variables` instead of `isPending`, customer in the accessible name, and `window.confirm`
+  replaced by `ui/alert-dialog` + `ConfirmDialog` for both irreversible actions. The dismiss button
+  says `Quay lại`: on the rentals list the confirmed action is itself a cancel.
+- Verification: fe **66** tests (+9 net, 3 rewritten to drive the real dialog), be **95** unit + 30
+  e2e, qr-admin 13, root `contract:check` / `check` / `lint` / `arch` / both builds green, and
+  `pnpm --filter fe e2e` green against the real stack (1 passed, 15.9s) — the happy path exercises
+  both resized board buttons and the new pre-filled refund.
+- Watch out: adding an `aria-label` changes the accessible NAME, so vitest queries for those buttons
+  had to move to regex — the visible label is still a prefix of the name (WCAG 2.5.3). And the
+  `Hôm nay` test asserts the date INPUT, not the last request: that board is already cached, so
+  returning costs no round trip.
+- Watch out: `docs/releases/2026-08-10-r1/` was written BEFORE these four features. Its README now
+  lists them as explicitly not covered — before go/no-go, either ship r1 at the SHA the readiness
+  pass examined, or write the four missing readiness files (the first one carries a contract change).
+- Next, from the same review, in the order I would take them: (1) the deposit COLLECTION is still
+  never recorded — three features and the readiness pass all point at it, and it is what stops the
+  shop reconciling cash; (2) rental `notes` are captured at booking and displayed nowhere; (3) no
+  rental detail route at all; (4) the remaining P2/P3 items (overdue card showing days late, one
+  search model instead of two, `EmptyState` heading level, language switcher out of the primary
+  header, `dateStyle: 'medium'` → a shorter Vietnamese format, offline indicator).
+
 ## 2026-08-10 (21) — `infra/e2e-ci` = pass + the first release record (`docs/releases/2026-08-10-r1/`)
 
 - Done (`infra/e2e-ci`): the browser proof is no longer manual. `apps/fe/playwright.config.ts` now
