@@ -88,13 +88,21 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
   const quote = lateFee.data ?? null;
 
   /**
-   * The catalog's STANDARD deposit for the dresses in this rental. No deposit is recorded when a
-   * rental is created (payments only ever sees settlement rows), so this is a reference figure —
-   * the dialog shows the arithmetic and staff may overwrite the field.
+   * The catalog's STANDARD deposit for the dresses in this rental — today's catalog figure, which
+   * may not be what was taken when the rental was booked, and no deposit is recorded anywhere yet.
+   * So it is a SUGGESTION, never a default: the money actually handed back has to be an amount
+   * staff chose. Auto-filling it would submit a guess that reads as authoritative.
    */
   const depositTotal = rental
     ? rental.dresses.reduce((sum, dress) => sum + dress.depositAmount, 0)
     : 0;
+  const suggestedLateFee = quote?.suggestedLateFee ?? null;
+  /**
+   * Without the quote the late fee is unknown, NOT zero — and omitting `lateFee` makes the server
+   * charge its own computed fee. Suggesting the full deposit here would hand back the fee the
+   * shop is about to charge, so no suggestion is offered until the number is known.
+   */
+  const suggestionAvailable = depositTotal > 0 && quote !== null;
 
   // One dialog instance serves every rental, so the form is re-primed per OPEN — keyed on the
   // rental id, not the DTO: the board refetches while the dialog is up, and a new object identity
@@ -108,22 +116,13 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
 
   // The quote arrives after the dialog is already usable, so seeding must not be a reset: on a
   // slow connection staff has often typed the waiver note or a fee by then, and losing that
-  // silently is worse than an empty field. Only UNTOUCHED fields take the derived numbers — the
-  // fee the server computed, and the refund left after it, which is the seven-digit amount
-  // nobody should reproduce from memory while the customer waits.
-  const suggestedLateFee = quote?.suggestedLateFee ?? null;
+  // silently is worse than an empty field. Only an UNTOUCHED late-fee field takes the server's
+  // number; the refund stays blank until staff taps the suggestion below.
   useEffect(() => {
     if (!rentalId || suggestedLateFee === null) return;
-    if (!getFieldState('lateFee').isDirty) {
-      setValue('lateFee', suggestedLateFee > 0 ? String(suggestedLateFee) : '');
-    }
-    if (!getFieldState('depositRefund').isDirty) {
-      setValue(
-        'depositRefund',
-        depositTotal > 0 ? String(Math.max(0, depositTotal - suggestedLateFee)) : '',
-      );
-    }
-  }, [rentalId, suggestedLateFee, depositTotal, setValue, getFieldState]);
+    if (getFieldState('lateFee').isDirty) return;
+    setValue('lateFee', suggestedLateFee > 0 ? String(suggestedLateFee) : '');
+  }, [rentalId, suggestedLateFee, setValue, getFieldState]);
 
   // Live arithmetic for the reference block: what is left of the deposit once the amounts
   // currently in the two fee fields are taken out.
@@ -231,10 +230,12 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
                 <span className="text-muted-foreground">{t('returnDialog.lateFee.onTime')}</span>
               )}
             </div>
-            {/* The deposit the catalog says was taken, and what is left of it after the fees
+            {/* The deposit the catalog carries, and what would be left of it after the fees
                 currently typed — the refund field is seven digits nobody should reproduce from
-                memory. Live, so editing a fee immediately shows what the customer gets back. */}
-            {depositTotal > 0 ? (
+                memory. Live, so editing a fee immediately shows what the customer would get back.
+                It fills the field only when staff taps it: the shop has no record of what was
+                actually taken, so this number is a suggestion, not a fact. */}
+            {suggestionAvailable ? (
               <div aria-live="polite" className="rounded-md border bg-muted/40 p-3 text-sm">
                 <p className="text-muted-foreground">
                   {t('returnDialog.deposit.standard', {
@@ -253,6 +254,19 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
                     {t('returnDialog.deposit.manual', { amount: formatVnd(typedRefund) })}
                   </p>
                 ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() =>
+                    form.setValue('depositRefund', String(refundAfterFees), {
+                      shouldValidate: true,
+                    })
+                  }
+                >
+                  {t('returnDialog.deposit.use', { amount: formatVnd(refundAfterFees) })}
+                </Button>
               </div>
             ) : null}
             {amountFields.map(({ name, label }) => (

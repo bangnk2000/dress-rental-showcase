@@ -56,7 +56,8 @@
     "deposit": {
       "standard": "Standard deposit for {{count}} dress(es): {{amount}}",
       "afterFees": "Less {{fees}} in fees → {{amount}} back to the customer",
-      "manual": "You entered {{amount}} — different from the amount above."
+      "manual": "You entered {{amount}} — different from the amount above.",
+      "use": "Put {{amount}} in the refund field"
     }
   },
   "errors": {

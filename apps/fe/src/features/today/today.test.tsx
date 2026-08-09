@@ -164,12 +164,11 @@ test('the return dialog settles fees + refund and sends only filled amounts', as
   renderToday();
 
   await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
-  // on time + one dress with a 3.000.000 standard deposit → the refund arrives pre-filled in full
+  // Money leaving the till is never pre-filled: the shop has no record of what deposit was taken.
   const refundField = await screen.findByLabelText('Hoàn cọc (VND)');
-  await waitFor(() => expect(refundField).toHaveValue('3000000'));
+  await waitFor(() => expect(refundField).toHaveValue(''));
 
   await user.type(screen.getByLabelText('Phí trễ hạn (VND)'), '200000');
-  await user.clear(refundField);
   await user.type(refundField, '2800000');
   await user.type(screen.getByLabelText('Ghi chú'), 'Trễ 1 ngày');
   await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
@@ -384,7 +383,7 @@ test('FR-RENT-09: a failing quote warns but never blocks the settlement', async 
   );
 });
 
-test('the refund is pre-filled with the standard deposit MINUS the suggested late fee', async () => {
+test('the refund suggestion states deposit MINUS late fee, and fills the field only when tapped', async () => {
   seedTodayBoard({
     dueBack: [
       makeTodayRental({
@@ -404,12 +403,36 @@ test('the refund is pre-filled with the standard deposit MINUS the suggested lat
   await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
 
   // 5.000.000 standard deposit − 1.200.000 late fee: the number staff would otherwise
-  // reconstruct from memory while the customer waits.
-  await waitFor(() =>
-    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('3800000'),
-  );
-  expect(screen.getByText(/Cọc chuẩn 2 váy: 5\.000\.000/)).toBeInTheDocument();
+  // reconstruct from memory while the customer waits. Stated, not assumed.
+  expect(await screen.findByText(/Cọc chuẩn 2 váy: 5\.000\.000/)).toBeInTheDocument();
   expect(screen.getByText(/hoàn lại khách 3\.800\.000/)).toBeInTheDocument();
+  expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('');
+
+  await user.click(screen.getByRole('button', { name: /Điền 3\.800\.000/ }));
+
+  expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('3800000');
+});
+
+test('no refund suggestion at all while the late fee is unknown', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  // The quote is what says how much to keep back. Suggesting the FULL deposit here would hand
+  // back the fee the server is about to charge, since an omitted lateFee means "charge the
+  // computed one".
+  server.use(
+    http.get('/api/v1/rentals/:id/late-fee', () =>
+      HttpResponse.json({ error: { code: 'GENERIC.INTERNAL', message: 'boom' } }, { status: 500 }),
+    ),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
+
+  expect(
+    await screen.findByText('Không tính được phí trễ hạn. Vui lòng nhập tay.'),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Điền/ })).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('');
 });
 
 test('the deposit block recomputes while fees are typed and flags a manual refund', async () => {
@@ -418,9 +441,8 @@ test('the deposit block recomputes while fees are typed and flags a manual refun
   renderToday();
 
   await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
-  await waitFor(() =>
-    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('3000000'),
-  );
+  await user.click(await screen.findByRole('button', { name: /Điền 3\.000\.000/ }));
+  expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('3000000');
 
   await user.type(screen.getByLabelText('Phí hư hỏng (VND)'), '500000');
 

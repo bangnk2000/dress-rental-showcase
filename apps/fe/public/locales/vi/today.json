@@ -56,7 +56,8 @@
     "deposit": {
       "standard": "Cọc chuẩn {{count}} váy: {{amount}}",
       "afterFees": "Trừ phí {{fees}} → hoàn lại khách {{amount}}",
-      "manual": "Bạn đang nhập {{amount}} — khác số tính ở trên."
+      "manual": "Bạn đang nhập {{amount}} — khác số tính ở trên.",
+      "use": "Điền {{amount}} vào ô hoàn cọc"
     }
   },
   "errors": {
