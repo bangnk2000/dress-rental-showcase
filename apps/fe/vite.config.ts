@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+/** The `/api` door, shared by the dev server and `vite preview`. */
+const apiProxy = { '/api': 'http://localhost:3000' };
+
 export default defineConfig({
   plugins: [
     react(),
@@ -63,9 +66,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  server: {
-    proxy: {
-      '/api': 'http://localhost:3000',
-    },
-  },
+  server: { proxy: apiProxy },
+  // `vite preview` serves the built artifact for the Playwright run (playwright.config.ts), so it
+  // needs the same same-origin `/api` door the dev server has — in production Nginx provides it
+  // (NFR-03: FE and BE share one origin, no CORS).
+  preview: { proxy: apiProxy },
 });

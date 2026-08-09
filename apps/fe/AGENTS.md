@@ -13,6 +13,7 @@ files here.
 | `pnpm --filter fe dev` | Vite dev server on :5173 (`/api` proxied to BE :3000) |
 | `pnpm --filter fe build` / `preview` | tsc + production build / serve `dist` (PWA checks need this) |
 | `pnpm --filter fe check` / `lint` / `arch` / `test` | gates (tsc, eslint boundaries, `scripts/check-architecture.sh`, vitest) |
+| `pnpm --filter fe e2e` | Playwright happy path; starts BE + the built FE itself, needs a migrated + seeded DB (deviation 5) |
 | `pnpm --filter fe generate:api` | Orval: `packages/contract/openapi.json` → `src/api/generated/` |
 | `pnpm --filter fe plop feature -- --name <kebab>` | deterministic feature-slice scaffold |
 | `pnpm contract` (root) | after ANY BE API change: re-emit spec + regenerate this client |
@@ -61,13 +62,18 @@ files here.
    return-and-settle mutations, and it ALWAYS sends the device-local date
    (`features/today/lib/local-date.ts`) — never rely on the server's "today". jsdom cannot
    open the Radix Select popover — drive status filters via the URL in tests.
-5. **Playwright e2e lives in `e2e/`** (`infra/e2e-playwright`): `pnpm --filter fe e2e` runs
-   the vi-locale happy path against the REAL stack (compose DB migrated + seeded, BE :3000 started
-   from `apps/be` so it finds `.env`, Vite :5173 — start them first; browsers via
-   `pnpm --filter fe exec playwright install chromium`). Root gates and init.sh still EXCLUDE e2e
-   (needs browsers + running stack); vitest excludes `e2e/` via its include glob.
-   Locators are scoped to the run's OWN rows (`ownRows`) — the target database is not assumed
-   empty, so never reach for a page-wide `getByRole('button', …)` on the board.
+5. **Playwright e2e lives in `e2e/`** (`infra/e2e-playwright`, automated by `infra/e2e-ci`):
+   `pnpm --filter fe e2e` runs the vi-locale happy path against the REAL stack and **starts that
+   stack itself** — BE on :3000 (`pnpm --filter be build && start`, so Nest resolves `apps/be/.env`)
+   and the FE **production build** served by `vite preview` on :4173, whose `/api` proxy mirrors the
+   dev server (`vite.config.ts`). Prerequisites are only a migrated + seeded database and installed
+   browsers (`pnpm --filter fe exec playwright install chromium`) — tests never provision the DB.
+   Set `E2E_BASE_URL` to say "I run the servers myself": `webServer` is then skipped entirely and
+   the run just points at your stack. Root gates and init.sh still EXCLUDE e2e (needs browsers +
+   a live DB) — **CI runs it as its own `e2e` job** and uploads report + trace on failure;
+   vitest excludes `e2e/` via its include glob. Locators are scoped to the run's OWN rows
+   (`ownRows`) — the target database is not assumed empty, so never reach for a page-wide
+   `getByRole('button', …)` on the board.
 6. **`customInstance` omits the legacy `promise.cancel` hack** — TanStack Query v5 passes
    AbortSignal in the request config (signal-based cancellation).
 7. **Unified `radix-ui` package** (not per-primitive `@radix-ui/react-*`); shadcn `sonner.tsx` is

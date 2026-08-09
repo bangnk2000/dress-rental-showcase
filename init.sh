@@ -48,7 +48,7 @@ pnpm test
 # `pnpm --filter be test:e2e` = the invariant-proof suite: it builds the api, creates/migrates
 # <db>_test and provokes the real EXCLUDE/UNIQUE/CHECK constraints (apps/be/test/). Playwright
 # (`pnpm --filter fe e2e`) stays OUT of this script on purpose: it needs installed browsers plus a
-# running BE + Vite (apps/fe/AGENTS.md #5).
+# migrated + seeded database (apps/fe/AGENTS.md #5). It is covered by the CI `e2e` job instead.
 if [ "$HAS_BE" = 1 ]; then
   if docker compose ps db >/dev/null 2>&1 && [ -n "$(docker compose ps -q db)" ]; then
     pnpm --filter be test:e2e || { echo "FAIL: BE invariant-proof e2e"; exit 1; }
