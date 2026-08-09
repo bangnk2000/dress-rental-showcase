@@ -66,19 +66,23 @@ test('happy path: create dress → rent today → pickup → return → settled 
     );
   });
 
+  // Board rows of THIS run only: the board also shows whatever else the target database holds
+  // (leftover or overdue rentals), so page-wide button lookups would be ambiguous.
+  const ownRows = page.getByRole('listitem').filter({ hasText: CUSTOMER });
+
   await test.step('morning board: hand out', async () => {
     await page.getByRole('link', { name: 'Hôm nay' }).click();
     // a single-day rental sits on BOTH lists (hand out and take back)
     await expect(page.getByText(CUSTOMER)).toHaveCount(2);
-    await page.getByRole('button', { name: 'Đã giao váy' }).click();
+    await ownRows.getByRole('button', { name: 'Đã giao váy' }).click();
     await expect(page.getByText('Đã ghi nhận giao váy cho khách.')).toBeVisible();
     // out of the hand-out list, still on take-back, now marked out
     await expect(page.getByText(CUSTOMER)).toHaveCount(1);
-    await expect(page.getByText('Đang thuê')).toBeVisible();
+    await expect(ownRows.getByText('Đang thuê')).toBeVisible();
   });
 
   await test.step('take back and settle the deposit', async () => {
-    await page.getByRole('button', { name: 'Nhận về & tất toán' }).click();
+    await ownRows.getByRole('button', { name: 'Nhận về & tất toán' }).click();
     await page.getByLabel('Hoàn cọc (VND)').fill('3000000');
     await page.getByLabel('Ghi chú').fill('Trả đủ, cọc hoàn nguyên');
     await page.getByRole('button', { name: 'Xác nhận trả váy' }).click();

@@ -11,10 +11,12 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md`; t
   → one `mapApiError` seam in both clients, three `is-conflict-error.ts` files deleted) and
   `infra/invariant-proof-e2e` (22 tests on real Postgres provoking the EXCLUDE/UNIQUE/CHECK
   constraints, `pnpm --filter be test:e2e`, CI postgres service, real gate in `init.sh`).
-  `apps/qr-admin` finally has its own app-level contract. Gates: be 82 unit + 22 e2e, fe 53,
-  qr-admin 13, check/lint/arch/builds green; `contract:check` + the arch freshness item stay red
-  until the regenerated client is committed. Next: a first `docs/releases/` record via
-  `docs/spec/init-release/`.
+  `apps/qr-admin` finally has its own app-level contract, and the `AGENTS.md` files were cut back to
+  routing + pointers so detail is read on demand. Committed on
+  `feat/outcome-model-and-invariant-proof`; every gate green including `bash init.sh` and the
+  Playwright happy path on the real stack (which needed two fixes to be runnable as documented:
+  `seed-owner.cjs` now loads `.env`, and the board locators are scoped to the run's own rows).
+  Next: a first `docs/releases/` record via `docs/spec/init-release/`.
 - 2026-08-09 (18) — Doc/spec maintenance session, no product code. `docs/spec/` re-synced from
   `knowledge-system` `815fa0f`: four sets refreshed, `init-feature-spec` + `init-release` added,
   new `docs/spec/README.md` records provenance + the one local delta + the re-sync recipe. The new

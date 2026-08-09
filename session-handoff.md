@@ -31,13 +31,19 @@
   53 · `pnpm --filter qr-admin test` 13 · root `check`, `lint`, `arch` (every rule except the
   freshness item), `pnpm --filter fe build`, `pnpm --filter qr-admin build` all green. `pnpm contract`
   re-run is idempotent (md5 identical).
-- Watch out (read before the next session): **`contract:check` and the arch freshness item are red
-  until this change is committed** — they diff the generated layer against HEAD, and the contract +
-  both clients were regenerated here. Commit BE + `packages/contract` + `apps/fe/src/api/generated` +
-  `apps/qr-admin/src/api/generated` together and they go green. Playwright was NOT run (needs
-  installed browsers + a running stack) and its vi-locale happy path may need the new outcome copy.
-  In this environment pnpm 11 wants to purge `node_modules` before every script; the workaround used
-  was `pnpm --config.verifyDepsBeforeRun=false <script>`.
+- Committed on branch `feat/outcome-model-and-invariant-proof` (`761f310` + follow-up), so
+  `contract:check`, the arch freshness item and a full `bash init.sh` are **green** — the generated
+  layer landed together with the BE change, as the contract invariant requires.
+- Playwright DID run against the real stack and passes. Two rough edges were fixed to make it
+  runnable as documented: `scripts/seed-owner.cjs` now loads `apps/be/.env` (README step 3 always
+  claimed it did, but the script only read `process.env`), and the board locators in
+  `e2e/happy-path.spec.ts` are scoped to the run's own rows — the old page-wide lookups broke as soon
+  as the target database held any other rental (an overdue leftover produced two return buttons).
+  The api must be started from `apps/be` (ConfigModule resolves `.env` from the cwd).
+- Watch out: in this environment pnpm 11 wants to purge `node_modules` before every script; the
+  workaround is `pnpm --config.verifyDepsBeforeRun=false <script>`. Also `nest build` had been
+  relying on an undeclared `@types/qrcode` — now a real devDependency, which a clean
+  `--frozen-lockfile` install would otherwise break.
 - Next: no tracked backlog. Strongest candidates — (1) a first release record through
   `docs/spec/init-release/` into `docs/releases/<id>/`, since the ledger is all `pass`; (2) an
   `Idempotency-Key` ADR if double-submit needs more than the DB constraint; (3) migrate Deviation #4
