@@ -59,7 +59,8 @@
       "manual": "You entered {{amount}} — different from the amount above.",
       "use": "Put {{amount}} in the refund field",
       "collected": "Deposit collected: {{amount}}",
-      "unavailable": "The rental ledger could not be read, so the deposit collected is unknown. Retry before settling — otherwise the refund could exceed what the shop actually took."
+      "unavailable": "The rental ledger could not be read, so the deposit collected is unknown. Retry before settling — otherwise the refund could exceed what the shop actually took.",
+      "changed": "The rental ledger just changed — {{amount}} collected. Check the refund amount, then confirm."
     }
   },
   "errors": {

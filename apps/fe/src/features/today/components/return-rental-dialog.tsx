@@ -240,8 +240,32 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
     },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
+  const onSubmit = form.handleSubmit(async (values) => {
     if (!rental) return;
+
+    // This dialog can sit open for minutes while staff talks to the customer, and the deposit may
+    // be recorded on ANOTHER device in that time — turning the basis on screen from "no deposit on
+    // file, here is the catalog figure" into a number that is now simply wrong. The ledger is
+    // therefore re-read at the moment money is about to leave the till, not only at mount.
+    const fresh = await payments.refetch();
+    if (fresh.isError || !fresh.data) {
+      toast.error(t('returnDialog.deposit.unavailable'));
+      return;
+    }
+
+    const freshDeposit = fresh.data.summary.deposit;
+    if (freshDeposit !== collectedDeposit) {
+      // Do NOT settle on this click: re-derive the refund from what the shop is now recorded as
+      // holding and let staff confirm the corrected number deliberately.
+      if (freshDeposit > 0) {
+        setValue('depositRefund', String(Math.max(0, freshDeposit - (suggestedLateFee ?? 0))), {
+          shouldValidate: true,
+        });
+      }
+      toast.error(t('returnDialog.deposit.changed', { amount: formatVnd(freshDeposit) }));
+      return;
+    }
+
     returnRental.mutate({ id: rental.rentalId, data: toReturnRequest(values) });
   });
 

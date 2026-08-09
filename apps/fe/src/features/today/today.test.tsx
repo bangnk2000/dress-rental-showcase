@@ -496,6 +496,37 @@ test('FR-PAY-02: a CACHED ledger cannot be settled against until its refetch lan
   expect(screen.getByRole('button', { name: 'Xác nhận trả váy' })).toBeEnabled();
 });
 
+test('FR-PAY-02: a deposit recorded elsewhere while the dialog sits open stops the settlement', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  seedLateFeeQuote('rental-9', { daysLate: 0, dressCount: 1, suggestedLateFee: 0 });
+  const user = userEvent.setup();
+  renderToday();
+
+  // Opens with no deposit on file: the block offers the catalog's 3.000.000 and staff takes it.
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
+  await user.click(await screen.findByRole('button', { name: /Điền 3\.000\.000/ }));
+  expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('3000000');
+
+  // Meanwhile another device records the deposit actually taken: 2.000.000.
+  seedRentalPayments('rental-9', [
+    makePayment({ id: 'p1', kind: 'deposit', amount: 2_000_000, note: null }),
+  ]);
+
+  await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
+
+  // Nothing is settled on this click, and the field is corrected to what the shop actually holds.
+  expect(await screen.findByText(/Sổ tiền của đơn vừa thay đổi/)).toBeInTheDocument();
+  expect(getLastReturn().rentalId).toBeNull();
+  await waitFor(() =>
+    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('2000000'),
+  );
+
+  // Confirming again settles the corrected amount.
+  await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
+  await waitFor(() => expect(getLastReturn().rentalId).toBe('rental-9'));
+  expect(getLastReturn().body).toMatchObject({ depositRefund: 2_000_000 });
+});
+
 test('FR-PAY-02: a ledger that fails to load blocks settlement instead of falling back to the catalog', async () => {
   seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
   seedLateFeeQuote('rental-9', { daysLate: 0, dressCount: 1, suggestedLateFee: 0 });
