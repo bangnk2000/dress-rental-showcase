@@ -1856,12 +1856,18 @@
           "name": {
             "type": "string",
             "example": "Váy cưới ren trắng"
+          },
+          "depositAmount": {
+            "type": "number",
+            "example": 3000000,
+            "description": "The catalog STANDARD deposit for this dress in VND — a reference, not what was collected: no deposit is recorded at booking time"
           }
         },
         "required": [
           "dressId",
           "code",
-          "name"
+          "name",
+          "depositAmount"
         ]
       },
       "TodayBoardRentalDto": {

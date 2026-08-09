@@ -10,8 +10,22 @@ const RENTAL_1 = '00000000-0000-4000-8000-000000000101';
 const RENTAL_2 = '00000000-0000-4000-8000-000000000102';
 
 const dresses: DressSnapshot[] = [
-  { id: DRESS_A, code: 'VD-002', name: 'Đầm dạ hội đỏ', retired: false, rentalPrice: 1_200_000 },
-  { id: DRESS_B, code: 'VD-001', name: 'Váy cưới ren trắng', retired: false, rentalPrice: 1_500_000 },
+  {
+    id: DRESS_A,
+    code: 'VD-002',
+    name: 'Đầm dạ hội đỏ',
+    retired: false,
+    rentalPrice: 1_200_000,
+    depositAmount: 2_000_000,
+  },
+  {
+    id: DRESS_B,
+    code: 'VD-001',
+    name: 'Váy cưới ren trắng',
+    retired: false,
+    rentalPrice: 1_500_000,
+    depositAmount: 3_000_000,
+  },
 ];
 
 function makeRow(overrides: Partial<RentalListRow>): RentalListRow {

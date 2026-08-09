@@ -7,6 +7,13 @@ export interface DressSnapshot {
   name: string;
   retired: boolean;
   rentalPrice: number;
+  /**
+   * The catalog's STANDARD deposit for this dress — a reference figure, not what was collected.
+   * No deposit is recorded when a rental is created, so reads may show this number as a
+   * suggestion (the return dialog pre-fills the refund with it) but must never present it as a
+   * fact about this rental.
+   */
+  depositAmount: number;
 }
 
 /**

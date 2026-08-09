@@ -45,6 +45,11 @@
       "onTime": "Trả đúng hạn — không có phí trễ.",
       "late": "Trễ {{days}} ngày · {{dresses}} váy → đề xuất {{amount}}",
       "unavailable": "Không tính được phí trễ hạn. Vui lòng nhập tay."
+    },
+    "deposit": {
+      "standard": "Cọc chuẩn {{count}} váy: {{amount}}",
+      "afterFees": "Trừ phí {{fees}} → hoàn lại khách {{amount}}",
+      "manual": "Bạn đang nhập {{amount}} — khác số tính ở trên."
     }
   },
   "errors": {

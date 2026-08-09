@@ -158,6 +158,20 @@
         "AC4: a failed CI run leaves a downloadable Playwright report/trace"
       ],
       "dependencies": ["infra/e2e-playwright"]
+    },
+    {
+      "id": "rentals/settlement-clarity",
+      "title": "The return dialog states the money: standard deposit out to the client, refund pre-filled, every amount read back grouped",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "UI/UX review finding P0: the return dialog asked staff to type a seven-digit refund from memory while the customer waited, with no thousand separators and no arithmetic on screen — the only screen in the app that moves real cash. AC1: `RentalDressDto` gained `depositAmount` (BE `DressSnapshot` + `DressLookupAdapter` now select `deposit_amount`; both read projections pass it through), documented in the DTO as the catalog STANDARD deposit and explicitly NOT what was collected — no deposit is recorded at booking time. Contract re-emitted and both clients regenerated in this commit. AC2: opening the dialog pre-fills `depositRefund` with `depositTotal − suggestedLateFee` (5.000.000 − 1.200.000 = 3.800.000 proven by a 2-dress vitest case; 3.000.000 in full when on time). AC3: a live reference block states `Cọc chuẩn N váy: X` and `Trừ phí F → hoàn lại khách Y`, recomputing as fees are typed (damage fee 500.000 → 2.500.000) and adding `Bạn đang nhập …` when the field disagrees with that arithmetic. AC4: each amount field renders its digits back grouped through `FormDescription`, which the shadcn form primitives already wire into `aria-describedby`. Gates: be 95 unit (today-board projection spec now asserts the deposit rides along per dress), fe 59 (+2 new cases, 1 rewritten for the pre-fill), qr-admin 13, root check/lint green, both builds green; `pnpm arch` freshness item red until this commit lands the generated layer, as designed. Assumption recorded for the shop owner: pre-filling `deposit − fees` encodes the deduction convention observed in `apps/be/scripts/smoke.sh` (lateFee 200.000 + refund 2.800.000 on a 3.000.000 deposit) and in the Playwright happy path; the field stays editable and the arithmetic is on screen, but the convention itself was never approved in writing the way the late-fee rules were.",
+      "acceptance": [
+        "AC1: the standard deposit of each dress reaches the board and list reads, labelled as a reference rather than as a recorded fact",
+        "AC2: opening the return dialog pre-fills the refund with the standard deposit minus the suggested late fee, and the field stays editable",
+        "AC3: a live block shows deposit, fees deducted and the resulting refund, and says so when the typed refund differs",
+        "AC4: every amount field reads its own digits back with thousand separators, associated with the input for assistive tech"
+      ],
+      "dependencies": ["rentals/settle-late-fee"]
     }
   ]
 }

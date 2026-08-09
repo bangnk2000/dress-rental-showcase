@@ -45,7 +45,9 @@ test('renders the rentals page with status badges and dress links', async () => 
       rentalId: 'rental-2',
       customerName: 'Trần Văn B',
       status: 'returned',
-      dresses: [{ dressId: 'd2', code: 'VD-900', name: 'Đầm dạ hội đỏ' }],
+      dresses: [
+        { dressId: 'd2', code: 'VD-900', name: 'Đầm dạ hội đỏ', depositAmount: 2_000_000 },
+      ],
     }),
   ]);
   renderList();

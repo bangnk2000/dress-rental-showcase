@@ -65,7 +65,12 @@ export function toTodayBoardDto(
       // rental_items.dress_id is a FK — a miss means the lookup was fed wrong ids.
       throw new Error(`Dress ${row.dress_id} missing from lookup`);
     }
-    entry.dto.dresses.push({ dressId: dress.id, code: dress.code, name: dress.name });
+    entry.dto.dresses.push({
+      dressId: dress.id,
+      code: dress.code,
+      name: dress.name,
+      depositAmount: dress.depositAmount,
+    });
   }
 
   for (const entry of entries.values()) {

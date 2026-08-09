@@ -10,4 +10,11 @@ export class RentalDressDto {
 
   @ApiProperty({ example: 'Váy cưới ren trắng' })
   readonly name!: string;
+
+  @ApiProperty({
+    example: 3_000_000,
+    description:
+      'The catalog STANDARD deposit for this dress in VND — a reference, not what was collected: no deposit is recorded at booking time',
+  })
+  readonly depositAmount!: number;
 }

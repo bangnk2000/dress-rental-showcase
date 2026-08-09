@@ -10,6 +10,7 @@ const dressLookupSchema = z.object({
   name: z.string(),
   status: z.string(),
   rental_price: z.number().int(),
+  deposit_amount: z.number().int(),
 });
 
 /**
@@ -24,7 +25,7 @@ export class DressLookupAdapter implements DressLookupPort {
   async findByIds(dressIds: string[]): Promise<DressSnapshot[]> {
     if (dressIds.length === 0) return [];
     const rows = await this.pool.any(sql.type(dressLookupSchema)`
-      SELECT id, code, name, status, rental_price FROM dresses
+      SELECT id, code, name, status, rental_price, deposit_amount FROM dresses
       WHERE id = ANY(${sql.array(dressIds, 'uuid')})
     `);
     return rows.map((row) => ({
@@ -33,6 +34,7 @@ export class DressLookupAdapter implements DressLookupPort {
       name: row.name,
       retired: row.status === 'retired',
       rentalPrice: row.rental_price,
+      depositAmount: row.deposit_amount,
     }));
   }
 }

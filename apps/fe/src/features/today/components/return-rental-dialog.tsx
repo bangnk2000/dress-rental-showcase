@@ -22,7 +22,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { formatVnd } from '@/lib/format';
@@ -38,6 +45,16 @@ interface ReturnRentalDialogProps {
   /** The rental being settled; null = closed. */
   rental: TodayBoardRentalDto | null;
   onClose: () => void;
+}
+
+/**
+ * A typed amount as a number, or null when the field is blank or not yet a valid amount. Used only
+ * for the on-screen arithmetic — the zod schema still owns what may be submitted.
+ */
+function parseAmount(raw: string): number | null {
+  if (!raw.trim()) return null;
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 /** Blank amounts are omitted — the API records only what staff entered. */
@@ -70,6 +87,15 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
   });
   const quote = lateFee.data ?? null;
 
+  /**
+   * The catalog's STANDARD deposit for the dresses in this rental. No deposit is recorded when a
+   * rental is created (payments only ever sees settlement rows), so this is a reference figure —
+   * the dialog shows the arithmetic and staff may overwrite the field.
+   */
+  const depositTotal = rental
+    ? rental.dresses.reduce((sum, dress) => sum + dress.depositAmount, 0)
+    : 0;
+
   // One dialog instance serves every rental, so the form is re-primed per OPEN — keyed on the
   // rental id, not the DTO: the board refetches while the dialog is up, and a new object identity
   // for the same rental must not wipe a half-typed settlement.
@@ -80,15 +106,33 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
     reset(returnFormDefaults);
   }, [rentalId, reset]);
 
-  // The quote arrives after the dialog is already usable, so seeding it must not be a reset: on a
+  // The quote arrives after the dialog is already usable, so seeding must not be a reset: on a
   // slow connection staff has often typed the waiver note or a fee by then, and losing that
-  // silently is worse than an empty field. Only an untouched field takes the server's number.
+  // silently is worse than an empty field. Only UNTOUCHED fields take the derived numbers — the
+  // fee the server computed, and the refund left after it, which is the seven-digit amount
+  // nobody should reproduce from memory while the customer waits.
   const suggestedLateFee = quote?.suggestedLateFee ?? null;
   useEffect(() => {
     if (!rentalId || suggestedLateFee === null) return;
-    if (getFieldState('lateFee').isDirty) return;
-    setValue('lateFee', suggestedLateFee > 0 ? String(suggestedLateFee) : '');
-  }, [rentalId, suggestedLateFee, setValue, getFieldState]);
+    if (!getFieldState('lateFee').isDirty) {
+      setValue('lateFee', suggestedLateFee > 0 ? String(suggestedLateFee) : '');
+    }
+    if (!getFieldState('depositRefund').isDirty) {
+      setValue(
+        'depositRefund',
+        depositTotal > 0 ? String(Math.max(0, depositTotal - suggestedLateFee)) : '',
+      );
+    }
+  }, [rentalId, suggestedLateFee, depositTotal, setValue, getFieldState]);
+
+  // Live arithmetic for the reference block: what is left of the deposit once the amounts
+  // currently in the two fee fields are taken out.
+  const typedLateFee = parseAmount(form.watch('lateFee')) ?? 0;
+  const typedDamageFee = parseAmount(form.watch('damageFee')) ?? 0;
+  const typedRefund = parseAmount(form.watch('depositRefund'));
+  const refundAfterFees = Math.max(0, depositTotal - typedLateFee - typedDamageFee);
+  const refundDiffersFromSuggestion =
+    depositTotal > 0 && typedRefund !== null && typedRefund !== refundAfterFees;
 
   async function refreshBoardAndList(): Promise<void> {
     await Promise.all([
@@ -187,20 +231,54 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
                 <span className="text-muted-foreground">{t('returnDialog.lateFee.onTime')}</span>
               )}
             </div>
+            {/* The deposit the catalog says was taken, and what is left of it after the fees
+                currently typed — the refund field is seven digits nobody should reproduce from
+                memory. Live, so editing a fee immediately shows what the customer gets back. */}
+            {depositTotal > 0 ? (
+              <div aria-live="polite" className="rounded-md border bg-muted/40 p-3 text-sm">
+                <p className="text-muted-foreground">
+                  {t('returnDialog.deposit.standard', {
+                    count: rental?.dresses.length ?? 0,
+                    amount: formatVnd(depositTotal),
+                  })}
+                </p>
+                <p className="font-medium">
+                  {t('returnDialog.deposit.afterFees', {
+                    fees: formatVnd(typedLateFee + typedDamageFee),
+                    amount: formatVnd(refundAfterFees),
+                  })}
+                </p>
+                {refundDiffersFromSuggestion ? (
+                  <p className="text-muted-foreground">
+                    {t('returnDialog.deposit.manual', { amount: formatVnd(typedRefund) })}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             {amountFields.map(({ name, label }) => (
               <FormField
                 key={name}
                 control={form.control}
                 name={name}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{label}</FormLabel>
-                    <FormControl>
-                      <Input inputMode="numeric" autoComplete="off" {...field} />
-                    </FormControl>
-                    <TodayFormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const amount = parseAmount(field.value);
+                  return (
+                    <FormItem>
+                      <FormLabel>{label}</FormLabel>
+                      <FormControl>
+                        <Input inputMode="numeric" autoComplete="off" {...field} />
+                      </FormControl>
+                      {/* Grouped read-back of the digits actually in the field: 3000000 and
+                          300000 differ by one keystroke and by 2.700.000 ₫. */}
+                      {amount !== null ? (
+                        <FormDescription className="tabular-nums">
+                          {formatVnd(amount)}
+                        </FormDescription>
+                      ) : null}
+                      <TodayFormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             ))}
             <FormField

@@ -7,8 +7,22 @@ const RENTAL_1 = '00000000-0000-4000-8000-000000000101';
 const RENTAL_2 = '00000000-0000-4000-8000-000000000102';
 
 const dresses: DressSnapshot[] = [
-  { id: DRESS_A, code: 'VD-002', name: 'Đầm dạ hội đỏ', retired: false, rentalPrice: 1_200_000 },
-  { id: DRESS_B, code: 'VD-001', name: 'Váy cưới ren trắng', retired: false, rentalPrice: 1_500_000 },
+  {
+    id: DRESS_A,
+    code: 'VD-002',
+    name: 'Đầm dạ hội đỏ',
+    retired: false,
+    rentalPrice: 1_200_000,
+    depositAmount: 2_000_000,
+  },
+  {
+    id: DRESS_B,
+    code: 'VD-001',
+    name: 'Váy cưới ren trắng',
+    retired: false,
+    rentalPrice: 1_500_000,
+    depositAmount: 3_000_000,
+  },
 ];
 
 function makeRow(overrides: Partial<TodayBoardRow>): TodayBoardRow {
@@ -43,6 +57,11 @@ test('groups item rows into one entry per rental, dresses sorted by code', () =>
     endDate: '2026-08-03', // half-open [.. ,08-04) → inclusive last day 08-03
   });
   expect(board.dueOut[0]!.dresses.map((dress) => dress.code)).toEqual(['VD-001', 'VD-002']);
+  // The STANDARD deposit rides along per dress: the return dialog sums it to suggest a refund,
+  // and no other read gives the board that number.
+  expect(board.dueOut[0]!.dresses.map((dress) => dress.depositAmount)).toEqual([
+    3_000_000, 2_000_000,
+  ]);
 });
 
 test('splits rentals over the two lists by the SQL membership flags', () => {

@@ -50,7 +50,12 @@ export function toRentalListItemDtos(
         // rental_items.dress_id is a FK — a miss means the lookup was fed wrong ids.
         throw new Error(`Dress ${item.dress_id} missing from lookup`);
       }
-      return { dressId: dress.id, code: dress.code, name: dress.name };
+      return {
+        dressId: dress.id,
+        code: dress.code,
+        name: dress.name,
+        depositAmount: dress.depositAmount,
+      };
     });
     rentalDresses.sort((a, b) => a.code.localeCompare(b.code));
 

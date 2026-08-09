@@ -49,7 +49,9 @@ test('renders both lists and asks the API for the DEVICE-local day', async () =>
         customerName: 'Trần Văn B',
         customerPhone: '0912345678',
         status: 'out',
-        dresses: [{ dressId: 'd2', code: 'VD-900', name: 'Đầm dạ hội đỏ' }],
+        dresses: [
+          { dressId: 'd2', code: 'VD-900', name: 'Đầm dạ hội đỏ', depositAmount: 2_000_000 },
+        ],
       }),
     ],
   });
@@ -126,8 +128,13 @@ test('the return dialog settles fees + refund and sends only filled amounts', as
   renderToday();
 
   await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  // on time + one dress with a 3.000.000 standard deposit → the refund arrives pre-filled in full
+  const refundField = await screen.findByLabelText('Hoàn cọc (VND)');
+  await waitFor(() => expect(refundField).toHaveValue('3000000'));
+
   await user.type(screen.getByLabelText('Phí trễ hạn (VND)'), '200000');
-  await user.type(screen.getByLabelText('Hoàn cọc (VND)'), '2800000');
+  await user.clear(refundField);
+  await user.type(refundField, '2800000');
   await user.type(screen.getByLabelText('Ghi chú'), 'Trễ 1 ngày');
   await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
 
@@ -339,6 +346,53 @@ test('FR-RENT-09: a failing quote warns but never blocks the settlement', async 
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Xác nhận trả váy' })).toBeEnabled(),
   );
+});
+
+test('the refund is pre-filled with the standard deposit MINUS the suggested late fee', async () => {
+  seedTodayBoard({
+    dueBack: [
+      makeTodayRental({
+        rentalId: 'rental-9',
+        status: 'out',
+        dresses: [
+          { dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng', depositAmount: 3_000_000 },
+          { dressId: 'd2', code: 'VD-900', name: 'Đầm dạ hội đỏ', depositAmount: 2_000_000 },
+        ],
+      }),
+    ],
+  });
+  seedLateFeeQuote('rental-9', { daysLate: 3, dressCount: 2, suggestedLateFee: 1_200_000 });
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+
+  // 5.000.000 standard deposit − 1.200.000 late fee: the number staff would otherwise
+  // reconstruct from memory while the customer waits.
+  await waitFor(() =>
+    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('3800000'),
+  );
+  expect(screen.getByText(/Cọc chuẩn 2 váy: 5\.000\.000/)).toBeInTheDocument();
+  expect(screen.getByText(/hoàn lại khách 3\.800\.000/)).toBeInTheDocument();
+});
+
+test('the deposit block recomputes while fees are typed and flags a manual refund', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await waitFor(() =>
+    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('3000000'),
+  );
+
+  await user.type(screen.getByLabelText('Phí hư hỏng (VND)'), '500000');
+
+  // the block follows the fee field without touching what staff typed in the refund
+  expect(await screen.findByText(/hoàn lại khách 2\.500\.000/)).toBeInTheDocument();
+  expect(screen.getByText(/Bạn đang nhập 3\.000\.000/)).toBeInTheDocument();
+  // and each amount field reads its own digits back, grouped
+  expect(screen.getByText('500.000 ₫')).toBeInTheDocument();
 });
 
 test('a non-numeric amount blocks the settlement with a translated error', async () => {

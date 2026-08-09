@@ -9,4 +9,6 @@ export interface RentalDressDto {
   dressId: string;
   code: string;
   name: string;
+  /** The catalog STANDARD deposit for this dress in VND — a reference, not what was collected: no deposit is recorded at booking time */
+  depositAmount: number;
 }

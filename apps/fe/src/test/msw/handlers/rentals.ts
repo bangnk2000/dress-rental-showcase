@@ -85,7 +85,9 @@ export function makeTodayRental(
     status: TodayBoardRentalDtoStatus.booked,
     startDate: '2099-08-01',
     endDate: '2099-08-03',
-    dresses: [{ dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng' }],
+    dresses: [
+      { dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng', depositAmount: 3_000_000 },
+    ],
     ...overrides,
   };
 }
@@ -139,7 +141,9 @@ export function makeRentalListItem(
     endDate: '2099-08-03',
     notes: null,
     createdAt: '2099-07-30T09:00:00.000Z',
-    dresses: [{ dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng' }],
+    dresses: [
+      { dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng', depositAmount: 3_000_000 },
+    ],
     ...overrides,
   };
 }

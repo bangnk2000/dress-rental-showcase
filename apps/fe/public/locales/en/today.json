@@ -45,6 +45,11 @@
       "onTime": "Returned on time — no late fee.",
       "late": "{{days}} day(s) late · {{dresses}} dress(es) → suggested {{amount}}",
       "unavailable": "Could not calculate the late fee. Please enter it manually."
+    },
+    "deposit": {
+      "standard": "Standard deposit for {{count}} dress(es): {{amount}}",
+      "afterFees": "Less {{fees}} in fees → {{amount}} back to the customer",
+      "manual": "You entered {{amount}} — different from the amount above."
     }
   },
   "errors": {
