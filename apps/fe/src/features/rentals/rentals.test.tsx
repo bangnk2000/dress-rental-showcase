@@ -9,8 +9,10 @@ import { Toaster } from '@/components/ui/sonner';
 import { makeDress, resetCatalog, seedDresses } from '@/test/msw/handlers/catalog';
 import {
   getLastCreateRentalBody,
+  makeBookedRange,
   resetRentals,
   seedBlockedDresses,
+  seedBookedRanges,
 } from '@/test/msw/handlers/rentals';
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/render';
@@ -153,6 +155,82 @@ test.each([
 
   expect(await screen.findByText(message)).toBeInTheDocument();
   expect(screen.queryByText('rentals-list-stub')).not.toBeInTheDocument();
+});
+
+test('a chosen dress is checked against the dates BEFORE submit', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  // A booking that ends before the asked range but whose cleaning buffer still covers it — the
+  // case staff cannot see on their own, and the reason the message names blockedUntilDate.
+  seedBookedRanges('d1', [
+    makeBookedRange({
+      startDate: '2026-07-28',
+      endDate: '2026-07-31',
+      blockedUntilDate: '2026-08-02',
+    }),
+  ]);
+  const user = userEvent.setup();
+  renderNewRental();
+
+  await fillCustomerAndDates(user);
+  await pickDress(user, 'DR-001');
+
+  // no submit, no rejection: the answer arrives while the form is still being filled
+  expect(await screen.findByText('Vướng lịch')).toBeInTheDocument();
+  expect(screen.getByText(/Váy này bận tới hết .*2026/)).toBeInTheDocument();
+});
+
+test('an available dress says so, so an empty picker never looks like a failure', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  const user = userEvent.setup();
+  renderNewRental();
+
+  await fillCustomerAndDates(user);
+  await pickDress(user, 'DR-001');
+
+  expect(await screen.findByText('Còn trống')).toBeInTheDocument();
+});
+
+test('the rejection points at the ONE dress that broke the booking', async () => {
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' }),
+    makeDress({ id: 'd2', code: 'DR-002', name: 'Váy cưới' }),
+  ]);
+  // Only d2 is refused. Before this, both rows looked identical and staff removed dresses by trial.
+  seedBlockedDresses(['d2']);
+  const user = userEvent.setup();
+  renderNewRental();
+
+  await fillCustomerAndDates(user);
+  await pickDress(user, 'DR-001');
+  await pickDress(user, 'DR-002');
+  await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+
+  const flagged = await screen.findAllByText(
+    'Váy này đã có lịch trong khoảng ngày vừa chọn.',
+  );
+  expect(flagged).toHaveLength(1);
+  // the flag sits in DR-002's row, not DR-001's
+  expect(flagged[0]!.closest('li')).toHaveTextContent('DR-002');
+});
+
+test('changing the dates drops a rejection that answered for the old range', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  seedBlockedDresses(['d1']);
+  const user = userEvent.setup();
+  renderNewRental();
+
+  await fillCustomerAndDates(user);
+  await pickDress(user, 'DR-001');
+  await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+  await screen.findByText('Váy này đã có lịch trong khoảng ngày vừa chọn.');
+
+  fireEvent.change(screen.getByLabelText('Ngày nhận'), { target: { value: '2026-09-01' } });
+
+  await waitFor(() =>
+    expect(
+      screen.queryByText('Váy này đã có lịch trong khoảng ngày vừa chọn.'),
+    ).not.toBeInTheDocument(),
+  );
 });
 
 test('a fault envelope falls back to the generic toast, not an outcome message', async () => {

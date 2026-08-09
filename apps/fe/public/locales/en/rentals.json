@@ -88,7 +88,17 @@
     "add": "Add",
     "remove": "Remove",
     "selectedEmpty": "No dresses selected yet",
-    "total": "Rental subtotal"
+    "total": "Rental subtotal",
+    "availability": {
+      "free": "Available",
+      "busy": "Booked",
+      "busyUntil": "This dress is taken through {{date}} (cleaning time included)."
+    },
+    "rejected": {
+      "unavailable": "This dress is already booked for the dates you picked.",
+      "retired": "This dress has been retired.",
+      "notFound": "This dress is no longer in the catalog."
+    }
   },
   "errors": {
     "rentalNotFound": "This rental no longer exists. The list has been refreshed."

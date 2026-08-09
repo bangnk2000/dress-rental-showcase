@@ -88,7 +88,17 @@
     "add": "Thêm",
     "remove": "Bỏ chọn",
     "selectedEmpty": "Chưa chọn váy nào",
-    "total": "Tạm tính tiền thuê"
+    "total": "Tạm tính tiền thuê",
+    "availability": {
+      "free": "Còn trống",
+      "busy": "Vướng lịch",
+      "busyUntil": "Váy này bận tới hết {{date}} (đã tính thời gian giặt ủi)."
+    },
+    "rejected": {
+      "unavailable": "Váy này đã có lịch trong khoảng ngày vừa chọn.",
+      "retired": "Váy này đã ngừng khai thác.",
+      "notFound": "Váy này không còn trong danh mục."
+    }
   },
   "errors": {
     "rentalNotFound": "Lượt thuê này không còn tồn tại. Danh sách đã được làm mới."

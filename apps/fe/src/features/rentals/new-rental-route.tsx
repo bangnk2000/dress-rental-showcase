@@ -1,12 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
-import { outcomeStatus } from '@/api/errors';
+import { mapApiError } from '@/api/errors';
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
@@ -18,13 +18,26 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
-import { DressPicker, type SelectedDress } from './components/dress-picker';
+import {
+  DressPicker,
+  type BlockedDresses,
+  type PickerPeriod,
+  type SelectedDress,
+} from './components/dress-picker';
 import { RentalFormMessage } from './components/rental-form-message';
 import {
   rentalFormDefaults,
   rentalFormSchema,
   type RentalFormValues,
 } from './schemas/rental-form.schema';
+
+/**
+ * The `dressIds` an outcome payload carries (ADR 0001 §3). Typed as `unknown` at the seam, so the
+ * form checks the shape rather than trusting it.
+ */
+function readDressIds(raw: unknown): string[] {
+  return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : [];
+}
 
 /** Form values + picked dresses → request body; blank notes are omitted. */
 function toCreateRentalRequest(
@@ -55,6 +68,20 @@ export function NewRentalRoute() {
   const [selected, setSelected] = useState<SelectedDress[]>([]);
   /** i18n key — set on empty selection at submit, or from a rejection outcome. */
   const [formError, setFormError] = useState<string | null>(null);
+  /** Which dresses the last rejection named (ADR 0001 payload), so the picker can point at them. */
+  const [blocked, setBlocked] = useState<BlockedDresses | null>(null);
+
+  // The dates the picker checks against. Only a sensible range is worth asking the server about.
+  const startDate = form.watch('startDate');
+  const endDate = form.watch('endDate');
+  const period: PickerPeriod | null =
+    startDate && endDate && startDate <= endDate ? { startDate, endDate } : null;
+
+  // A rejection belongs to the dates it was answered for. Changing them makes it stale, and the
+  // per-dress availability check below is what answers for the new range.
+  useEffect(() => {
+    setBlocked(null);
+  }, [startDate, endDate]);
 
   // One designed state per outcome code (ADR 0001 §4): the form stays filled and says WHICH
   // dresses are the problem. Defining onError here also overrides the global mutation toast.
@@ -75,15 +102,20 @@ export function NewRentalRoute() {
         void navigate('/rentals');
       },
       onError: (error) => {
-        switch (outcomeStatus(error)) {
+        const mapped = mapApiError(error);
+        const dressIds = mapped.kind === 'outcome' ? readDressIds(mapped.dressIds) : [];
+        switch (mapped.kind === 'outcome' ? mapped.status : null) {
           case 'rejected_dress_unavailable':
             setFormError('form.errors.dressUnavailable');
+            setBlocked({ dressIds, reason: 'unavailable' });
             return;
           case 'rejected_dress_retired':
             setFormError('form.errors.dressRetired');
+            setBlocked({ dressIds, reason: 'retired' });
             return;
           case 'rejected_dress_not_found':
             setFormError('form.errors.dressNotFound');
+            setBlocked({ dressIds, reason: 'notFound' });
             return;
           default:
             toast.error(t('form.error'));
@@ -174,11 +206,15 @@ export function NewRentalRoute() {
             onAdd={(dress) => {
               setSelected((current) => [...current, dress]);
               setFormError(null);
+              setBlocked(null);
             }}
-            onRemove={(dressId) =>
-              setSelected((current) => current.filter((dress) => dress.id !== dressId))
-            }
+            onRemove={(dressId) => {
+              setSelected((current) => current.filter((dress) => dress.id !== dressId));
+              setBlocked(null);
+            }}
             error={formError === 'form.errors.noDresses' ? formError : null}
+            period={period}
+            blocked={blocked}
           />
           <FormField
             control={form.control}

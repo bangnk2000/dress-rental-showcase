@@ -172,6 +172,20 @@
         "AC4: every amount field reads its own digits back with thousand separators, associated with the input for assistive tech"
       ],
       "dependencies": ["rentals/settle-late-fee"]
+    },
+    {
+      "id": "rentals/dress-availability-in-picker",
+      "title": "The new-rental form answers 'which dress is the problem' — per-dress availability before submit, and the rejection points at the named dresses",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "UI/UX review findings #4 and #5: `rejected_dress_unavailable` carries `dressIds` by design (ADR 0001 §3) and the form threw the payload away, leaving one sentence about 'some dress' for staff to resolve by removing dresses one at a time; and the picker searched the catalog with no idea of the dates already typed above it. FE-only — no API changed. AC1: each SELECTED dress now runs `GET /dresses/:id/availability` for the form's range (own child component per row, so the hook count stays static), rendering a `Còn trống` / `Vướng lịch` badge plus `Váy này bận tới hết <blockedUntilDate>` — the cleaning-buffer date, which is exactly the case staff cannot deduce; proven by a vitest case whose seeded booking ENDS before the asked range and still blocks it through the buffer. AC2: search results are deliberately NOT checked — one query per keystroke per row for an answer nobody asked for; recorded in the component. AC3: on rejection the form reads `dressIds` through a shape-checking helper and marks only those rows (destructive tint + per-row reason); proven with 2 dresses where only the second is refused — exactly one flag, and it sits in that row's `<li>`. All three dress rejections (`unavailable` / `retired` / `notFound`) get their own row copy. AC4: the flag is dropped as soon as the selection or either date changes, since it answered for the old range — proven by a case that changes the start date and watches the flag disappear. Gates: fe 63 tests (+4 new), check/lint/arch green, be untouched (95), qr-admin 13.",
+      "acceptance": [
+        "AC1: a dress that cannot serve the typed date range says so in its row, with the date it is busy until, before anything is submitted",
+        "AC2: the availability check covers chosen dresses only, never the search results",
+        "AC3: a rejection marks exactly the dresses the server named, each with the reason for that code",
+        "AC4: a rejection is cleared as soon as the dates or the selection change"
+      ],
+      "dependencies": ["infra/outcome-model"]
     }
   ]
 }
