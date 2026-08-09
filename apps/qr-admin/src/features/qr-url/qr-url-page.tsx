@@ -46,6 +46,13 @@ export function QrUrlPage() {
     if (!selected) return;
     let active = true;
     setImageError(null);
+    // Drop the previous QR before fetching the new one. Leaving it up means a slow request shows
+    // — and downloads, under the NEW row's target URL and filename — the QR of the row before it.
+    // A wrong QR that looks right is worse than a moment of "Đang tải SVG…".
+    setPreviewUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return null;
+    });
     void getQrSvgBlob(selected.id)
       .then((blob) => {
         if (!active) return;
