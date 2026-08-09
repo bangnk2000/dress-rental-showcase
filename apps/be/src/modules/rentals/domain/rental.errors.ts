@@ -115,3 +115,20 @@ export class RentalCancelNotAllowedError extends ExceptionBase {
     super(RentalCancelNotAllowedError.message, cause, { currentStatus });
   }
 }
+
+/**
+ * FR-PAY-02: the settlement was computed from a deposit total that no longer matches the ledger —
+ * another device recorded a collection while the return dialog was open. Nothing is written; the
+ * payload carries what IS on file so the screen can correct itself and ask for confirmation.
+ */
+export class ReturnDepositBasisChangedError extends ExceptionBase {
+  static readonly message = 'The recorded deposit changed while the settlement was being prepared';
+  public readonly code = 'RENTALS.DEPOSIT_BASIS_CHANGED';
+
+  constructor(
+    readonly collectedDeposit: number,
+    cause?: Error,
+  ) {
+    super(ReturnDepositBasisChangedError.message, cause, { collectedDeposit });
+  }
+}

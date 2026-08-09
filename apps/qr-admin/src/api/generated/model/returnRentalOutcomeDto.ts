@@ -17,4 +17,6 @@ export interface ReturnRentalOutcomeDto {
   suggestedLateFee?: number;
   /** Late fee the client tried to charge */
   submittedLateFee?: number;
+  /** Deposit currently on file, so the screen can re-derive the refund it offered (rejected_deposit_basis_changed, FR-PAY-02) */
+  collectedDeposit?: number;
 }

@@ -221,6 +221,25 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
             form.setFocus('note');
             return;
           }
+          if (mapped.status === 'rejected_deposit_basis_changed') {
+            // The server refused because the deposit moved under us — the same correction the
+            // client-side re-read makes, now driven by the authority that actually holds the lock.
+            const collected = Number(mapped.collectedDeposit ?? 0);
+            const fees =
+              (parseAmount(form.getValues('lateFee')) ?? 0) +
+              (parseAmount(form.getValues('damageFee')) ?? 0);
+            if (collected > 0) {
+              setValue('depositRefund', String(Math.max(0, collected - fees)), {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
+            }
+            await queryClient.invalidateQueries({
+              queryKey: getListPaymentsHttpControllerListQueryKey(rental?.rentalId ?? ''),
+            });
+            toast.error(t('returnDialog.deposit.changed', { amount: formatVnd(collected) }));
+            return;
+          }
           // Anything else means the rental moved on — nothing left to settle here.
           toast.error(
             mapped.status === 'rejected_return_not_allowed'
@@ -272,7 +291,12 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
       return;
     }
 
-    returnRental.mutate({ id: rental.rentalId, data: toReturnRequest(values) });
+    returnRental.mutate({
+      id: rental.rentalId,
+      // The basis this refund was computed from. The server re-checks it under the rental's row
+      // lock, which is the only place the check cannot be raced past (FR-PAY-02).
+      data: { ...toReturnRequest(values), expectedDepositCollected: freshDeposit },
+    });
   });
 
   const amountFields = [

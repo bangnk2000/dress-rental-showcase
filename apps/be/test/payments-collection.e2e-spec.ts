@@ -241,6 +241,48 @@ describe('recording money collected (real Postgres)', () => {
     });
   });
 
+  it('FR-PAY-02: a settlement whose deposit basis moved is refused, and nothing is written', async () => {
+    const rentalId = await openRental(['PC-013']);
+    expect((await collect(rentalId, { deposit: 2_000_000 })).status).toBe(200);
+
+    // The client computed its refund believing NO deposit was on file (the catalog fallback), but
+    // 2.000.000 has since been recorded. The check runs in the same transaction as the status flip,
+    // under the rental's row lock, so it cannot be raced past.
+    const settled = await context.request(`/api/v1/rentals/${rentalId}/return`, {
+      method: 'POST',
+      body: { depositRefund: 3_000_000, expectedDepositCollected: 0 },
+      token: context.token,
+    });
+
+    expect(settled.status).toBe(422);
+    expect(settled.body).toEqual({
+      status: 'rejected_deposit_basis_changed',
+      collectedDeposit: 2_000_000,
+    });
+
+    // The rental is untouched and no refund row exists: a refused settlement writes NOTHING.
+    const rows = await context.db.query<{ status: string }>(
+      'SELECT status FROM rentals WHERE id = $1',
+      [rentalId],
+    );
+    expect(rows.rows[0]!.status).toBe('booked'); // never flipped to returned
+    expect((await ledgerOf(rentalId)).summary.depositRefund).toBe(0);
+  });
+
+  it('FR-PAY-02: a settlement whose basis still matches goes through', async () => {
+    const rentalId = await openRental(['PC-014']);
+    expect((await collect(rentalId, { deposit: 2_000_000 })).status).toBe(200);
+
+    const settled = await context.request(`/api/v1/rentals/${rentalId}/return`, {
+      method: 'POST',
+      body: { depositRefund: 2_000_000, expectedDepositCollected: 2_000_000 },
+      token: context.token,
+    });
+
+    expect(settled.status).toBe(200);
+    expect((await ledgerOf(rentalId)).summary.depositRefund).toBe(2_000_000);
+  });
+
   it('AC4: an empty recording is a 422 outcome, not a 500 and not an empty write', async () => {
     const rentalId = await openRental(['PC-009']);
 

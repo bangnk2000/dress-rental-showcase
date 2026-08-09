@@ -49,11 +49,17 @@ function parseAmount(raw: string): number | null {
   return Number.isInteger(value) && value >= 1 ? value : null;
 }
 
-/** Blank amounts are omitted — the ledger records only what was actually collected. */
+/**
+ * Blank AND zero amounts are omitted — the ledger records only what was actually collected, and
+ * "not collected" is the absence of the field (the API's `@Min(1)` says the same). Typing 0 in one
+ * field must not 400 the whole request and lose the other, genuine amount with it.
+ */
 function toCollectRequest(values: CollectionFormValues): RecordCollectionRequestDto {
+  const deposit = parseAmount(values.deposit);
+  const rentalFee = parseAmount(values.rentalFee);
   return {
-    ...(values.deposit ? { deposit: Number(values.deposit) } : {}),
-    ...(values.rentalFee ? { rentalFee: Number(values.rentalFee) } : {}),
+    ...(deposit !== null ? { deposit } : {}),
+    ...(rentalFee !== null ? { rentalFee } : {}),
     ...(values.note ? { note: values.note } : {}),
   };
 }

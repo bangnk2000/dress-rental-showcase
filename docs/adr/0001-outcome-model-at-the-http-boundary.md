@@ -93,6 +93,7 @@ FE cần đủ dữ liệu để hành động, không phải GET thêm lần n�
 | `rentals/return-rental` | `RentalReturnNotAllowedError` | `rejected_return_not_allowed` | `currentStatus` | FR-RENT-05, BR-3 |
 | `rentals/return-rental` | `LateFeeWaiverNotAllowedError` | `forbidden` (**403**) + `reason: 'late_fee_waiver_requires_owner'` | `suggestedLateFee`, `submittedLateFee` | FR-RENT-09 |
 | `rentals/return-rental` | `LateFeeWaiverNoteRequiredError` | `rejected_waiver_note_required` | `suggestedLateFee`, `submittedLateFee` | FR-RENT-09 |
+| `rentals/return-rental` | `ReturnDepositBasisChangedError` | `rejected_deposit_basis_changed` | `collectedDeposit` | FR-PAY-02 |
 | `rentals/cancel-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-06 |
 | `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` | `currentStatus` | FR-RENT-06, BR-3 |
 
@@ -163,6 +164,7 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_deposit_already_recorded` / `rejected_rental_fee_already_recorded` | GIỮ dialog, field error trên ô tương ứng + invalidate sổ của đơn (danh sách phía trên hiện ngay dòng đã có) | `rentals:collect.errors.alreadyRecorded` |
 | `rejected_nothing_to_record` | message trên ô Tiền cọc; thực tế nút đã disabled khi cả hai ô trống | `rentals:collect.errors.nothingToRecord` |
 | `rejected_rental_closed` | đóng dialog, toast nêu `currentStatus` + invalidate list | `rentals:collect.rentalClosed` |
+| `rejected_deposit_basis_changed` | GIỮ dialog: tính lại hoàn cọc theo `collectedDeposit` server trả về, toast nêu số mới, invalidate sổ của đơn | `today:returnDialog.deposit.changed` |
 | *fault* `GENERIC.VALIDATION` (400 + `details[]`) | `form.setError` theo `details[].field` | (message từ server) |
 | *fault* còn lại trên mutation | toast lỗi chung + cho bấm lại | `common:errors.generic` |
 | *fault* còn lại trên query | route error boundary | — |

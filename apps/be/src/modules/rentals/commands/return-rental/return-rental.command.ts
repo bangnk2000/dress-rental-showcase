@@ -11,6 +11,8 @@ export class ReturnRentalCommand extends Command {
   /** VND integers; null = nothing to record for that movement. */
   readonly damageFee: number | null;
   readonly depositRefund: number | null;
+  /** Null = the caller makes no claim about the deposit basis. */
+  readonly expectedDepositCollected: number | null;
   readonly note: string | null;
   /** From the verified JWT — decides whether a waiver is allowed at all. */
   readonly actorRole: StaffRole;
@@ -21,6 +23,7 @@ export class ReturnRentalCommand extends Command {
     this.lateFee = props.lateFee;
     this.damageFee = props.damageFee;
     this.depositRefund = props.depositRefund;
+    this.expectedDepositCollected = props.expectedDepositCollected;
     this.note = props.note;
     this.actorRole = props.actorRole;
   }

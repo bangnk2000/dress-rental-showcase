@@ -11,6 +11,7 @@ export class ReturnRentalOutcomeDto {
       'rejected_rental_not_found',
       'rejected_return_not_allowed',
       'rejected_waiver_note_required',
+      'rejected_deposit_basis_changed',
       'forbidden',
     ],
   })
@@ -18,6 +19,7 @@ export class ReturnRentalOutcomeDto {
     | 'rejected_rental_not_found'
     | 'rejected_return_not_allowed'
     | 'rejected_waiver_note_required'
+    | 'rejected_deposit_basis_changed'
     | 'forbidden';
 
   @ApiProperty({ enum: ['booked', 'out', 'returned', 'cancelled'], required: false })
@@ -38,4 +40,11 @@ export class ReturnRentalOutcomeDto {
 
   @ApiProperty({ required: false, description: 'Late fee the client tried to charge' })
   readonly submittedLateFee?: number;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Deposit currently on file, so the screen can re-derive the refund it offered (rejected_deposit_basis_changed, FR-PAY-02)',
+  })
+  readonly collectedDeposit?: number;
 }

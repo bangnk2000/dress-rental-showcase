@@ -12,5 +12,6 @@ export const ReturnRentalOutcomeDtoStatus = {
   rejected_rental_not_found: 'rejected_rental_not_found',
   rejected_return_not_allowed: 'rejected_return_not_allowed',
   rejected_waiver_note_required: 'rejected_waiver_note_required',
+  rejected_deposit_basis_changed: 'rejected_deposit_basis_changed',
   forbidden: 'forbidden',
 } as const;

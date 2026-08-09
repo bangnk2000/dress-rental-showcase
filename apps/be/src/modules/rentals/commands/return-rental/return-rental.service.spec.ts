@@ -9,7 +9,9 @@ import {
   LateFeeWaiverNoteRequiredError,
   RentalNotFoundError,
   RentalReturnNotAllowedError,
+  ReturnDepositBasisChangedError,
 } from '../../domain/rental.errors';
+import { DepositBasisChangedError } from '../../application/ports/deposit-basis-changed.error';
 import { ReturnRentalCommand } from './return-rental.command';
 import { ReturnRentalService } from './return-rental.service';
 
@@ -42,6 +44,7 @@ function makeRepo(rental: RentalEntity | null): RentalRepositoryPort {
   return {
     insert: jest.fn().mockResolvedValue(undefined),
     save: jest.fn().mockResolvedValue(undefined),
+    saveReturned: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(rental),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
     nextId: jest.fn(() => 'unused'),
@@ -61,6 +64,7 @@ function makeCommand(overrides: Partial<ReturnRentalCommand> = {}): ReturnRental
     lateFee: null,
     damageFee: null,
     depositRefund: null,
+    expectedDepositCollected: null,
     note: null,
     actorRole: 'staff',
     ...overrides,
@@ -103,7 +107,9 @@ test('out → returned: records the nonzero movements with the note', async () =
 
   expect(result.isOk()).toBe(true);
   expect(rental.status).toBe('returned');
-  expect(repo.save).toHaveBeenCalledWith(rental);
+  // The settlement path writes through saveReturned: the deposit basis is verified in the same
+  // transaction as the status flip (FR-PAY-02).
+  expect(repo.saveReturned).toHaveBeenCalledWith(rental, null);
   // zero-amount damage fee is NOT recorded; the note rides on every row
   expect(recorder.recordSettlement).toHaveBeenCalledWith(RENTAL_ID, [
     { kind: 'late_fee', amount: 200_000, note: 'Trễ 1 ngày' },
@@ -151,7 +157,7 @@ test('AC3: staff charging LESS than suggested is refused, and nothing is written
   expect(error).toBeInstanceOf(LateFeeWaiverNotAllowedError);
   expect((error as LateFeeWaiverNotAllowedError).suggestedLateFee).toBe(600_000);
   expect((error as LateFeeWaiverNotAllowedError).submittedLateFee).toBe(100_000);
-  expect(repo.save).not.toHaveBeenCalled();
+  expect(repo.saveReturned).not.toHaveBeenCalled();
   expect(recorder.recordSettlement).not.toHaveBeenCalled();
 });
 
@@ -164,7 +170,7 @@ test('AC3: an owner waiver without a reason is refused', async () => {
   );
 
   expect(result.unwrapErr()).toBeInstanceOf(LateFeeWaiverNoteRequiredError);
-  expect(repo.save).not.toHaveBeenCalled();
+  expect(repo.saveReturned).not.toHaveBeenCalled();
 });
 
 test('AC3: an owner waiver WITH a reason records the reduced amount', async () => {
@@ -207,7 +213,7 @@ test('the lifecycle rule wins over the fee rule: already returned → not-allowe
   const result = await service.execute(makeCommand({ lateFee: 0 }));
 
   expect(result.unwrapErr()).toBeInstanceOf(RentalReturnNotAllowedError);
-  expect(repo.save).not.toHaveBeenCalled();
+  expect(repo.saveReturned).not.toHaveBeenCalled();
   expect(recorder.recordSettlement).not.toHaveBeenCalled();
 });
 
@@ -219,4 +225,35 @@ test('unknown rental → RentalNotFoundError', async () => {
 
   expect(result.isErr()).toBe(true);
   expect(result.unwrapErr()).toBeInstanceOf(RentalNotFoundError);
+});
+
+test('FR-PAY-02: a deposit recorded during the write refuses the settlement and states what is on file', async () => {
+  freezeShopDay('2026-08-03');
+  const rental = makeRental();
+  rental.markPickedUp(new Date('2026-08-01T02:00:00Z'));
+  const { service, repo, recorder } = makeService(rental);
+  // The repository verified the basis under the rental's row lock and found a different number.
+  (repo.saveReturned as jest.Mock).mockRejectedValue(new DepositBasisChangedError(2_000_000));
+
+  const result = await service.execute(
+    makeCommand({ expectedDepositCollected: 0, depositRefund: 3_000_000 }),
+  );
+
+  expect(result.isErr()).toBe(true);
+  const error = result.unwrapErr() as ReturnDepositBasisChangedError;
+  expect(error).toBeInstanceOf(ReturnDepositBasisChangedError);
+  expect(error.collectedDeposit).toBe(2_000_000);
+  // Nothing settled: no movement may be written against a refund the basis no longer supports.
+  expect(recorder.recordSettlement).not.toHaveBeenCalled();
+});
+
+test('FR-PAY-02: the expected basis is passed to the write, so the check happens under its lock', async () => {
+  freezeShopDay('2026-08-03');
+  const rental = makeRental();
+  rental.markPickedUp(new Date('2026-08-01T02:00:00Z'));
+  const { service, repo } = makeService(rental);
+
+  await service.execute(makeCommand({ expectedDepositCollected: 2_000_000 }));
+
+  expect(repo.saveReturned).toHaveBeenCalledWith(rental, 2_000_000);
 });

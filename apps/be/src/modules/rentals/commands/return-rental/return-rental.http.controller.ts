@@ -24,6 +24,7 @@ import { ApiErrorResponseDto, BusinessOutcomeException } from '../../../../libs/
 import {
   LateFeeWaiverNotAllowedError,
   LateFeeWaiverNoteRequiredError,
+  ReturnDepositBasisChangedError,
   RentalNotFoundError,
   RentalReturnNotAllowedError,
 } from '../../domain/rental.errors';
@@ -50,7 +51,7 @@ export class ReturnRentalHttpController {
     status: 422,
     type: ReturnRentalOutcomeDto,
     description:
-      'Business rejection: rejected_rental_not_found | rejected_return_not_allowed (carries currentStatus) | rejected_waiver_note_required (carries suggested + submitted late fee)',
+      'Business rejection: rejected_rental_not_found | rejected_return_not_allowed (currentStatus) | rejected_deposit_basis_changed (collectedDeposit) | rejected_waiver_note_required (carries suggested + submitted late fee)',
   })
   @ApiResponse({
     status: 403,
@@ -70,6 +71,7 @@ export class ReturnRentalHttpController {
         lateFee: body.lateFee ?? null,
         damageFee: body.damageFee ?? null,
         depositRefund: body.depositRefund ?? null,
+        expectedDepositCollected: body.expectedDepositCollected ?? null,
         note: body.note ?? null,
         actorRole: subject.role,
       }),
@@ -105,6 +107,14 @@ export class ReturnRentalHttpController {
             status: 'rejected_waiver_note_required',
             suggestedLateFee: error.suggestedLateFee,
             submittedLateFee: error.submittedLateFee,
+          });
+        }
+        if (error instanceof ReturnDepositBasisChangedError) {
+          // Nothing was written: the deposit moved under the caller. The payload states what IS on
+          // file so the screen re-derives its refund instead of guessing (FR-PAY-02).
+          throw new BusinessOutcomeException({
+            status: 'rejected_deposit_basis_changed',
+            collectedDeposit: error.collectedDeposit,
           });
         }
         throw error;

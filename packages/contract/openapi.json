@@ -686,7 +686,7 @@
             }
           },
           "422": {
-            "description": "Business rejection: rejected_rental_not_found | rejected_return_not_allowed (carries currentStatus) | rejected_waiver_note_required (carries suggested + submitted late fee)",
+            "description": "Business rejection: rejected_rental_not_found | rejected_return_not_allowed (currentStatus) | rejected_deposit_basis_changed (collectedDeposit) | rejected_waiver_note_required (carries suggested + submitted late fee)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1772,6 +1772,12 @@
             "example": 3000000,
             "description": "Deposit amount handed back to the customer, in VND (integer)"
           },
+          "expectedDepositCollected": {
+            "type": "number",
+            "minimum": 0,
+            "example": 3000000,
+            "description": "The deposit total the client computed its refund from. When present the server verifies it against the ledger under the rental row lock and refuses a settlement whose basis moved (FR-PAY-02)."
+          },
           "note": {
             "type": "string",
             "minLength": 1,
@@ -1788,6 +1794,7 @@
               "rejected_rental_not_found",
               "rejected_return_not_allowed",
               "rejected_waiver_note_required",
+              "rejected_deposit_basis_changed",
               "forbidden"
             ],
             "type": "string"
@@ -1815,6 +1822,10 @@
           "submittedLateFee": {
             "type": "number",
             "description": "Late fee the client tried to charge"
+          },
+          "collectedDeposit": {
+            "type": "number",
+            "description": "Deposit currently on file, so the screen can re-derive the refund it offered (rejected_deposit_basis_changed, FR-PAY-02)"
           }
         },
         "required": [

@@ -182,10 +182,17 @@ test('the return dialog settles fees + refund and sends only filled amounts', as
   await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
 
   expect(await screen.findByText('Đã tất toán lượt thuê.')).toBeInTheDocument();
-  // damageFee left blank → omitted from the request entirely
+  // damageFee left blank → omitted from the request entirely. `expectedDepositCollected` rides
+  // along: it is the basis this refund was computed from, which the server re-checks under the
+  // rental's row lock (FR-PAY-02) — 0 here, since nothing is on file for this rental.
   expect(getLastReturn()).toEqual({
     rentalId: 'rental-9',
-    body: { lateFee: 200000, depositRefund: 2800000, note: 'Trễ 1 ngày' },
+    body: {
+      lateFee: 200000,
+      depositRefund: 2800000,
+      note: 'Trễ 1 ngày',
+      expectedDepositCollected: 0,
+    },
   });
 });
 
@@ -528,6 +535,33 @@ test('FR-PAY-02: a deposit recorded elsewhere while the dialog sits open stops t
   await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
   await waitFor(() => expect(getLastReturn().rentalId).toBe('rental-9'));
   expect(getLastReturn().body).toMatchObject({ depositRefund: 1_500_000, damageFee: 500_000 });
+});
+
+test('FR-PAY-02: the server refusing the basis corrects the screen rather than settling', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  seedLateFeeQuote('rental-9', { daysLate: 0, dressCount: 1, suggestedLateFee: 0 });
+  // The client's own re-read agrees with what it had, but the server — which holds the row lock —
+  // finds 2.000.000 recorded and refuses.
+  server.use(
+    http.post('/api/v1/rentals/:id/return', () =>
+      HttpResponse.json(
+        { status: 'rejected_deposit_basis_changed', collectedDeposit: 2_000_000 },
+        { status: 422 },
+      ),
+    ),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
+  await user.click(await screen.findByRole('button', { name: /Điền 3\.000\.000/ }));
+  await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
+
+  expect(await screen.findByText(/Sổ tiền của đơn vừa thay đổi/)).toBeInTheDocument();
+  // The dialog stays open with the refund corrected to the deposit the server says is on file.
+  await waitFor(() =>
+    expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('2000000'),
+  );
 });
 
 test('FR-PAY-02: a ledger that fails to load blocks settlement instead of falling back to the catalog', async () => {

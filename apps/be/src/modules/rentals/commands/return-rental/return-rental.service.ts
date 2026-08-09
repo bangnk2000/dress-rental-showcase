@@ -9,6 +9,7 @@ import {
   PaymentRecorderPort,
   SettlementPayment,
 } from '../../application/ports/payment-recorder.port';
+import { DepositBasisChangedError } from '../../application/ports/deposit-basis-changed.error';
 import {
   RENTAL_REPOSITORY,
   RentalRepositoryPort,
@@ -18,6 +19,7 @@ import {
   LateFeeWaiverNoteRequiredError,
   RentalNotFoundError,
   RentalReturnNotAllowedError,
+  ReturnDepositBasisChangedError,
 } from '../../domain/rental.errors';
 import { ReturnRentalCommand } from './return-rental.command';
 
@@ -27,6 +29,7 @@ export type ReturnRentalResult = Result<
   | RentalReturnNotAllowedError
   | LateFeeWaiverNotAllowedError
   | LateFeeWaiverNoteRequiredError
+  | ReturnDepositBasisChangedError
 >;
 
 @CommandHandler(ReturnRentalCommand)
@@ -77,7 +80,17 @@ export class ReturnRentalService
       }
     }
 
-    await this.rentalRepo.save(rental);
+    // The refund the caller computed rests on the deposit ON FILE, and a collection can commit
+    // right up to this write. The check travels INTO the write transaction, under the rental's row
+    // lock, so the two operations take turns instead of overlapping (FR-PAY-02).
+    try {
+      await this.rentalRepo.saveReturned(rental, command.expectedDepositCollected);
+    } catch (error) {
+      if (error instanceof DepositBasisChangedError) {
+        return Err(new ReturnDepositBasisChangedError(error.collectedDeposit, error));
+      }
+      throw error;
+    }
 
     const movements: SettlementPayment[] = [
       { kind: 'late_fee' as const, amount: chargedLateFee },

@@ -11,6 +11,7 @@ import { SqlRepositoryBase } from '../../../libs/db/sql-repository.base';
 import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { AggregateID } from '../../../libs/ddd/entity.base';
 import { LOGGER_PORT, LoggerPort } from '../../../libs/ports/logger.port';
+import { DepositBasisChangedError } from '../application/ports/deposit-basis-changed.error';
 import { RentalItemsOverlapError } from '../application/ports/rental-overlap.error';
 import { RentalRepositoryPort } from '../application/ports/rental.repository.port';
 import { RentalEntity } from '../domain/rental.entity';
@@ -27,6 +28,7 @@ import {
 } from './rental.persistence.model';
 
 const dressIdSchema = z.object({ dress_id: z.string() });
+const collectedDepositSchema = z.object({ collected: z.number().int() });
 
 /**
  * The aggregate spans rentals + rental_items, so the single-table helpers of
@@ -57,6 +59,33 @@ export class RentalRepository
 
   override async save(entity: RentalEntity): Promise<void> {
     await this.writeAggregate(entity, true);
+  }
+
+  /**
+   * The settlement's refund is computed from the deposit on file, and that number can change right
+   * up until this write: another device may record a collection while the return dialog is open.
+   * Re-reading it here, under the rental's row lock and in the SAME transaction as the status
+   * flip, is what makes the two operations take turns — payments/record-collection locks the very
+   * same row before inserting, so either it commits first and this read sees it, or it arrives
+   * after the flip and its own closed-rental rule refuses it.
+   */
+  async saveReturned(
+    entity: RentalEntity,
+    expectedDepositCollected: number | null,
+  ): Promise<void> {
+    await this.writeAggregate(entity, true, async (conn, record) => {
+      if (expectedDepositCollected === null) return;
+      await conn.query(sql.unsafe`
+        SELECT id FROM rentals WHERE id = ${record.rental.id} FOR UPDATE
+      `);
+      const { collected } = await conn.one(sql.type(collectedDepositSchema)`
+        SELECT coalesce(sum(amount), 0)::int AS collected
+        FROM payments WHERE rental_id = ${record.rental.id} AND kind = 'deposit'
+      `);
+      if (collected !== expectedDepositCollected) {
+        throw new DepositBasisChangedError(collected);
+      }
+    });
   }
 
   override async findOneById(id: AggregateID): Promise<RentalEntity | null> {
@@ -90,9 +119,15 @@ export class RentalRepository
     return rows.map((row) => row.dress_id);
   }
 
-  private async writeAggregate(entity: RentalEntity, upsert: boolean): Promise<void> {
+  private async writeAggregate(
+    entity: RentalEntity,
+    upsert: boolean,
+    /** Runs INSIDE the write transaction, before any row is touched. Throwing aborts the write. */
+    precondition?: (conn: DatabaseTransactionConnection, record: RentalModel) => Promise<void>,
+  ): Promise<void> {
     try {
       await this.writeInTransaction(entity, async (conn, record) => {
+        await precondition?.(conn, record);
         await this.writeRentalRow(conn, record.rental, upsert);
         for (const item of record.items) {
           await this.writeItemRow(conn, item, upsert);
