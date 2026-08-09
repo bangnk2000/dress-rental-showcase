@@ -1,5 +1,58 @@
 # Session Handoff
 
+## 2026-08-10 (24) — everything pushed as 5 stacked PRs, each reviewed by codex until clean
+
+- Done: the 18 commits that had never left this machine are now **five stacked PRs** on
+  `bangnk2000/dress-rental`, one per feature session, each reviewed by the **codex CLI in WSL**
+  (`codex exec review --base <parent>`) and fixed until the review came back with nothing. Every
+  branch is pushed; nothing is merged — that is the owner's call.
+
+  | PR | Branch | Base | codex findings fixed |
+  | --- | --- | --- | --- |
+  | [#1](https://github.com/bangnk2000/dress-rental/pull/1) | `feat/qr-url-phase` | `master` | 5 |
+  | [#2](https://github.com/bangnk2000/dress-rental/pull/2) | `feat/outcome-model-and-invariant-proof` | #1 | 2 |
+  | [#3](https://github.com/bangnk2000/dress-rental/pull/3) | `feat/e2e-ci-and-release-record` | #2 | 0 |
+  | [#4](https://github.com/bangnk2000/dress-rental/pull/4) | `feat/ui-review-batch` | #3 | 4 |
+  | [#5](https://github.com/bangnk2000/dress-rental/pull/5) | `feat/payments-record-collection` | #4 | 9 |
+
+- **The review paid for itself in the money paths.** What it found, in the order it matters:
+  - `payments/record-collection` checked the rental status in the service, then inserted in a
+    separate transaction — a concurrent return could close the rental in between and the money
+    landed on a closed rental anyway. The check now runs `SELECT … FOR UPDATE` inside the write.
+  - The return dialog treated a **failed** ledger read, and later a ledger **still loading**, as
+    "no deposit collected", so it offered a refund based on the catalog for money the shop may
+    never have taken. An unknown basis now blocks and says why.
+  - Even with a re-read at submit time, a collection could still commit between that read and the
+    write. The settlement now sends the basis it used and the return write verifies it under the
+    rental's row lock (`rejected_deposit_basis_changed`), which is the only place that cannot be
+    raced past. The two operations lock the same row, so they take turns.
+  - Same class in `catalog`: a duplicate code caught by the UNIQUE index surfaced as a 409
+    envelope while the identical pre-check answered a 422 outcome — the form lost its field error
+    depending on who won the race. ADR 0001 now states the rule for every precondition with a
+    constraint behind it, and each such rule owes a concurrent `test:e2e` case.
+  - `apps/qr-admin` stored a refresh token and never used it: every reload signed the owner out.
+    Fixing that created the need for a sign-out, which did not exist either (a staff member was
+    stuck on the denied screen forever).
+  - The rest: a booking rejection outliving the booking it described, a QR preview downloadable
+    under the next row's filename, the QR history omitting the creator FR-QR-03 requires, and a
+    `0` typed into a collect field 400-ing the whole request.
+- Verification at the stack tip: `bash init.sh` fully green — be **114 unit** · **46 e2e** ·
+  fe **83** · qr-admin **17** · contract:check, check, lint, arch, both builds — plus
+  `pnpm --filter fe e2e` green against the real stack.
+- **Watch out — the stack is stacked.** Each PR's base is the previous branch, so merge in order
+  #1 → #5 (GitHub retargets the next one automatically). Reviewing #5 alone shows only its own
+  diff, which is the point.
+- **Watch out — local `master` is stale**: it sits at `bdd211d`, five commits ahead of
+  `origin/master`, and those commits are the QR phase now under review in PR #1. Do not push it;
+  let the PRs land and reset it to `origin/master` afterwards.
+- Watch out: `codex exec review --base X` resolves X LOCALLY. Reviewing PR #1 against `master`
+  silently produced an empty diff (local master already contained those commits) — use
+  `origin/master`. The default model also needs codex ≥ 0.147; the copy at
+  `~/.local/share/pnpm/bin/codex` is current, and an older 0.139 shim shadows it earlier in PATH.
+- Next: unchanged from below — rental `notes` are displayed nowhere, there is still no rental
+  detail route, and `payments/correct-movement` (fixing a wrongly recorded amount) is the open
+  operational hole the owner has to rule on.
+
 ## 2026-08-10 (23) — `payments/record-collection` = pass (the deposit gap is closed)
 
 - Done: the gap three features and the readiness pass all pointed at — **money coming IN was never

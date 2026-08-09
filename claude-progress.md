@@ -3,6 +3,16 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-08-10 (24) — the repo's whole unpushed history (18 commits) went out as **five stacked PRs**
+  (#1 QR phase → #2 outcome model + invariant proof → #3 e2e CI + release record → #4 UI review
+  batch → #5 FR-PAY-02), each reviewed by the codex CLI in WSL and fixed until the review returned
+  nothing: 20 findings, most of them in the money paths — a TOCTOU on recording money, two screens
+  reading a failed/loading ledger as "nothing collected", a settlement basis that could be raced
+  past until the check moved under the rental's row lock, a catalog duplicate answering 409 or 422
+  depending on who won, and a QR admin that never used its refresh token. ADR 0001 gained the
+  general rule: a pre-check and the DB constraint behind it are two guards of ONE rule, and the
+  client must not be able to tell which fired. init.sh green at the tip (be 114 + 46 e2e, fe 83,
+  qr-admin 17) plus Playwright. Nothing merged — the stack merges in order, #1 first.
 - 2026-08-10 (23) — `payments/record-collection` = pass (FR-PAY-02), ledger 25/25. The deposit the
   shop TAKES is finally written down, and the refund at return is computed from it instead of from
   the catalog. Spec-before-code again: the rules went to the owner as blocker questions and came back
