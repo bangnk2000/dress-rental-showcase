@@ -32,8 +32,19 @@ function AppShell() {
       setRole('anonymous');
     });
   }, []);
+  /**
+   * The session now survives a reload, which is exactly why ending one has to be possible: a
+   * staff member would otherwise be stuck on the denied screen forever, and an owner session on a
+   * shared machine would outlive the person who opened it.
+   */
+  function signOut() {
+    clearTokens();
+    queryClient.clear();
+    setRole('anonymous');
+  }
+
   if (role === 'loading') return <main className="p-10">Đang kiểm tra phiên đăng nhập…</main>;
   if (role === 'anonymous') return <LoginPage onSignedIn={setRole} />;
-  if (role === 'staff') return <main className="mx-auto max-w-xl p-10"><h1 className="text-2xl font-bold">Không có quyền truy cập</h1><p className="mt-2">QR Admin chỉ dành cho owner.</p></main>;
-  return <QrUrlPage />;
+  if (role === 'staff') return <main className="mx-auto max-w-xl p-10"><h1 className="text-2xl font-bold">Không có quyền truy cập</h1><p className="mt-2">QR Admin chỉ dành cho owner.</p><button className="mt-6 rounded border px-3 py-1 text-sm" onClick={signOut} type="button">Đăng xuất</button></main>;
+  return <QrUrlPage onSignOut={signOut} />;
 }

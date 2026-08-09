@@ -17,7 +17,12 @@ function dateTime(value: string) {
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
 }
 
-export function QrUrlPage() {
+interface QrUrlPageProps {
+  /** Ends the session. Sessions survive reloads now, so leaving one open is a deliberate act. */
+  onSignOut: () => void;
+}
+
+export function QrUrlPage({ onSignOut }: QrUrlPageProps) {
   const queryClient = useQueryClient();
   const [targetUrl, setTargetUrl] = useState('');
   const [label, setLabel] = useState('');
@@ -91,7 +96,7 @@ export function QrUrlPage() {
 
   return (
     <main className="mx-auto min-h-svh max-w-4xl px-6 py-10">
-      <header className="flex items-start justify-between gap-4"><div><p className="text-sm font-medium text-sky-700">Dress rental</p><h1 className="mt-1 text-3xl font-bold">QR URL Admin</h1></div></header>
+      <header className="flex items-start justify-between gap-4"><div><p className="text-sm font-medium text-sky-700">Dress rental</p><h1 className="mt-1 text-3xl font-bold">QR URL Admin</h1></div><button className="shrink-0 rounded border px-3 py-1 text-sm" onClick={onSignOut} type="button">Đăng xuất</button></header>
       <section className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold">Tạo QR URL</h2>
         <form className="mt-4 grid gap-4" onSubmit={submit}>
