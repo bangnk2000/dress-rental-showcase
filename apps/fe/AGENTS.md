@@ -30,7 +30,17 @@ files here.
 - `src/api/generated/**` is READ-ONLY — regenerate via `pnpm contract`, never edit. Same for
   `packages/contract/openapi.json`. "FE needs a field" = BE change first.
 - `src/api/mutator/custom-instance.ts` is the ONE HTTP door: auth header, 401 refresh-and-retry,
-  base URL. Components never inspect `error.response.status` (use `src/api/errors.ts` helpers).
+  base URL. `src/api/errors.ts` is the ONE seam that reads wire shapes: `mapApiError` returns
+  either an **outcome** (`{ kind: 'outcome', status, ...payload }`) or a **fault**
+  (`{ kind: 'fault', code, message, details? }`). Components branch on that — never on
+  `error.response.status`, and never with a feature-local status helper.
+- Every outcome code has a DESIGNED state, listed in
+  [ADR 0001](../../docs/adr/0001-outcome-model-at-the-http-boundary.md) §4 with its i18n key:
+  `rejected_*` keeps the form/dialog and says what to do next; a stale-state rejection also
+  invalidates the affected queries (the board and list are shared across devices). Faults: query →
+  route error boundary via `isServerOrNetworkError`; mutation → local toast + retry, never thrown to
+  the boundary. Adding an outcome to the BE means adding its row to ADR 0001 §4 and its key to
+  vi + en in the same commit.
 
 ## Deviations from the stack spec (deliberate, keep consistent)
 
@@ -60,6 +70,15 @@ files here.
    AbortSignal in the request config (signal-based cancellation).
 7. **Unified `radix-ui` package** (not per-primitive `@radix-ui/react-*`); shadcn `sonner.tsx` is
    hand-authored for Vite (no next-themes).
+8. **No `Idempotency-Key`** (04-data-layer §3): no client sends it, no endpoint honours it. A
+   double-submitted rental is stopped by the DB overlap constraint — which is exactly why that
+   constraint has proof tests (`pnpm --filter be test:e2e`). It needs a BE store first, so closing
+   it is an ADR, not a FE tweak.
+
+Two things that are NOT deviations but bite if missed: the three former
+`features/*/lib/is-conflict-error.ts` files are deleted — never recreate that shape; and rejection
+copy is per feature namespace, where `t('status.<value>')` renders the `currentStatus` payload, so a
+NEW rental status needs its label in BOTH `rentals` and `today`.
 
 ## Where do I add a new feature?
 

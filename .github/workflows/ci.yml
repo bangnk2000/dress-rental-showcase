@@ -20,6 +20,25 @@ jobs:
 
   be:
     runs-on: ubuntu-latest
+    services:
+      # The invariant-proof suite must run against a REAL Postgres: the constraints under test
+      # (EXCLUDE overlap, UNIQUE, CHECK) do not exist anywhere else.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dress
+          POSTGRES_PASSWORD: dress
+          POSTGRES_DB: dress_rental
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U dress -d dress_rental"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://dress:dress@localhost:5432/dress_rental
+      JWT_SECRET: ci-jwt-secret-value-0123456789
+      JWT_REFRESH_SECRET: ci-jwt-refresh-secret-0123456789
+      CLEANING_BUFFER_DAYS: '2'
+      LOG_LEVEL: fatal
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -28,8 +47,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter be lint && pnpm --filter be arch
       - run: pnpm --filter be test
-      # + migrate/test:e2e with postgres service once apps/be lands
-      #   (docs/spec/init-nestjs-hexagonal/09-testing-strategy.md)
+      # Creates dress_rental_test, migrates it, then proves the DB-level invariants
+      # (docs/spec/init-nestjs-hexagonal/09-testing-strategy.md — "Invariant proof tests").
+      - run: pnpm --filter be test:e2e
 
   fe:
     runs-on: ubuntu-latest

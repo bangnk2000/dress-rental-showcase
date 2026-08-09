@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { toast } from 'sonner';
 
+import { mapApiError } from '@/api/errors';
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
@@ -20,7 +21,6 @@ import { RentalListPagination } from './components/rental-list-pagination';
 import { RentalPaymentsDialog } from './components/rental-payments-dialog';
 import { RentalTable } from './components/rental-table';
 import { useRentalFilters } from './hooks/use-rental-filters';
-import { isConflictError } from './lib/is-conflict-error';
 
 /**
  * Rentals list — the post-create landing. Loading/error surfaces belong to
@@ -35,8 +35,8 @@ export function RentalsRoute() {
   const { data } = useListRentalsHttpControllerListSuspense(listParams);
   const [paymentsTarget, setPaymentsTarget] = useState<RentalListItemDto | null>(null);
 
-  // Cancel is booked-only on the server (409 otherwise); frees the calendar.
-  const cancelRental = useCancelRentalHttpControllerCancel<unknown>({
+  // Cancel is booked-only on the server; frees the calendar.
+  const cancelRental = useCancelRentalHttpControllerCancel({
     mutation: {
       onSuccess: async () => {
         // Parameterless keys prefix every filtered list / dated board query.
@@ -50,10 +50,31 @@ export function RentalsRoute() {
         ]);
         toast.success(t('cancel.success'));
       },
-      onError: (error) => {
-        toast.error(
-          isConflictError(error) ? t('cancel.alreadyProcessed') : t('cancel.error'),
-        );
+      onError: async (error) => {
+        // Rejections mean another device moved this rental on: say what state it is in and
+        // refresh, instead of one vague "conflict" (ADR 0001 §4).
+        const mapped = mapApiError(error);
+        if (mapped.kind === 'outcome') {
+          toast.error(
+            mapped.status === 'rejected_cancel_not_allowed'
+              ? t('cancel.notAllowed', {
+                  status: t(`status.${String(mapped.currentStatus)}`, {
+                    defaultValue: String(mapped.currentStatus ?? ''),
+                  }),
+                })
+              : t('errors.rentalNotFound'),
+          );
+          await Promise.all([
+            queryClient.invalidateQueries({
+              queryKey: getListRentalsHttpControllerListQueryKey(),
+            }),
+            queryClient.invalidateQueries({
+              queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
+            }),
+          ]);
+          return;
+        }
+        toast.error(t('cancel.error'));
       },
     },
   });

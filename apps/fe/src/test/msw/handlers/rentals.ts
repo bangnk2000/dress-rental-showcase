@@ -1,7 +1,8 @@
 /**
  * MSW handlers for the rentals tag. Tests mark dresses as unavailable through
- * seedBlockedDresses; the handler answers 409 like the real API (which has no
- * contract-typed error body), otherwise 201 with an IdResponse.
+ * seedBlockedDresses; the handler then answers with the same outcome body the real API renders —
+ * `{ status: 'rejected_dress_unavailable', dressIds }` at 422 (ADR 0001) — otherwise 201 with an
+ * IdResponse. Rejections of pickup/return/cancel are seeded per test via server.use overrides.
  */
 import { http, HttpResponse, type HttpHandler } from 'msw';
 
@@ -266,12 +267,19 @@ export const rentalsHandlers: HttpHandler[] = [
     return HttpResponse.json(response);
   }),
 
-  // POST /api/v1/rentals — 201 IdResponse, or 409 when a dress is blocked.
+  // POST /api/v1/rentals — 201 IdResponse, or the rejected_dress_unavailable outcome naming the
+  // offending dresses (ADR 0001 §3).
   http.post('/api/v1/rentals', async ({ request }) => {
     const body = (await request.json()) as CreateRentalRequestDto;
     lastCreateRentalBody = body;
-    if (body.items.some((item) => blockedDressIds.has(item.dressId))) {
-      return new HttpResponse(null, { status: 409 });
+    const blocked = body.items
+      .map((item) => item.dressId)
+      .filter((dressId) => blockedDressIds.has(dressId));
+    if (blocked.length > 0) {
+      return HttpResponse.json(
+        { status: 'rejected_dress_unavailable', dressIds: blocked },
+        { status: 422 },
+      );
     }
     const response: IdResponse = { id: 'rental-1' };
     return HttpResponse.json(response, { status: 201 });

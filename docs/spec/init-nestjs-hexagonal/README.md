@@ -56,7 +56,7 @@ pnpm plop            # plop / nest schematics: generate a vertical slice
 ## Usage Flow 2 — Add a Feature to an Existing Project
 
 1. Give the agent [10-module-scaffold-prompt.md](./10-module-scaffold-prompt.md) — the deterministic slice generator.
-2. Provide the bounded context, the use case (command **or** query), and the entities/value objects involved. If the feature is design-tier (new aggregate, new invariant, new cross-context contract — [14-design-first.md](./14-design-first.md) §tiers), the context design doc must exist and be approved first; a standard CRUD slice uses the filled input contract of `10` as its mini design doc.
+2. Provide the bounded context, the use case (command **or** query), and the entities/value objects involved. If the feature is design-tier (new aggregate, new invariant, new cross-context contract — tiers defined in [`../init-harness/06-design-first.md`](../init-harness/06-design-first.md); [14-design-first.md](./14-design-first.md) is the stack binding), the context design doc must exist and be approved first; a standard CRUD slice with a single happy path uses the filled input contract of `10` as its mini design doc; any use case with business outcomes beyond the happy path also needs an approved use-case spec ([14-design-first.md](./14-design-first.md)).
 3. The agent generates a single vertical slice under `modules/<context>/commands/<use-case>/` or `queries/<use-case>/`: command/query + handler, controllers, request/response DTOs, ports, repository wiring, and tests — following Common Closure (files that change together live together).
 4. Remember the orchestration rule: **Command → Event → Command**, never command-calls-command directly; cross-module communication goes through the command/query bus or events only.
 5. Confirm guardrails still pass (`pnpm arch && pnpm lint`) and the relevant items in [12-implementation-checklist.md](./12-implementation-checklist.md).
@@ -78,7 +78,7 @@ This is the concrete, hands-on version of Usage Flow 1. It uses **Claude Code** 
 
 Tell the agent the spec exists and must be followed verbatim:
 
-> Read every file in `docs/spec/` (the `init-nestjs-hexagonal` prompt set). Treat `00-system-prompt.md` as your system prompt and `01`–`09` as the binding conventions. Do not invent patterns that contradict them.
+> Read every file in `docs/spec/` (the `init-nestjs-hexagonal` prompt set). Treat `00-system-prompt.md` as your system prompt and `01`–`10` plus `13`/`14` as the binding conventions. Do not invent patterns that contradict them.
 
 ### Step 2 — Kick off with one prompt (copy-paste, fill the blanks)
 
@@ -131,10 +131,12 @@ Use [11-example-output.md](./11-example-output.md) as the depth/tone benchmark: 
 If your product ships an LLM feature, have the agent create the first-class `modules/ai-agent/` context per [08-ai-agent-first.md](./08-ai-agent-first.md):
 
 > Add the `ai-agent` bounded context from `docs/spec/08-ai-agent-first.md` Half B: the domain
-> (`Agent`, `Conversation`, `Message`, `Tool`, `PromptTemplate`), `LlmPort`, and `ClaudeLlmAdapter`
-> (`@anthropic-ai/sdk`, default model `claude-sonnet-4-6`). The LLM stays **behind the port** — domain
-> and application must never import the SDK; `pnpm arch` enforces this. Add a `start-conversation`
-> command slice and a unit test that mocks `LlmPort`.
+> (`Agent`, `Conversation`, `Message`, `Tool`, `PromptTemplate`) and `ClaudeLlmAdapter`
+> (`@anthropic-ai/sdk`, default model `claude-sonnet-4-6`) implementing the shared `LlmPort`
+> (`libs/ports/llm.port.ts`). The LLM stays **behind the port** — domain and application must never
+> import the SDK; `pnpm arch` enforces this. Then add the consuming `start-conversation` command
+> slice in `modules/conversations/` (per `11-example-output.md`) with a unit test that mocks
+> `LlmPort` — `ai-agent` owns the adapter, not the feature slice.
 
 Set `ANTHROPIC_API_KEY` in `.env` (key only — never commit it; see [07-cross-cutting.md](./07-cross-cutting.md)). [11-example-output.md](./11-example-output.md) is a full worked example of exactly this slice.
 

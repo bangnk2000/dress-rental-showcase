@@ -10,12 +10,13 @@ import {
 import { match } from 'oxide.ts';
 import { RequirePermission } from '../../../../libs/authz/require-permission.decorator';
 import { IdResponse } from '../../../../libs/ddd/id.response.dto';
-import { ConflictException, NotFoundException } from '../../../../libs/exceptions';
+import { BusinessOutcomeException } from '../../../../libs/exceptions';
 import {
   RentalCancelNotAllowedError,
   RentalNotFoundError,
 } from '../../domain/rental.errors';
 import { CancelRentalCommand } from './cancel-rental.command';
+import { CancelRentalOutcomeDto } from './cancel-rental.outcome.dto';
 import { CancelRentalResult } from './cancel-rental.service';
 
 @ApiTags('rentals')
@@ -29,8 +30,12 @@ export class CancelRentalHttpController {
   @RequirePermission('rental:cancel')
   @ApiOperation({ summary: 'Cancel a booked rental — frees the calendar, keeps history' })
   @ApiOkResponse({ type: IdResponse })
-  @ApiResponse({ status: 404, description: 'Rental not found' })
-  @ApiResponse({ status: 409, description: 'Rental is not in the booked status' })
+  @ApiResponse({
+    status: 422,
+    type: CancelRentalOutcomeDto,
+    description:
+      'Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus)',
+  })
   async cancel(@Param('id', ParseUUIDPipe) id: string): Promise<IdResponse> {
     const result: CancelRentalResult = await this.commandBus.execute(
       new CancelRentalCommand({ rentalId: id }),
@@ -40,10 +45,13 @@ export class CancelRentalHttpController {
       Ok: (rentalId) => new IdResponse(rentalId),
       Err: (error: Error) => {
         if (error instanceof RentalNotFoundError) {
-          throw new NotFoundException(error.message);
+          throw new BusinessOutcomeException({ status: 'rejected_rental_not_found' });
         }
         if (error instanceof RentalCancelNotAllowedError) {
-          throw new ConflictException(error.message);
+          throw new BusinessOutcomeException({
+            status: 'rejected_cancel_not_allowed',
+            currentStatus: error.currentStatus,
+          });
         }
         throw error;
       },

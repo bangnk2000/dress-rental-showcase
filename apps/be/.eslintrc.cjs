@@ -1,7 +1,8 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: 'tsconfig.json',
+    // Both projects: tsconfig.json covers src, test/tsconfig.json covers the e2e suite.
+    project: ['tsconfig.json', 'test/tsconfig.json'],
     tsconfigRootDir: __dirname,
     sourceType: 'module',
   },

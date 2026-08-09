@@ -84,7 +84,9 @@ Conventions:
   provider owns this). Components reference semantic tokens (`bg-background`, `text-primary`) —
   never raw palette values — so re-theming touches one file.
 - **Editing a ui/ component is allowed** (that's the point) but it must stay *generic*: no feature
-  imports, no domain naming, no `t()` calls with feature namespaces. Feature-specific variants
+  imports, no domain naming, no `t()` calls with feature namespaces (`FormMessage` resolving an
+  already-namespaced KEY passed to it is key passthrough, not namespace coupling — the ban is on
+  ui/ components hardcoding a feature namespace themselves). Feature-specific variants
   wrap the primitive inside the feature (`invoice-status-badge.tsx` wraps `badge.tsx`).
 - **Do not re-generate over local edits.** Re-running `add` for an existing component overwrites;
   diff before accepting.
@@ -129,6 +131,9 @@ export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 
 ```tsx
 // features/invoices/components/invoice-form.tsx
+import { mapApiError } from '@/api/errors';
+// other imports elided
+
 const form = useForm<InvoiceFormValues>({
   resolver: zodResolver(invoiceFormSchema),
   defaultValues: { customerId: '', amount: 0 },
@@ -137,10 +142,25 @@ const createInvoice = useCreateInvoice();          // Orval-generated (04-data-l
 
 function onSubmit(values: InvoiceFormValues) {
   createInvoice.mutate({ data: values }, {
-    onError: (e) => form.setError('root', { message: mapApiError(e) }),
+    onError: (e) => {
+      const err = mapApiError(e);            // src/api/errors.ts — the one seam (04 §3)
+      if (err.kind === 'outcome') {
+        // one branch per outcome code — never a generic collapse (designed states: 14 §2 template §4)
+        if (err.status === 'rejected_duplicate_invoice') {
+          form.setError('customerId', { message: t('form.errors.duplicateInvoice') });
+        }
+      } else if (err.details) {
+        for (const d of err.details) form.setError(d.field ?? 'root', { message: d.message });
+      } else {
+        form.setError('root', { message: t('form.errors.createFailed') });
+      }
+    },
   });
 }
 ```
+
+Root-level errors need explicit rendering — shadcn `<FormMessage>` only renders per-FIELD errors
+(see 11's form for the `errors.root` line).
 
 Rules:
 
@@ -150,8 +170,8 @@ Rules:
   in `onSubmit`.
 - Error messages in schemas are **i18n keys**, rendered through `t()` at the `<FormMessage>` site
   (`06-i18n.md`).
-- Server-side validation errors (400/409 payloads) map back to `form.setError` per field where the
-  API provides field paths; otherwise to the root error.
+- Validation faults carry `details[]` in the envelope (04 §3) — map them to per-field
+  `form.setError`; otherwise to the root error.
 - Submitting state comes from the mutation (`createInvoice.isPending`) — never a `useState` flag.
 
 ## 5. Loading, Empty, and Error Surfaces
@@ -163,6 +183,9 @@ Every data-bearing screen designs three non-happy states, using kernel component
 | Loading | Suspense fallback (route-level) or `isPending` (widget-level) | `<Spinner/>` or a skeleton matching layout |
 | Empty | Query succeeded, zero items | `components/feedback/empty-state.tsx` with a CTA |
 | Error | Error boundary (unexpected) / mutation error (expected) | `error-fallback.tsx` with retry (`resetErrorBoundary` + query `refetch`) |
+
+Mutations additionally design: submitting (double-submit blocked) and ONE state per business
+outcome code in the slice's catalog (14 §2 template §4).
 
 The choice of Suspense vs `isPending` per surface is made in the data layer — see
 `04-data-layer.md` §5.

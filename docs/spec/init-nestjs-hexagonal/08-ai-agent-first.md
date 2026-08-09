@@ -41,14 +41,14 @@ Domain-Driven Hexagon, AI-agent-first. Read this before writing or editing code.
 NestJS 11 (Express 5 default) · Node 22 LTS (>= 20) · TypeScript 5.7+ · pnpm. CQRS via `@nestjs/cqrs` ^11.
 
 ## Project map
-- `modules/<context>/`     — one bounded context == one mini-app. NO cross-module imports.
-- `libs/`                  — shared kernel: ddd/, db/, ports/, exceptions/, utils/, decorators/.
-- `modules/<context>/domain/`        — entities, value objects, domain events, domain errors. ZERO framework/IO/SDK.
-- `modules/<context>/commands/<use-case>/`  — write side: command + handler + controllers + DTOs (vertical slice).
-- `modules/<context>/queries/<use-case>/`   — read side: query + query-handler (may hit DB directly).
-- `modules/<context>/application/event-handlers/` — domain-event handlers.
-- `modules/<context>/database/`      — repository, persistence model, mapper.
-- `modules/<context>/<context>.module.ts` — Nest module wiring (DI tokens → implementations).
+- `src/modules/<context>/`     — one bounded context == one mini-app. NO cross-module imports.
+- `src/libs/`                  — shared kernel: ddd/, db/, ports/, exceptions/, contracts/, config/, observability/, utils/, decorators/.
+- `src/modules/<context>/domain/`        — entities, value objects (flat), events/ subfolder, domain errors. ZERO framework/IO/SDK.
+- `src/modules/<context>/commands/<use-case>/`  — write side: command + handler + controllers + DTOs (vertical slice).
+- `src/modules/<context>/queries/<use-case>/`   — read side: query + query-handler (may hit DB directly).
+- `src/modules/<context>/application/event-handlers/` — domain-event handlers.
+- `src/modules/<context>/database/`      — repository, persistence model, mapper.
+- `src/modules/<context>/<context>.module.ts` — Nest module wiring (DI tokens → implementations).
 
 ## The four layers (dependencies point INWARD only)
 Interface Adapters → Application → Domain.  Infrastructure sits on the outer ring, implementing Application ports.
@@ -84,9 +84,11 @@ Interface Adapters → Application → Domain.  Infrastructure sits on the outer
 - Test:       `pnpm test`            (unit + integration, Jest)
 - Acceptance: `pnpm test:e2e`        (Cucumber/Gherkin + supertest)
 - Lint:       `pnpm lint`            (ESLint, incl. boundaries + naming)
-- Arch check: `pnpm arch`            (dependency-cruiser — layering + cross-module)
+- Arch check: `pnpm arch`            (dependency-cruiser + scripts/check-architecture.sh)
+- Map check:  `pnpm map:check`       (generated architecture map is current; `pnpm map` regenerates)
+- API check:  `pnpm openapi:check`   (committed OpenAPI is current; `pnpm openapi:emit` regenerates)
 - Scaffold:   `pnpm plop`            (interactive) or `pnpm plop slice -- --context billing --name create-invoice`
-- Migrate:    `pnpm migrate:up` / `pnpm migrate:down`
+- Migrate:    `pnpm migrate` / `pnpm migrate:down` / `pnpm migrate:create`
 
 ## How to add a new use case (the ONLY recipe)
 1. `pnpm plop slice -- --context <context> --name <verb-noun>`  (e.g. `--name create-invoice`).
@@ -97,10 +99,10 @@ Interface Adapters → Application → Domain.  Infrastructure sits on the outer
 5. `pnpm arch && pnpm lint && pnpm test` must pass before you open a PR.
 
 ## DO
-- Return domain errors as `Result<T, E>` (oxide.ts `Ok`/`Err`). Map them to HTTP status in the controller via `.match()`.
+- Return domain errors as `Result<T, E>` (oxide.ts `Ok`/`Err`). In the controller, `.match()` renders each business rejection as an outcome body with its stable snake_case `status` code from the use-case spec catalog (`BusinessOutcomeException`); technical failures throw to the global filter (error envelope).
 - Keep the persistence model separate from the domain entity; cross with the mapper.
 - Publish aggregate events INSIDE the DB transaction (`repo.save` calls `publishEvents()`).
-- Inject `DateTimeProvider` and `IdGenerator` into domain factories.
+- Time and ids enter at the edge: the handler passes `new Date()` and `repo.nextId()` into domain factories — the domain never reads the clock or generates ids.
 
 ## DO NOT
 - DO NOT import one module from another. Use a command/query/event.
@@ -162,7 +164,7 @@ module.exports = {
       name: 'domain-stays-pure',
       comment: 'Domain must not import framework, IO, ORM, or any SDK.',
       severity: 'error',
-      from: { path: 'modules/[^/]+/domain' },
+      from: { path: 'src/modules/[^/]+/domain' },
       to: {
         path: [
           '@nestjs',
@@ -178,18 +180,18 @@ module.exports = {
       name: 'application-no-infra-concretes',
       comment: 'Application depends on ports (interfaces), not on database/ adapters.',
       severity: 'error',
-      from: { path: 'modules/[^/]+/(commands|queries|application)' },
-      to: { path: 'modules/[^/]+/(database|adapters)' },
+      from: { path: 'src/modules/[^/]+/(commands|queries|application)' },
+      to: { path: 'src/modules/[^/]+/(database|adapters)' },
     },
     {
       name: 'no-cross-module-imports',
       comment: 'Modules talk via CommandBus/QueryBus/EventBus only — never direct imports.',
       severity: 'error',
-      from: { path: 'modules/([^/]+)/.+' },
+      from: { path: 'src/modules/([^/]+)/.+' },
       to: {
-        path: 'modules/([^/]+)/.+',
+        path: 'src/modules/([^/]+)/.+',
         // import is allowed only when the captured module name matches (same module)
-        pathNot: 'modules/$1/.+',
+        pathNot: 'src/modules/$1/.+',
       },
     },
     {
@@ -215,21 +217,23 @@ module.exports = {
 };
 ```
 
-Run with `pnpm arch` → `depcruise modules libs --config .dependency-cruiser.cjs`.
+Run with `pnpm arch` → `depcruise src/modules src/libs --config .dependency-cruiser.cjs && bash scripts/check-architecture.sh` (the ONE canonical definition; the grep script is wired in `13-harness-engineering.md`).
 
 ### A.4.2 ESLint boundary config (sketch)
 
 `eslint-plugin-boundaries` enforces the same layering at lint time (faster feedback than the full graph crawl). Tag each layer, then declare which tag may depend on which.
+
+> NestJS 11 scaffolds ESLint 9 flat config (`eslint.config.mjs`) — port these rules (shown eslintrc-style for brevity) into it.
 
 ```json
 {
   "plugins": ["boundaries"],
   "settings": {
     "boundaries/elements": [
-      { "type": "domain",         "pattern": "modules/*/domain" },
-      { "type": "application",    "pattern": "modules/*/(commands|queries|application)" },
-      { "type": "infrastructure", "pattern": "modules/*/(database|adapters)" },
-      { "type": "interface",      "pattern": "modules/*/**/*.(http|cli|message).controller.ts" }
+      { "type": "domain",         "pattern": "src/modules/*/domain" },
+      { "type": "application",    "pattern": "src/modules/*/{commands,queries,application}" },
+      { "type": "infrastructure", "pattern": "src/modules/*/{database,adapters}" },
+      { "type": "interface",      "pattern": "src/modules/*/**/*.{http,cli,message}.controller.ts" }
     ]
   },
   "rules": {
@@ -254,13 +258,13 @@ A filename-pattern rule (`eslint-plugin-check-file` or a small custom rule) keep
 {
   "rules": {
     "check-file/filename-naming-convention": ["error", {
-      "modules/**/domain/**/*.entity.ts": "KEBAB_CASE",
-      "modules/**/commands/**/*.command.ts": "KEBAB_CASE",
-      "modules/**/commands/**/*.service.ts": "KEBAB_CASE",
-      "modules/**/**/*.{http,cli,message}.controller.ts": "KEBAB_CASE",
-      "modules/**/**/*.{request,response}.dto.ts": "KEBAB_CASE"
+      "src/modules/**/domain/**/*.entity.ts": "KEBAB_CASE",
+      "src/modules/**/commands/**/*.command.ts": "KEBAB_CASE",
+      "src/modules/**/commands/**/*.service.ts": "KEBAB_CASE",
+      "src/modules/**/**/*.{http,cli,message}.controller.ts": "KEBAB_CASE",
+      "src/modules/**/**/*.{request,response}.dto.ts": "KEBAB_CASE"
     }],
-    "check-file/folder-naming-convention": ["error", { "modules/**/": "KEBAB_CASE" }]
+    "check-file/folder-naming-convention": ["error", { "src/modules/**/": "KEBAB_CASE" }]
   }
 }
 ```
@@ -274,7 +278,7 @@ Wire the guardrails into both a fast local hook and CI so a violation is caught 
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
-    "arch": "depcruise modules libs --config .dependency-cruiser.cjs",
+    "arch": "depcruise src/modules src/libs --config .dependency-cruiser.cjs && bash scripts/check-architecture.sh",
     "test": "jest",
     "verify": "pnpm typecheck && pnpm lint && pnpm arch && pnpm test"
   }
@@ -296,6 +300,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify           # typecheck + lint + arch + test — all must pass
+      - run: pnpm map:check        # generated architecture map is current
+      - run: pnpm openapi:check    # committed OpenAPI matches the code
       - run: pnpm test:e2e
 ```
 
@@ -308,6 +314,23 @@ One command emits an identical, correct vertical slice every time. This is what 
 ```javascript
 // plopfile.cjs
 module.exports = function (plop) {
+  plop.setGenerator('module', {
+    description: 'A bounded-context skeleton: src/modules/<context>/ layer folders + module file',
+    prompts: [
+      { type: 'input', name: 'context', message: 'Bounded context (kebab-case), e.g. billing' },
+    ],
+    actions: [
+      { type: 'add', path: 'src/modules/{{context}}/{{context}}.module.ts',                      templateFile: 'tools/plop-templates/module.hbs' },
+      // empty layer folders (domain/, domain/events/, commands/, queries/, application/ports/,
+      // application/event-handlers/, database/) via .gitkeep adds
+      { type: 'add', path: 'src/modules/{{context}}/domain/events/.gitkeep' },
+      { type: 'add', path: 'src/modules/{{context}}/commands/.gitkeep' },
+      { type: 'add', path: 'src/modules/{{context}}/queries/.gitkeep' },
+      { type: 'add', path: 'src/modules/{{context}}/application/ports/.gitkeep' },
+      { type: 'add', path: 'src/modules/{{context}}/application/event-handlers/.gitkeep' },
+      { type: 'add', path: 'src/modules/{{context}}/database/.gitkeep' },
+    ],
+  });
   plop.setGenerator('slice', {
     description: 'A write-side vertical slice: command + handler + controller + DTOs + test',
     prompts: [
@@ -315,13 +338,16 @@ module.exports = function (plop) {
       { type: 'input', name: 'name',    message: 'Use case (verb-noun, kebab-case), e.g. create-invoice' },
     ],
     actions: [
-      { type: 'add', path: 'modules/{{context}}/commands/{{name}}/{{name}}.command.ts',          templateFile: 'tools/plop-templates/command.hbs' },
-      { type: 'add', path: 'modules/{{context}}/commands/{{name}}/{{name}}.service.ts',          templateFile: 'tools/plop-templates/service.hbs' },
-      { type: 'add', path: 'modules/{{context}}/commands/{{name}}/{{name}}.http.controller.ts',  templateFile: 'tools/plop-templates/http-controller.hbs' },
-      { type: 'add', path: 'modules/{{context}}/commands/{{name}}/{{name}}.request.dto.ts',      templateFile: 'tools/plop-templates/request-dto.hbs' },
-      { type: 'add', path: 'modules/{{context}}/commands/{{name}}/{{name}}.service.spec.ts',     templateFile: 'tools/plop-templates/service-spec.hbs' },
+      { type: 'add', path: 'src/modules/{{context}}/commands/{{name}}/{{name}}.command.ts',          templateFile: 'tools/plop-templates/command.hbs' },
+      { type: 'add', path: 'src/modules/{{context}}/commands/{{name}}/{{name}}.service.ts',          templateFile: 'tools/plop-templates/service.hbs' },
+      { type: 'add', path: 'src/modules/{{context}}/commands/{{name}}/{{name}}.http.controller.ts',  templateFile: 'tools/plop-templates/http-controller.hbs' },
+      { type: 'add', path: 'src/modules/{{context}}/commands/{{name}}/{{name}}.request.dto.ts',      templateFile: 'tools/plop-templates/request-dto.hbs' },
+      { type: 'add', path: 'src/modules/{{context}}/commands/{{name}}/{{name}}.response.dto.ts',     templateFile: 'tools/plop-templates/response-dto.hbs' },
+      { type: 'add', path: 'src/modules/{{context}}/commands/{{name}}/{{name}}.service.spec.ts',     templateFile: 'tools/plop-templates/service-spec.hbs' },
     ],
   });
+  // Query slices mirror this with query.hbs / query-handler.hbs templates emitting into
+  // src/modules/{{context}}/queries/{{name}}/.
 };
 ```
 
@@ -336,7 +362,7 @@ pnpm plop slice -- --context billing --name create-invoice
 A handler template (`tools/plop-templates/service.hbs`) bakes the correct shape so the agent only fills the body — see Half B and `04-application-layer.md` for the full handler pattern.
 
 ```typescript
-// modules/{{context}}/commands/{{name}}/{{pascalCase name}}.service.ts (template output)
+// src/modules/{{context}}/commands/{{name}}/{{name}}.service.ts (template output)
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Result, Ok, Err } from 'oxide.ts';
 import { {{pascalCase name}}Command } from './{{name}}.command';
@@ -366,10 +392,10 @@ export class {{pascalCase name}}Service
 
 | Path | Purpose | Typical Contents | Priority |
 | --- | --- | --- | --- |
-| `modules/ai-agent/domain/` | Pure agent domain | `agent.entity.ts`, `conversation.entity.ts` (AggregateRoot), `message.entity.ts`, `tool.value-object.ts`, `prompt-template.value-object.ts`, `*.domain-event.ts`, `agent.errors.ts` | Required |
+| `modules/ai-agent/domain/` | Pure agent domain | `agent.entity.ts`, `conversation.entity.ts` (AggregateRoot), `message.value-object.ts`, `tool.value-object.ts`, `prompt-template.value-object.ts` (VOs flat in `domain/`), `events/*.domain-event.ts`, `agent.errors.ts` | Required |
 | `modules/ai-agent/commands/` | Write use cases | `send-message/`, `run-agent-turn/` (command + handler + controller + DTOs) | Required |
 | `modules/ai-agent/queries/` | Read side | `get-conversation/` (query + query-handler) | Optional |
-| `modules/ai-agent/application/ports/` | Abstractions | `llm.port.ts`, `tool-registry.port.ts`, `conversation.repository.port.ts` | Required |
+| `modules/ai-agent/application/ports/` | Abstractions | `tool-registry.port.ts`, `conversation.repository.port.ts` (the canonical `LlmPort` lives in `libs/ports/llm.port.ts`) | Required |
 | `modules/ai-agent/adapters/` | Anti-corruption layer | `claude-llm.adapter.ts` (implements `LlmPort` with `@anthropic-ai/sdk`) | Required |
 | `modules/ai-agent/database/` | Persistence | `conversation.repository.ts`, `conversation.mapper.ts`, persistence model | Required |
 | `modules/ai-agent/evals/` | Offline quality gates | golden-set fixtures, scenario specs, `eval.runner.ts`, regression thresholds | Prod-only |
@@ -384,8 +410,8 @@ Pure TypeScript — no `@nestjs/*`, no SDK, no IO. Time and ids are injected.
 // modules/ai-agent/domain/conversation.entity.ts
 import { AggregateRoot } from '@libs/ddd/aggregate-root.base';
 import { Result, Ok, Err } from 'oxide.ts';
-import { Message } from './message.entity';
-import { MessageAddedDomainEvent } from './message-added.domain-event';
+import { Message } from './message.value-object';
+import { MessageAddedDomainEvent } from './events/message-added.domain-event';
 import { ConversationClosedError, EmptyMessageError } from './agent.errors';
 
 interface ConversationProps {
@@ -419,17 +445,17 @@ export class Conversation extends AggregateRoot<ConversationProps> {
 ```
 
 - `Agent` (entity): identity, equality by id, holds which `PromptTemplate` and tool set it may use; `static create()` factory.
-- `Message` (entity): role (`user`/`assistant`/`tool`), text/tool-call payload, ordering.
+- `Message` (value object): role (`user`/`assistant`/`tool`), text/tool-call payload, ordering.
 - `Tool` (value object): immutable `{ name, description, inputSchema }`, structural equality, guard-validated in the constructor.
 - `PromptTemplate` (value object): immutable template + variable contract; renders deterministically (no clock/random inside).
 - Domain errors (`agent.errors.ts`): `ConversationClosedError`, `EmptyMessageError`, `ToolNotAllowedError` — RETURNED via `Result`, never thrown.
 
 ## B.3 `LlmPort` — the interface the application depends on
 
-The application layer knows only this interface. It never imports the SDK. The model is a *parameter*, so a handler chooses `claude-sonnet-4-6` (default), `claude-opus-4-8` (hard reasoning), `claude-haiku-4-5-20251001` (cheap), or `claude-fable-5` (most capable) without any code change in the adapter.
+The application layer knows only this interface. It never imports the SDK. The model is an OPTIONAL *parameter* — omitted, the adapter defaults from config (`ANTHROPIC_MODEL`, default `claude-sonnet-4-6`); a handler may still choose `claude-opus-4-8` (hard reasoning), `claude-haiku-4-5-20251001` (cheap), or `claude-fable-5` (most capable) without any code change in the adapter.
 
 ```typescript
-// modules/ai-agent/application/ports/llm.port.ts
+// libs/ports/llm.port.ts
 import { Result } from 'oxide.ts';
 
 export const LLM_PORT = Symbol('LlmPort'); // DI token
@@ -453,7 +479,7 @@ export interface LlmMessage {
 }
 
 export interface LlmCompletionRequest {
-  readonly model: LlmModel;
+  readonly model?: LlmModel; // OPTIONAL — adapter defaults from config (ANTHROPIC_MODEL)
   readonly system: string;
   readonly messages: LlmMessage[];
   readonly tools?: LlmToolDef[];
@@ -496,22 +522,26 @@ import Anthropic from '@anthropic-ai/sdk';
 import { Result, Ok, Err } from 'oxide.ts';
 import {
   LlmPort, LlmCompletionRequest, LlmCompletion, LlmRefusalError, LlmToolCall,
-} from '../application/ports/llm.port';
+} from '@libs/ports/llm.port';
 import { LOGGER_PORT, LoggerPort } from '@libs/ports/logger.port';
+import { AppConfigService } from '@libs/config'; // zod-validated wrapper over @nestjs/config
 
 @Injectable()
 export class ClaudeLlmAdapter implements LlmPort {
   private readonly client: Anthropic;
 
-  constructor(@Inject(LOGGER_PORT) private readonly logger: LoggerPort) {
-    // API key from @nestjs/config (zod-validated) — never hard-coded.
-    this.client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  constructor(
+    @Inject(LOGGER_PORT) private readonly logger: LoggerPort,
+    private readonly config: AppConfigService,
+  ) {
+    // API key from the zod-validated config service — never process.env here (07: only libs/config reads env).
+    this.client = new Anthropic({ apiKey: this.config.anthropicApiKey });
   }
 
   async complete(req: LlmCompletionRequest): Promise<Result<LlmCompletion, LlmRefusalError>> {
     try {
       const res = await this.client.messages.create({
-        model: req.model,              // 'claude-sonnet-4-6' default — chosen by the caller
+        model: req.model ?? this.config.anthropicModel, // caller may override; default from config (ANTHROPIC_MODEL)
         max_tokens: req.maxTokens,
         system: req.system,
         messages: req.messages.map((m) => ({
@@ -600,7 +630,7 @@ Both folders are optional for a project that ships only a thin LLM feature; add 
 
 - [ ] `@anthropic-ai/sdk` imported in exactly one file: `claude-llm.adapter.ts` (enforced by dependency-cruiser).
 - [ ] Domain (`Agent`, `Conversation`, `Message`, `Tool`, `PromptTemplate`) is pure — no SDK, no `@nestjs/*`, injected time/ids.
-- [ ] `LlmPort` speaks domain types; model is a parameter (`claude-sonnet-4-6` default).
+- [ ] `LlmPort` speaks domain types; model is an optional parameter (adapter defaults from config `ANTHROPIC_MODEL`, `claude-sonnet-4-6`).
 - [ ] Refusals returned as `Result`; network/technical failures thrown.
 - [ ] Tool loop runs Command → Event → Command, never command→command.
 - [ ] `evals/` + `guardrails/` present when the agent is autonomous or user-facing; omitted for thin features.

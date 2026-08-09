@@ -26,7 +26,7 @@ export class CreateDressService implements ICommandHandler<CreateDressCommand, C
 
     // Uniqueness precondition; the DB unique constraint backs it against races.
     const existing = await this.dressRepo.findOneByCode(code.unpack());
-    if (existing) return Err(new DressCodeAlreadyExistsError());
+    if (existing) return Err(new DressCodeAlreadyExistsError(code.unpack()));
 
     const dress = DressEntity.create(
       {

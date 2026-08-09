@@ -64,7 +64,8 @@ After approval, generate in this order and nothing else:
 
 1. `AGENTS.md` (and/or `CLAUDE.md` per the user's agent) — from the template, slots filled.
 2. `feature_list.json` — seeded with REAL features of this repo (inspect the code; placeholder
-   entries only for an empty repo).
+   entries only for an empty repo); when a brief/ACs exist, seed the optional `acceptance`
+   field from them — code inspection cannot produce ACs, so otherwise leave it `[]`.
 3. `init.sh` — explicit commands for THIS repo, `set -euo pipefail`, exits non-zero on any gate
    failure, ends by printing the startup path.
 4. `progress.md`, `session-handoff.md`, `clean-state-checklist.md` — from templates.

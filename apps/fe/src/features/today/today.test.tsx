@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import userEvent from '@testing-library/user-event';
@@ -13,6 +14,7 @@ import {
   resetRentals,
   seedTodayBoard,
 } from '@/test/msw/handlers/rentals';
+import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/render';
 
 import { localDateIso } from './lib/local-date';
@@ -134,6 +136,49 @@ test('the return dialog settles fees + refund and sends only filled amounts', as
     rentalId: 'rental-9',
     body: { lateFee: 200000, depositRefund: 2800000, note: 'Trễ 1 ngày' },
   });
+});
+
+test('a rejected_pickup_not_allowed outcome names the current status and refreshes', async () => {
+  seedTodayBoard({ dueOut: [makeTodayRental()] });
+  // Another device handed this rental out first: the board is stale, and the staff needs to know
+  // WHICH state it is in now — not a generic "already processed" (ADR 0001 §4).
+  server.use(
+    http.post('/api/v1/rentals/:id/pickup', () =>
+      HttpResponse.json(
+        { status: 'rejected_pickup_not_allowed', currentStatus: 'out' },
+        { status: 422 },
+      ),
+    ),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Đã giao váy' }));
+
+  expect(
+    await screen.findByText('Không giao được: lượt thuê đang ở trạng thái "Đang thuê".'),
+  ).toBeInTheDocument();
+});
+
+test('a rejected_rental_not_found outcome on return closes the dialog', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  server.use(
+    http.post('/api/v1/rentals/:id/return', () =>
+      HttpResponse.json({ status: 'rejected_rental_not_found' }, { status: 422 }),
+    ),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
+
+  expect(
+    await screen.findByText('Lượt thuê này không còn tồn tại. Bảng đã được làm mới.'),
+  ).toBeInTheDocument();
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Xác nhận trả váy' })).not.toBeInTheDocument(),
+  );
 });
 
 test('a non-numeric amount blocks the settlement with a translated error', async () => {

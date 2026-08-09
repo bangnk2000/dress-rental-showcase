@@ -38,8 +38,8 @@
   "cancel": {
     "confirm": "Cancel this rental? The dresses' calendar will be freed for other bookings.",
     "success": "Rental cancelled.",
-    "alreadyProcessed": "This rental is no longer waiting to be handed out.",
-    "error": "Something went wrong, please retry."
+    "error": "Something went wrong, please retry.",
+    "notAllowed": "Cannot cancel: the rental is \"{{status}}\"."
   },
   "payments": {
     "title": "Rental payments",
@@ -76,7 +76,9 @@
       "endBeforeStart": "The return date must be on or after the pick-up date",
       "notesTooLong": "Notes must be at most 2000 characters",
       "noDresses": "Please select at least one dress",
-      "unavailable": "A dress is already rented in this date range (including cleaning time). Change the dates or pick another dress."
+      "dressUnavailable": "A dress is already rented in this date range (including cleaning time). Change the dates or pick another dress.",
+      "dressRetired": "A dress is retired. Remove it from the rental.",
+      "dressNotFound": "A dress is no longer in the catalog. Please pick again."
     }
   },
   "picker": {
@@ -87,5 +89,8 @@
     "remove": "Remove",
     "selectedEmpty": "No dresses selected yet",
     "total": "Rental subtotal"
+  },
+  "errors": {
+    "rentalNotFound": "This rental no longer exists. The list has been refreshed."
   }
 }

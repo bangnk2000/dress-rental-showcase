@@ -27,14 +27,19 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiErrorResponseDto,
   AvailabilityResponseDto,
   BookedRangeListResponseDto,
+  CancelRentalOutcomeDto,
   CheckAvailabilityHttpControllerCheckParams,
+  CreateRentalOutcomeDto,
   CreateRentalRequestDto,
   GetTodayBoardHttpControllerGetParams,
   IdResponse,
   ListRentalsHttpControllerListParams,
+  PickupRentalOutcomeDto,
   RentalListResponseDto,
+  ReturnRentalOutcomeDto,
   ReturnRentalRequestDto,
   TodayBoardResponseDto
 } from '../model';
@@ -81,7 +86,7 @@ export const createRentalHttpControllerCreate = (
 
 
 
-export const getCreateRentalHttpControllerCreateMutationOptions = <TError = void,
+export const getCreateRentalHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto | CreateRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRentalHttpControllerCreate>>, TError,{data: CreateRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createRentalHttpControllerCreate>>, TError,{data: CreateRentalRequestDto}, TContext> => {
 
@@ -110,12 +115,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateRentalHttpControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof createRentalHttpControllerCreate>>>
     export type CreateRentalHttpControllerCreateMutationBody = CreateRentalRequestDto
-    export type CreateRentalHttpControllerCreateMutationError = void
+    export type CreateRentalHttpControllerCreateMutationError = ApiErrorResponseDto | CreateRentalOutcomeDto
 
     /**
  * @summary Create a rental booking 1..n dresses for a date range
  */
-export const useCreateRentalHttpControllerCreate = <TError = void,
+export const useCreateRentalHttpControllerCreate = <TError = ApiErrorResponseDto | CreateRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRentalHttpControllerCreate>>, TError,{data: CreateRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createRentalHttpControllerCreate>>,
@@ -291,7 +296,7 @@ export const cancelRentalHttpControllerCancel = (
 
 
 
-export const getCancelRentalHttpControllerCancelMutationOptions = <TError = void,
+export const getCancelRentalHttpControllerCancelMutationOptions = <TError = CancelRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext> => {
 
@@ -320,12 +325,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CancelRentalHttpControllerCancelMutationResult = NonNullable<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>>
 
-    export type CancelRentalHttpControllerCancelMutationError = void
+    export type CancelRentalHttpControllerCancelMutationError = CancelRentalOutcomeDto
 
     /**
  * @summary Cancel a booked rental — frees the calendar, keeps history
  */
-export const useCancelRentalHttpControllerCancel = <TError = void,
+export const useCancelRentalHttpControllerCancel = <TError = CancelRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>,
@@ -353,7 +358,7 @@ export const pickupRentalHttpControllerPickup = (
 
 
 
-export const getPickupRentalHttpControllerPickupMutationOptions = <TError = void,
+export const getPickupRentalHttpControllerPickupMutationOptions = <TError = PickupRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string}, TContext> => {
 
@@ -382,12 +387,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type PickupRentalHttpControllerPickupMutationResult = NonNullable<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>>
 
-    export type PickupRentalHttpControllerPickupMutationError = void
+    export type PickupRentalHttpControllerPickupMutationError = PickupRentalOutcomeDto
 
     /**
  * @summary Mark a booked rental as handed out to the customer
  */
-export const usePickupRentalHttpControllerPickup = <TError = void,
+export const usePickupRentalHttpControllerPickup = <TError = PickupRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>,
@@ -418,7 +423,7 @@ export const returnRentalHttpControllerSettle = (
 
 
 
-export const getReturnRentalHttpControllerSettleMutationOptions = <TError = void,
+export const getReturnRentalHttpControllerSettleMutationOptions = <TError = ApiErrorResponseDto | ReturnRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>, TError,{id: string;data: ReturnRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>, TError,{id: string;data: ReturnRentalRequestDto}, TContext> => {
 
@@ -447,12 +452,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ReturnRentalHttpControllerSettleMutationResult = NonNullable<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>>
     export type ReturnRentalHttpControllerSettleMutationBody = ReturnRentalRequestDto
-    export type ReturnRentalHttpControllerSettleMutationError = void
+    export type ReturnRentalHttpControllerSettleMutationError = ApiErrorResponseDto | ReturnRentalOutcomeDto
 
     /**
  * @summary Return a rental: settle the deposit and record late/damage fees
  */
-export const useReturnRentalHttpControllerSettle = <TError = void,
+export const useReturnRentalHttpControllerSettle = <TError = ApiErrorResponseDto | ReturnRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>, TError,{id: string;data: ReturnRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof returnRentalHttpControllerSettle>>,

@@ -1,5 +1,85 @@
 # Session Handoff
 
+## 2026-08-09 (19) — `infra/outcome-model` + `infra/invariant-proof-e2e` = pass (both MUST gaps closed)
+
+- Done (design gate first, per the process): [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md)
+  approved before any code — decision, full outcome catalog (§3), UI state matrix (§4), rejected
+  alternatives. `docs/SRS-dress-rental.md` (FR-AUTH-02, FR-RENT-02, BR-1) and the rentals / catalog /
+  identity / qr-admin design docs were re-synced in the SAME change, and `docs/design/README.md`
+  gained **B2.1** (outcome catalog before code, `useCaseSpec` + `outcomes` inputs, spec-file/ADR
+  conventions) plus an ADR index.
+- Done (`infra/outcome-model`): ONE wire rule — returned `Result` Err → outcome body
+  `{ status, ...payload }` at 422/403; thrown → `{ error: { code, message, details?, correlationId } }`.
+  `libs/exceptions` gained `BusinessOutcomeException`, `ErrorDetail`, `ApiErrorResponseDto`; the
+  global filter renders exactly those two shapes and hides internals on 500. Nine command
+  controllers map each domain error to its own snake_case code with a typed payload
+  (`dressIds` / `currentStatus` / `dressCode`) and declare `@ApiResponse({ status: 422, type })`.
+  The EXCLUDE race is translated in `rental.repository` → `RentalItemsOverlapError` and converted in
+  `create-rental.service` back to the SAME `rejected_dress_unavailable` (re-queried ids), so one
+  business rule has one code. Login/refresh reject as outcomes, so **401 now means only "the guard
+  rejected the access token"**. FE: `src/api/errors.ts` is the single `mapApiError` seam, the three
+  `features/*/lib/is-conflict-error.ts` files are deleted, every code has a designed state + vi/en
+  key; `apps/qr-admin/src/api/errors.ts` is the same seam (`error-message.ts` gone).
+- Done (`infra/invariant-proof-e2e`): `apps/be/test/` — 22 tests on real Postgres via
+  `pnpm --filter be test:e2e`, covering the overlap pre-check, the cleaning buffer, a concurrent
+  race ([201, 422] with one row), a raw INSERT that bypasses the app, catalog/staff UNIQUE + status
+  CHECKs, and that 404/401 stay fault envelopes. CI has a postgres service; `init.sh` calls the real
+  gate; `apps/be` lint now also covers `test/`.
+- Done: `apps/qr-admin/AGENTS.md` created (the app-level contract that was missing), with its four
+  deliberate deviations (vi-only, no PWA/router, no plop, hand-written error copy).
+- Verification: `pnpm --filter be test` 82 · `pnpm --filter be test:e2e` 22 · `pnpm --filter fe test`
+  53 · `pnpm --filter qr-admin test` 13 · root `check`, `lint`, `arch` (every rule except the
+  freshness item), `pnpm --filter fe build`, `pnpm --filter qr-admin build` all green. `pnpm contract`
+  re-run is idempotent (md5 identical).
+- Watch out (read before the next session): **`contract:check` and the arch freshness item are red
+  until this change is committed** — they diff the generated layer against HEAD, and the contract +
+  both clients were regenerated here. Commit BE + `packages/contract` + `apps/fe/src/api/generated` +
+  `apps/qr-admin/src/api/generated` together and they go green. Playwright was NOT run (needs
+  installed browsers + a running stack) and its vi-locale happy path may need the new outcome copy.
+  In this environment pnpm 11 wants to purge `node_modules` before every script; the workaround used
+  was `pnpm --config.verifyDepsBeforeRun=false <script>`.
+- Next: no tracked backlog. Strongest candidates — (1) a first release record through
+  `docs/spec/init-release/` into `docs/releases/<id>/`, since the ledger is all `pass`; (2) an
+  `Idempotency-Key` ADR if double-submit needs more than the DB constraint; (3) migrate Deviation #4
+  (cross-context table reads) to contract queries if a schema change ever bites.
+
+## 2026-08-09 (18) — spec re-sync + harness docs caught up (no product code)
+
+- Done: `docs/spec/` re-synced from upstream `knowledge-system` commit `815fa0f`. The four existing
+  sets are refreshed byte-for-byte and two NEW sets are vendored — `init-feature-spec` (use-case
+  spec + outcome catalog + UI state matrix, approved before code) and `init-release` (readiness,
+  release/rollback plan, compatibility matrix → `docs/releases/<release-id>/`). New
+  `docs/spec/README.md` is the vendor manifest: provenance, what each set owns, the four upstream-only
+  `ddd-*` docs that are deliberately NOT vendored, and the exact re-sync recipe including the single
+  local delta (8 rewritten links).
+- Done: stale harness/init docs updated to the repo as-committed — root `AGENTS.md` (spec entry
+  points incl. `apps/qr-admin` → init-react, design gate before `in-progress`, optional `acceptance`
+  field, gate list that no longer implies a green `be test:e2e`), `clean-state-checklist.md`
+  (both generated clients, design as-built note, "don't patch vendored spec"), `claude-progress.md`
+  (backfilled sessions 4–17, which existed only in this handoff), root `README.md` doc index (+ QR
+  SRS, + spec index), `init.sh` and `ci.yml` comments (dead "README.md step 2/4" pointers replaced;
+  the `test:e2e` no-op is now stated instead of implied).
+- Done: the spec change with teeth is the **outcome model** — a business rejection must leave BE as
+  an outcome body `{ status: '<snake_case_code>' }` at 422/403 via `BusinessOutcomeException`, faults
+  as `{ error: { code, message, details?, correlationId } }`, and FE must read wire shapes in exactly
+  one `mapApiError` seam. This repo does neither (409 + flat `GENERIC.CONFLICT`; three feature-local
+  `is-conflict-error.ts` + `qr-admin/src/api/error-message.ts` branching on status). Recorded as
+  `apps/be/AGENTS.md` GAP #6 and `apps/fe/AGENTS.md` GAP #8, each naming the other.
+- Verification: doc-only session, no source or generated artifact touched — `packages/contract/`,
+  `apps/fe/src/api/generated/` and `apps/qr-admin/src/api/generated/` are untouched, so no root gate
+  outcome can change. `feature_list.json` gained only its `rules` line (acceptance + design gate); no
+  entry was added, since nothing shipped. Vendored files verified identical to upstream
+  (`diff -rq` per set) except the 8 documented link rewrites.
+- Next: unchanged top candidate — spec gap #5: real-Postgres invariant proof for
+  `rental_items_no_overlap` (compose/testcontainers) + CI postgres service + the missing
+  `pnpm --filter be test:e2e` script. Then the outcome model (BE #6 + FE #8) as ONE cross-contract
+  feature: outcome catalog per use case → `BusinessOutcomeException` + envelope + `@ApiResponse` →
+  `pnpm contract` → FE `mapApiError` + per-outcome copy. Do not ship half of it.
+- Watch out: `docs/spec/` is vendored — never "improve" a file there; fix it upstream in
+  `knowledge-system` and re-sync per `docs/spec/README.md`. `apps/qr-admin` still has no app-level
+  `AGENTS.md`; until it gets one, `apps/fe/AGENTS.md` ring/contract rules apply to it minus
+  i18n/PWA/routing. Creating that file is a small, worthwhile next doc task.
+
 ## 2026-08-06 (17) — `qr/styled-svg-rendering` = pass
 
 - Done: downloaded and previewed QR SVGs now use the shop's fixed red-pink styling: red-pink QR

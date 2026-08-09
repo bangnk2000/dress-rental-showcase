@@ -107,5 +107,8 @@
       "conflict": "Busy from {{start}} to {{end}} (held until the end of {{blockedUntil}})",
       "error": "Could not check availability. Please try again."
     }
+  },
+  "errors": {
+    "notFound": "This dress is no longer in the catalog. The list has been refreshed."
   }
 }

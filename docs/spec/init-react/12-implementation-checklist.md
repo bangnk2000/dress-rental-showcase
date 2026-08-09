@@ -61,7 +61,11 @@ Per `03-ui-layer.md`.
       `lib/utils.ts` (cn), CSS variables + `.dark` block.
 - [ ] `pnpm dlx shadcn@latest add button input form dialog table badge toast` (what the first
       feature needs — not the whole registry).
-- [ ] Build the kernel feedback set: `spinner.tsx`, `empty-state.tsx`, `error-fallback.tsx`.
+      - [ ] Edit `components/ui/form.tsx` so `FormMessage` passes `error.message` through `t()` —
+            schema messages are i18n KEYS, not text.
+- [ ] Build the kernel feedback set: `spinner.tsx`, `empty-state.tsx`, `error-fallback.tsx`, plus
+      `layout/page-header.tsx` and `src/lib/format.ts` (`formatCurrency`, `formatDate`) — the
+      example slice (11) imports both.
 - [ ] Write `docs/design/ui-foundation.md` (`14-design-first.md` §3): density & device context
       (which screens are mobile-first), navigation model (ADR-worthy), shared patterns
       (table/form/confirm/toast/skeleton policies), i18n layout constraints. Slices assemble
@@ -79,6 +83,8 @@ Per `04-data-layer.md`.
       `useSuspenseQuery: true`, `clean: true`; optional second `zod` output with
       `fileExtension: '.zod.ts'`.
 - [ ] `pnpm generate:api` → commit `openapi.json` + `src/api/generated/` together.
+- [ ] Write `src/api/errors.ts` — `mapApiError` + `isServerOrNetworkError` (04 §3) — before the
+      QueryClient defaults that reference it.
 - [ ] QueryClient defaults in `app/providers.tsx`: `staleTime: 60_000`, `retry: 1`,
       `throwOnError` for 5xx/network.
 - [ ] Wire the CI freshness check: `pnpm generate:api && git diff --exit-code src/api/generated`.
@@ -101,12 +107,14 @@ after — the first feature is built under the harness.
       feature") + thin `CLAUDE.md`.
 - [ ] `feature_list.json` seeded from the planned feature table (section 2 of the 00-prompt
       output), all `"todo"`.
-- [ ] `init.sh`: install → check → lint → arch → test → build + harness-file presence check.
+- [ ] `init.sh`: install → generated-layer freshness (`pnpm generate:api && git diff --exit-code
+      src/api/generated openapi.json`) → check → lint → arch → test → build + harness-file
+      presence check.
 - [ ] `session-handoff.md`, `claude-progress.md`, `clean-state-checklist.md` skeletons.
 - [ ] `eslint-plugin-boundaries` ring rules (`default: 'disallow'`) + `no-restricted-imports`
       bans (axios outside api/, deep feature imports, app/ imports).
-- [ ] `scripts/check-architecture.sh` (the five checks in `08-ai-agent-first.md` §3c) wired as
-      `pnpm arch`.
+- [ ] `scripts/check-architecture.sh` (the SEVEN checks specified in `13-harness-engineering.md`
+      §5 — a superset of `08-ai-agent-first.md` §3c) wired as `pnpm arch`.
 - [ ] `plopfile.cjs` feature generator (slice + locales + d.ts line + feature_list entry).
 - [ ] CI pipeline: check → lint → arch → test → build → e2e (`08-ai-agent-first.md` §3d).
 
@@ -144,11 +152,13 @@ Per `10-feature-scaffold-prompt.md`, benchmarked against `11-example-output.md`.
       invalidation map, interaction state machine, screen states) approved BEFORE scaffolding.
 - [ ] `pnpm plop feature -- --name <first-feature>`.
 - [ ] Fill the slice: Suspense list view + validated form + generated-mutation wiring +
-      status/empty/error surfaces + namespace JSONs.
-- [ ] Wire the route (lazy, guarded); verify the three states and the invalidation in `pnpm dev`.
+      status/empty/error surfaces + one designed state per business outcome code + namespace JSONs.
+- [ ] Wire the route (lazy, guarded); verify the three states + one designed state per business
+      outcome code, and the invalidation in `pnpm dev`.
 - [ ] **Visual polish pass** after the slice works (`14-design-first.md` §4): spacing/responsive/
       dark/focus on the real app, then the UX checklist (locales render, keyboard flow, mobile
-      overflow, empty/error seen with eyes).
+      overflow, empty/error seen with eyes). The DECISIONS (aria-live outcome region, responsive
+      behavior) are made in the slice design doc (14 §2 template §4); the polish pass VERIFIES them.
 - [ ] Move its `feature_list.json` entry to `"pass"` WITH runtime evidence — including the
       Playwright screenshot(s) of the finished screens.
 
@@ -158,10 +168,13 @@ Per `09-testing-strategy.md`.
 
 - [ ] `pnpm add -D vitest @testing-library/react @testing-library/user-event
       @testing-library/jest-dom jsdom msw @playwright/test`.
+- [ ] `vitest.config.ts`: jsdom environment, `setupFiles: ['./src/test/setup.ts']` (runs the MSW
+      server lifecycle).
 - [ ] `src/test/`: `setup.ts` (MSW server lifecycle, `onUnhandledRequest: 'error'`),
       `msw/server.ts` + per-tag handlers (typed from generated models), `render.tsx`
-      (fresh QueryClient, test i18n, MemoryRouter).
-- [ ] Slice tests: happy/empty/error/validation for the first feature (see `11-example-output.md` §10).
+      (fresh QueryClient, test i18n, MemoryRouter, Suspense + test error boundary — `09` §3).
+- [ ] Slice tests: happy/empty/error/validation + one designed state per business outcome code
+      for the first feature (see `11-example-output.md` §10).
 - [ ] Playwright: auth bypass fixture, core flow spec, (if PWA) offline spec; runs against
       `pnpm preview` in CI.
 - [ ] Coverage gate on `src/features/**` + `src/lib/**` (exclude `api/generated`, `components/ui`).

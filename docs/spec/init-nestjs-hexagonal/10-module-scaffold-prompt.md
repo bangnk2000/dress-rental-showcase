@@ -28,6 +28,14 @@ fields:             # name: type pairs the aggregate holds
 invariants:         # business rules validate() must protect (returned as Result errors)
   - amount.amount must be > 0
   - status can only move draft -> issued -> paid
+actor:              # who invokes, e.g. back-office user (authenticated, role billing)
+authorization:      # denial rule -> outcome, e.g. missing role -> forbidden
+outcomes:           # business outcome catalog: snake_case code -> HTTP (+ payload the FE needs)
+  - accepted: 201                     # happy path (plain DTO when it is the only success)
+  - rejected_amount_invalid: 422
+idempotency:        # none | required   (required when the mutation is retryable — see 06 §10)
+useCaseSpec:        # path to the approved use-case spec, e.g. docs/design/billing/create-invoice.md
+                    # REQUIRED (status approved) when outcomes lists more than the happy path
 ports:              # application ports the slice needs (DI tokens)
   - InvoiceRepositoryPort        # required for a command that persists
   - LoggerPort
@@ -37,6 +45,8 @@ isNewContext:       # true = create the module skeleton too; false = add to exis
 ```
 
 > Rule of thumb (YAGNI, see `01-architecture-principles.md`): make a value object only for a primitive with a real rule; add a port only where it earns its keep. A pure read query MAY skip the domain and repository entirely and hit the DB directly.
+
+> Spec gate: if `outcomes` lists anything beyond the happy path, the use-case spec named in `useCaseSpec` must exist and be `approved` BEFORE this prompt runs (`14-design-first.md`; authored with [`../init-feature-spec/`](../init-feature-spec/README.md) when the project uses it). Paste its outcome catalog into `outcomes` — do not invent codes here.
 
 ---
 
@@ -71,8 +81,8 @@ Emit exactly the files below for the slice, each at its path with a one-line res
 | Path | Responsibility | Layer / ref |
 | --- | --- | --- |
 | `domain/<aggregate>.entity.ts` | `AggregateRoot`: `static create()` factory, `validate()` invariants, no public setters, `addEvent()` | Domain · 03 |
-| `domain/value-objects/<vo>.value-object.ts` | Immutable VO, guard-based validation in ctor (e.g. `money.value-object.ts`) | Domain · 03 |
-| `domain/events/<aggregate>-<verb>.domain-event.ts` | e.g. `invoice-created.domain-event.ts` | Domain · 03 |
+| `domain/<vo>.value-object.ts` | Immutable VO, guard-based validation in ctor (e.g. `money.value-object.ts`) — VOs live FLAT in `domain/` | Domain · 03 |
+| `domain/events/<aggregate>-<verb>.domain-event.ts` | e.g. `invoice-created.domain-event.ts` — events live in `domain/events/` | Domain · 03 |
 | `domain/<aggregate>.errors.ts` | Domain errors returned via Result (e.g. `InvoiceAmountInvalidError`) | Domain · 03 |
 | `application/ports/<aggregate>.repository.port.ts` | Repository interface + DI token | Application · 04 |
 | `database/<aggregate>.repository.ts` | `implements …RepositoryPort`, extends `SqlRepositoryBase`; `publishEvents()` inside the tx | Infrastructure · 05 |
@@ -133,13 +143,14 @@ export class CreateInvoiceService implements ICommandHandler<CreateInvoiceComman
 // controller maps the Result to transport (HTTP shown)
 const result = await this.commandBus.execute(command);
 return match(result, {
-  Ok: (id) => new IdResponse(id),
+  Ok: (id) => new IdResponse(id), // single-success use case; 201 implies accepted
   Err: (error) => {
+    // business rejection -> outcome body with a stable code from the use-case spec catalog
     if (error instanceof InvoiceAmountInvalidError)
-      throw new BadRequestException(error.message);          // 400
+      throw new BusinessOutcomeException({ status: 'rejected_amount_invalid' });
     if (error instanceof InvoiceAlreadyExistsError)
-      throw new ConflictException(error.message);            // 409
-    throw error;                                             // technical → global filter
+      throw new BusinessOutcomeException({ status: 'rejected_duplicate_invoice' });
+    throw error;                                             // technical → global filter (envelope)
   },
 });
 ```
@@ -150,7 +161,7 @@ return match(result, {
 
 - **Dependency rule**: outer may import inner, inner NEVER imports outer. Domain has ZERO framework / IO / SDK imports. Inject time and random ids; never read `Date.now()` / generate uuids inside the domain.
 - **No cross-module imports**: modules talk only via `CommandBus` / `QueryBus` / `EventBus`. If you reach for another module's class, stop and use a command/query/event instead.
-- **Result for domain errors**: business-rule violations are RETURNED as `Result<T, E>` (oxide.ts `Ok`/`Err`) and listed in the return type. Technical failures are THROWN and handled by the global exception filter.
+- **Result for domain errors**: business-rule violations are RETURNED as `Result<T, E>` (oxide.ts `Ok`/`Err`) and listed in the return type. The controller renders each one as an outcome body `{ status: '<code>', ...payload }` via `BusinessOutcomeException` (`06-interface-layer.md` §5) — never a generic `GENERIC.*` code. Technical failures are THROWN and handled by the global exception filter (error envelope).
 - **Command → Event → Command**: a command handler never calls another command directly; it emits a domain event that a handler turns into the next command.
 - **Read side may bypass** the domain and repository and query the DB directly; the write side never does.
 - **Naming is mechanical**: follow `02-folder-structure.md` exactly. Directories kebab-case; files use the dot-suffix map (`.command.ts`, `.service.ts`, `.query-handler.ts`, `.repository.ts`, `.mapper.ts`, `.value-object.ts`, `.domain-event.ts`, `.errors.ts`, `.request.dto.ts`, `.response.dto.ts`, `.http.controller.ts`).
@@ -163,7 +174,9 @@ return match(result, {
 
 - [ ] Every file in the relevant output table exists at the exact path, with the correct dot-suffix.
 - [ ] Handler `implements ICommandHandler` / `IQueryHandler` and is decorated `@CommandHandler` / `@QueryHandler`.
-- [ ] Command handler returns `Result<Success, DomainError>`; controller `match()`es it and maps each domain error to a status.
+- [ ] Command handler returns `Result<Success, DomainError>`; controller `match()`es it and renders each domain error as its outcome code from the `outcomes` catalog (`BusinessOutcomeException`) — no rejection collapses into a generic code or a 500.
+- [ ] Every code in `outcomes` appears in an `@ApiResponse` and matches the approved use-case spec verbatim.
+- [ ] `idempotency: required` ⇒ the `Idempotency-Key` interceptor path exists and replay returns the FIRST result (`06-interface-layer.md` §10).
 - [ ] Aggregate uses `static create()`, validates invariants in `validate()`, has no public setters, and `addEvent()`s its domain event.
 - [ ] All listed invariants are enforced and have a corresponding error in `<aggregate>.errors.ts`.
 - [ ] No domain/application file imports `@nestjs/*` infra, a DB driver, or `@anthropic-ai/sdk`; the LLM (if any) is behind `LlmPort`.
@@ -193,6 +206,14 @@ invariants:
   - amount.amount must be > 0
   - currency must be a 3-letter ISO code
   - new invoices start in status draft
+actor: back-office user (authenticated, role billing)
+authorization: missing billing role -> forbidden
+outcomes:
+  - accepted: 201
+  - rejected_amount_invalid: 422
+  - rejected_duplicate_invoice: 422
+idempotency: none
+useCaseSpec: docs/design/billing/create-invoice.md
 ports:
   - InvoiceRepositoryPort
   - LoggerPort
@@ -200,6 +221,6 @@ persistence: slonik
 isNewContext: true
 ```
 
-Expected emitted slice (A + C + D): `commands/create-invoice/` (`.command.ts`, `.service.ts`, `.request.dto.ts`, `.response.dto.ts`, `.http.controller.ts`, `.service.spec.ts`); `domain/invoice.entity.ts`, `domain/value-objects/money.value-object.ts`, `domain/events/invoice-created.domain-event.ts`, `domain/invoice.errors.ts`; `application/ports/invoice.repository.port.ts`; `database/invoice.repository.ts`, `database/invoice.mapper.ts`, `database/sql/billing.migration.sql`; `billing.module.ts` wiring `INVOICE_REPOSITORY → InvoiceRepository` and registering `CreateInvoiceService` + `CreateInvoiceHttpController`.
+Expected emitted slice (A + C + D): `commands/create-invoice/` (`.command.ts`, `.service.ts`, `.request.dto.ts`, `.response.dto.ts`, `.http.controller.ts`, `.service.spec.ts`); `domain/invoice.entity.ts`, `domain/money.value-object.ts`, `domain/events/invoice-created.domain-event.ts`, `domain/invoice.errors.ts`; `application/ports/invoice.repository.port.ts`; `database/invoice.repository.ts`, `database/invoice.mapper.ts`, `database/sql/billing.migration.sql`; `billing.module.ts` wiring `INVOICE_REPOSITORY → InvoiceRepository` and registering `CreateInvoiceService` + `CreateInvoiceHttpController`.
 
 > See `11-example-output.md` for a fully fleshed reference slice, and `12-implementation-checklist.md` for the repo-wide acceptance gate.

@@ -16,7 +16,8 @@ HAS_BE=0; HAS_FE=0; HAS_QR_ADMIN=0
 [ -f apps/qr-admin/package.json ] && HAS_QR_ADMIN=1
 
 if [ "$HAS_BE" = 0 ] && [ "$HAS_FE" = 0 ] && [ "$HAS_QR_ADMIN" = 0 ]; then
-  echo "WARN: no apps bootstrapped yet — next step is the BE kickoff prompt (README.md step 2)."
+  echo "WARN: no apps bootstrapped yet — next step is the BE kickoff prompt"
+  echo "      (docs/spec/init-nestjs-hexagonal/README.md §Kickoff)."
   echo "OK: skeleton checks passed."
   exit 0
 fi
@@ -44,17 +45,21 @@ pnpm arch
 pnpm test
 
 # 4. Runtime-adjacent gates (degrade with WARN when infra is absent).
+# `pnpm --filter be test:e2e` = the invariant-proof suite: it builds the api, creates/migrates
+# <db>_test and provokes the real EXCLUDE/UNIQUE/CHECK constraints (apps/be/test/). Playwright
+# (`pnpm --filter fe e2e`) stays OUT of this script on purpose: it needs installed browsers plus a
+# running BE + Vite (apps/fe/AGENTS.md #5).
 if [ "$HAS_BE" = 1 ]; then
-  if docker compose ps >/dev/null 2>&1; then
-    pnpm --filter be --if-present test:e2e || { echo "FAIL: BE e2e"; exit 1; }
+  if docker compose ps db >/dev/null 2>&1 && [ -n "$(docker compose ps -q db)" ]; then
+    pnpm --filter be test:e2e || { echo "FAIL: BE invariant-proof e2e"; exit 1; }
   else
-    echo "WARN: compose stack unavailable — BE e2e skipped."
+    echo "WARN: postgres not running (docker compose up -d) — BE invariant-proof e2e skipped."
   fi
 fi
 [ "$HAS_FE" = 1 ] && pnpm --filter fe build
 [ "$HAS_QR_ADMIN" = 1 ] && pnpm --filter qr-admin build
 
-[ "$HAS_BE" = 0 ] && echo "WARN: apps/be not bootstrapped yet (README.md step 2)."
-[ "$HAS_FE" = 0 ] && echo "WARN: apps/fe not bootstrapped yet (README.md step 4)."
-[ "$HAS_QR_ADMIN" = 0 ] && echo "WARN: apps/qr-admin not bootstrapped yet (SRS-QR bootstrap)."
+[ "$HAS_BE" = 0 ] && echo "WARN: apps/be not bootstrapped (docs/spec/init-nestjs-hexagonal/README.md)."
+[ "$HAS_FE" = 0 ] && echo "WARN: apps/fe not bootstrapped (docs/spec/init-react/README.md)."
+[ "$HAS_QR_ADMIN" = 0 ] && echo "WARN: apps/qr-admin not bootstrapped (docs/design/qr-admin.md)."
 echo "== init: all runnable gates green =="

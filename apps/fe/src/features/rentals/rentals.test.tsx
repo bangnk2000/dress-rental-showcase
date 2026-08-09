@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import { beforeEach, expect, test } from 'vitest';
@@ -11,6 +12,7 @@ import {
   resetRentals,
   seedBlockedDresses,
 } from '@/test/msw/handlers/rentals';
+import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/render';
 
 import { NewRentalRoute } from './new-rental-route';
@@ -109,7 +111,7 @@ test('searching adds a dress, and creating toasts then navigates to /rentals', a
   });
 });
 
-test('a 409 (dress unavailable) shows the conflict message and stays on the form', async () => {
+test('the rejected_dress_unavailable outcome keeps the form and explains the overlap', async () => {
   seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
   seedBlockedDresses(['d1']);
   const user = userEvent.setup();
@@ -128,4 +130,49 @@ test('a 409 (dress unavailable) shows the conflict message and stays on the form
     expect(screen.getByRole('button', { name: 'Tạo lượt thuê' })).toBeEnabled(),
   );
   expect(screen.queryByText('rentals-list-stub')).not.toBeInTheDocument();
+});
+
+test.each([
+  ['rejected_dress_retired', 'Có váy đã ngừng khai thác. Vui lòng bỏ váy đó khỏi đơn.'],
+  ['rejected_dress_not_found', 'Có váy không còn trong danh mục. Vui lòng chọn lại.'],
+])('the %s outcome renders its own designed message', async (status, message) => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  // Each rejection has its OWN code and message — proving they no longer collapse into one
+  // "conflict" string the way the pre-ADR-0001 409 did.
+  server.use(
+    http.post('/api/v1/rentals', () =>
+      HttpResponse.json({ status, dressIds: ['d1'] }, { status: 422 }),
+    ),
+  );
+  const user = userEvent.setup();
+  renderNewRental();
+
+  await fillCustomerAndDates(user);
+  await pickDress(user, 'DR-001');
+  await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+
+  expect(await screen.findByText(message)).toBeInTheDocument();
+  expect(screen.queryByText('rentals-list-stub')).not.toBeInTheDocument();
+});
+
+test('a fault envelope falls back to the generic toast, not an outcome message', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  server.use(
+    http.post('/api/v1/rentals', () =>
+      HttpResponse.json(
+        { error: { code: 'GENERIC.INTERNAL', message: 'Internal server error' } },
+        { status: 500 },
+      ),
+    ),
+  );
+  const user = userEvent.setup();
+  renderNewRental();
+
+  await fillCustomerAndDates(user);
+  await pickDress(user, 'DR-001');
+  await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+
+  expect(
+    await screen.findByText('Không tạo được lượt thuê. Vui lòng thử lại.'),
+  ).toBeInTheDocument();
 });

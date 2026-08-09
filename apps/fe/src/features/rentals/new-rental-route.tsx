@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import { outcomeStatus } from '@/api/errors';
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
@@ -19,7 +20,6 @@ import { Input } from '@/components/ui/input';
 
 import { DressPicker, type SelectedDress } from './components/dress-picker';
 import { RentalFormMessage } from './components/rental-form-message';
-import { isConflictError } from './lib/is-conflict-error';
 import {
   rentalFormDefaults,
   rentalFormSchema,
@@ -53,13 +53,12 @@ export function NewRentalRoute() {
     defaultValues: rentalFormDefaults,
   });
   const [selected, setSelected] = useState<SelectedDress[]>([]);
-  /** i18n key — set on empty selection at submit, or on a 409 from the API. */
+  /** i18n key — set on empty selection at submit, or from a rejection outcome. */
   const [formError, setFormError] = useState<string | null>(null);
 
-  // TError widened from the generated default (void) so onError can inspect
-  // the 409 (retired / period unavailable). Defining onError here also
-  // overrides the global "mutation failed" toast for this mutation.
-  const createRental = useCreateRentalHttpControllerCreate<unknown>({
+  // One designed state per outcome code (ADR 0001 §4): the form stays filled and says WHICH
+  // dresses are the problem. Defining onError here also overrides the global mutation toast.
+  const createRental = useCreateRentalHttpControllerCreate({
     mutation: {
       onSuccess: async () => {
         // The cached list/board may still be FRESH (staleTime 60s) — without
@@ -76,12 +75,19 @@ export function NewRentalRoute() {
         void navigate('/rentals');
       },
       onError: (error) => {
-        if (isConflictError(error)) {
-          // 409 = dress retired or booked for an overlapping (buffered) period.
-          setFormError('form.errors.unavailable');
-          return;
+        switch (outcomeStatus(error)) {
+          case 'rejected_dress_unavailable':
+            setFormError('form.errors.dressUnavailable');
+            return;
+          case 'rejected_dress_retired':
+            setFormError('form.errors.dressRetired');
+            return;
+          case 'rejected_dress_not_found':
+            setFormError('form.errors.dressNotFound');
+            return;
+          default:
+            toast.error(t('form.error'));
         }
-        toast.error(t('form.error'));
       },
     },
   });
@@ -187,7 +193,8 @@ export function NewRentalRoute() {
               </FormItem>
             )}
           />
-          {formError === 'form.errors.unavailable' ? (
+          {/* Every rejection outcome renders form-level here; the picker owns only noDresses. */}
+          {formError && formError !== 'form.errors.noDresses' ? (
             <p role="alert" className="text-sm text-destructive">
               {translate(formError)}
             </p>

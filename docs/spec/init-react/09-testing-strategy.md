@@ -58,6 +58,16 @@ afterAll(() => server.close());
 
 ```tsx
 // src/test/render.tsx
+class TestErrorBoundary extends React.Component<React.PropsWithChildren, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    return this.state.error
+      ? <div role="alert">{String(this.state.error)}</div>
+      : this.props.children;
+  }
+}
+
 export function renderWithProviders(ui: React.ReactElement, { route = '/' } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: Infinity } },  // fresh cache per test
@@ -65,7 +75,12 @@ export function renderWithProviders(ui: React.ReactElement, { route = '/' } = {}
   return render(
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18nForTests}>          {/* bundled resources, cimode or 'en' */}
-        <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+        <MemoryRouter initialEntries={[route]}>
+          {/* mirror the route shell: *Suspense hooks and thrown query faults cannot render without these */}
+          <TestErrorBoundary>
+            <Suspense fallback={<div role="status">loading</div>}>{ui}</Suspense>
+          </TestErrorBoundary>
+        </MemoryRouter>
       </I18nextProvider>
     </QueryClientProvider>,
   );
@@ -98,7 +113,7 @@ as last resort); async UI via `findBy*`/`waitFor`, never manual `act` gymnastics
 
 | Target | Must-cover cases |
 | --- | --- |
-| Form components | valid submit (mutation payload correct), zod errors render (i18n keys resolved), server 400 maps to field/root error, pending state disables submit |
+| Form components | valid submit (mutation payload correct), zod errors render (i18n keys resolved), server validation `details[]` maps to field errors, EACH business outcome code in the slice's catalog renders its designed state (never one generic message), double-click sends ONE request (pending disables submit), timeout → retry affordance resends the SAME `Idempotency-Key` when the contract requires it |
 | List/detail components | data renders, empty state, error state (handler returns 500 → boundary/fallback), filter params reach the request (assert via handler spy) |
 | Session/guards | anonymous → redirected, authenticated → children render, 401-refresh flow (first call 401, refresh handler, retry 200) at the mutator level |
 | Stores/hooks | pure logic in isolation, no rendering needed |

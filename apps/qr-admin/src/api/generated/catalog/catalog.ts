@@ -24,11 +24,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiErrorResponseDto,
+  CreateDressOutcomeDto,
   CreateDressRequestDto,
   DressListResponseDto,
   DressResponseDto,
   IdResponse,
   ListDressesHttpControllerListParams,
+  RetireDressOutcomeDto,
+  UpdateDressOutcomeDto,
   UpdateDressRequestDto
 } from '../model';
 
@@ -74,7 +78,7 @@ export const createDressHttpControllerCreate = (
 
 
 
-export const getCreateDressHttpControllerCreateMutationOptions = <TError = void,
+export const getCreateDressHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto | CreateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDressHttpControllerCreate>>, TError,{data: CreateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createDressHttpControllerCreate>>, TError,{data: CreateDressRequestDto}, TContext> => {
 
@@ -103,12 +107,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateDressHttpControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof createDressHttpControllerCreate>>>
     export type CreateDressHttpControllerCreateMutationBody = CreateDressRequestDto
-    export type CreateDressHttpControllerCreateMutationError = void
+    export type CreateDressHttpControllerCreateMutationError = ApiErrorResponseDto | CreateDressOutcomeDto
 
     /**
  * @summary Add a dress to the catalog
  */
-export const useCreateDressHttpControllerCreate = <TError = void,
+export const useCreateDressHttpControllerCreate = <TError = ApiErrorResponseDto | CreateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDressHttpControllerCreate>>, TError,{data: CreateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createDressHttpControllerCreate>>,
@@ -232,7 +236,7 @@ export const updateDressHttpControllerUpdate = (
 
 
 
-export const getUpdateDressHttpControllerUpdateMutationOptions = <TError = void,
+export const getUpdateDressHttpControllerUpdateMutationOptions = <TError = ApiErrorResponseDto | UpdateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext> => {
 
@@ -261,12 +265,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateDressHttpControllerUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>>
     export type UpdateDressHttpControllerUpdateMutationBody = UpdateDressRequestDto
-    export type UpdateDressHttpControllerUpdateMutationError = void
+    export type UpdateDressHttpControllerUpdateMutationError = ApiErrorResponseDto | UpdateDressOutcomeDto
 
     /**
  * @summary Update a dress (partial; omitted fields are kept)
  */
-export const useUpdateDressHttpControllerUpdate = <TError = void,
+export const useUpdateDressHttpControllerUpdate = <TError = ApiErrorResponseDto | UpdateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>,
@@ -386,7 +390,7 @@ export const retireDressHttpControllerRetire = (
 
 
 
-export const getRetireDressHttpControllerRetireMutationOptions = <TError = void,
+export const getRetireDressHttpControllerRetireMutationOptions = <TError = ApiErrorResponseDto | RetireDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retireDressHttpControllerRetire>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof retireDressHttpControllerRetire>>, TError,{id: string}, TContext> => {
 
@@ -415,12 +419,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type RetireDressHttpControllerRetireMutationResult = NonNullable<Awaited<ReturnType<typeof retireDressHttpControllerRetire>>>
 
-    export type RetireDressHttpControllerRetireMutationError = void
+    export type RetireDressHttpControllerRetireMutationError = ApiErrorResponseDto | RetireDressOutcomeDto
 
     /**
  * @summary Retire a dress (owner only; one-way in MVP)
  */
-export const useRetireDressHttpControllerRetire = <TError = void,
+export const useRetireDressHttpControllerRetire = <TError = ApiErrorResponseDto | RetireDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retireDressHttpControllerRetire>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof retireDressHttpControllerRetire>>,

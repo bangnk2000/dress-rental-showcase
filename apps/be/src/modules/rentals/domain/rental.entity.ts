@@ -63,7 +63,7 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
   /** Staff hands the dresses to the customer: booked → out. */
   markPickedUp(now: Date): Result<void, RentalPickupNotAllowedError> {
     if (this.props.status !== 'booked') {
-      return Err(new RentalPickupNotAllowedError(undefined, { status: this.props.status }));
+      return Err(new RentalPickupNotAllowedError(this.props.status));
     }
     this.props.status = 'out';
     this.setUpdatedAt(now);
@@ -78,7 +78,7 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
    */
   markReturned(now: Date): Result<void, RentalReturnNotAllowedError> {
     if (this.props.status !== 'booked' && this.props.status !== 'out') {
-      return Err(new RentalReturnNotAllowedError(undefined, { status: this.props.status }));
+      return Err(new RentalReturnNotAllowedError(this.props.status));
     }
     this.props.status = 'returned';
     this.setUpdatedAt(now);
@@ -93,7 +93,7 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
    */
   cancel(now: Date): Result<void, RentalCancelNotAllowedError> {
     if (this.props.status !== 'booked') {
-      return Err(new RentalCancelNotAllowedError(undefined, { status: this.props.status }));
+      return Err(new RentalCancelNotAllowedError(this.props.status));
     }
     this.props.status = 'cancelled';
     for (const item of this.props.items) {

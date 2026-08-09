@@ -24,7 +24,6 @@
     "return": "Take back & settle"
   },
   "pickupSuccess": "Hand-out recorded.",
-  "alreadyProcessed": "This rental was already processed.",
   "actionError": "Something went wrong, please retry.",
   "returnDialog": {
     "title": "Settle rental",
@@ -41,5 +40,10 @@
       "amountInvalid": "Amount must be a non-negative integer",
       "noteTooLong": "Note is limited to 2000 characters"
     }
+  },
+  "errors": {
+    "pickupNotAllowed": "Cannot hand out: the rental is \"{{status}}\".",
+    "returnNotAllowed": "Cannot take back: the rental is \"{{status}}\".",
+    "rentalNotFound": "This rental no longer exists. The board has been refreshed."
   }
 }

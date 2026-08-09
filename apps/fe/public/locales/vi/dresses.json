@@ -107,5 +107,8 @@
       "conflict": "Bận từ {{start}} đến {{end}} (giữ váy đến hết {{blockedUntil}})",
       "error": "Không kiểm tra được. Vui lòng thử lại."
     }
+  },
+  "errors": {
+    "notFound": "Váy này không còn trong danh mục. Danh sách đã được làm mới."
   }
 }

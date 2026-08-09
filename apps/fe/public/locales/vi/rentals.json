@@ -38,8 +38,8 @@
   "cancel": {
     "confirm": "Huỷ lượt thuê này? Lịch của váy sẽ được giải phóng để khách khác đặt.",
     "success": "Đã huỷ lượt thuê.",
-    "alreadyProcessed": "Lượt thuê này không còn ở trạng thái chờ giao.",
-    "error": "Có lỗi xảy ra, vui lòng thử lại."
+    "error": "Có lỗi xảy ra, vui lòng thử lại.",
+    "notAllowed": "Không huỷ được: lượt thuê đang ở trạng thái \"{{status}}\"."
   },
   "payments": {
     "title": "Thanh toán của lượt thuê",
@@ -76,7 +76,9 @@
       "endBeforeStart": "Ngày trả phải từ ngày nhận trở đi",
       "notesTooLong": "Ghi chú tối đa 2000 ký tự",
       "noDresses": "Vui lòng chọn ít nhất một váy",
-      "unavailable": "Có váy đã được thuê trong khoảng ngày này (tính cả thời gian giặt ủi). Vui lòng đổi ngày hoặc chọn váy khác."
+      "dressUnavailable": "Có váy đã được thuê trong khoảng ngày này (tính cả thời gian giặt ủi). Vui lòng đổi ngày hoặc chọn váy khác.",
+      "dressRetired": "Có váy đã ngừng khai thác. Vui lòng bỏ váy đó khỏi đơn.",
+      "dressNotFound": "Có váy không còn trong danh mục. Vui lòng chọn lại."
     }
   },
   "picker": {
@@ -87,5 +89,8 @@
     "remove": "Bỏ chọn",
     "selectedEmpty": "Chưa chọn váy nào",
     "total": "Tạm tính tiền thuê"
+  },
+  "errors": {
+    "rentalNotFound": "Lượt thuê này không còn tồn tại. Danh sách đã được làm mới."
   }
 }

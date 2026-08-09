@@ -24,7 +24,6 @@
     "return": "Nhận về & tất toán"
   },
   "pickupSuccess": "Đã ghi nhận giao váy cho khách.",
-  "alreadyProcessed": "Lượt thuê này đã được xử lý trước đó.",
   "actionError": "Có lỗi xảy ra, vui lòng thử lại.",
   "returnDialog": {
     "title": "Tất toán lượt thuê",
@@ -41,5 +40,10 @@
       "amountInvalid": "Số tiền phải là số nguyên không âm",
       "noteTooLong": "Ghi chú tối đa 2000 ký tự"
     }
+  },
+  "errors": {
+    "pickupNotAllowed": "Không giao được: lượt thuê đang ở trạng thái \"{{status}}\".",
+    "returnNotAllowed": "Không nhận về được: lượt thuê đang ở trạng thái \"{{status}}\".",
+    "rentalNotFound": "Lượt thuê này không còn tồn tại. Bảng đã được làm mới."
   }
 }

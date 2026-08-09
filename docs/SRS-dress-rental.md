@@ -28,7 +28,10 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 
 ### identity
 - **FR-AUTH-01** Đăng nhập email/password → access + refresh token (2 secret riêng).
-- **FR-AUTH-02** Refresh token; 401 của login/refresh là terminal (FE không retry).
+- **FR-AUTH-02** Refresh token. Sai mật khẩu / refresh token không hợp lệ là **outcome nghiệp vụ**
+  (`rejected_invalid_credentials` / `rejected_invalid_refresh_token`, 422 — [ADR
+  0001](./adr/0001-outcome-model-at-the-http-boundary.md)), FE không retry. **401 chỉ còn một
+  nghĩa**: guard chặn vì thiếu/hết hạn access token → refresh-and-retry một lần.
 - **FR-AUTH-03** Xem hồ sơ đang đăng nhập (`GET /auth/me`).
 
 ### catalog
@@ -45,7 +48,9 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   `[start, end]`; mỗi váy bị block thêm **buffer vệ sinh** (`CLEANING_BUFFER_DAYS`) sau ngày trả.
 - **FR-RENT-02** Chống trùng lịch: một váy không thể có hai khoảng block giao nhau (kể cả
   buffer) — **enforce ở tầng DB** bằng EXCLUDE constraint; app chỉ pre-check để báo lỗi đẹp
-  (BR-1). Race giữa hai request đồng thời phải bị DB chặn → 409.
+  (BR-1). Race giữa hai request đồng thời phải bị DB chặn, và **cả hai đường (pre-check lẫn
+  race) trả cùng một outcome** `rejected_dress_unavailable` (422) kèm `dressIds` — một quy tắc
+  nghiệp vụ chỉ có một mã trên dây ([ADR 0001](./adr/0001-outcome-model-at-the-http-boundary.md)).
 - **FR-RENT-03** Availability: trả lời "váy X có trống từ A đến B không"; chi tiết váy hiển thị
   các khoảng đã đặt trên lịch.
 - **FR-RENT-04** Pickup: đơn `booked` → `out` khi khách lấy váy.
@@ -68,7 +73,7 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 
 | # | Rule | Enforce |
 | --- | --- | --- |
-| BR-1 | Một váy không bị đặt trùng khoảng thời gian, tính cả buffer vệ sinh | DB `EXCLUDE USING gist` + pre-check → 409 |
+| BR-1 | Một váy không bị đặt trùng khoảng thời gian, tính cả buffer vệ sinh | DB `EXCLUDE USING gist` (+ proof test trên Postgres thật) + pre-check → outcome `rejected_dress_unavailable` (422) |
 | BR-2 | Một váy không xuất hiện hai lần trong cùng một đơn | DTO `@ArrayUnique` + entity `validate()` + DB `UNIQUE (rental_id, dress_id)` |
 | BR-3 | Vòng đời đơn: `booked → out → returned`; `booked → cancelled`; không đường nào khác | State machine trong `RentalEntity` + DB CHECK status |
 | BR-4 | Tiền là VND integer ≥ 0 (không thập phân) | `Money` VO + DB CHECK |

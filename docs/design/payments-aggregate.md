@@ -21,9 +21,9 @@ nghiệp vụ hiện tại — không update/delete movement; sai thì ghi movem
 
 | Invariant | Application check | Cơ chế DB | Vi phạm → | Proof test |
 | --- | --- | --- | --- | --- |
-| BR-4: amount VND integer ≥ 0 | filter movements > 0 trong `return-rental.service.ts` | `CHECK (amount >= 0)` | 400 | GAP #5 |
+| BR-4: amount VND integer ≥ 0 | filter movements > 0 trong `return-rental.service.ts` | `CHECK (amount >= 0)` | 400 envelope | chưa có test khiêu khích riêng — bổ sung vào `apps/be/test/` khi payments có write endpoint (hiện chỉ ghi qua return flow) |
 | Kind hợp lệ | TypeScript union `SettlementPayment['kind']` | `CHECK (kind IN (...))` | — | — |
-| Movement thuộc đơn có thật | — | `REFERENCES rentals (id)` | 404/409 | — |
+| Movement thuộc đơn có thật | — | `REFERENCES rentals (id)` | không thể xảy ra qua API (chỉ ghi trong return flow của một rental đã load); vi phạm = 500 envelope nếu bypass | — |
 | BR-6: settlement ghi SAU flip status returned; ghi lỗi → nhập tay lại | Thứ tự trong `return-rental.service.ts` (comment giải thích trade-off) | (không có — chấp nhận MVP) | — | — (theo dõi: nếu tái diễn thực tế → chuyển sang cùng transaction, thành feature design-tier) |
 
 ## Cross-context

@@ -135,12 +135,12 @@ export abstract class Entity<EntityProps> {
 
 ```ts
 // modules/user/domain/user.entity.ts
-import { AggregateRoot, CreateEntityProps } from '@libs/ddd';
+import { AggregateRoot } from '@libs/ddd';
 import { Result, Ok, Err } from 'oxide.ts';
 import { Email } from './email.value-object';
 import { Address } from './address.value-object';
-import { UserCreatedDomainEvent } from './user-created.domain-event';
-import { UserAddressUpdatedDomainEvent } from './user-address-updated.domain-event';
+import { UserCreatedDomainEvent } from './events/user-created.domain-event';
+import { UserAddressUpdatedDomainEvent } from './events/user-address-updated.domain-event';
 import { EmailAlreadyVerifiedError } from './user.errors';
 
 export interface UserProps {
@@ -300,7 +300,9 @@ export abstract class ValueObject<T> {
 
 ```ts
 // modules/user/domain/email.value-object.ts
-import { ValueObject, DomainPrimitive, Guard, ArgumentInvalidException } from '@libs/ddd';
+import { ValueObject, DomainPrimitive } from '@libs/ddd';
+import { Guard } from '@libs/guard';
+import { ArgumentInvalidException } from '@libs/exceptions';
 
 export class Email extends ValueObject<string> {
   protected validate({ value }: DomainPrimitive<string>): void {
@@ -316,7 +318,9 @@ export class Email extends ValueObject<string> {
 
 ```ts
 // modules/user/domain/address.value-object.ts
-import { ValueObject, Guard, ArgumentInvalidException } from '@libs/ddd';
+import { ValueObject } from '@libs/ddd';
+import { Guard } from '@libs/guard';
+import { ArgumentInvalidException } from '@libs/exceptions';
 
 export interface AddressProps {
   country: string;
@@ -368,7 +372,7 @@ export abstract class DomainEvent {
 ```
 
 ```ts
-// modules/user/domain/user-created.domain-event.ts
+// modules/user/domain/events/user-created.domain-event.ts
 import { DomainEvent, DomainEventProps } from '@libs/ddd';
 
 export class UserCreatedDomainEvent extends DomainEvent {
@@ -388,8 +392,9 @@ Handlers for these live in `modules/<context>/application/event-handlers/` as
 ## 5. Domain Errors — `*.errors.ts`
 
 **Purpose.** Represent **business-rule violations** as first-class, explicit, recoverable values
-**returned** via `Result<T, E>` — never thrown. The caller `match()`es them and the controller maps
-them to HTTP status (see `06-interface-layer.md`: `UserAlreadyExistsError → 409 Conflict`).
+**returned** via `Result<T, E>` — never thrown. The caller `match()`es them and the controller
+renders each as its outcome body (see `06-interface-layer.md` §5:
+`UserAlreadyExistsError → { status: 'rejected_email_taken' }`, 422).
 
 **Rules.** Extend a small `ExceptionBase` (from `libs/exceptions`, see `07-cross-cutting.md`) so the
 error carries a stable `code` and `message`, but it is **used as a value**, not raised. One file per

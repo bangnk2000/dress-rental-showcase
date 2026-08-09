@@ -49,13 +49,22 @@ Generated hooks consumed; for EVERY mutation: which query keys it invalidates;
 server state (query cache only) vs client state (URL/store) vs derived.
 
 ## 3. Interaction state machine
-For status-driven UI: which actions are VISIBLE/enabled per status — mirror the backend
-entity's transitions table so an impossible action is unreachable, not error-handled.
+For status-driven UI: which actions are VISIBLE/enabled per status — driven by the status
+values and transitions the API CONTRACT exposes (use-case spec / outcome catalog), so an
+impossible action is unreachable, not error-handled. Never mirror the backend entity's
+internal transitions table: if the contract doesn't expose a status, the UI doesn't know it.
 
 ## 4. Screen states & error policy
 Per screen: loading / empty / error — with actual copy (i18n keys), not "has empty state".
-Which errors are handled locally (409 → which message, where) vs globally (401 refresh,
-5xx boundary). Role gating: what organizer sees vs participant.
+Per mutation: submitting (double-submit blocked), success (navigate/toast/reset?), retry
+(same Idempotency-Key on timeout/network — 04 §3).
+Business outcomes: ONE ROW PER outcome code from the use-case spec catalog
+(`rejected_out_of_stock` → which message, which action, keep the form?). Faults:
+which are local (validation `details[]` → field errors) vs global (401 refresh, 5xx
+boundary). Branch on `mapApiError` output, never on raw HTTP status.
+A11y: `aria-live` on the outcome/notice region; focus moves to it on rejection.
+Responsive: name the slice's mobile behavior here, not in the polish pass.
+Role gating: what organizer sees vs participant.
 
 ## 5. Form ↔ DTO mapping
 Zod form schema fields ↔ request DTO fields; divergences (client-only fields, coercions).

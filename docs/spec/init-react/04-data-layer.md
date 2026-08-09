@@ -100,6 +100,7 @@ import Axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 
 export const AXIOS_INSTANCE = Axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: 15_000, // a hung request becomes a retryable timeout fault, not an infinite spinner
 });
 
 // ── auth header ─────────────────────────────────────────────────────────────
@@ -146,6 +147,73 @@ Rules:
   `withCredentials: true` replaces it — the mutator is still the single seam.
 - Do NOT add `ErrorType`/`BodyType` type-alias exports to the mutator "because Orval needs them" —
   it does not; add type helpers only if your own code wants them.
+- **Idempotency-Key**: for mutations the contract marks retryable, generate a UUID per user
+  attempt, send it as the `Idempotency-Key` header, and resend the SAME key on retry
+  (timeout/network error). Mechanically: generate the key into component STATE when the form
+  mounts or resets — one key per attempt; pass it via the hook's `request` option
+  (`{ headers: { 'Idempotency-Key': key } }`), which is captured at hook render. A NEW attempt —
+  e.g. re-submitting at the new price after `rejected_price_changed` — sets a new key (the
+  re-render re-captures it); a RETRY calls `mutate` again with the state untouched — the SAME
+  key is resent. No interceptor magic.
+
+### Error normalization — `mapApiError`, the one seam that reads wire shapes
+
+The API has exactly two non-success shapes (see the backend set's `07-cross-cutting.md`): a
+**business outcome** body `{ "status": "<code>", ...payload }` and a **fault envelope**
+`{ "error": { "code", "message", "details"?, "correlationId" } }`. This mapper is the only code
+that knows that; components branch on its RESULT — never on raw HTTP status codes.
+
+```ts
+// src/api/errors.ts
+import { AxiosError } from 'axios';
+
+export type ApiOutcome = { kind: 'outcome'; status: string } & Record<string, unknown>;
+export type ApiFault = {
+  kind: 'fault';
+  code: string; // stable machine code, e.g. 'GENERIC.VALIDATION' — never parse `message`
+  message: string;
+  details?: { field?: string; rule?: string; message: string }[];
+  correlationId?: string;
+};
+
+export function mapApiError(e: unknown): ApiOutcome | ApiFault {
+  if (e instanceof AxiosError) {
+    const body = e.response?.data;
+    if (typeof body?.status === 'string') return { kind: 'outcome', ...body };
+    if (body?.error?.code) return { kind: 'fault', ...body.error };
+    if (e.code === 'ECONNABORTED') return { kind: 'fault', code: 'CLIENT.TIMEOUT', message: 'Request timed out' };
+    if (!e.response) return { kind: 'fault', code: 'CLIENT.NETWORK', message: 'Network unreachable' };
+    if (e.response.status >= 500)
+      return { kind: 'fault', code: 'GENERIC.INTERNAL', message: 'Server error' }; // 5xx without envelope (proxy/gateway HTML)
+  }
+  return { kind: 'fault', code: 'CLIENT.UNKNOWN', message: 'Unexpected error' };
+}
+
+// The boundary predicate for QUERIES (§4 defaults). The seam MAY read `e.response.status` —
+// that is its job; components may not, they see only `kind` and `code`.
+const BOUNDARY_CODES = ['GENERIC.INTERNAL', 'GENERIC.HTTP', 'CLIENT.NETWORK', 'CLIENT.TIMEOUT', 'CLIENT.UNKNOWN'];
+export function isServerOrNetworkError(error: unknown): boolean {
+  const e = mapApiError(error);
+  return e.kind === 'fault' && BOUNDARY_CODES.includes(e.code);
+}
+```
+
+- An **outcome** renders per the slice's state matrix: every outcome code in the use-case spec
+  catalog has a designed state (`rejected_*` usually keeps the form and shows what to do next).
+  Outcomes NEVER throw to the error boundary — they are results, not failures.
+- A **fault** with `details[]` maps to per-field `form.setError`. The remaining faults split by
+  CALL TYPE, not by code: on a **query**, `throwOnError: isServerOrNetworkError` (§4 defaults)
+  sends them to the route error boundary — the screen cannot render without the data; on a
+  **mutation**, the same faults render locally as a retry affordance (resend with the SAME
+  `Idempotency-Key`) — never throw a mutation error to the boundary from `onError`.
+
+**Success outcomes** never pass through `mapApiError` — success arrives as `data` in `onSuccess`.
+One success outcome → plain DTO (the 201 itself implies accepted). Several success outcomes → the
+response DTO carries `status` and `onSuccess` branches on `data.status`. In a slice's `outcomes`
+input: success codes are implemented in `onSuccess`, rejection codes in `onError` via `mapApiError`.
+
+Terminology: prose says "outcome code"; on the wire it is the `status` field (`ApiOutcome.status`)
+— `code` is a FAULT field; never read `err.code` on an outcome.
 
 ## 4. Query Conventions (TanStack Query v5)
 
@@ -157,9 +225,9 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 60_000,          // deliberate: no request storms on remount/refocus
       retry: 1,
-      throwOnError: (error) => isServerOrNetworkError(error), // 5xx/network → error boundary
+      throwOnError: (error) => isServerOrNetworkError(error), // server/network faults on QUERIES → boundary (mutations handle theirs locally — §3)
     },
-    mutations: { onError: toastUnhandledMutationError },
+    // no global mutations.onError — mutations handle failures locally (§3)
   },
 });
 ```
@@ -171,6 +239,10 @@ const queryClient = new QueryClient({
   affects, from the same generated key functions. Optimistic updates
   (`onMutate` + `setQueryData` + rollback) only where latency genuinely hurts UX
   (`01-architecture-principles.md` §8).
+- **Projections may lag.** When a list is a projection the contract marks eventually consistent,
+  invalidate-and-refetch may not show the new row yet. Seed the cache from the command response
+  (`setQueryData`) or render an optimistic entry — never assume read-after-write for such lists,
+  and design the "still processing" affordance in the slice doc.
 
 ```ts
 const qc = useQueryClient();

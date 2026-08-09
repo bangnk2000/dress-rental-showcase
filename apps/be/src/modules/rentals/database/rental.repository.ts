@@ -10,8 +10,8 @@ import { z } from 'zod';
 import { SqlRepositoryBase } from '../../../libs/db/sql-repository.base';
 import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { AggregateID } from '../../../libs/ddd/entity.base';
-import { ConflictException } from '../../../libs/exceptions';
 import { LOGGER_PORT, LoggerPort } from '../../../libs/ports/logger.port';
+import { RentalItemsOverlapError } from '../application/ports/rental-overlap.error';
 import { RentalRepositoryPort } from '../application/ports/rental.repository.port';
 import { RentalEntity } from '../domain/rental.entity';
 import { RentalPeriod } from '../domain/rental-period.value-object';
@@ -100,11 +100,10 @@ export class RentalRepository
       });
     } catch (error) {
       if (error instanceof CheckExclusionConstraintViolationError) {
-        // The EXCLUDE constraint fired: a race beat the availability pre-check.
-        throw new ConflictException(
-          'A dress is already booked for an overlapping period',
-          error as Error,
-        );
+        // The EXCLUDE constraint fired: a race beat the availability pre-check. Translated into
+        // the port's own exception so no slonik type escapes the adapter; create-rental turns it
+        // into the SAME rejected_dress_unavailable outcome as the pre-check (ADR 0001 §2).
+        throw new RentalItemsOverlapError(error as Error);
       }
       throw error;
     }

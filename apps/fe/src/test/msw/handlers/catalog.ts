@@ -47,11 +47,11 @@ export function resetCatalog(): void {
 }
 
 export const catalogHandlers: HttpHandler[] = [
-  // PATCH /api/v1/dresses/:id — partial update; 404 unknown, 409 taken code.
+  // PATCH /api/v1/dresses/:id — partial update; both rejections are outcome bodies (ADR 0001 §3).
   http.patch('/api/v1/dresses/:id', async ({ params, request }) => {
     const dress = dresses.find((candidate) => candidate.id === params.id);
     if (!dress) {
-      return new HttpResponse(null, { status: 404 });
+      return HttpResponse.json({ status: 'rejected_dress_not_found' }, { status: 422 });
     }
     const body = (await request.json()) as UpdateDressRequestDto;
     if (
@@ -62,7 +62,10 @@ export const catalogHandlers: HttpHandler[] = [
           candidate.code.toLowerCase() === body.code!.toLowerCase(),
       )
     ) {
-      return new HttpResponse(null, { status: 409 });
+      return HttpResponse.json(
+        { status: 'rejected_dress_code_taken', dressCode: body.code.toUpperCase() },
+        { status: 422 },
+      );
     }
     if (body.code !== undefined) dress.code = body.code.toUpperCase();
     if (body.name !== undefined) dress.name = body.name;
@@ -75,25 +78,29 @@ export const catalogHandlers: HttpHandler[] = [
     return HttpResponse.json(response);
   }),
 
-  // POST /api/v1/dresses/:id/retire — 404 unknown, 409 already retired.
+  // POST /api/v1/dresses/:id/retire — both rejections are outcome bodies.
   http.post('/api/v1/dresses/:id/retire', ({ params }) => {
     const dress = dresses.find((candidate) => candidate.id === params.id);
     if (!dress) {
-      return new HttpResponse(null, { status: 404 });
+      return HttpResponse.json({ status: 'rejected_dress_not_found' }, { status: 422 });
     }
     if (dress.status === DressResponseDtoStatus.retired) {
-      return new HttpResponse(null, { status: 409 });
+      return HttpResponse.json({ status: 'rejected_dress_already_retired' }, { status: 422 });
     }
     dress.status = DressResponseDtoStatus.retired;
     const response: IdResponse = { id: dress.id };
     return HttpResponse.json(response);
   }),
 
-  // GET /api/v1/dresses/:id — one dress, or 404 like the real API.
+  // GET /api/v1/dresses/:id — one dress, or the 404 fault envelope like the real API (a read that
+  // finds nothing is THROWN server-side, so it stays an envelope — never an outcome).
   http.get('/api/v1/dresses/:id', ({ params }) => {
     const dress = dresses.find((candidate) => candidate.id === params.id);
     if (!dress) {
-      return new HttpResponse(null, { status: 404 });
+      return HttpResponse.json(
+        { error: { code: 'GENERIC.NOT_FOUND', message: 'Dress not found' } },
+        { status: 404 },
+      );
     }
     return HttpResponse.json(dress);
   }),
@@ -127,12 +134,14 @@ export const catalogHandlers: HttpHandler[] = [
     return HttpResponse.json(body);
   }),
 
-  // POST /api/v1/dresses — 201 IdResponse, or 409 when the code already exists
-  // (the real API returns no contract-typed body for the duplicate case).
+  // POST /api/v1/dresses — 201 IdResponse, or the rejected_dress_code_taken outcome.
   http.post('/api/v1/dresses', async ({ request }) => {
     const body = (await request.json()) as CreateDressRequestDto;
     if (dresses.some((dress) => dress.code.toLowerCase() === body.code.toLowerCase())) {
-      return new HttpResponse(null, { status: 409 });
+      return HttpResponse.json(
+        { status: 'rejected_dress_code_taken', dressCode: body.code.toUpperCase() },
+        { status: 422 },
+      );
     }
     const dress = makeDress({
       code: body.code,

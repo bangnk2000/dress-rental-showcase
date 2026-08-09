@@ -10,13 +10,17 @@ import {
 import { match } from 'oxide.ts';
 import { RequirePermission } from '../../../../libs/authz/require-permission.decorator';
 import { IdResponse } from '../../../../libs/ddd/id.response.dto';
-import { ConflictException, NotFoundException } from '../../../../libs/exceptions';
+import {
+  ApiErrorResponseDto,
+  BusinessOutcomeException,
+} from '../../../../libs/exceptions';
 import {
   DressUnavailableError,
   RentalDressNotFoundError,
   RentalDressRetiredError,
 } from '../../domain/rental.errors';
 import { CreateRentalCommand } from './create-rental.command';
+import { CreateRentalOutcomeDto } from './create-rental.outcome.dto';
 import { CreateRentalRequestDto } from './create-rental.request.dto';
 import { CreateRentalResult } from './create-rental.service';
 
@@ -30,12 +34,13 @@ export class CreateRentalHttpController {
   @RequirePermission('rental:create')
   @ApiOperation({ summary: 'Create a rental booking 1..n dresses for a date range' })
   @ApiCreatedResponse({ type: IdResponse })
-  @ApiResponse({ status: 404, description: 'A dress in the rental does not exist' })
   @ApiResponse({
-    status: 409,
+    status: 422,
+    type: CreateRentalOutcomeDto,
     description:
-      'A dress is retired, or already booked for an overlapping period (rental + cleaning buffer)',
+      'Business rejection: rejected_dress_not_found | rejected_dress_retired | rejected_dress_unavailable (overlap incl. cleaning buffer, pre-check AND race)',
   })
+  @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Invalid request body' })
   async create(@Body() body: CreateRentalRequestDto): Promise<IdResponse> {
     const result: CreateRentalResult = await this.commandBus.execute(
       new CreateRentalCommand({
@@ -54,16 +59,27 @@ export class CreateRentalHttpController {
     return match(result, {
       Ok: (id) => new IdResponse(id),
       Err: (error: Error) => {
+        // Returned domain error = business outcome. Each rejection keeps its own code so the form
+        // can say WHICH dress and WHY (ADR 0001 §3); dressIds is the outcome payload.
         if (error instanceof RentalDressNotFoundError) {
-          throw new NotFoundException(error.message);
+          throw new BusinessOutcomeException({
+            status: 'rejected_dress_not_found',
+            dressIds: error.dressIds,
+          });
         }
-        if (
-          error instanceof RentalDressRetiredError ||
-          error instanceof DressUnavailableError
-        ) {
-          throw new ConflictException(error.message);
+        if (error instanceof RentalDressRetiredError) {
+          throw new BusinessOutcomeException({
+            status: 'rejected_dress_retired',
+            dressIds: error.dressIds,
+          });
         }
-        throw error;
+        if (error instanceof DressUnavailableError) {
+          throw new BusinessOutcomeException({
+            status: 'rejected_dress_unavailable',
+            dressIds: error.dressIds,
+          });
+        }
+        throw error; // unexpected: the global filter renders GENERIC.INTERNAL
       },
     });
   }

@@ -35,7 +35,8 @@ prompt set. Required sections:
 app/ → features/<name>/ → { components|lib|hooks (kernel), api/ }
 - A feature NEVER imports another feature. Nothing imports app/.
 - src/api/generated/** is READ-ONLY — regenerate, never edit.
-- No axios/fetch outside src/api/. No server data in stores/useState.
+- No axios/fetch outside src/api/ — the mutator + src/api/errors.ts are the only two files
+  that read wire shapes. No server data in stores/useState.
 - Import features only via `@/features/<name>` (its index.ts).
 
 ## File naming (lint-enforced)
@@ -59,7 +60,8 @@ kebab-case files; `use-*.ts` hooks; `*.store.ts`; `*.schema.ts`; `*-provider.tsx
 
 ## Do NOT
 - Edit src/api/generated/**, add tailwind.config.js, or use @tailwind v3 directives.
-- Copy query data into useState/stores; inspect error.response.status in components.
+- Copy query data into useState/stores; inspect error.response.status in components — branch
+  on `mapApiError` output (`src/api/errors.ts`, 04 §3) instead.
 - Import across features, deep-import past a feature's index.ts, or import app/ from anywhere.
 - Mark a feature "pass" without runtime evidence (see 13-harness-engineering.md).
 ````
@@ -72,8 +74,9 @@ Thin, links the contract, adds Claude-specific notes:
 # CLAUDE.md
 Read AGENTS.md first — it is the contract. Then session-handoff.md and feature_list.json.
 - Commands, rings, and naming: see AGENTS.md (do not improvise alternatives).
-- Deep rules live in docs/spec/ (init-react prompt set): 01 architecture, 02 folders,
-  03 UI, 04 data, 05 auth, 06 i18n, 07 PWA, 09 testing, 13 harness.
+- Deep rules live in docs/spec/ (init-react prompt set) — enter at docs/spec/00-system-prompt.md:
+  01 architecture, 02 folders, 03 UI, 04 data, 05 auth, 06 i18n, 07 PWA, 09 testing, 13 harness,
+  14 design-first.
 - Verification gate before declaring done: bash init.sh && pnpm test — plus runtime check
   in the browser (pnpm dev) for any UI-visible change.
 ```
@@ -112,7 +115,8 @@ rules: {
 
 ### 3b. Import bans (`no-restricted-imports`)
 
-- `axios`, `fetch` wrappers outside `src/api/**` — the mutator is the only HTTP door.
+- `axios`, `fetch` wrappers outside `src/api/**` — the mutator + `src/api/errors.ts` are the
+  only two files that read wire shapes.
 - Deep feature imports: `@/features/*/…` from outside that feature (only `@/features/<name>`
   via its `index.ts`).
 - `@/app/*` from anywhere outside `src/app`.

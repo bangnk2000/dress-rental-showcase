@@ -18,12 +18,13 @@ import {
 import { match } from 'oxide.ts';
 import { RequirePermission } from '../../../../libs/authz/require-permission.decorator';
 import { IdResponse } from '../../../../libs/ddd/id.response.dto';
-import { ConflictException, NotFoundException } from '../../../../libs/exceptions';
+import { ApiErrorResponseDto, BusinessOutcomeException } from '../../../../libs/exceptions';
 import {
   RentalNotFoundError,
   RentalReturnNotAllowedError,
 } from '../../domain/rental.errors';
 import { ReturnRentalCommand } from './return-rental.command';
+import { ReturnRentalOutcomeDto } from './return-rental.outcome.dto';
 import { ReturnRentalRequestDto } from './return-rental.request.dto';
 import { ReturnRentalResult } from './return-rental.service';
 
@@ -38,8 +39,13 @@ export class ReturnRentalHttpController {
   @RequirePermission('rental:return')
   @ApiOperation({ summary: 'Return a rental: settle the deposit and record late/damage fees' })
   @ApiOkResponse({ type: IdResponse })
-  @ApiResponse({ status: 404, description: 'Rental not found' })
-  @ApiResponse({ status: 409, description: 'Rental is already returned or cancelled' })
+  @ApiResponse({
+    status: 422,
+    type: ReturnRentalOutcomeDto,
+    description:
+      'Business rejection: rejected_rental_not_found | rejected_return_not_allowed (carries currentStatus)',
+  })
+  @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Invalid settlement body' })
   async settle(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: ReturnRentalRequestDto,
@@ -58,10 +64,13 @@ export class ReturnRentalHttpController {
       Ok: (rentalId) => new IdResponse(rentalId),
       Err: (error: Error) => {
         if (error instanceof RentalNotFoundError) {
-          throw new NotFoundException(error.message);
+          throw new BusinessOutcomeException({ status: 'rejected_rental_not_found' });
         }
         if (error instanceof RentalReturnNotAllowedError) {
-          throw new ConflictException(error.message);
+          throw new BusinessOutcomeException({
+            status: 'rejected_return_not_allowed',
+            currentStatus: error.currentStatus,
+          });
         }
         throw error;
       },

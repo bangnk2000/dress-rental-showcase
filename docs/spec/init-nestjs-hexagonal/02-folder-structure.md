@@ -31,7 +31,7 @@ project-root/
 ├── .dependency-cruiser.cjs         # layer + cross-module import guardrails
 ├── nest-cli.json                   # Nest monorepo: projects + libs paths
 ├── package.json                    # scripts: build/test/lint/arch/plop/migrate
-├── tsconfig.json                   # path aliases: @libs/*, @modules/*
+├── tsconfig.json                   # path aliases: @libs/*, @modules/*, @contracts/*
 ├── tsconfig.build.json
 ├── .eslintrc.cjs                   # eslint boundaries + naming lint
 ├── .env.example                    # every env key, no secrets (validated by zod/joi)
@@ -57,12 +57,17 @@ project-root/
 │   │   ├── db/
 │   │   │   └── sql-repository.base.ts   # SqlRepositoryBase (Slonik), tx + publishEvents
 │   │   ├── ports/
-│   │   │   └── logger.port.ts
+│   │   │   ├── logger.port.ts
+│   │   │   └── llm.port.ts              # canonical LlmPort + LLM_PORT token (adapter lives in modules/ai-agent)
 │   │   ├── exceptions/
 │   │   │   ├── exception.base.ts
 │   │   │   ├── argument-invalid.exception.ts
 │   │   │   ├── not-found.exception.ts
-│   │   │   └── conflict.exception.ts
+│   │   │   ├── conflict.exception.ts
+│   │   │   ├── forbidden.exception.ts
+│   │   │   ├── unauthorized.exception.ts
+│   │   │   ├── business-outcome.exception.ts   # outcome-body pass-through (06 §5)
+│   │   │   └── exception.filter.ts             # global filter: outcome bodies + error envelope
 │   │   ├── decorators/                  # e.g. @ApiErrorResponse, param decorators
 │   │   ├── utils/
 │   │   └── guard.ts                     # Guard helper for value-object validation
@@ -72,10 +77,9 @@ project-root/
 │       │   ├── user.di-tokens.ts        # injection tokens (USER_REPOSITORY, ...)
 │       │   ├── domain/                  # innermost — ZERO framework/IO. See 03-domain-layer.md
 │       │   │   ├── user.entity.ts
-│       │   │   ├── value-objects/
-│       │   │   │   ├── address.value-object.ts
-│       │   │   │   └── email.value-object.ts
-│       │   │   ├── events/
+│       │   │   ├── address.value-object.ts   # value objects live FLAT in domain/ (no value-objects/ folder)
+│       │   │   ├── email.value-object.ts
+│       │   │   ├── events/                   # domain events live in domain/events/
 │       │   │   │   ├── user-created.domain-event.ts
 │       │   │   │   └── user-address-updated.domain-event.ts
 │       │   │   ├── user.errors.ts       # UserAlreadyExistsError, returned via Result
@@ -107,18 +111,18 @@ project-root/
 │       │       ├── user.repository.ts               # implements port, extends SqlRepositoryBase
 │       │       ├── user.mapper.ts                   # toDomain/toPersistence/toResponse
 │       │       └── user.persistence.model.ts       # ORM/SQL model (separate from entity)
-│       └── ai-agent/                    # first-class AI bounded context — see 08-ai-agent-first.md
+│       └── ai-agent/                    # owns the LLM ADAPTER + provides LLM_PORT; the LlmPort
+│           │                            # interface lives in libs/ports. See 08-ai-agent-first.md
 │           ├── ai-agent.module.ts
 │           ├── ai-agent.di-tokens.ts
 │           ├── domain/
 │           │   ├── agent.entity.ts                  # AggregateRoot
 │           │   ├── conversation.entity.ts
-│           │   ├── value-objects/
-│           │   │   ├── message.value-object.ts
-│           │   │   ├── tool.value-object.ts
-│           │   │   └── prompt-template.value-object.ts
+│           │   ├── message.value-object.ts          # VOs flat in domain/
+│           │   ├── tool.value-object.ts
+│           │   ├── prompt-template.value-object.ts
 │           │   ├── events/
-│           │   │   └── message-appended.domain-event.ts
+│           │   │   └── message-added.domain-event.ts
 │           │   └── ai-agent.errors.ts
 │           ├── commands/
 │           │   └── send-message/
@@ -128,9 +132,9 @@ project-root/
 │           │       └── send-message.request.dto.ts
 │           ├── application/
 │           │   └── ports/
-│           │       └── llm.port.ts                  # LlmPort — domain/app never import the SDK
+│           │       └── tool-registry.port.ts        # context-local ports only — LlmPort is in libs/ports
 │           ├── adapters/
-│           │   └── claude-llm.adapter.ts            # ClaudeLlmAdapter — @anthropic-ai/sdk
+│           │   └── claude-llm.adapter.ts            # ClaudeLlmAdapter — @anthropic-ai/sdk; bound to LLM_PORT here
 │           ├── evals/                               # prompt/agent eval suites
 │           └── guardrails/                          # input/output safety checks
 ├── tests/
@@ -153,8 +157,8 @@ unit an agent scaffolds, reviews, and tests as a whole. Each file:
 | `<use-case>.service.ts` | Application | `implements ICommandHandler<Cmd>`; orchestrates domain entity + repository port; returns `Result<Success, DomainError>`. |
 | `<use-case>.query.ts` | Application | Read intent (queries only); extends `Query` / `PaginatedQueryBase`. |
 | `<use-case>.query-handler.ts` | Application | `implements IQueryHandler<Q>`; MAY bypass domain + repository and hit the read model / DB directly for performance. |
-| `<use-case>.http.controller.ts` | Interface | REST endpoint; dispatches via `commandBus.execute()` / `queryBus.execute()`, then `match()`es the Result and maps domain errors to HTTP status. See `06-interface-layer.md`. |
-| `<use-case>.cli.controller.ts` | Interface | Same intent driven from CLI (`nestjs-command`). Optional. |
+| `<use-case>.http.controller.ts` | Interface | REST endpoint; dispatches via `commandBus.execute()` / `queryBus.execute()`, then `match()`es the Result and renders business rejections as outcome bodies (`BusinessOutcomeException`, `06-interface-layer.md` §5); technical failures go to the global filter. |
+| `<use-case>.cli.controller.ts` | Interface | Same intent driven from CLI (`nest-commander`). Optional. |
 | `<use-case>.message.controller.ts` | Interface | Same intent driven from a broker message / event. Optional. |
 | `<use-case>.graphql-resolver.ts` | Interface | GraphQL field resolver, same dispatch pattern. Optional. |
 | `<use-case>.request.dto.ts` | Interface | Inbound shape with `class-validator` decorators; constructs the Command. |
@@ -178,7 +182,7 @@ therefore lives in the context-level `domain/`, not in any single slice (`03-dom
 | `.dependency-cruiser.cjs` | Forbids inner→outer imports, cross-module imports, and SDK imports in domain/application. Runs in CI. | Required |
 | `nest-cli.json` | Monorepo config: `projects` + `libs` source roots and compiler options. | Required |
 | `package.json` | Scripts: `build`, `test`, `test:e2e`, `lint`, `arch` (dep-cruiser), `plop` (scaffold), `migrate`. Pin `engines.node >= 20` (NestJS 11 baseline; Node 22 LTS recommended). | Required |
-| `tsconfig.json` | Path aliases (`@libs/*`, `@modules/*`) so slices import the shared kernel cleanly. | Required |
+| `tsconfig.json` | Path aliases (`@libs/*`, `@modules/*`, `@contracts/*` → `libs/contracts/*`) so slices import the shared kernel cleanly. | Required |
 | `.eslintrc.cjs` | `eslint-plugin-boundaries` + naming-convention rules mirroring the table in §5. | Required |
 | `.env.example` | Every env key with empty/placeholder values; the real schema is validated by `@nestjs/config` + zod/joi at boot. | Required |
 | `plopfile.cjs` | Deterministic generators: a single command produces an identical, correct module or vertical slice. | Required |
@@ -199,14 +203,18 @@ pnpm plop module -- --context billing
 ## 4. `libs/` — Shared Kernel
 
 `libs/` holds the framework-agnostic DDD building blocks every module reuses. Modules import `libs/`;
-`libs/` imports nothing from `modules/`.
+`libs/` imports nothing from `modules/`. **This table is the export canon** — the names each `libs/`
+package exports; modules import only these.
 
 | Path | Contents | Priority |
 | --- | --- | --- |
-| `libs/ddd/` | `entity.base.ts`, `aggregate-root.base.ts`, `value-object.base.ts`, `domain-event.base.ts`, `repository.port.ts`, `mapper.interface.ts`, `command.base.ts`, `query.base.ts`. | Required |
-| `libs/db/` | `sql-repository.base.ts` — `SqlRepositoryBase` (Slonik): transaction handling + `publishEvents()` INSIDE the tx. | Required |
-| `libs/ports/` | Tech-agnostic ports shared across contexts, e.g. `logger.port.ts`. | Required |
-| `libs/exceptions/` | `exception.base.ts` + `ArgumentInvalidException`, `NotFoundException`, `ConflictException` (THROWN technical failures; mapped by the global filter). | Required |
+| `libs/ddd/` | `entity.base.ts`, `aggregate-root.base.ts`, `value-object.base.ts`, `domain-event.base.ts`, `repository.port.ts`, `mapper.interface.ts`, `command.base.ts`, `query.base.ts`. Also exports `IdResponse`, `Paginated`, `PaginatedQueryBase`, `AggregateID`. | Required |
+| `libs/db/` | `sql-repository.base.ts` — `SqlRepositoryBase` (Slonik): transaction handling + `publishEvents()` INSIDE the tx. Exports the `DB_POOL` token. | Required |
+| `libs/ports/` | Tech-agnostic ports shared across contexts: `logger.port.ts`, `llm.port.ts` (canonical `LlmPort` + `LLM_PORT` token; adapter + binding owned by `modules/ai-agent`). | Required |
+| `libs/contracts/<owner-context>/` | Cross-context query classes (contract-only communication, `14-design-first.md` §3.2) — imported via the `@contracts/*` alias (`@contracts/* → libs/contracts/*`). | Required |
+| `libs/config/` | zod-validated config module — the ONLY place that reads `process.env` (`07-cross-cutting.md`). | Required |
+| `libs/observability/` | `request-context.ts` — request-scoped correlation context. | Required |
+| `libs/exceptions/` | `exception.base.ts` + `ArgumentInvalidException`, `NotFoundException`, `ConflictException`, `ForbiddenException`, `UnauthorizedException` (THROWN technical failures; rendered as the error envelope by `exception.filter.ts`, the global filter) + `BusinessOutcomeException` (outcome-body pass-through, `06-interface-layer.md` §5). | Required |
 | `libs/decorators/` | Reusable param/method decorators (e.g. API error response). | Optional |
 | `libs/utils/` | Pure helpers (no IO). | Optional |
 | `libs/guard.ts` | `Guard` helper used by value objects to validate in their constructor. | Required |
@@ -261,7 +269,7 @@ rule enforces it.
 | `src/app.module.ts` | Composition root | imports of all context modules + libs | Required |
 | `src/libs/ddd/` | DDD primitives | base classes, ports, command/query bases | Required |
 | `src/libs/db/` | SQL repo base | `SqlRepositoryBase`, tx + event publishing | Required |
-| `src/libs/exceptions/` | Technical errors | base exception + Conflict/NotFound/ArgumentInvalid | Required |
+| `src/libs/exceptions/` | Exceptions + wire shapes | base exception + Conflict/NotFound/ArgumentInvalid/Forbidden/Unauthorized, `BusinessOutcomeException`, global `exception.filter.ts` | Required |
 | `src/libs/ports/` | Shared ports | `logger.port.ts` | Required |
 | `src/libs/decorators/`, `src/libs/utils/` | Cross-cutting helpers | reusable decorators, pure utils | Optional |
 | `modules/<context>/` | One bounded context | module file, di-tokens, the layer folders below | Required |
@@ -272,7 +280,7 @@ rule enforces it.
 | `modules/<context>/application/event-handlers/` | Domain-event handlers | `*.domain-event-handler.ts` (Command→Event→Command) | Required |
 | `modules/<context>/dtos/` | Shared context DTOs | response shapes reused across slices | Optional |
 | `modules/<context>/database/` | Infrastructure | repository impl, mapper, persistence model | Required |
-| `modules/ai-agent/` | AI bounded context | Agent/Conversation domain, `LlmPort`, `ClaudeLlmAdapter` | Optional |
+| `modules/ai-agent/` | AI bounded context | Agent/Conversation domain, `ClaudeLlmAdapter` (binds `LLM_PORT`; `LlmPort` interface in `libs/ports`) | Optional |
 | `modules/ai-agent/adapters/` | Anti-corruption layer | `claude-llm.adapter.ts` (`@anthropic-ai/sdk`, `claude-sonnet-4-6`) | Optional |
 | `modules/ai-agent/evals/`, `.../guardrails/` | AI quality + safety | eval suites, input/output guardrails | Experimental |
 | `migrations/` | Schema versioning | SQL migration files | Required |

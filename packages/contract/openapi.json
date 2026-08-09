@@ -26,8 +26,25 @@
               }
             }
           },
-          "401": {
-            "description": "Invalid credentials"
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_invalid_credentials. NOT 401 — 401 means only that a guard rejected an access token (ADR 0001)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginOutcomeDto"
+                }
+              }
+            }
           }
         },
         "summary": "Staff login with email + password",
@@ -61,8 +78,15 @@
               }
             }
           },
-          "401": {
-            "description": "Invalid or expired refresh token"
+          "422": {
+            "description": "Business rejection: rejected_invalid_refresh_token — terminal, the client clears the session (ADR 0001)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshTokenOutcomeDto"
+                }
+              }
+            }
           }
         },
         "summary": "Exchange a refresh token for a new token pair",
@@ -123,8 +147,25 @@
               }
             }
           },
-          "409": {
-            "description": "Dress code already exists"
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_dress_code_taken (carries dressCode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDressOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -243,11 +284,25 @@
               }
             }
           },
-          "404": {
-            "description": "Dress not found"
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
           },
-          "409": {
-            "description": "New dress code already exists"
+          "422": {
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_code_taken (carries dressCode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateDressOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -323,13 +378,24 @@
             }
           },
           "403": {
-            "description": "Only the owner may retire a dress"
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner may retire a dress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
           },
-          "404": {
-            "description": "Dress not found"
-          },
-          "409": {
-            "description": "Dress is already retired"
+          "422": {
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_already_retired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetireDressOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -368,11 +434,25 @@
               }
             }
           },
-          "404": {
-            "description": "A dress in the rental does not exist"
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
           },
-          "409": {
-            "description": "A dress is retired, or already booked for an overlapping period (rental + cleaning buffer)"
+          "422": {
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_retired | rejected_dress_unavailable (overlap incl. cleaning buffer, pre-check AND race)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateRentalOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -483,11 +563,15 @@
               }
             }
           },
-          "404": {
-            "description": "Rental not found"
-          },
-          "409": {
-            "description": "Rental is not in the booked status"
+          "422": {
+            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelRentalOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -525,11 +609,15 @@
               }
             }
           },
-          "404": {
-            "description": "Rental not found"
-          },
-          "409": {
-            "description": "Rental is not in the booked status"
+          "422": {
+            "description": "Business rejection: rejected_rental_not_found | rejected_pickup_not_allowed (carries currentStatus)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PickupRentalOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -577,11 +665,25 @@
               }
             }
           },
-          "404": {
-            "description": "Rental not found"
+          "400": {
+            "description": "Invalid settlement body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
           },
-          "409": {
-            "description": "Rental is already returned or cancelled"
+          "422": {
+            "description": "Business rejection: rejected_rental_not_found | rejected_return_not_allowed (carries currentStatus)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReturnRentalOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -993,6 +1095,77 @@
           "refreshToken"
         ]
       },
+      "ApiErrorDetailDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Request field the detail points at"
+          },
+          "rule": {
+            "type": "string",
+            "description": "Violated rule, e.g. 'min', 'format'"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "ApiErrorBodyDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "GENERIC.VALIDATION",
+            "description": "Stable machine code — branch on this, never parse `message`"
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorDetailDto"
+            }
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "Echo of the x-request-id header"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "ApiErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "LoginOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_invalid_credentials"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "RefreshTokenRequestDto": {
         "type": "object",
         "properties": {
@@ -1003,6 +1176,20 @@
         },
         "required": [
           "refreshToken"
+        ]
+      },
+      "RefreshTokenOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_invalid_refresh_token"
+            ]
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "MeResponseDto": {
@@ -1106,6 +1293,25 @@
           "id"
         ]
       },
+      "CreateDressOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_dress_code_taken"
+            ]
+          },
+          "dressCode": {
+            "type": "string",
+            "description": "The dress code that is already in use"
+          }
+        },
+        "required": [
+          "status",
+          "dressCode"
+        ]
+      },
       "UpdateDressRequestDto": {
         "type": "object",
         "properties": {
@@ -1160,6 +1366,40 @@
             }
           }
         }
+      },
+      "UpdateDressOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_dress_not_found",
+              "rejected_dress_code_taken"
+            ],
+            "type": "string"
+          },
+          "dressCode": {
+            "type": "string",
+            "description": "The dress code that is already in use"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "RetireDressOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_dress_not_found",
+              "rejected_dress_already_retired"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "DressResponseDto": {
         "type": "object",
@@ -1326,6 +1566,78 @@
           "items"
         ]
       },
+      "CreateRentalOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_dress_not_found",
+              "rejected_dress_retired",
+              "rejected_dress_unavailable"
+            ],
+            "type": "string"
+          },
+          "dressIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "dressIds"
+        ]
+      },
+      "CancelRentalOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_rental_not_found",
+              "rejected_cancel_not_allowed"
+            ],
+            "type": "string"
+          },
+          "currentStatus": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "PickupRentalOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_rental_not_found",
+              "rejected_pickup_not_allowed"
+            ],
+            "type": "string"
+          },
+          "currentStatus": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "ReturnRentalRequestDto": {
         "type": "object",
         "properties": {
@@ -1354,6 +1666,30 @@
             "example": "Rách nhẹ đường viền, đã thoả thuận phí"
           }
         }
+      },
+      "ReturnRentalOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_rental_not_found",
+              "rejected_return_not_allowed"
+            ],
+            "type": "string"
+          },
+          "currentStatus": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "BookedRangeDto": {
         "type": "object",

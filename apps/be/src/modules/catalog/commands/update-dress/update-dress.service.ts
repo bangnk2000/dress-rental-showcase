@@ -35,7 +35,7 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
       if (nextCode.unpack() !== props.code.unpack()) {
         // Uniqueness precondition; the DB unique constraint backs it against races.
         const taken = await this.dressRepo.findOneByCode(nextCode.unpack());
-        if (taken) return Err(new DressCodeAlreadyExistsError());
+        if (taken) return Err(new DressCodeAlreadyExistsError(nextCode.unpack()));
         dress.changeCode(nextCode, now);
       }
     }

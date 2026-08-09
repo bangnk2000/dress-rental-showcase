@@ -11,7 +11,8 @@ files here.
 
 | Command | What |
 | --- | --- |
-| `pnpm --filter be build` / `lint` / `arch` / `test` | gates (tsc, eslint, dependency-cruiser, jest) |
+| `pnpm --filter be build` / `lint` / `arch` / `test` | gates (tsc, eslint over `src` + `test`, dependency-cruiser, jest unit) |
+| `pnpm --filter be test:e2e` | invariant-proof suite: builds the api, creates/migrates `<db>_test`, provokes the real EXCLUDE/UNIQUE/CHECK constraints (needs Postgres running) |
 | `pnpm openapi:emit` | build + dump swagger → `packages/contract/openapi.json` (OFFLINE — no DB) |
 | `pnpm --filter be migrate` / `seed` | node-pg-migrate up / seed owner (needs `DATABASE_URL`, `SEED_OWNER_PASSWORD`) |
 | `pnpm --filter be import:dresses <file.csv>` | one-time catalog seed from the shop's Sheets CSV (header per `seed/dresses.sample.csv`; duplicates skipped — safe to re-run; exit 1 if rows failed) |
@@ -26,6 +27,14 @@ files here.
 - No cross-module imports — contexts talk via CommandBus/QueryBus/EventEmitter events only.
 - Business errors are RETURNED (`Result<T, DomainError>`, oxide.ts); technical failures are
   THROWN (`libs/exceptions`) and mapped by the global filter. Controllers `match()` and convert.
+- **returned vs thrown IS the wire contract** ([ADR 0001](../../docs/adr/0001-outcome-model-at-the-http-boundary.md)):
+  a returned Err becomes `throw new BusinessOutcomeException({ status: '<code>', ...payload })`
+  (422, or 403 for a named denial) — code taken from the ADR §3 catalog, never invented at the
+  keyboard; a thrown exception becomes the envelope `{ error: { code, message, details?,
+  correlationId } }`. No third shape, no `GENERIC.*` for a rejection. The outcome payload lives as
+  a TYPED field on the domain error (`error.dressIds`, `error.currentStatus`), and each operation
+  declares `@ApiResponse({ status: 422, type: <UseCase>OutcomeDto })` so both clients get literal
+  types.
 - One command = one aggregate = one transaction; domain events publish INSIDE the transaction
   (`SqlRepositoryBase.writeInTransaction`).
 - Reads may bypass domain and hit the pool directly (query handlers import slonik — allowed).
@@ -66,12 +75,34 @@ files here.
    few, commented as boundaries, and a QueryBus layer earns nothing at this size. The cost is
    schema-level coupling no guardrail sees — if a shared table's columns change, grep these
    adapters. Migration path when it bites: one contract query per adapter.
-5. **GAP (to close, not deliberate): no invariant-proof tests against real Postgres.** Spec 09
-   ("Invariant proof tests — Required") + 12 now require a CI test that PROVOKES the
-   `rental_items_no_overlap` EXCLUDE constraint (and the race path → 409). Today its only
-   evidence is manual (`scripts/smoke.sh` + psql notes in `feature_list.json`), and the root
-   gate list names `pnpm --filter be test:e2e` which does not exist. Closing this = an e2e/integration
-   suite on a real Postgres (compose/testcontainers) + a CI postgres service + the missing script.
+5. **`correlationId` comes from the `x-request-id` header**, read in the global filter — the
+   AsyncLocalStorage request-context of spec 07 §Observability is not implemented. The envelope
+   shape is unaffected; add the context only when a log needs to be correlated without a header.
+
+(Historical: gaps #5 "no invariant proof" and #6 "flat `GENERIC.*` rejections" were CLOSED on
+2026-08-09 by `infra/invariant-proof-e2e` and `infra/outcome-model`; the story is in
+`docs/adr/0001-outcome-model-at-the-http-boundary.md` §1 and `session-handoff.md` (19). Only LIVE
+deviations are numbered here, so nothing below is a constraint that no longer exists.)
+
+## Wire contract — three facts, then read [ADR 0001](../../docs/adr/0001-outcome-model-at-the-http-boundary.md)
+
+- Outcome codes come from the ADR §3 catalog, never from the keyboard. Adding one = update §3 + §4
+  first (and the FE key), then code.
+- The overlap race is converted where the rule lives: the repository turns the constraint violation
+  into `RentalItemsOverlapError` (`application/ports/rental-overlap.error.ts`) and
+  `create-rental.service.ts` returns `DressUnavailableError` with re-queried ids — so race and
+  pre-check yield the SAME `rejected_dress_unavailable` body.
+- Do NOT reintroduce 401 for a wrong password. 401 means "a guard rejected the access token"; the
+  FE's refresh-and-retry interceptor depends on that being the only meaning.
+
+## Invariant-proof suite (`test/`, `pnpm --filter be test:e2e`)
+
+- Drives the **built** api (`dist/main.js`) out-of-process: slonik is ESM-only and jest's CommonJS
+  registry cannot load it. Raw SQL therefore uses `pg` (`test/e2e-db.ts` + `test/types/pg.d.ts`).
+- It TRUNCATES tables, so `test/e2e-database-url.ts` forces a separate `<db>_test` database and
+  refuses the dev URL unless `E2E_ALLOW_DEV_DB=1`; `test/global-setup.ts` creates + migrates it.
+- A new invariant row in a design doc means a new spec here in the same change — that column is
+  the promise, this folder is the proof.
 
 ## Where do I add a new use case?
 
@@ -79,6 +110,9 @@ files here.
    §Quy trình: design-tier (new aggregate/invariant/state transition/cross-context contract) →
    update `docs/design/<ctx>-aggregate.md` (incl. the invariant-enforcement table) and get it
    approved BEFORE scaffolding; standard CRUD → the filled scaffold input contract is enough.
+   Has business rejections? List them as an outcome catalog first
+   (`docs/spec/init-feature-spec/`) — that catalog is the scaffold prompt's `outcomes` input and
+   the FE's branch list, so it is written once, before either side is scaffolded.
 1. `pnpm --filter be plop slice -- --context <ctx> --name <verb-noun>` (or `query`).
 2. Domain first (entity method/VO/error in `modules/<ctx>/domain/`), then fill the service,
    then the controller's error→HTTP mapping + swagger decorators, then the spec file.

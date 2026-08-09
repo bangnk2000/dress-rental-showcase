@@ -32,8 +32,8 @@ Notes:
 - The **shared kernel has ZERO product knowledge** — a `Button` or `formatDate()` must make sense
   in any app. The moment something knows about "invoices", it belongs in `features/invoices/`.
 - The **API layer is machine-owned**: `src/api/generated/**` is emitted by Orval and is read-only
-  for humans and agents alike. The only hand-written files are the mutator and (optionally) thin
-  query-key helpers. See `04-data-layer.md`.
+  for humans and agents alike. The only hand-written files are the mutator, `src/api/errors.ts`
+  (the error seam, 04 §3), and (optionally) thin query-key helpers. See `04-data-layer.md`.
 
 ## 2. The Dependency Rule (inward only)
 
@@ -79,6 +79,10 @@ machine-enforced.
 | **features/<name>** | ✓ | ✓ | ✗ (only Orval wires it) | ✓ | ✗ **[CI]** | ✗ **[CI]** |
 | **app/** | ✓ | ✓ (prefetch only) | ✓ (QueryClient defaults) | ✓ | ✓ | ✓ |
 
+`src/api/errors.ts` sits in the `api/` element and follows the `api/generated` column: any
+feature may import it — `mapApiError` is the surface components branch on (04 §3); the kernel
+may not.
+
 Key forbidden edges, all **[CI]**-enforced:
 - **Kernel → anything outer** — the cardinal rule. A `components/ui` file importing from
   `features/` means the primitive was never generic; move it.
@@ -109,8 +113,9 @@ The single most load-bearing discipline in this architecture:
 
 - `openapi.json` is the **contract**; Orval-generated hooks/models are the **port**; the single
   **mutator** (`custom-instance.ts`, an Axios instance) is the **adapter** where every cross-cutting
-  HTTP concern lives: base URL, `Authorization` header injection, 401 → refresh-and-retry, error
-  normalization. Swapping auth schemes or API hosts touches ONE file.
+  HTTP concern lives: base URL, `Authorization` header injection, 401 → refresh-and-retry, timeout.
+  Error normalization lives in `src/api/errors.ts` (`mapApiError`, 04 §3). Swapping auth schemes or
+  API hosts touches ONE file.
 - Components never call `fetch`/`axios` directly and never build URLs — **[CI]**-enforced (an
   import ban on `axios` outside `src/api/`). If an endpoint is missing, fix the OpenAPI spec and
   regenerate; do not hand-roll a request.
@@ -119,14 +124,17 @@ The single most load-bearing discipline in this architecture:
 
 ## 6. Error Handling Discipline
 
-- **Expected request failures are STATE, not exceptions.** A 4xx from a mutation (validation
-  conflict, forbidden) surfaces through the mutation's `error` and is mapped to UI: a form field
-  message, a toast, an inline alert. Zod-validated forms catch most 400s before they happen.
+- **Expected request failures are STATE, not exceptions.** An expected mutation failure — a
+  business outcome (`rejected_*`) or a validation fault with `details[]` — surfaces through the
+  mutation's `error` and is mapped to UI: a form field message, a toast, an inline alert. Client
+  zod catches malformed input before a request is sent; business outcomes (422) are server truth
+  no client validation can pre-empt — each outcome code gets a designed state (14 §2 template §4).
 - **Unexpected failures are caught by boundaries.** Each route has an error boundary (paired with
   Suspense when using `useSuspenseQuery`); the QueryClient's `throwOnError` policy routes
   unrecoverable query errors (5xx, network) to it. A global boundary in `app/` is the last resort.
 - **401 is handled ONCE**, in the mutator: attempt refresh, retry the request, and on failure
-  clear the session and redirect to sign-in. Components never inspect status codes.
+  clear the session and redirect to sign-in. Components never inspect status codes — they branch
+  on `mapApiError` output (04 §3).
 - Rule of thumb: *if the user can act on it, render it; if not, throw to the boundary.*
 
 ## 7. Naming & Idiom Discipline
@@ -155,7 +163,8 @@ structure that still upholds the Dependency Rule.
 - **PWA:** skip entirely unless installability/offline is a real requirement; a half-configured
   service worker causes stale-cache bugs that cost more than it gives.
 - **Optimistic updates:** invalidate-on-success is the default; optimistic cache writes only where
-  latency genuinely hurts UX.
+  latency genuinely hurts UX, or where a read model is eventually consistent (projection lag —
+  04 §4).
 
 The rules you NEVER skip, at any size: **the Dependency Rule, no hand-edits to generated code, and
 no server state in stores** — they are CI-enforced. Everything else scales with the product.
@@ -168,7 +177,8 @@ Before finishing a change, an agent should confirm NONE of these are present:
 - A hand edit inside `src/api/generated/**` (fix the spec or the Orval config, then regenerate).
 - `axios`/`fetch` imported in a component, or a URL string built outside the API layer.
 - `useEffect` copying query data into `useState`/a store; server data living in zustand.
-- A component inspecting `error.response.status` (401/403 logic belongs in the mutator/guards).
+- A component inspecting `error.response.status` — components branch on `mapApiError` output
+  (04 §3); 401/403 logic belongs in the mutator/guards.
 - A `components/ui/` file importing from `features/` or knowing a domain word.
 - Hardcoded user-facing text in JSX where a `t('<ns>:<key>')` belongs.
 - `tailwind.config.js` reappearing, or theme values hardcoded in class names instead of `@theme`

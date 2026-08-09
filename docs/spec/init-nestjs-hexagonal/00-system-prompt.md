@@ -147,7 +147,7 @@ tests (Jest unit/integration, Cucumber + supertest e2e) → AGENTS.md/CLAUDE.md 
   domain has zero framework/IO/SDK deps.
 - File names follow the map exactly (`*.entity.ts`, `*.command.ts`, `*.service.ts`,
   `*.query-handler.ts`, `*.port.ts`, `*.repository.ts`, `*.mapper.ts`, `*.http.controller.ts`).
-- Business errors are `Result<T, E>`; technical failures are thrown — global filter maps them.
+- Business errors are `Result<T, E>`, and every business rejection surfaces as an outcome body with a stable snake_case code (`06-interface-layer.md` §5) — never a generic HTTP error; technical failures are thrown — global filter maps them.
 - DDD building blocks are pragmatic, not exhaustive (no value objects without real rules).
 - Any LLM usage is behind `LlmPort` via `ClaudeLlmAdapter` with a current model id
   (`claude-sonnet-4-6` default; never `claude-3-*`).

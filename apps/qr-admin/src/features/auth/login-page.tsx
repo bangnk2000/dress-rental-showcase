@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 
+import { apiErrorMessage } from '@/api/errors';
 import { loginHttpControllerLogin, meHttpControllerMe } from '@/api/generated/identity/identity';
 import { setTokens } from '@/api/mutator/auth-tokens';
 
@@ -22,8 +23,10 @@ export function LoginPage({ onSignedIn }: LoginPageProps) {
       setTokens(tokens);
       const me = await meHttpControllerMe();
       onSignedIn(me.role);
-    } catch {
-      setError('Email hoặc mật khẩu không đúng. Vui lòng thử lại.');
+    } catch (caught) {
+      // Wrong password is the rejected_invalid_credentials OUTCOME; a staff account signing in
+      // successfully but lacking qr:* rights is a 403 envelope. The seam tells them apart.
+      setError(apiErrorMessage(caught));
     } finally {
       setSubmitting(false);
     }

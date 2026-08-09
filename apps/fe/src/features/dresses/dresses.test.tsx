@@ -153,7 +153,7 @@ test('creating a dress toasts, closes the dialog, and the invalidated list shows
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 });
 
-test('a duplicate code maps the 409 to a field error on code', async () => {
+test('the rejected_dress_code_taken outcome becomes a field error on code', async () => {
   seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
   const user = userEvent.setup();
   renderList();
@@ -289,7 +289,7 @@ test('an invalid photo link line blocks the save with a translated error', async
   ).toBeInTheDocument();
 });
 
-test('editing to a taken code maps the 409 to a field error', async () => {
+test('editing to a taken code renders the rejected_dress_code_taken field error', async () => {
   seedDresses([
     makeDress({ id: 'd1', code: 'DR-001' }),
     makeDress({ id: 'd2', code: 'DR-002' }),

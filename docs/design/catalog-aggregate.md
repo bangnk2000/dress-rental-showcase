@@ -1,6 +1,6 @@
 # catalog — Tactical Design
 
-> Status: **as-built 2026-08-02** · SRS: FR-CAT-01..04 · Context Supporting
+> Status: **as-built 2026-08-09** (re-synced with ADR 0001: rejections are named 422 outcomes; UNIQUE/CHECK now have proof tests) · SRS: FR-CAT-01..04 · Context Supporting
 
 ## Vai trò & ranh giới
 
@@ -30,9 +30,9 @@ lịch sử đơn cũ giữ nguyên.
 
 | Invariant | Application check | Cơ chế DB | Vi phạm → | Proof test |
 | --- | --- | --- | --- | --- |
-| Mã váy duy nhất | `DressCode` VO + pre-check | `UNIQUE (code)` | 409 | GAP #5 (chưa có test khiêu khích) |
-| Giá thuê / cọc ≥ 0 | `Money` VO | `CHECK (rental_price >= 0)`, `CHECK (deposit_amount >= 0)` | 400 | unit VO (có) |
-| Status hợp lệ | Entity | `CHECK (status IN ('active','retired'))` | 409 | unit entity (có) |
+| Mã váy duy nhất | `DressCode` VO + pre-check | `UNIQUE (code)` | outcome `rejected_dress_code_taken` (422) + `dressCode` ([ADR 0001](../adr/0001-outcome-model-at-the-http-boundary.md)) | `test:e2e` → `catalog-unique-code.e2e-spec.ts`: API 422 + INSERT trùng bị `UNIQUE` chặn |
+| Giá thuê / cọc ≥ 0 | `Money` VO | `CHECK (rental_price >= 0)`, `CHECK (deposit_amount >= 0)` | 400 envelope | unit VO (có) |
+| Status hợp lệ | Entity | `CHECK (status IN ('active','retired'))` | outcome `rejected_dress_already_retired` (422) khi retire lại; `CHECK` là lưới cuối | unit entity (có) + e2e UPDATE rác bị chặn |
 
 ## Persistence sketch
 

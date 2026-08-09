@@ -11,10 +11,14 @@ scope. vi là ngôn ngữ duy nhất của app này ở MVP.
 
 Owner flow:
 
-1. Mở `/`, chưa có token thì thấy form đăng nhập email/password.
-2. Đăng nhập thành công → form “Tạo QR URL” và lịch sử QR; `staff` nhận 403 thông báo không có quyền.
-3. Nhập URL + nhãn tuỳ chọn, submit → validation inline; 400 giữ nguyên form, 401 refresh/đăng nhập
-   lại, 403 hiển thị quyền bị từ chối.
+1. Mở `/`, chưa có token thì thấy form đăng nhập email/password. Sai mật khẩu = outcome
+   `rejected_invalid_credentials` (422) → message ngay dưới form, KHÔNG phải 401
+   ([ADR 0001](../adr/0001-outcome-model-at-the-http-boundary.md)).
+2. Đăng nhập thành công → form “Tạo QR URL” và lịch sử QR; `staff` nhận 403 envelope
+   `GENERIC.FORBIDDEN` (guard chặn) → thông báo không có quyền.
+3. Nhập URL + nhãn tuỳ chọn, submit → validation inline; 400 envelope giữ nguyên form (URL sai là
+   input invalid, không có outcome), 401 envelope = access token hết hạn → refresh một lần rồi
+   đăng nhập lại, 403 envelope hiển thị quyền bị từ chối.
 4. Thành công → preview SVG, nút “Tải SVG”, toast thành công và danh sách refresh với QR mới đầu.
 5. Chọn hàng lịch sử → preview/load SVG của record đó và tải lại được.
 

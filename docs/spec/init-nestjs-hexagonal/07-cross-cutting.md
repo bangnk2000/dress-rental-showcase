@@ -27,12 +27,13 @@ the exception filter and `Result.match()` are in `06-interface-layer.md`.
 | `libs/ddd/` | DDD base classes | `entity.base.ts`, `aggregate-root.base.ts`, `value-object.base.ts`, `repository.port.ts`, `mapper.interface.ts`, `domain-event.base.ts`, `command.base.ts`, `query.base.ts` | Required |
 | `libs/db/` | Persistence base | `sql-repository.base.ts` (Slonik transaction + `publishEvents()`) | Required |
 | `libs/ports/` | Generic ports | `logger.port.ts` | Required |
-| `libs/exceptions/` | Exception hierarchy | `exception.base.ts`, `argument-invalid.exception.ts`, `not-found.exception.ts`, `conflict.exception.ts` | Required |
+| `libs/exceptions/` | Exception hierarchy | `exception.base.ts`, `argument-invalid.exception.ts`, `not-found.exception.ts`, `conflict.exception.ts`, `forbidden.exception.ts`, `unauthorized.exception.ts`, `business-outcome.exception.ts`, `exception.filter.ts` | Required |
 | `libs/guard.ts` | Invariant guards | `Guard.isEmpty`, `Guard.lengthIsBetween` | Required |
 | `libs/utils/` | Pure helpers | id generation, date helpers (injected into domain, never read there) | Required |
 | `libs/decorators/` | Shared decorators | param decorators, validation helpers | Optional |
 | `libs/config/` | Typed config | `config.schema.ts`, `app-config.service.ts` | Required |
-| `libs/observability/` | Tracing/metrics | OTel setup, metrics registry, health indicators | Prod-only |
+| `libs/observability/request-context.ts` | Request-scoped context | `AsyncLocalStorage` `requestId` store — the exception filter and pino logger depend on it | Required |
+| `libs/observability/` (rest) | Tracing/metrics | OTel setup, metrics registry, health indicators | Prod-only |
 
 Rule: `libs/` may be imported by any module; `libs/` itself imports nothing from `modules/`.
 `libs/ddd/` and `libs/exceptions/` stay framework-free where possible so the domain can use them.
@@ -132,19 +133,30 @@ can branch on it.
 
 ```ts
 // libs/exceptions/exception.base.ts
-export interface SerializedException {
+export interface ErrorDetail {
+  field?: string; // request field the detail points at, when known
+  rule?: string;  // violated rule, e.g. 'min', 'format'
   message: string;
+}
+
+export interface SerializedException {
   code: string;
-  correlationId?: string;
+  message: string;
+  details?: ErrorDetail[];
 }
 
 export abstract class ExceptionBase extends Error {
   abstract code: string;
-  constructor(readonly message: string, readonly cause?: Error, readonly metadata?: unknown) {
+  constructor(
+    readonly message: string,
+    readonly cause?: Error,
+    readonly metadata?: unknown,
+    readonly details?: ErrorDetail[],
+  ) {
     super(message);
   }
   toJSON(): SerializedException {
-    return { message: this.message, code: this.code };
+    return { code: this.code, message: this.message, ...(this.details && { details: this.details }) };
   }
 }
 ```
@@ -162,30 +174,83 @@ export class NotFoundException extends ExceptionBase {
 export class ConflictException extends ExceptionBase {
   readonly code = 'GENERIC.CONFLICT';
 }
+// libs/exceptions/forbidden.exception.ts
+export class ForbiddenException extends ExceptionBase {
+  readonly code = 'GENERIC.FORBIDDEN';
+}
+// libs/exceptions/unauthorized.exception.ts
+export class UnauthorizedException extends ExceptionBase {
+  readonly code = 'GENERIC.UNAUTHORIZED';
+}
+```
+
+```ts
+// libs/exceptions/business-outcome.exception.ts
+// A business REJECTION is an outcome, not a fault. Controllers throw this to render
+// `{ "status": "<outcome_code>", ...payload }` (default 422) — the outcome code is snake_case
+// Ubiquitous Language from the use case's outcome catalog, stable once approved, and the FE
+// branches on it. The global filter passes this body through untouched (no error envelope).
+import { HttpException } from '@nestjs/common';
+
+export class BusinessOutcomeException extends HttpException {
+  constructor(body: { status: string } & Record<string, unknown>, statusCode = 422) {
+    super(body, statusCode);
+  }
+}
 ```
 
 | Exception | Thrown when | Maps to HTTP |
 | --- | --- | --- |
+| `BusinessOutcomeException` | business rejection (returned `Result` Err in the controller) | 422 (or 403) |
 | `ArgumentInvalidException` | guard/value-object construction fails on bad input | 400 |
 | `NotFoundException` | repository cannot load a required aggregate by id | 404 |
 | `ConflictException` | DB uniqueness/consistency violation surfaces technically | 409 |
+| `ForbiddenException` | actor authenticated but not allowed | 403 |
+| `UnauthorizedException` | authentication missing/invalid | 401 |
 | (uncaught / unknown) | bug, infra outage, unhandled throw | 500 |
+
+403 arbitration (one rule, no third option — mirrors `06-interface-layer.md` §5): guard-level
+denials BEFORE the use case runs (missing/invalid/expired token, route-guard role check) →
+envelope `GENERIC.UNAUTHORIZED` (401) / `GENERIC.FORBIDDEN` (403); a denial that is a NAMED
+outcome in the use-case spec → outcome body `{ status: 'forbidden', reason }` (403) via
+`BusinessOutcomeException`.
 
 ## Global Exception Filter — Required
 
-A single `@Catch()` filter at the root maps thrown exceptions to HTTP responses, attaches the
-correlation id, logs at the right level (500s as `error`, 4xx as `warn`), and hides internals on
-500. It does NOT handle domain errors — those never reach it, because controllers `match()` the
-`Result` and convert domain errors to status codes themselves (see `06-interface-layer.md`).
+The wire has exactly TWO response shapes besides success, and the filter is the only place that
+renders them:
+
+1. **Business outcome** — `{ "status": "<outcome_code>", ...payload }`. Thrown by controllers as
+   `BusinessOutcomeException` after `match()`ing a `Result` Err (`06-interface-layer.md` §4–5).
+   Passed through untouched.
+2. **Error envelope** — `{ "error": { "code", "message", "details"?, "correlationId" } }` for
+   every transport/system fault. `code` is a stable machine string clients branch on (never parse
+   `message`); `details[]` carries field-level validation info so the FE can highlight fields.
+
+A single `@Catch()` filter at the root renders both, attaches the correlation id, logs at the
+right level (500s as `error`, 4xx as `warn`), and hides internals on 500.
 
 ```ts
 // libs/exceptions/exception.filter.ts
-import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/common';
+import {
+  ArgumentsHost, BadRequestException, Catch, ExceptionFilter, HttpException, HttpStatus,
+} from '@nestjs/common';
 import { ExceptionBase } from './exception.base';
+import { ArgumentInvalidException } from './argument-invalid.exception';
 import { NotFoundException } from './not-found.exception';
 import { ConflictException } from './conflict.exception';
-import { ArgumentInvalidException } from './argument-invalid.exception';
+import { ForbiddenException } from './forbidden.exception';
+import { UnauthorizedException } from './unauthorized.exception';
+import { BusinessOutcomeException } from './business-outcome.exception';
 import { requestContext } from 'libs/observability/request-context';
+
+const STATUS_BY_TYPE: Array<[new (...a: never[]) => ExceptionBase, HttpStatus]> = [
+  [ArgumentInvalidException, HttpStatus.BAD_REQUEST],
+  [NotFoundException, HttpStatus.NOT_FOUND],
+  [ConflictException, HttpStatus.CONFLICT],
+  [ForbiddenException, HttpStatus.FORBIDDEN],
+  [UnauthorizedException, HttpStatus.UNAUTHORIZED],
+];
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -193,17 +258,38 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const res = host.switchToHttp().getResponse();
     const correlationId = requestContext.getStore()?.requestId;
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    if (exception instanceof ArgumentInvalidException) status = HttpStatus.BAD_REQUEST;
-    else if (exception instanceof NotFoundException) status = HttpStatus.NOT_FOUND;
-    else if (exception instanceof ConflictException) status = HttpStatus.CONFLICT;
+    // 1. Business outcome: body passes through untouched.
+    if (exception instanceof BusinessOutcomeException) {
+      return res.status(exception.getStatus()).json(exception.getResponse());
+    }
 
-    const body =
-      exception instanceof ExceptionBase
-        ? { ...exception.toJSON(), correlationId }
-        : { message: 'Internal server error', code: 'GENERIC.INTERNAL', correlationId };
+    // 2. Our own exceptions -> envelope with their stable code.
+    if (exception instanceof ExceptionBase) {
+      const status =
+        STATUS_BY_TYPE.find(([type]) => exception instanceof type)?.[1] ??
+        HttpStatus.INTERNAL_SERVER_ERROR;
+      return res.status(status).json({ error: { ...exception.toJSON(), correlationId } });
+    }
 
-    res.status(status).json(body);
+    // 3. Nest built-ins — notably ValidationPipe's BadRequestException. Without this branch a
+    //    validation failure would fall through to a 500 "Internal server error".
+    if (exception instanceof HttpException) {
+      const resp = exception.getResponse() as { message?: string | string[] };
+      const messages = Array.isArray(resp.message) ? resp.message : undefined;
+      return res.status(exception.getStatus()).json({
+        error: {
+          code: exception instanceof BadRequestException ? 'GENERIC.VALIDATION' : 'GENERIC.HTTP',
+          message: messages ? 'Validation failed' : resp.message ?? exception.message,
+          ...(messages && { details: messages.map((message) => ({ message })) }),
+          correlationId,
+        },
+      });
+    }
+
+    // 4. Unknown: 500, internals hidden.
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      error: { code: 'GENERIC.INTERNAL', message: 'Internal server error', correlationId },
+    });
   }
 }
 ```
@@ -223,8 +309,9 @@ acceptable alternative. The rule that keeps error handling explicit:
 
 - Command handlers return `Result<Success, DomainError>`; controllers `match()` it (see
   `04-application-layer.md` and `06-interface-layer.md`).
-- Domain errors extend a `DomainError` base and live in `*.errors.ts` per context; they are
-  documented in the handler's return type, so callers cannot ignore them.
+- Domain errors extend `ExceptionBase` (stable `code` + `message`) but are USED AS VALUES
+  returned via `Result` — never raised (`03-domain-layer.md` §5). They live in `*.errors.ts` per
+  context and are documented in the handler's return type, so callers cannot ignore them.
 - Never throw a domain error to signal a recoverable business outcome, and never return a `Result`
   to paper over an infrastructure outage — let it throw and fail fast.
 
@@ -283,7 +370,7 @@ const app = await NestFactory.create(AppModule, { bufferLogs: true });
 app.useLogger(app.get(LOGGER_PORT));            // pino adapter behind LoggerPort
 app.use(helmet());                              // security headers
 app.use(correlationIdMiddleware);               // AsyncLocalStorage requestId
-app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
 app.useGlobalFilters(new GlobalExceptionFilter());
 await app.listen(app.get(AppConfigService).port);
 ```
@@ -293,7 +380,7 @@ await app.listen(app.get(AppConfigService).port);
 - Config validated by schema at boot; nothing reads `process.env` outside `libs/config/`.
 - All code depends on `LoggerPort`, not pino directly; every log line carries `requestId`.
 - Domain/business failures `return` `Result`/`Option`; technical failures `throw` `ExceptionBase`.
-- Global filter maps thrown exceptions to 400/404/409/500 and never sees domain errors.
+- Global filter renders the two wire shapes — outcome bodies (`BusinessOutcomeException` pass-through) and the error envelope — and hides internals on 500.
 - Validation pipe, helmet, and secret hygiene are on; observability/rate-limit deferred as Prod-only.
 - `libs/` imports nothing from `modules/`; cross-refs to `05-infrastructure-layer.md` and
   `06-interface-layer.md` are accurate.

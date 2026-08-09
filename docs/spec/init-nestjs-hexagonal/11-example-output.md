@@ -42,7 +42,7 @@ deterministically, see `10-module-scaffold-prompt.md`.
 | Context | Role | Notes |
 | --- | --- | --- |
 | `conversations` | Owns conversation lifecycle: start, store, fetch. | The slice authored here. |
-| `ai-agent` (shared kernel) | Hosts `LlmPort` + `ClaudeLlmAdapter`, prompt templates, evals, guardrails. | Reused via DI; `conversations` depends on the **port**, never the adapter. See `08-ai-agent-first.md`. |
+| `ai-agent` | Hosts `ClaudeLlmAdapter`, prompt templates, evals, guardrails; provides the `LLM_PORT` binding. | The port INTERFACE lives in `libs/ports/llm.port.ts` (shared kernel) — `conversations` imports the port from `@libs/ports`, never the adapter. See `08-ai-agent-first.md`. |
 
 Modules never import each other's internals — they communicate via the command/query bus or domain
 events (`01-architecture-principles.md`). Here `conversations` consumes `LlmPort` provided by the
@@ -82,8 +82,9 @@ src/modules/conversations/
 └── conversations.module.ts
 ```
 
-The shared `LlmPort` lives under `src/modules/ai-agent/application/ports/llm.port.ts`; its
-`ClaudeLlmAdapter` under `src/modules/ai-agent/adapters/claude-llm.adapter.ts`.
+The shared `LlmPort` interface lives in `src/libs/ports/llm.port.ts` (shared kernel); its
+`ClaudeLlmAdapter` lives under `src/modules/ai-agent/adapters/claude-llm.adapter.ts`, and the
+`ai-agent` module provides the `LLM_PORT` binding.
 
 ## 4. Folder-by-Folder
 | Path | Purpose | Typical Contents | Priority |
@@ -201,7 +202,8 @@ import {
   ConversationRepositoryPort,
   CONVERSATION_REPOSITORY,
 } from '../../application/ports/conversation.repository.port';
-import { LlmPort, LLM_PORT } from '@modules/ai-agent/application/ports/llm.port';
+import { LlmPort, LLM_PORT } from '@libs/ports/llm.port';
+import { StartConversationCommand } from './start-conversation.command';
 
 export type StartConversationResult = Result<string, EmptyMessageError>;
 
@@ -229,11 +231,12 @@ export class StartConversationService
       now,
     });
 
-    const completion = await this.llm.complete({
-      messages: [{ role: 'user', content: command.firstMessage }],
-    }); // technical failure throws -> global exception filter
+    const completion = (
+      await this.llm.complete({ messages: [{ role: 'user', content: command.firstMessage }] })
+    ).unwrap(); // refusal -> Err (a real slice maps it to an outcome/retry policy);
+                // technical failure throws -> global exception filter
 
-    conversation.appendAssistantReply(completion.content, now);
+    conversation.appendAssistantReply(completion.text, now);
 
     await this.repo.insert(conversation); // publishes events inside the DB transaction
     return Ok(conversation.id);
@@ -241,12 +244,13 @@ export class StartConversationService
 }
 ```
 
-### `ai-agent/application/ports/llm.port.ts`
-The port the application depends on. No SDK types leak across this boundary. This is a deliberately
-minimal port (it throws on technical failure); `08-ai-agent-first.md` defines the fuller `LlmPort`
-that also models tool-calls and safety refusals (the latter returned as a `Result`).
+### `libs/ports/llm.port.ts`
+The port the application depends on. No SDK types leak across this boundary. This is the
+canonical port of `08-ai-agent-first.md`, shown minimally (tool-call support elided).
 
 ```ts
+import { Result } from 'oxide.ts';
+
 export const LLM_PORT = Symbol('LLM_PORT');
 
 export interface LlmMessage {
@@ -256,17 +260,19 @@ export interface LlmMessage {
 
 export interface LlmCompletionRequest {
   messages: LlmMessage[];
-  model?: string;
+  model?: string;   // adapter defaults from config (ANTHROPIC_MODEL)
   maxTokens?: number;
 }
 
 export interface LlmCompletion {
-  content: string;
+  text: string;
   model: string;
 }
 
+export class LlmRefusalError extends Error {} // canonical definition: 08-ai-agent-first.md
+
 export interface LlmPort {
-  complete(request: LlmCompletionRequest): Promise<LlmCompletion>;
+  complete(request: LlmCompletionRequest): Promise<Result<LlmCompletion, LlmRefusalError>>;
 }
 ```
 
@@ -278,22 +284,25 @@ Anti-corruption adapter implementing `LlmPort` with `@anthropic-ai/sdk`. Default
 import { Injectable } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
 import { ConfigService } from '@nestjs/config';
+import { Ok, Result } from 'oxide.ts';
 import {
   LlmPort,
   LlmCompletionRequest,
   LlmCompletion,
-} from '../application/ports/llm.port';
+  LlmRefusalError,
+} from '@libs/ports/llm.port';
 
 @Injectable()
 export class ClaudeLlmAdapter implements LlmPort {
   private readonly client: Anthropic;
-  private readonly defaultModel = 'claude-sonnet-4-6';
+  private readonly defaultModel: string;
 
   constructor(private readonly config: ConfigService) {
     this.client = new Anthropic({ apiKey: this.config.getOrThrow('ANTHROPIC_API_KEY') });
+    this.defaultModel = this.config.get('ANTHROPIC_MODEL') ?? 'claude-sonnet-4-6';
   }
 
-  async complete(request: LlmCompletionRequest): Promise<LlmCompletion> {
+  async complete(request: LlmCompletionRequest): Promise<Result<LlmCompletion, LlmRefusalError>> {
     const model = request.model ?? this.defaultModel;
     const response = await this.client.messages.create({
       model,
@@ -304,45 +313,60 @@ export class ClaudeLlmAdapter implements LlmPort {
       .filter((block): block is Anthropic.TextBlock => block.type === 'text')
       .map((block) => block.text)
       .join('');
-    return { content: text, model };
+    return Ok({ text, model }); // refusal/guardrail detection -> Err(new LlmRefusalError(...)) — see 08
   }
 }
 ```
 
 ### `commands/start-conversation/start-conversation.http.controller.ts`
-Dispatches via `commandBus`, then `match()`es the Result and maps domain errors to HTTP status.
+Dispatches via `commandBus`, then `match()`es the Result: business rejections become **outcome
+bodies** with stable codes from the use-case spec catalog (`06-interface-layer.md` §5);
+technical failures go to the global filter (error envelope).
 
 ```ts
-import { Body, BadRequestException, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { match } from 'oxide.ts';
+import { BusinessOutcomeException } from '@libs/exceptions';
+import { IdResponse } from '@libs/ddd';
 import { StartConversationCommand } from './start-conversation.command';
 import { StartConversationRequestDto } from './start-conversation.request.dto';
 import { EmptyMessageError } from '../../domain/conversation.errors';
 import { StartConversationResult } from './start-conversation.service';
 
-@Controller('v1/conversations')
+@ApiTags('conversations')
+@Controller({ path: 'conversations', version: '1' })
 export class StartConversationHttpController {
   constructor(private readonly commandBus: CommandBus) {}
 
   @Post()
-  async start(@Body() body: StartConversationRequestDto): Promise<{ id: string }> {
+  @ApiOperation({ summary: 'Start a conversation' })
+  @ApiResponse({ status: 201, description: 'Created', type: IdResponse })
+  @ApiResponse({ status: 422, description: "Outcome body { status: 'rejected_empty_message' }" })
+  async start(@Body() body: StartConversationRequestDto): Promise<IdResponse> {
     const result: StartConversationResult = await this.commandBus.execute(
       new StartConversationCommand({ userId: body.userId, firstMessage: body.message }),
     );
 
     return match(result, {
-      Ok: (id: string) => ({ id }),
+      Ok: (id: string) => new IdResponse(id), // single-success use case; 201 implies accepted
       Err: (error: Error) => {
         if (error instanceof EmptyMessageError) {
-          throw new BadRequestException(error.message); // 400 — empty input is a validation error
+          // @IsNotEmpty already rejects empty input at the edge (400 envelope); this branch
+          // guards the DOMAIN rule (whitespace-only after trim) and renders it as an outcome.
+          throw new BusinessOutcomeException({ status: 'rejected_empty_message' });
         }
-        throw error; // unknown -> global exception filter
+        throw error; // unknown -> global exception filter (error envelope)
       },
     });
   }
 }
 ```
+
+Outcome catalog for this use case (from its use-case spec, `14-design-first.md`):
+`accepted` (201, `IdResponse`) · `rejected_empty_message` (422). Transport faults use the
+envelope: `GENERIC.VALIDATION` (400 + `details[]`), `GENERIC.INTERNAL` (500).
 
 ### `commands/start-conversation/start-conversation.request.dto.ts`
 ```ts
@@ -358,6 +382,22 @@ export class StartConversationRequestDto {
   readonly message: string;
 }
 ```
+
+### `queries/get-conversation/get-conversation.query-handler.ts` (excerpt)
+Read side: straight to the DB with **explicit columns** into a response-shaped read model — the
+persistence model and `SELECT *` never cross the boundary (`04-application-layer.md`).
+
+```ts
+const rows = await this.pool.query(sql.type(conversationViewSchema)`
+  SELECT id, user_id AS "userId", started_at AS "startedAt"
+  FROM conversations WHERE id = ${query.conversationId}
+`);
+return Ok(rows.rows[0] ?? null);
+```
+
+The controller `unwrap()`s the Result and returns the read model as the response DTO
+(`06-interface-layer.md` §6); a `null` becomes `NotFoundException` — envelope `GENERIC.NOT_FOUND`,
+404, since "not found" on a GET is a transport fact, not a business outcome.
 
 ### `dtos/conversation.response.dto.ts`
 Exposes ONLY intended fields (no internal aggregate shape).
@@ -451,7 +491,9 @@ Rules:
   - Domain has ZERO framework/IO/SDK imports. Inject time + ids; never read Date/uuid in domain.
   - LLM access ONLY via LlmPort (Symbol LLM_PORT). NEVER import @anthropic-ai/sdk here — that lives
     in modules/ai-agent. Default model: claude-sonnet-4-6.
-  - Business errors -> return Result (Err); technical failures -> throw (global filter).
+  - Business errors -> return Result (Err); the controller renders each as an outcome body
+    { status: '<code>' } via BusinessOutcomeException (codes from the use-case spec catalog).
+    Technical failures -> throw (global filter -> error envelope).
   - No cross-module imports; talk via command/query bus or domain events.
   - Command -> Event -> Command (never call a command from another command).
 
@@ -465,8 +507,10 @@ holds the only invariants and raises `ConversationStartedDomainEvent`, while tim
 the handler — so the aggregate stays pure and trivially unit-testable. Claude sits behind `LlmPort`,
 so swapping models or providers, stubbing in tests, and enforcing guardrails all happen in the
 adapter without touching application logic. Business outcomes travel as `Result` (explicit,
-documented in return types); only technical faults throw. `dependency-cruiser` + eslint boundaries
-forbid inner→outer and cross-module imports in CI, so an agent cannot silently break layering.
+documented in return types) and cross the API as `{ status }` outcome bodies with stable codes;
+only technical faults throw and render as the error envelope. `dependency-cruiser` + eslint
+boundaries forbid inner→outer and cross-module imports in CI, so an agent cannot silently break
+layering.
 
 ## 8. Optional Extensions
 - **Continue a conversation**: `commands/send-message/` reusing `LlmPort` and the same aggregate.

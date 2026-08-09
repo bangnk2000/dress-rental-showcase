@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { outcomeStatus } from '@/api/errors';
 import {
   getGetDressHttpControllerGetQueryKey,
   getListDressesHttpControllerListQueryKey,
@@ -30,7 +31,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
-import { isConflictError } from '../lib/is-conflict-error';
 import {
   dressFormDefaults,
   dressFormSchema,
@@ -119,10 +119,9 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
     }
   }
 
-  // TError widened from the generated default (void) so onError can inspect
-  // the 409 duplicate-code case. Defining onError here also overrides the
+  // One designed state per outcome code (ADR 0001 §4). Defining onError here also overrides the
   // global "mutation failed" toast for these mutations.
-  const createDress = useCreateDressHttpControllerCreate<unknown>({
+  const createDress = useCreateDressHttpControllerCreate({
     mutation: {
       onSuccess: async () => {
         await invalidateDressQueries();
@@ -130,8 +129,7 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
         handleOpenChange(false);
       },
       onError: (error) => {
-        if (isConflictError(error)) {
-          // 409 = duplicate code; the contract has no typed body for it.
+        if (outcomeStatus(error) === 'rejected_dress_code_taken') {
           form.setError('code', { message: 'form.errors.duplicateCode' });
           return;
         }
@@ -140,19 +138,27 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
     },
   });
 
-  const updateDress = useUpdateDressHttpControllerUpdate<unknown>({
+  const updateDress = useUpdateDressHttpControllerUpdate({
     mutation: {
       onSuccess: async () => {
         await invalidateDressQueries();
         toast.success(t('form.updateSuccess'));
         handleOpenChange(false);
       },
-      onError: (error) => {
-        if (isConflictError(error)) {
-          form.setError('code', { message: 'form.errors.duplicateCode' });
-          return;
+      onError: async (error) => {
+        switch (outcomeStatus(error)) {
+          case 'rejected_dress_code_taken':
+            form.setError('code', { message: 'form.errors.duplicateCode' });
+            return;
+          case 'rejected_dress_not_found':
+            // Someone deleted/retired it under us: the dialog has nothing left to edit.
+            await invalidateDressQueries();
+            toast.error(t('errors.notFound'));
+            handleOpenChange(false);
+            return;
+          default:
+            toast.error(t('form.updateError'));
         }
-        toast.error(t('form.updateError'));
       },
     },
   });

@@ -26,7 +26,10 @@ Rules:
 - **Anything derivable from the disk is generated, never maintained by hand.** A hand-maintained
   inventory is stale by the third session; a generated one cannot lie.
 - **An intent doc never restates what a truth doc generates.** It records decisions and their
-  *why* — the parts no script can recover from code.
+  *why* — the parts no script can recover from code. Carve-out: a use-case spec's outcome
+  catalog / contract-shape section is intent, not a restatement — it is written BEFORE the code
+  that `openapi.json` is later generated from, and it is the source the code implements. The
+  smell is copying the *emitted* contract back into a doc, not specifying the *intended* one.
 - **Intent docs carry a date and an as-built note.** After the feature merges, reconcile the doc
   with what was actually built (one dated line is enough: "as-built 2026-07-02, matches" or
   "deviated: <what> because <why>"). An intent doc with no reconciliation and no date is a rumor.
@@ -91,7 +94,9 @@ unreachable-action state machines for the frontend).
 ## 6.6 Smells
 
 - A design-tier feature `in-progress` with no design doc — the tier gate was skipped.
-- A design doc that restates the generated inventory/contract — intent duplicating truth.
+- A design doc that restates the generated inventory/contract — intent duplicating truth. (A
+  use-case spec's *intended* outcome catalog, written before the code, is not this smell —
+  §6.1 carve-out.)
 - A truth doc maintained by hand, or one without a CI check gate — it is already stale.
 - Design docs with no dates and no as-built notes — unfalsifiable, therefore untrusted.
 - Every feature tiered "standard" on a repo full of new aggregates — tier inflation to dodge

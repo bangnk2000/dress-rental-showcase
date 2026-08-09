@@ -38,11 +38,12 @@ A repository is the only place an aggregate root is loaded or saved. It implemen
 
 ```ts
 // modules/user/database/user.repository.ts
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { sql } from 'slonik';
+import { DatabasePool, sql } from 'slonik';
+import { DB_POOL } from '@libs/db';
 import { SqlRepositoryBase } from '@libs/db/sql-repository.base';
-import { LoggerPort } from '@libs/ports/logger.port';
+import { LOGGER_PORT, LoggerPort } from '@libs/ports/logger.port';
 import { UserEntity } from '../domain/user.entity';
 import { UserRepositoryPort } from '../application/ports/user.repository.port';
 import { UserMapper } from './user.mapper';
@@ -56,8 +57,13 @@ export class UserRepository
   protected tableName = 'users';
   protected schema = userSchema; // zod schema validating each row
 
-  constructor(mapper: UserMapper, logger: LoggerPort, eventEmitter: EventEmitter2) {
-    super(mapper, logger, eventEmitter);
+  constructor(
+    @Inject(DB_POOL) pool: DatabasePool,
+    mapper: UserMapper,
+    @Inject(LOGGER_PORT) logger: LoggerPort,
+    eventEmitter: EventEmitter2,
+  ) {
+    super(pool, mapper, logger, eventEmitter);
   }
 
   async findOneByEmail(email: string): Promise<UserEntity | null> {
@@ -74,14 +80,18 @@ export class UserRepository
 export abstract class SqlRepositoryBase<
   Aggregate extends AggregateRoot<unknown>,
   Model,
+  Response = unknown,
 > implements RepositoryPort<Aggregate>
 {
   protected abstract tableName: string;
   protected abstract schema: ZodSchema<Model>;
 
   constructor(
-    protected readonly mapper: Mapper<Aggregate, Model>,
-    protected readonly logger: LoggerPort,
+    // DB_POOL (from @libs/db) is an injection token — `DatabasePool` is an interface,
+    // and an interface type alone is not injectable.
+    @Inject(DB_POOL) protected readonly pool: DatabasePool,
+    protected readonly mapper: Mapper<Aggregate, Model, Response>,
+    @Inject(LOGGER_PORT) protected readonly logger: LoggerPort,
     protected readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -99,6 +109,8 @@ export abstract class SqlRepositoryBase<
   nextId(): string {
     return crypto.randomUUID();
   }
+
+  // insertRow / upsertRow: protected helpers the base implements over `this.pool` (bodies elided).
 
   private async writeInTransaction(
     entity: Aggregate,
@@ -146,7 +158,7 @@ export type UserModel = z.infer<typeof userSchema>;
 
 ## Mapper: `toDomain` / `toPersistence` / `toResponse`
 
-The mapper is the single translation point between the three representations. It implements `Mapper<Entity, Model>` from `libs/ddd/mapper.interface.ts`. `toResponse()` produces the Response DTO consumed by controllers (06-interface-layer.md) and exposes only intended fields.
+The mapper is the single translation point between the three representations. It implements the 3-param `Mapper<Entity, Model, Response>` from `libs/ddd/mapper.interface.ts`. `toResponse()` produces the Response DTO consumed by controllers (06-interface-layer.md) and exposes only intended fields. Response DTOs are slice-local (`commands/<use-case>/<use-case>.response.dto.ts` — never a shared `dtos/` folder).
 
 ```ts
 // modules/user/database/user.mapper.ts
@@ -156,7 +168,7 @@ import { UserEntity } from '../domain/user.entity';
 import { Email } from '../domain/email.value-object';
 import { Address } from '../domain/address.value-object';
 import { UserModel } from './user.persistence.model';
-import { UserResponseDto } from '../dtos/user.response.dto';
+import { UserResponseDto } from '../commands/create-user/create-user.response.dto';
 
 @Injectable()
 export class UserMapper
@@ -223,14 +235,14 @@ import {
   LlmCompletionRequest,
   LlmCompletion,
   LlmRefusalError,
-} from '../application/ports/llm.port';
+} from '@libs/ports/llm.port';
 import { LOGGER_PORT, LoggerPort } from '@libs/ports/logger.port';
 
 @Injectable()
 export class ClaudeLlmAdapter implements LlmPort {
   private readonly client: Anthropic;
-  // Default app model per the architecture spec; never use claude-3-* ids.
-  private readonly defaultModel = 'claude-sonnet-4-6';
+  // `req.model` is optional; the default comes from validated config, never hard-coded.
+  private readonly defaultModel: string;
 
   constructor(
     config: ConfigService,
@@ -238,24 +250,33 @@ export class ClaudeLlmAdapter implements LlmPort {
   ) {
     // Missing key is a misconfiguration → fail fast at construction.
     this.client = new Anthropic({ apiKey: config.getOrThrow('ANTHROPIC_API_KEY') });
+    this.defaultModel = config.getOrThrow('ANTHROPIC_MODEL'); // claude-sonnet-4-6 by default
   }
 
-  // Canonical port shape — same signature as 08-ai-agent-first.md.
+  // Canonical port shape — `LlmPort` in libs/ports/llm.port.ts (08-ai-agent-first.md).
   async complete(req: LlmCompletionRequest): Promise<Result<LlmCompletion, LlmRefusalError>> {
     try {
       const res = await this.client.messages.create({
         model: req.model ?? this.defaultModel,
         max_tokens: req.maxTokens,
         system: req.system,
-        messages: req.messages, // already in our port's shape, not the SDK's
+        // Port roles ≠ SDK roles — translate explicitly: map (or exclude) 'tool' entries;
+        // never pass the port's message array straight through.
+        messages: req.messages
+          .filter((m) => m.role !== 'tool')
+          .map((m) => ({ role: m.role, content: m.content })),
       });
       // Domain-relevant: a safety refusal is a Result error the caller can recover from.
-      if (res.stop_reason === 'refusal') return Err(new LlmRefusalError());
+      if (res.stop_reason === 'refusal') return Err(new LlmRefusalError('model refused'));
       const text = res.content
         .filter((b): b is Anthropic.TextBlock => b.type === 'text')
         .map((b) => b.text)
         .join('');
-      return Ok({ stop: res.stop_reason, text, toolCalls: [], usage: res.usage });
+      return Ok({
+        text,
+        model: res.model,
+        usage: { inputTokens: res.usage.input_tokens, outputTokens: res.usage.output_tokens },
+      });
     } catch (err) {
       // Technical failure (network/5xx/rate-limit) → THROW (fail-fast); the global exception
       // filter renders it. Full LlmPort + tool-calling shape lives in 08-ai-agent-first.md.
@@ -286,9 +307,9 @@ Note the error policy (07-cross-cutting.md), consistent with `01-architecture-pr
 Schema is versioned from day one. With Slonik use a migration runner (e.g. `node-pg-migrate`) writing forward/back SQL; with Prisma use `prisma migrate`. Migrations live alongside the module or in a top-level `database/migrations/` and run in CI before integration tests (09-testing-strategy.md).
 
 ```bash
-npm run migration:create -- add-users-table   # new migration
-npm run migration:up                          # apply pending
-npm run migration:down                        # roll back last
+pnpm migrate:create add-users-table   # new migration
+pnpm migrate                          # apply pending
+pnpm migrate:down                     # roll back last
 ```
 
 A migration is never edited after it ships; correct a mistake with a new migration. The persistence model and the migration must agree — the row schema (`userSchema`) is the contract both honour.
@@ -312,22 +333,24 @@ only by application code (the full rule and the design-doc table it traces to li
 
 Division of labour: the **handler pre-checks** the rule to return a precise domain error; the
 **constraint enforces** it; the **repository catches the constraint violation** (unique/exclusion
-error codes) and maps it to the same domain error / `ConflictException` the pre-check produces —
-so the race path and the friendly path are indistinguishable to clients. Each constraint gets an
+error codes) and maps it to the same domain error the pre-check produces, so the race path
+surfaces the same outcome body (`14-design-first.md` §3.1) — race path and friendly path are
+indistinguishable to clients. Each constraint gets an
 integration/e2e test that provokes it (`09-testing-strategy.md`).
 
 ## Transactions and unit-of-work
 
-A single command must commit atomically. `SqlRepositoryBase` exposes the transaction; for use cases that touch more than one repository within one aggregate boundary, inject a unit-of-work that hands the same transaction to each repository:
+A single command must commit atomically. `SqlRepositoryBase` already wraps each `insert`/`save` (write + event publish) in one transaction. When one command must persist two writes atomically, put both inside `this.pool.transaction(async (tx) => ...)` exposed via a repository-base helper — the handler still calls ONE repository method; it never opens transactions itself:
 
 ```ts
-// usage inside a command handler (Application layer)
-return this.unitOfWork.execute(async (tx) => {
-  await this.userRepo.withTransaction(tx).save(user);
-  // events for `user` publish on commit of THIS transaction
-  return Ok(user.id);
+// inside a repository method (Infrastructure) — both writes commit or neither does
+await this.pool.transaction(async (tx) => {
+  await this.insertRow(record, tx);
+  await this.insertRow(auditRecord, tx);
 });
 ```
+
+A dedicated UnitOfWork port is YAGNI until a second cross-aggregate use case exists.
 
 Keep transactions scoped to one aggregate root where possible (the consistency boundary, 03-domain-layer.md). Cross-aggregate consistency is achieved with domain events, not by widening the transaction.
 

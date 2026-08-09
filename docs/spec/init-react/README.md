@@ -103,8 +103,8 @@ For deeper questions during the task, cross-reference the matching layer doc
 ### Step 1 — Make the prompt set the agent's source of truth
 
 > Read every file in `docs/spec/` (the `init-react` prompt set). Treat `00-system-prompt.md` as
-> your system prompt and `01`–`09` + `13` as the binding conventions. Do not invent patterns that
-> contradict them.
+> your system prompt and `01`–`09` + `13`–`14` as the binding conventions. Do not invent patterns
+> that contradict them.
 
 ### Step 2 — Kick off with one prompt (copy-paste, fill the blanks)
 
@@ -113,7 +113,8 @@ You are bootstrapping a new React SPA. The folder docs/spec/ is your specificati
 treat it as authoritative.
 
 1. Adopt docs/spec/00-system-prompt.md as your system prompt. Apply 01+02, the layer guides
-   03–07, 08 for guardrails, 09 for tests, 13 for the harness.
+   03–07, 08 for guardrails, 09 for tests, 13 for the harness, 14 design-first (before any
+   design-tier slice).
 2. Product idea: <one paragraph: what the app does and for whom>.
    - openapi.json: <path/URL | "none yet — use the 04 §6 fallback">
    - Auth: <Google credential flow + cookie session | bearer+refresh | none>
@@ -164,7 +165,8 @@ checklist ([13](./13-harness-engineering.md) §8).
 - **Scaffold, don't free-hand.** `pnpm plop feature` makes every slice identical; the agent fills
   bodies only.
 - **The spec is the API.** Wrong/missing endpoint → change `openapi.json` (i.e. the backend),
-  regenerate — never hand-write a request.
+  regenerate — never hand-write a request (sync process: 04 §7 — CI artifact or `contract:pull`;
+  every contract gap gets an explicit block / stub / BE-change-request decision, 14 §1).
 - **Evidence before "done".** The harness (13) makes "it works" a checkable claim, not a vibe.
 
 ## Stack Summary
@@ -187,7 +189,8 @@ checklist ([13](./13-harness-engineering.md) §8).
 
 **Four rings, dependencies point inward:** `app/` (composition root) → `features/<name>/`
 (vertical slices) → shared kernel (`components/`, `lib/`, `hooks/`) + `api/` (generated port +
-one hand-written mutator adapter). Features never import each other; nothing imports `app/`;
+one hand-written mutator adapter + `errors.ts`, the error seam). Features never import each
+other; nothing imports `app/`;
 generated code is never edited. Server state lives ONLY in the TanStack Query cache; client state
 in React/small stores.
 
@@ -198,6 +201,9 @@ in React/small stores.
 [learn-harness-engineering](https://github.com/walkinglabs/learn-harness-engineering) (harness).
 Version targets live in [12-implementation-checklist.md](./12-implementation-checklist.md) Phase 0
 — re-verify `latest` at init time; the ecosystem moves fast.
+
+**Cross-set:** outcome catalogs and UI state matrices come from an approved use-case spec —
+authored with [`../init-feature-spec/`](../init-feature-spec/README.md).
 
 ## A Note on Naming and Idioms
 

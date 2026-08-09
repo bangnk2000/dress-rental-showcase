@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { mapApiError } from '@/api/errors';
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
@@ -24,7 +25,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
-import { isConflictError } from '../lib/is-conflict-error';
 import {
   returnFormDefaults,
   returnFormSchema,
@@ -64,7 +64,14 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
     if (rental) reset(returnFormDefaults);
   }, [rental, reset]);
 
-  const returnRental = useReturnRentalHttpControllerSettle<unknown>({
+  async function refreshBoardAndList(): Promise<void> {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: getGetTodayBoardHttpControllerGetQueryKey() }),
+      queryClient.invalidateQueries({ queryKey: getListRentalsHttpControllerListQueryKey() }),
+    ]);
+  }
+
+  const returnRental = useReturnRentalHttpControllerSettle({
     mutation: {
       onSuccess: async () => {
         // Parameterless keys prefix every dated board / filtered list query —
@@ -81,10 +88,24 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
         toast.success(t('returnDialog.success'));
         onClose();
       },
-      onError: (error) => {
-        toast.error(
-          isConflictError(error) ? t('alreadyProcessed') : t('actionError'),
-        );
+      onError: async (error) => {
+        const mapped = mapApiError(error);
+        if (mapped.kind === 'outcome') {
+          // Nothing left to settle in this dialog — close it and refresh the board.
+          toast.error(
+            mapped.status === 'rejected_return_not_allowed'
+              ? t('errors.returnNotAllowed', {
+                  status: t(`status.${String(mapped.currentStatus)}`, {
+                    defaultValue: String(mapped.currentStatus ?? ''),
+                  }),
+                })
+              : t('errors.rentalNotFound'),
+          );
+          await refreshBoardAndList();
+          onClose();
+          return;
+        }
+        toast.error(t('actionError'));
       },
     },
   });

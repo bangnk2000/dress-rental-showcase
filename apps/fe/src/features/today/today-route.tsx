@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { mapApiError } from '@/api/errors';
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
@@ -16,7 +17,6 @@ import { Input } from '@/components/ui/input';
 
 import { ReturnRentalDialog } from './components/return-rental-dialog';
 import { TodayBoardSection } from './components/today-board-section';
-import { isConflictError } from './lib/is-conflict-error';
 import { localDateIso } from './lib/local-date';
 
 /** The morning screen: what goes out, what comes back, what is late. */
@@ -27,7 +27,15 @@ export function TodayRoute() {
   const [returnTarget, setReturnTarget] = useState<TodayBoardRentalDto | null>(null);
   const { data: board } = useGetTodayBoardHttpControllerGetSuspense({ date });
 
-  const pickupRental = usePickupRentalHttpControllerPickup<unknown>({
+  /** The board is shared across devices, so a rejection means someone else already acted. */
+  async function refreshBoardAndList(): Promise<void> {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: getGetTodayBoardHttpControllerGetQueryKey() }),
+      queryClient.invalidateQueries({ queryKey: getListRentalsHttpControllerListQueryKey() }),
+    ]);
+  }
+
+  const pickupRental = usePickupRentalHttpControllerPickup({
     mutation: {
       onSuccess: async () => {
         // Parameterless keys prefix every dated board / filtered list query —
@@ -43,10 +51,22 @@ export function TodayRoute() {
         ]);
         toast.success(t('pickupSuccess'));
       },
-      onError: (error) => {
-        toast.error(
-          isConflictError(error) ? t('alreadyProcessed') : t('actionError'),
-        );
+      onError: async (error) => {
+        const mapped = mapApiError(error);
+        if (mapped.kind === 'outcome') {
+          toast.error(
+            mapped.status === 'rejected_pickup_not_allowed'
+              ? t('errors.pickupNotAllowed', {
+                  status: t(`status.${String(mapped.currentStatus)}`, {
+                    defaultValue: String(mapped.currentStatus ?? ''),
+                  }),
+                })
+              : t('errors.rentalNotFound'),
+          );
+          await refreshBoardAndList();
+          return;
+        }
+        toast.error(t('actionError'));
       },
     },
   });
