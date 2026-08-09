@@ -1,5 +1,58 @@
 # Session Handoff
 
+## 2026-08-10 (21) — `infra/e2e-ci` = pass + the first release record (`docs/releases/2026-08-10-r1/`)
+
+- Done (`infra/e2e-ci`): the browser proof is no longer manual. `apps/fe/playwright.config.ts` now
+  declares two `webServer`s — `pnpm --filter be build && start` on :3000 (readiness probed via
+  `/api/v1/dresses` answering 401, since there is no health route) and
+  `pnpm build && vite preview --port 4173 --strictPort` — so `pnpm --filter fe e2e` starts the stack
+  it needs and is the SAME command locally and in CI. Two deliberate boundaries: the DATABASE is
+  never started by the tests (migrate + seed stay an explicit act), and `E2E_BASE_URL` means "I run
+  the servers myself" (`webServer` becomes `undefined`, nothing is started). The browser now
+  exercises the PRODUCTION build, service worker included — `vite.config.ts` gained the matching
+  `preview.proxy` for `/api`, which is also what production needs from Nginx (NFR-03).
+- Done (CI): new `e2e` job — own postgres service, `playwright install --with-deps chromium`,
+  `pnpm --filter be migrate`, `pnpm --filter be seed` (`SEED_OWNER_PASSWORD=changeme`, the pair the
+  spec signs in with), `pnpm --filter fe e2e`, and report + trace uploaded on failure. An `html`
+  reporter was added so there is something to upload besides the raw trace.
+- Verification: cold run against only `docker compose up -d` + migrate + seed = **1 passed (18.2s)**;
+  again with `CI=1` (reuseExistingServer off) = **1 passed (17.1s)**. `E2E_BASE_URL` pointed at a
+  dead port emitted **0 `[WebServer]` lines** and failed in seconds — proving nothing is started —
+  and produced BOTH `playwright-report/` and `test-results/<test>/trace.zip`, the two paths the job
+  uploads. Root gates green: contract emit + `generate:api` clean, check, lint, arch, be 95 unit +
+  30 e2e, fe 57, qr-admin 13, both builds. **AC2 is the one gap: the job has never run on GitHub —
+  push the branch and read the run.**
+- Done (release lane, first use): `docs/releases/2026-08-10-r1/` — 20 per-feature readiness files,
+  `release-plan.md` (§0 release-wide rows + risks R1–R4, §1 prerequisites P1–P7, §2 ordered steps,
+  §3 compatibility matrix), `rollback.md`, a seeded `record.md`, plus a local index README. Owner
+  decisions taken as input: all 20 features are the candidates, target is VPS + PM2 + Nginx, bangnk
+  is owner AND on-call. The lane prepares only — it ends at "STOP — awaiting go/no-go".
+- What the readiness pass actually found (the useful output, not the paperwork):
+  1. **No deployment artifact exists in the repo at all** — no PM2 definition, Nginx conf, TLS,
+     backup procedure, production secrets or catalog CSV (P1–P7). Every deploy step names a command
+     whose artifact still has to be created.
+  2. **NFR-03 is load-bearing, not a preference**: `configureApp()` never calls `enableCors()`, so
+     unless Nginx serves the SPAs and proxies `/api` on ONE origin, every call fails. `apps/qr-admin`
+     additionally sets no `base`, so a subpath deploy breaks its assets — it needs its own host.
+  3. **Every migration `down` is a `DROP`** (tables, or `photo_urls`). Schema reversal is safe
+     exactly once — before the shop enters data. After that the only reversal is restore-from-backup,
+     and the backup does not exist. This is why P5 blocks.
+  4. **R1–R4 are `missing` on every feature**: no observability of any kind, no feature flag, one
+     person as owner+on-call, no cross-version contract test.
+  5. Two features are thinner than a uniform `pass` suggests: `qr/create-url-code` has no live-DB and
+     no browser proof (the ledger says so), and `qr/styled-svg-rendering` has never been printed and
+     scanned. Both recorded in their own readiness files.
+- Watch out: `bash init.sh` still aborts in this environment on `pnpm install --frozen-lockfile`
+  (`ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`) — the gates were run individually with
+  `npm_config_verify_deps_before_run=false`. Nothing is committed yet: the working tree carries this
+  session's changes.
+- Next: (1) push the branch so the CI `e2e` job proves itself — that is the cheapest open item in the
+  release; (2) the release's own prerequisites P1–P7 are real work and the natural next feature
+  (`infra/deploy-vps` would give PM2 + Nginx + backup an entry in the ledger instead of living only
+  in the plan); (3) still open from before: the `qr` context has no invariant proof, and the deposit
+  COLLECTION is never recorded — the readiness pass surfaced that second one from three different
+  features, which is a strong signal.
+
 ## 2026-08-10 (20) — `rentals/settle-late-fee` = pass (first capability through the spec-before-code lane)
 
 - Done (the point of the exercise): the `init-feature-spec` lane was used for real. The spec

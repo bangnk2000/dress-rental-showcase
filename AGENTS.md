@@ -14,7 +14,8 @@ to open when the task actually needs it:
   catalog + UI state matrix for ONE capability; its output feeds both `10-*-scaffold-prompt`
   INPUT CONTRACTs. Required for a capability with business rejections; skip for pure CRUD reads
 - `docs/spec/init-release/README.md` — readiness/rollout lane AFTER features reach `pass`
-  (outputs → `docs/releases/<release-id>/`); never deploys. Unused in this repo so far
+  (outputs → `docs/releases/<release-id>/`); never deploys. First used 2026-08-10 →
+  [`docs/releases/2026-08-10-r1/`](docs/releases/2026-08-10-r1/README.md)
 
 Product intent docs (this product, not the reusable spec):
 
@@ -30,7 +31,7 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 
 ## Current state (re-sync at every session end — see Session rules)
 
-**As of 2026-08-09 · `feature_list.json` is 18/18 `pass`, no tracked backlog, no shell routes.**
+**As of 2026-08-10 · `feature_list.json` is 20/20 `pass`, no tracked backlog, no shell routes.**
 This section stays a MAP, not a description — each row's detail lives in the doc it points at.
 
 | Area | State | Detail lives in |
@@ -42,7 +43,8 @@ This section stays a MAP, not a description — each row's detail lives in the d
 | Invariant proof | `pnpm --filter be test:e2e` (22 tests) provokes the real EXCLUDE/UNIQUE/CHECK constraints, incl. a concurrent race and a raw INSERT that bypasses the app. CI has a postgres service. | `apps/be/test/` + `apps/be/AGENTS.md` §Invariant-proof suite |
 | `docs/spec` | Six vendored `init-*` sets, synced 2026-08-09 from upstream `815fa0f`. | `docs/spec/README.md` |
 | Open by choice | `Idempotency-Key` unimplemented (DB constraint stops double-submit); cross-context table-read adapters kept. | `apps/fe/AGENTS.md` #8, `apps/be/AGENTS.md` #4 |
-| Not in root gates | Playwright (`pnpm --filter fe e2e`, vi happy path vs the real stack) — needs browsers + a running stack. | `apps/fe/AGENTS.md` #5 |
+| Not in root gates | Playwright (`pnpm --filter fe e2e`, vi happy path) — needs browsers + a live DB, but it is NOT manual any more: it starts the BE and the built FE itself and runs as the CI `e2e` job. | `apps/fe/AGENTS.md` #5, `.github/workflows/ci.yml` |
+| Release lane | First release prepared 2026-08-10 (`2026-08-10-r1`, all 20 features): readiness per feature, plan, rollback, seeded record. **Nothing is deployed** — it stops at go/no-go, and 7 prerequisites (PM2, Nginx same-origin, TLS, backup, secrets, catalog CSV, QR Admin origin) do not exist yet. | [`docs/releases/2026-08-10-r1/README.md`](docs/releases/2026-08-10-r1/README.md) |
 
 Next-session candidates are in `session-handoff.md` (latest entry) — do not re-derive them here.
 
@@ -77,8 +79,10 @@ Two things to know about these gates:
 - `contract:check` and the arch **freshness** item compare the generated layer against HEAD, so they
   are red whenever the contract was regenerated but not yet committed. That is the gate doing its
   job: commit BE + `packages/contract` + both clients together, then they go green.
-- `pnpm --filter fe e2e` (Playwright, needs browsers + a running stack) is deliberately EXCLUDED
-  from root gates and `init.sh`; run it by hand (FE Deviation #5).
+- `pnpm --filter fe e2e` (Playwright) is deliberately EXCLUDED from root gates and `init.sh` — it
+  needs installed browsers plus a migrated + seeded database. It is NOT unproven work, though: CI
+  runs it as its own `e2e` job on every push/PR (`infra/e2e-ci`), and the command starts the BE and
+  the built FE itself, so locally it is one command against a running compose DB (FE Deviation #5).
 
 ## Session rules
 

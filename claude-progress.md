@@ -3,6 +3,19 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-08-10 (21) — `infra/e2e-ci` = pass, and the repo's FIRST release record. The browser proof
+  stopped being manual: `playwright.config.ts` starts the BE and the FE **production build**
+  (`vite preview` :4173, `preview.proxy` added to `vite.config.ts`) itself, so `pnpm --filter fe e2e`
+  is one command locally and in CI; `E2E_BASE_URL` opts out of that entirely. New CI `e2e` job with
+  its own postgres, migrate + seed, chromium, and report/trace uploaded on failure. Proven cold
+  (18.2s) and with `CI=1` (17.1s); the opt-out branch proven by 0 `[WebServer]` lines against a dead
+  port. Then the `init-release` lane ran for real → `docs/releases/2026-08-10-r1/`: 20 readiness
+  files, release plan (risks R1–R4, prerequisites P1–P7, ordered steps, compatibility matrix),
+  rollback plan, seeded record, index. It found what a uniform `pass` ledger hides — no deployment
+  artifact exists at all, NFR-03 same-origin is load-bearing because CORS is never enabled, every
+  migration `down` is a `DROP` so reversal is safe exactly once, there is no observability or flag
+  anywhere, and the `qr` slices have no live-DB/browser/print proof. Ends at "STOP — awaiting
+  go/no-go"; nothing was deployed and nothing is committed.
 - 2026-08-10 (20) — `rentals/settle-late-fee` (FR-RENT-09) = pass — the first capability driven
   through the `init-feature-spec` lane: spec `draft` with the business rules left as blocker
   questions, contract check on the draft, owner decisions recorded in §6, THEN code, then an as-built
