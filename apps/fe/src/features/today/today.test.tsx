@@ -256,6 +256,68 @@ test('FR-RENT-09: a waiver without a reason points at the note field', async () 
   expect(await screen.findByText('Giảm phí trễ thì phải ghi lý do.')).toBeInTheDocument();
 });
 
+test('FR-RENT-09: a slow quote never erases what staff already typed', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  server.use(
+    http.get('/api/v1/rentals/:id/late-fee', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      return HttpResponse.json({
+        rentalId: 'rental-9',
+        dueDate: '2026-08-03',
+        referenceDate: '2026-08-04',
+        daysLate: 1,
+        dressCount: 1,
+        dailyRateAmount: 200_000,
+        suggestedLateFee: 200_000,
+      });
+    }),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  // The dialog is usable before the quote lands, so staff starts working: settling is a
+  // conversation with a customer, not a wait for a spinner.
+  await user.type(screen.getByLabelText('Ghi chú'), 'Váy dính bùn');
+  await user.type(screen.getByLabelText('Phí hư hỏng (VND)'), '500000');
+
+  // When the quote arrives it seeds ONLY the untouched late-fee field.
+  await waitFor(() =>
+    expect(screen.getByLabelText('Phí trễ hạn (VND)')).toHaveValue('200000'),
+  );
+  expect(screen.getByLabelText('Ghi chú')).toHaveValue('Váy dính bùn');
+  expect(screen.getByLabelText('Phí hư hỏng (VND)')).toHaveValue('500000');
+});
+
+test('FR-RENT-09: a late fee staff already edited is not overwritten by the quote', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  server.use(
+    http.get('/api/v1/rentals/:id/late-fee', async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      return HttpResponse.json({
+        rentalId: 'rental-9',
+        dueDate: '2026-08-03',
+        referenceDate: '2026-08-04',
+        daysLate: 1,
+        dressCount: 1,
+        dailyRateAmount: 200_000,
+        suggestedLateFee: 200_000,
+      });
+    }),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.type(screen.getByLabelText('Phí trễ hạn (VND)'), '300000');
+
+  // A deliberate amount survives; the server's suggestion is still on the banner to read from.
+  await waitFor(() =>
+    expect(screen.getByText(/đề xuất 200\.000/)).toBeInTheDocument(),
+  );
+  expect(screen.getByLabelText('Phí trễ hạn (VND)')).toHaveValue('300000');
+});
+
 test('FR-RENT-09: a failing quote warns but never blocks the settlement', async () => {
   seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
   server.use(

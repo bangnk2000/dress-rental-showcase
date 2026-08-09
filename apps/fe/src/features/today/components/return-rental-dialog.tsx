@@ -70,16 +70,25 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
   });
   const quote = lateFee.data ?? null;
 
-  // Re-prime per open: the dialog instance is reused across rentals. The suggested fee arrives
-  // asynchronously, so re-prime again when it lands (staff has not typed yet at that point).
-  const { reset } = form;
+  // One dialog instance serves every rental, so the form is re-primed per OPEN — keyed on the
+  // rental id, not the DTO: the board refetches while the dialog is up, and a new object identity
+  // for the same rental must not wipe a half-typed settlement.
+  const rentalId = rental?.rentalId ?? null;
+  const { reset, setValue, getFieldState } = form;
   useEffect(() => {
-    if (!rental) return;
-    reset({
-      ...returnFormDefaults,
-      lateFee: quote && quote.suggestedLateFee > 0 ? String(quote.suggestedLateFee) : '',
-    });
-  }, [rental, quote, reset]);
+    if (!rentalId) return;
+    reset(returnFormDefaults);
+  }, [rentalId, reset]);
+
+  // The quote arrives after the dialog is already usable, so seeding it must not be a reset: on a
+  // slow connection staff has often typed the waiver note or a fee by then, and losing that
+  // silently is worse than an empty field. Only an untouched field takes the server's number.
+  const suggestedLateFee = quote?.suggestedLateFee ?? null;
+  useEffect(() => {
+    if (!rentalId || suggestedLateFee === null) return;
+    if (getFieldState('lateFee').isDirty) return;
+    setValue('lateFee', suggestedLateFee > 0 ? String(suggestedLateFee) : '');
+  }, [rentalId, suggestedLateFee, setValue, getFieldState]);
 
   async function refreshBoardAndList(): Promise<void> {
     await Promise.all([
