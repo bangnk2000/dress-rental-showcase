@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -37,6 +37,15 @@ import {
  */
 function readDressIds(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : [];
+}
+
+/**
+ * Identity of a booking ATTEMPT: the dates and the set of dresses, which is exactly what every
+ * rejection outcome answers about. Two attempts with the same key deserve the same verdict; a
+ * verdict for any other key belongs to a request the staff has already moved past.
+ */
+function bookingKey(startDate: string, endDate: string, dressIds: string[]): string {
+  return [startDate, endDate, [...dressIds].sort().join(',')].join('|');
 }
 
 /** Form values + picked dresses → request body; blank notes are omitted. */
@@ -77,10 +86,21 @@ export function NewRentalRoute() {
   const period: PickerPeriod | null =
     startDate && endDate && startDate <= endDate ? { startDate, endDate } : null;
 
-  // A rejection belongs to the dates it was answered for. Changing them makes it stale, and the
-  // per-dress availability check below is what answers for the new range.
+  /**
+   * The current selection, readable from the mutation callbacks — which capture the `selected` of
+   * the render that fired them, not the one on screen when the answer arrives.
+   */
+  const selectedRef = useRef<SelectedDress[]>([]);
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
+
+  // A rejection belongs to the dates it was answered for. Changing them makes it stale — both the
+  // per-dress marking AND the message, or the form keeps telling staff that the booking they just
+  // corrected is invalid. The per-dress availability check below answers for the new range.
   useEffect(() => {
     setBlocked(null);
+    setFormError(null);
   }, [startDate, endDate]);
 
   // One designed state per outcome code (ADR 0001 §4): the form stays filled and says WHICH
@@ -101,7 +121,26 @@ export function NewRentalRoute() {
         toast.success(t('form.success'));
         void navigate('/rentals');
       },
-      onError: (error) => {
+      onError: (error, variables) => {
+        // The answer must belong to the booking still on screen. Staff who edits the dates or the
+        // selection while the request is in flight would otherwise get rows marked unavailable for
+        // a range that was never submitted.
+        const answered = bookingKey(
+          variables.data.startDate,
+          variables.data.endDate,
+          variables.data.items.map((item) => item.dressId),
+        );
+        const onScreen = bookingKey(
+          form.getValues('startDate'),
+          form.getValues('endDate'),
+          selectedRef.current.map((dress) => dress.id),
+        );
+        if (answered !== onScreen) {
+          // Still say the booking did not go through: the rental was NOT created either way.
+          toast.error(t('form.error'));
+          return;
+        }
+
         const mapped = mapApiError(error);
         const dressIds = mapped.kind === 'outcome' ? readDressIds(mapped.dressIds) : [];
         switch (mapped.kind === 'outcome' ? mapped.status : null) {
@@ -210,7 +249,10 @@ export function NewRentalRoute() {
             }}
             onRemove={(dressId) => {
               setSelected((current) => current.filter((dress) => dress.id !== dressId));
+              // Dropping a dress can be exactly the fix the rejection asked for, so the message
+              // goes with the marking rather than outliving the problem it described.
               setBlocked(null);
+              setFormError(null);
             }}
             error={formError === 'form.errors.noDresses' ? formError : null}
             period={period}
