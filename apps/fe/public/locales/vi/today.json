@@ -58,7 +58,8 @@
       "afterFees": "Trừ phí {{fees}} → hoàn lại khách {{amount}}",
       "manual": "Bạn đang nhập {{amount}} — khác số tính ở trên.",
       "use": "Điền {{amount}} vào ô hoàn cọc",
-      "collected": "Đã thu cọc: {{amount}}"
+      "collected": "Đã thu cọc: {{amount}}",
+      "unavailable": "Không đọc được sổ tiền của đơn nên chưa biết đã thu cọc bao nhiêu. Thử lại trước khi tất toán — tránh hoàn nhầm số tiền tiệm chưa từng nhận."
     }
   },
   "errors": {

@@ -17,8 +17,10 @@ export interface PaymentRepositoryPort {
   findCollected(rentalId: string): Promise<RecordedCollection[]>;
 
   /**
-   * Writes 1..2 movements in ONE transaction (R5). Throws `CollectionConflictError` when the
-   * partial UNIQUE index refuses a row — a race the pre-check could not see.
+   * Writes 1..2 movements in ONE transaction (R5), with the rental's status re-checked under a row
+   * lock in that same transaction (R4). Throws `CollectionConflictError` when the partial UNIQUE
+   * index refuses a row, and `RentalNotOpenError` when the rental closed after the pre-check —
+   * both races the service turns back into its own outcomes.
    */
-  recordCollection(payments: PaymentEntity[]): Promise<void>;
+  recordCollection(rentalId: string, payments: PaymentEntity[]): Promise<void>;
 }

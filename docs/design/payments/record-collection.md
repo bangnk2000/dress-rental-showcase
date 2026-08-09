@@ -133,6 +133,7 @@ Dialog **"Nhận về & tất toán"** (đổi cơ sở, không đổi luồng):
 | --- | --- | --- |
 | có cọc đã thu | `summary.deposit > 0` | "Đã thu cọc: {{amount}}"; hoàn cọc pre-fill = `cọc đã thu − phí trễ đề xuất` |
 | chưa ghi cọc | `summary.deposit = 0` | "Chưa ghi nhận tiền cọc — số dưới đây là cọc chuẩn trong danh mục"; giữ nguyên hành vi cũ |
+| **sổ tiền lỗi** | query payments `isError` | banner đỏ + nút Thử lại; **không** pre-fill gì cả và nút xác nhận **disabled**. "Chưa đọc được sổ" KHÁC "chưa thu cọc": rơi về cọc chuẩn ở trạng thái này là hoàn tiền tiệm có thể chưa từng nhận. Chặn không mất gì — API không đọc được thì cũng không ghi được tất toán |
 
 Accessibility: khối tổng tiền và các message dùng `aria-live="polite"`; ô tiền có `inputMode="numeric"`;
 nút xác nhận có trạng thái busy. Responsive: dialog cuộn được trên tablet dọc.
@@ -162,6 +163,8 @@ nút xác nhận có trạng thái busy. Responsive: dialog cuộn được trê
 | AC4 | không gửi khoản nào → `rejected_nothing_to_record` | application unit |
 | AC5 | đơn đã ghi cọc → dialog trả váy pre-fill hoàn cọc theo CỌC ĐÃ THU | vitest (FE) |
 | AC5 | đơn chưa ghi cọc → dialog nói rõ đang dùng cọc chuẩn | vitest (FE) |
+| AC5 | đọc sổ tiền lỗi → không pre-fill, chặn tất toán | vitest (FE) |
+| AC3 | return commit XEN GIỮA pre-check và lệnh ghi → vẫn `rejected_rental_closed`, sổ 0 dòng | `test:e2e` (giữ lock rồi commit) |
 | — | `summary` cộng đúng theo kind | unit projection |
 | — | contract không lệch | `pnpm contract:check` |
 
@@ -233,6 +236,17 @@ Quyết định phát sinh khi code (đều nhỏ, ghi lại để không phải
    không dùng giá trị này, nó chỉ giữ shape chung với các command khác.
 3. **Nút trên `/rentals` đổi nhãn `Thanh toán` → `Tiền`** và hiện ở MỌI hàng: "thanh toán" trên một
    đơn vừa đặt (chưa có gì để tất toán) đọc sai nghĩa; màn hình giờ là sổ tiền của đơn.
+
+Hai lỗi do **codex review PR #5** tìm ra, sửa ngay trên nhánh (cả hai đều là lỗi TIỀN):
+
+1. **TOCTOU ở R4.** `findStatus()` chạy trong transaction riêng, nên một lượt return commit xen vào
+   giữa pre-check và lệnh INSERT vẫn để tiền rơi vào đơn đã đóng. Giờ trạng thái được đọc lại
+   `FOR UPDATE` **ngay trong transaction ghi**; thua lock thì repository ném `RentalNotOpenError` và
+   service trả về ĐÚNG outcome mà pre-check sẽ trả — cùng cách đã làm với `CollectionConflictError`.
+   Thứ tự khoá của cả hai luồng đều là `rentals` → `payments` nên không deadlock.
+2. **Sổ tiền đọc lỗi bị coi như "chưa thu cọc".** `payments.data` undefined khi query fail, nên dialog
+   rơi về cọc chuẩn và pre-fill một số hoàn cọc trông rất chính thống — tiệm có thể hoàn tiền chưa
+   từng nhận. Giờ trạng thái lỗi có banner + nút Thử lại, không pre-fill, và chặn tất toán.
 
 Phát hiện phụ khi chạy Playwright (đã sửa cùng lượt, đáng nhớ): dialog trả váy **không**
 invalidate query payments của đơn, nên sau khi tất toán, màn hình tiền trên `/rentals` vẫn hiện sổ

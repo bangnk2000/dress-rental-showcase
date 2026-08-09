@@ -3,7 +3,10 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateID } from '../../../../libs/ddd/entity.base';
 import { Money } from '../../../../libs/ddd/money.value-object';
-import { CollectionConflictError } from '../../application/ports/collection-conflict.error';
+import {
+  CollectionConflictError,
+  RentalNotOpenError,
+} from '../../application/ports/collection-conflict.error';
 import {
   PAYMENT_REPOSITORY,
   PaymentRepositoryPort,
@@ -79,7 +82,7 @@ export class RecordCollectionService
     );
 
     try {
-      await this.paymentRepo.recordCollection(payments);
+      await this.paymentRepo.recordCollection(command.rentalId, payments);
     } catch (error) {
       if (error instanceof CollectionConflictError) {
         // A concurrent request recorded first and the index refused this write. Same business rule
@@ -89,6 +92,15 @@ export class RecordCollectionService
         return Err(
           this.firstClash(requested, recordedNow) ??
             new CollectionAlreadyRecordedError(requested[0]!.kind, 0, error),
+        );
+      }
+      if (error instanceof RentalNotOpenError) {
+        // The rental closed between the pre-check above and the locked write. Same rule again, so
+        // the caller must not be able to tell which of the two noticed (R4).
+        return Err(
+          error.currentStatus === null
+            ? new CollectionRentalNotFoundError(error)
+            : new RentalClosedError(error.currentStatus, error),
         );
       }
       throw error;

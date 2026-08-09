@@ -458,6 +458,29 @@ test('no refund suggestion at all while the late fee is unknown', async () => {
   expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('');
 });
 
+test('FR-PAY-02: a ledger that fails to load blocks settlement instead of falling back to the catalog', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-9', status: 'out' })] });
+  seedLateFeeQuote('rental-9', { daysLate: 0, dressCount: 1, suggestedLateFee: 0 });
+  server.use(
+    http.get('/api/v1/rentals/:id/payments', () =>
+      HttpResponse.json({ error: { code: 'GENERIC.INTERNAL', message: 'boom' } }, { status: 500 }),
+    ),
+  );
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
+
+  // "Unknown" must not be rendered as "nothing was collected": the catalog's 3.000.000 would look
+  // like an authoritative refund for money the shop may never have taken.
+  expect(await screen.findByText(/Không đọc được sổ tiền/)).toBeInTheDocument();
+  expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('');
+  expect(screen.queryByText(/cọc chuẩn/i)).not.toBeInTheDocument();
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Xác nhận trả váy' })).toBeDisabled(),
+  );
+});
+
 test('FR-PAY-02: the refund is computed from the deposit ACTUALLY collected, not the catalog', async () => {
   seedTodayBoard({
     dueBack: [

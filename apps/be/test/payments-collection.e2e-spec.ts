@@ -1,4 +1,6 @@
+import { Client } from 'pg';
 import { E2eContext, rentalBody, startE2eApp } from './e2e-app';
+import { e2eDatabaseUrl } from './e2e-database-url';
 import { addDays, shopToday } from '../src/libs/utils/date';
 
 /**
@@ -161,6 +163,40 @@ describe('recording money collected (real Postgres)', () => {
       depositRefund: 2_800_000,
       damageFee: 200_000,
     });
+  });
+
+  it('AC3: a return that commits DURING the write still takes no money (row lock, not a pre-check)', async () => {
+    const rentalId = await openRental(['PC-012']);
+
+    // A second connection holds an uncommitted "the rental was returned" write. The collect
+    // request must BLOCK on the rentals row rather than read the stale `out` status and insert
+    // against a rental that is about to be closed.
+    const blocker = new Client({ connectionString: e2eDatabaseUrl() });
+    await blocker.connect();
+    let response;
+    try {
+      await blocker.query('BEGIN');
+      await blocker.query("UPDATE rentals SET status = 'returned' WHERE id = $1", [rentalId]);
+
+      const pending = collect(rentalId, { deposit: 3_000_000 });
+      // Long enough for the request to reach the lock; the assertion below is what proves it did.
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await blocker.query('COMMIT');
+      response = await pending;
+    } finally {
+      await blocker.end();
+    }
+
+    expect(response.status).toBe(422);
+    expect(response.body).toEqual({
+      status: 'rejected_rental_closed',
+      currentStatus: 'returned',
+    });
+    const rows = await context.db.query<{ count: string }>(
+      'SELECT count(*) AS count FROM payments WHERE rental_id = $1',
+      [rentalId],
+    );
+    expect(rows.rows[0]!.count).toBe('0');
   });
 
   it('AC3: a returned rental takes no more money', async () => {

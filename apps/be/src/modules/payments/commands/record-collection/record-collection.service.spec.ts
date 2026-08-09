@@ -1,4 +1,7 @@
-import { CollectionConflictError } from '../../application/ports/collection-conflict.error';
+import {
+  CollectionConflictError,
+  RentalNotOpenError,
+} from '../../application/ports/collection-conflict.error';
 import {
   PaymentRepositoryPort,
   RecordedCollection,
@@ -55,8 +58,15 @@ function command(props: Partial<RecordCollectionCommand> = {}): RecordCollection
 
 /** The entities handed to the repository — what would actually hit the table. */
 function written(recordCollection: jest.Mock): Array<{ kind: string; amount: number }> {
-  const payments = recordCollection.mock.calls[0]![0] as PaymentEntity[];
-  return payments.map((payment) => ({ kind: payment.kind, amount: payment.amount }));
+  return writtenEntities(recordCollection).map((payment) => ({
+    kind: payment.kind,
+    amount: payment.amount,
+  }));
+}
+
+/** `recordCollection(rentalId, payments)` — the entities are the SECOND argument. */
+function writtenEntities(recordCollection: jest.Mock): PaymentEntity[] {
+  return recordCollection.mock.calls[0]![1] as PaymentEntity[];
 }
 
 test('AC1: deposit and rental fee are recorded together, both carrying the note', async () => {
@@ -73,8 +83,7 @@ test('AC1: deposit and rental fee are recorded together, both carrying the note'
     { kind: 'deposit', amount: 3_000_000 },
     { kind: 'rental_fee', amount: 1_500_000 },
   ]);
-  const payments = recordCollection.mock.calls[0]![0] as PaymentEntity[];
-  expect(payments.map((payment) => payment.getProps().note)).toEqual([
+  expect(writtenEntities(recordCollection).map((payment) => payment.getProps().note)).toEqual([
     'Khách chuyển khoản',
     'Khách chuyển khoản',
   ]);
@@ -162,6 +171,34 @@ test('AC4: a call with no amount at all is a business rejection, not a write', a
   expect(result.isErr()).toBe(true);
   expect(result.unwrapErr()).toBeInstanceOf(NothingToRecordError);
   expect(recordCollection).not.toHaveBeenCalled();
+});
+
+test('AC3: a return that commits DURING the write answers the same outcome as the pre-check', async () => {
+  // The pre-check saw `out`; the locked write found `returned`. Staff must not be able to tell
+  // which of the two noticed — same rule, same code.
+  const recordCollection = jest.fn().mockRejectedValue(new RentalNotOpenError('returned'));
+  const repo = makeRepo([], recordCollection);
+
+  const result = await new RecordCollectionService(repo, makeLookup('out')).execute(
+    command({ deposit: 3_000_000 }),
+  );
+
+  expect(result.isErr()).toBe(true);
+  const error = result.unwrapErr() as RentalClosedError;
+  expect(error).toBeInstanceOf(RentalClosedError);
+  expect(error.currentStatus).toBe('returned');
+});
+
+test('a rental that vanished during the write is reported as not found, not as closed', async () => {
+  const recordCollection = jest.fn().mockRejectedValue(new RentalNotOpenError(null));
+  const repo = makeRepo([], recordCollection);
+
+  const result = await new RecordCollectionService(repo, makeLookup('booked')).execute(
+    command({ deposit: 3_000_000 }),
+  );
+
+  expect(result.isErr()).toBe(true);
+  expect(result.unwrapErr()).toBeInstanceOf(CollectionRentalNotFoundError);
 });
 
 test('an unknown rental is refused before anything is read from the ledger', async () => {

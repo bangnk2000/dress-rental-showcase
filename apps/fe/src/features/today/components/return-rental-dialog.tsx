@@ -100,12 +100,25 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
   const payments = useListPaymentsHttpControllerList(rental?.rentalId ?? '', {
     query: { enabled: rental !== null, staleTime: 0 },
   });
+  /**
+   * A FAILED ledger read is not the same as "no deposit was collected", and treating it as one is
+   * how the shop hands back money it never received: the catalog fallback would quietly pre-fill a
+   * refund that looks authoritative. So while the ledger is unknown the dialog states that, fills
+   * nothing, and refuses to settle — an unreachable API cannot record the settlement either, so
+   * blocking costs nothing that was going to work.
+   */
+  const ledgerUnavailable = payments.isError;
   const collectedDeposit = payments.data?.summary.deposit ?? 0;
   const standardDeposit = rental
     ? rental.dresses.reduce((sum, dress) => sum + dress.depositAmount, 0)
     : 0;
   const depositIsCollected = collectedDeposit > 0;
-  const depositTotal = depositIsCollected ? collectedDeposit : standardDeposit;
+  // An unreadable ledger is an UNKNOWN basis, not a zero one, so nothing is derived from it.
+  const depositTotal = ledgerUnavailable
+    ? 0
+    : depositIsCollected
+      ? collectedDeposit
+      : standardDeposit;
   const suggestedLateFee = quote?.suggestedLateFee ?? null;
   /**
    * Without the quote the late fee is unknown, NOT zero — and omitting `lateFee` makes the server
@@ -270,8 +283,26 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
             {/* The deposit the catalog carries, and what would be left of it after the fees
                 currently typed — the refund field is seven digits nobody should reproduce from
                 memory. Live, so editing a fee immediately shows what the customer would get back.
-                It fills the field only when staff taps it: the shop has no record of what was
-                actually taken, so this number is a suggestion, not a fact. */}
+                It fills the field only when staff taps it, unless the deposit is recorded money
+                — see the seeding effect above. */}
+            {ledgerUnavailable ? (
+              <div
+                aria-live="polite"
+                className="rounded-md border border-destructive/50 p-3 text-sm text-destructive"
+              >
+                <p>{t('returnDialog.deposit.unavailable')}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => void payments.refetch()}
+                  disabled={payments.isFetching}
+                >
+                  {tCommon('actions.retry')}
+                </Button>
+              </div>
+            ) : null}
             {suggestionAvailable ? (
               <div aria-live="polite" className="rounded-md border bg-muted/40 p-3 text-sm">
                 <p className="text-muted-foreground">
@@ -353,10 +384,16 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
               </Button>
               {/* Never submit before the suggested fee AND the collected deposit are known: a
                   blind submit would charge whatever the empty field means (tripping the waiver
-                  rule) or hand back a refund computed from the catalog instead of the till. */}
+                  rule) or hand back a refund computed from the catalog instead of the till. A
+                  ledger that FAILED to load is the same unknown, which is why it blocks too. */}
               <Button
                 type="submit"
-                disabled={returnRental.isPending || lateFee.isPending || payments.isPending}
+                disabled={
+                  returnRental.isPending ||
+                  lateFee.isPending ||
+                  payments.isPending ||
+                  ledgerUnavailable
+                }
               >
                 {t('returnDialog.submit')}
               </Button>
