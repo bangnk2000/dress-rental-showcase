@@ -19,9 +19,16 @@
     "returned": "Returned",
     "cancelled": "Cancelled"
   },
+  "date": {
+    "previous": "Previous day",
+    "next": "Next day",
+    "today": "Today"
+  },
   "actions": {
     "pickup": "Handed out",
-    "return": "Take back & settle"
+    "pickupFor": "Handed out to {{customer}}",
+    "return": "Take back & settle",
+    "returnFor": "Take back & settle for {{customer}}"
   },
   "pickupSuccess": "Hand-out recorded.",
   "actionError": "Something went wrong, please retry.",

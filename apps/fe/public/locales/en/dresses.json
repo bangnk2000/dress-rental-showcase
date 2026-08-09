@@ -72,6 +72,7 @@
       "retire": "Retire"
     },
     "retire": {
+      "title": "Retire {{code}}?",
       "confirm": "Retire this dress? It can no longer be rented (cannot be undone).",
       "success": "Dress retired",
       "alreadyRetired": "This dress was already retired",

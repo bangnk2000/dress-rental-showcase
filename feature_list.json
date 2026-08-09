@@ -199,6 +199,22 @@
         "AC3: the thumbnail adds nothing for a screen reader, since the dress code is already text next to it"
       ],
       "dependencies": ["catalog/manage-dress"]
+    },
+    {
+      "id": "fe:board-and-confirm-ergonomics",
+      "title": "The morning board behaves like a tablet screen: it steps days without blanking, its actions are thumb-sized and per-row, and destructive confirms are the app's own",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "UI/UX review findings #7–#11, FE-only. AC1 (#7): the board date now moves inside `useTransition`, so a new day keeps the current board on screen at 50% opacity instead of dropping the whole route to the Suspense spinner — this screen is opened dozens of times a day and blanking it read as a reload. AC2 (#8): ± day buttons and a `Hôm nay` button, disabled when already there; `shiftDateIso` builds the neighbouring day through the local Date constructor, never `Date.parse` (which reads a bare yyyy-mm-dd as UTC and would step a day short east of Greenwich). Its test asserts the date INPUT after returning to today, because that board is already cached — no request is made, which is the point. AC3 (#9): the two board actions are `h-11` (44px) instead of the 32px `sm` used for secondary actions; they are pressed with a thumb while the other hand holds a dress. AC4 (#10): one mutation object serves every row, so `isPending` greyed out the entire list with no clue which hand-out was in flight — the spinner now marks the row whose id is in `variables`, while all buttons stay disabled to stop a double action. AC5 (#18): both board actions carry the customer in their accessible name, and the visible label is a prefix of it (WCAG 2.5.3); the vitest queries moved to regex names because the accessible name genuinely changed. AC6 (#11): `window.confirm` is gone from both destructive actions — new `ui/alert-dialog` primitive + a `ConfirmDialog` wrapper. The native dialog was wrong on a shop tablet for three reasons now recorded in the component: its buttons follow the OS language rather than the app's Vietnamese, it blocks the JS thread, and inside an installed PWA it renders as browser chrome that reads as a malfunction. The dismiss button says `Quay lại` rather than `Hủy`, because on the rentals list the CONFIRMED action is itself a cancel and two buttons reading Huỷ/Hủy side by side is a coin toss. Gates: fe 66 tests (+2 new, 3 rewritten to drive the real dialog), be 95, qr-admin 13, check/lint/arch/builds green, and `pnpm --filter fe e2e` passes against the real stack (1 passed, 15.9s) — the happy path clicks both resized board buttons.",
+      "acceptance": [
+        "AC1: changing the board date keeps the previous board visible instead of blanking the route",
+        "AC2: the board steps one day at a time and returns to today in one tap",
+        "AC3: the two board actions meet the 44px touch target",
+        "AC4: only the row whose action is in flight shows a spinner, and no second action can start meanwhile",
+        "AC5: repeated board actions are distinguishable by accessible name",
+        "AC6: cancelling a rental and retiring a dress confirm through the app's own dialog, in Vietnamese, with a confirm button that states the action"
+      ],
+      "dependencies": ["rentals/today-board", "rentals/cancel-rental"]
     }
   ]
 }

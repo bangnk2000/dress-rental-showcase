@@ -18,7 +18,7 @@ import {
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/render';
 
-import { localDateIso } from './lib/local-date';
+import { localDateIso, shiftDateIso } from './lib/local-date';
 import { TodayRoute } from './today-route';
 
 function renderToday() {
@@ -88,6 +88,42 @@ test('changing the board date refetches that day', async () => {
   await waitFor(() => expect(getLastTodayBoardDate()).toBe('2099-02-01'));
 });
 
+test('the day arrows step the board and "Hôm nay" comes straight back', async () => {
+  const user = userEvent.setup();
+  renderToday();
+  await screen.findByText('Không có lượt thuê nào cần giao.');
+  const today = localDateIso();
+
+  // Getting back to today was otherwise "remember the date, then use the picker".
+  await user.click(screen.getByRole('button', { name: 'Ngày sau' }));
+  await waitFor(() => expect(getLastTodayBoardDate()).toBe(shiftDateIso(today, 1)));
+  expect(screen.getByRole('button', { name: 'Hôm nay' })).toBeEnabled();
+
+  await user.click(screen.getByRole('button', { name: 'Hôm nay' }));
+
+  // Asserting the input, not the last request: today's board is already in the TanStack cache
+  // (fetched at mount, staleTime 60s), so coming back costs no round trip — which is the point.
+  await waitFor(() => expect(screen.getByLabelText('Ngày của bảng')).toHaveValue(today));
+  // already there → nothing to go back to
+  expect(screen.getByRole('button', { name: 'Hôm nay' })).toBeDisabled();
+});
+
+test('board actions carry the customer in their accessible name', async () => {
+  seedTodayBoard({
+    dueOut: [makeTodayRental()],
+    dueBack: [makeTodayRental({ rentalId: 'rental-2', status: 'out' })],
+  });
+  renderToday();
+
+  // "Đã giao váy" repeats down the list; the accessible name has to say whose rental it is.
+  expect(
+    await screen.findByRole('button', { name: 'Đã giao váy cho Nguyễn Thị Hoa' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Nhận về & tất toán cho Nguyễn Thị Hoa' }),
+  ).toBeInTheDocument();
+});
+
 test('a dress code links to its detail page', async () => {
   seedTodayBoard({ dueOut: [makeTodayRental()], dueBack: [] });
   const user = userEvent.setup();
@@ -106,7 +142,7 @@ test('the overdue section lists late rentals with the return action', async () =
 
   expect(await screen.findByText('Nguyễn Thị Hoa')).toBeInTheDocument();
   expect(screen.getByText('Đang thuê')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Nhận về & tất toán' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Nhận về & tất toán/ })).toBeInTheDocument();
 });
 
 test('the pickup button marks a due-out rental as handed out', async () => {
@@ -114,7 +150,7 @@ test('the pickup button marks a due-out rental as handed out', async () => {
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Đã giao váy' }));
+  await user.click(await screen.findByRole('button', { name: /Đã giao váy/ }));
 
   expect(await screen.findByText('Đã ghi nhận giao váy cho khách.')).toBeInTheDocument();
   expect(getLastPickupRentalId()).toBe('rental-1');
@@ -127,7 +163,7 @@ test('the return dialog settles fees + refund and sends only filled amounts', as
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
   // on time + one dress with a 3.000.000 standard deposit → the refund arrives pre-filled in full
   const refundField = await screen.findByLabelText('Hoàn cọc (VND)');
   await waitFor(() => expect(refundField).toHaveValue('3000000'));
@@ -161,7 +197,7 @@ test('a rejected_pickup_not_allowed outcome names the current status and refresh
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Đã giao váy' }));
+  await user.click(await screen.findByRole('button', { name: /Đã giao váy/ }));
 
   expect(
     await screen.findByText('Không giao được: lượt thuê đang ở trạng thái "Đang thuê".'),
@@ -178,7 +214,7 @@ test('a rejected_rental_not_found outcome on return closes the dialog', async ()
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
   await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
 
   expect(
@@ -195,7 +231,7 @@ test('FR-RENT-09: the dialog states the late fee and pre-fills the suggested amo
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
 
   // Intl puts a non-breaking space before ₫, so match the digits, not the exact spacing.
   expect(
@@ -226,7 +262,7 @@ test('FR-RENT-09: a staff waiver keeps the dialog open with the field error', as
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
   const lateFeeField = await screen.findByLabelText('Phí trễ hạn (VND)');
   await user.clear(lateFeeField);
   await user.type(lateFeeField, '100000');
@@ -257,7 +293,7 @@ test('FR-RENT-09: a waiver without a reason points at the note field', async () 
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
   await user.click(await screen.findByRole('button', { name: 'Xác nhận trả váy' }));
 
   expect(await screen.findByText('Giảm phí trễ thì phải ghi lý do.')).toBeInTheDocument();
@@ -338,7 +374,7 @@ test('FR-RENT-09: a failing quote warns but never blocks the settlement', async 
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
 
   expect(
     await screen.findByText('Không tính được phí trễ hạn. Vui lòng nhập tay.'),
@@ -365,7 +401,7 @@ test('the refund is pre-filled with the standard deposit MINUS the suggested lat
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
 
   // 5.000.000 standard deposit − 1.200.000 late fee: the number staff would otherwise
   // reconstruct from memory while the customer waits.
@@ -381,7 +417,7 @@ test('the deposit block recomputes while fees are typed and flags a manual refun
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
   await waitFor(() =>
     expect(screen.getByLabelText('Hoàn cọc (VND)')).toHaveValue('3000000'),
   );
@@ -400,7 +436,7 @@ test('a non-numeric amount blocks the settlement with a translated error', async
   const user = userEvent.setup();
   renderToday();
 
-  await user.click(await screen.findByRole('button', { name: 'Nhận về & tất toán' }));
+  await user.click(await screen.findByRole('button', { name: /Nhận về & tất toán/ }));
   await user.type(screen.getByLabelText('Phí trễ hạn (VND)'), '2trieu');
   await user.click(screen.getByRole('button', { name: 'Xác nhận trả váy' }));
 

@@ -1,8 +1,8 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
-import { beforeEach, expect, test, vi } from 'vitest';
+import { beforeEach, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
 import { makeDress, resetCatalog, seedDresses } from '@/test/msw/handlers/catalog';
@@ -325,17 +325,20 @@ test('editing to a taken code renders the rejected_dress_code_taken field error'
 
 test('retiring a dress (confirmed) flips the badge and removes the retire button', async () => {
   seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
-  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
   const user = userEvent.setup();
   renderDetail('/dresses/d1');
   await screen.findByRole('button', { name: 'Ngừng khai thác' });
 
   await user.click(screen.getByRole('button', { name: 'Ngừng khai thác' }));
 
+  // one-way action → the app's own confirmation, naming the dress it is about to retire
+  const dialog = await screen.findByRole('alertdialog');
+  expect(within(dialog).getByText('Ngừng khai thác DR-001?')).toBeInTheDocument();
+  await user.click(within(dialog).getByRole('button', { name: 'Ngừng khai thác' }));
+
   expect(await screen.findByText('Đã ngừng khai thác váy')).toBeInTheDocument();
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Ngừng khai thác' })).not.toBeInTheDocument(),
   );
   expect(screen.getByText('Ngừng khai thác')).toBeInTheDocument(); // the status badge
-  confirmSpy.mockRestore();
 });

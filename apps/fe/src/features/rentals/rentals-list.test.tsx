@@ -1,8 +1,8 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, expect, test, vi } from 'vitest';
+import { beforeEach, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
 import {
@@ -95,12 +95,11 @@ test('pagination requests the next page', async () => {
   await waitFor(() => expect(getLastRentalListParams()).toEqual({ page: '2' }));
 });
 
-test('cancelling a booked rental confirms, calls the API, and toasts', async () => {
+test('cancelling a booked rental confirms in-app, calls the API, and toasts', async () => {
   seedRentalList([
     makeRentalListItem(),
     makeRentalListItem({ rentalId: 'rental-2', customerName: 'Trần Văn B', status: 'returned' }),
   ]);
-  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
   const user = userEvent.setup();
   renderList();
 
@@ -109,22 +108,27 @@ test('cancelling a booked rental confirms, calls the API, and toasts', async () 
   expect(cancelButtons).toHaveLength(1);
   await user.click(cancelButtons[0]!);
 
-  expect(confirmSpy).toHaveBeenCalled();
+  // the app's own dialog, not window.confirm: it names the customer and its confirm button says
+  // what it does, so it can never be mistaken for the "Quay lại" next to it
+  const dialog = await screen.findByRole('alertdialog');
+  expect(within(dialog).getByText(/Nguyễn Thị Hoa/)).toBeInTheDocument();
+  await user.click(within(dialog).getByRole('button', { name: 'Huỷ lượt thuê' }));
+
   expect(await screen.findByText('Đã huỷ lượt thuê.')).toBeInTheDocument();
   expect(getLastCancelRentalId()).toBe('rental-1');
-  confirmSpy.mockRestore();
 });
 
-test('declining the confirm leaves the rental alone', async () => {
+test('backing out of the confirmation leaves the rental alone', async () => {
   seedRentalList([makeRentalListItem()]);
-  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
   const user = userEvent.setup();
   renderList();
 
   await user.click(await screen.findByRole('button', { name: 'Huỷ' }));
+  const dialog = await screen.findByRole('alertdialog');
+  await user.click(within(dialog).getByRole('button', { name: 'Quay lại' }));
 
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
   expect(getLastCancelRentalId()).toBeNull();
-  confirmSpy.mockRestore();
 });
 
 test('the payments dialog lists the settled movements of a returned rental', async () => {

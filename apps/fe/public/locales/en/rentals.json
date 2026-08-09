@@ -36,6 +36,9 @@
     }
   },
   "cancel": {
+    "title": "Cancel this rental?",
+    "confirmAction": "Cancel the rental",
+    "confirmFor": "Cancel {{customer}}'s rental? The dresses are freed for other bookings straight away, and this cannot be undone.",
     "confirm": "Cancel this rental? The dresses' calendar will be freed for other bookings.",
     "success": "Rental cancelled.",
     "error": "Something went wrong, please retry.",

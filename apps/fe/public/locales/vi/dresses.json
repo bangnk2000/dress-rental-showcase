@@ -72,6 +72,7 @@
       "retire": "Ngừng khai thác"
     },
     "retire": {
+      "title": "Ngừng khai thác {{code}}?",
       "confirm": "Ngừng khai thác váy này? Váy sẽ không thể cho thuê nữa (không thể hoàn tác).",
       "success": "Đã ngừng khai thác váy",
       "alreadyRetired": "Váy đã ngừng khai thác trước đó",

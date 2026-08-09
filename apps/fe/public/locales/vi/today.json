@@ -19,9 +19,16 @@
     "returned": "Đã trả",
     "cancelled": "Đã huỷ"
   },
+  "date": {
+    "previous": "Ngày trước",
+    "next": "Ngày sau",
+    "today": "Hôm nay"
+  },
   "actions": {
     "pickup": "Đã giao váy",
-    "return": "Nhận về & tất toán"
+    "pickupFor": "Đã giao váy cho {{customer}}",
+    "return": "Nhận về & tất toán",
+    "returnFor": "Nhận về & tất toán cho {{customer}}"
   },
   "pickupSuccess": "Đã ghi nhận giao váy cho khách.",
   "actionError": "Có lỗi xảy ra, vui lòng thử lại.",

@@ -12,6 +12,7 @@ import {
   useListRentalsHttpControllerListSuspense,
 } from '@/api/generated/rentals/rentals';
 import type { RentalListItemDto } from '@/api/generated/model';
+import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ export function RentalsRoute() {
     useRentalFilters();
   const { data } = useListRentalsHttpControllerListSuspense(listParams);
   const [paymentsTarget, setPaymentsTarget] = useState<RentalListItemDto | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<RentalListItemDto | null>(null);
 
   // Cancel is booked-only on the server; frees the calendar.
   const cancelRental = useCancelRentalHttpControllerCancel({
@@ -119,11 +121,7 @@ export function RentalsRoute() {
           <>
             <RentalTable
               rentals={data.data}
-              onCancel={(rental) => {
-                if (window.confirm(t('cancel.confirm'))) {
-                  cancelRental.mutate({ id: rental.rentalId });
-                }
-              }}
+              onCancel={setCancelTarget}
               onShowPayments={setPaymentsTarget}
             />
             {totalPages > 1 ? (
@@ -136,6 +134,24 @@ export function RentalsRoute() {
           </>
         )}
       </div>
+      {/* Cancelling frees the calendar immediately and cannot be undone — the confirmation names
+          the customer so a mis-tap on the tablet is caught before, not after. */}
+      <ConfirmDialog
+        open={cancelTarget !== null}
+        onOpenChange={(open) => !open && setCancelTarget(null)}
+        title={t('cancel.title')}
+        description={
+          cancelTarget
+            ? t('cancel.confirmFor', { customer: cancelTarget.customerName })
+            : undefined
+        }
+        confirmLabel={t('cancel.confirmAction')}
+        destructive
+        onConfirm={() => {
+          if (cancelTarget) cancelRental.mutate({ id: cancelTarget.rentalId });
+          setCancelTarget(null);
+        }}
+      />
       <RentalPaymentsDialog rental={paymentsTarget} onClose={() => setPaymentsTarget(null)} />
     </>
   );

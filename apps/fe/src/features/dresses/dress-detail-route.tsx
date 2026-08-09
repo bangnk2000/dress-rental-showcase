@@ -12,6 +12,7 @@ import {
   useRetireDressHttpControllerRetire,
 } from '@/api/generated/catalog/catalog';
 import { useListBookedRangesHttpControllerListSuspense } from '@/api/generated/rentals/rentals';
+import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { formatVnd } from '@/lib/format';
@@ -32,6 +33,7 @@ function DressDetail({ dressId }: { dressId: string }) {
   const { data: dress } = useGetDressHttpControllerGetSuspense(dressId);
   const { data: ranges } = useListBookedRangesHttpControllerListSuspense(dressId);
   const [editOpen, setEditOpen] = useState(false);
+  const [retireOpen, setRetireOpen] = useState(false);
 
   async function refreshDressQueries(): Promise<void> {
     await Promise.all([
@@ -86,11 +88,7 @@ function DressDetail({ dressId }: { dressId: string }) {
               <Button
                 variant="destructive"
                 disabled={retireDress.isPending}
-                onClick={() => {
-                  if (window.confirm(t('detail.retire.confirm'))) {
-                    retireDress.mutate({ id: dressId });
-                  }
-                }}
+                onClick={() => setRetireOpen(true)}
               >
                 {t('detail.actions.retire')}
               </Button>
@@ -136,6 +134,20 @@ function DressDetail({ dressId }: { dressId: string }) {
           <AvailabilityChecker dressId={dressId} />
         </section>
       </div>
+      {/* Retiring is one-way in the MVP — no endpoint reactivates a dress — so the confirmation
+          says which dress and stays in Vietnamese, unlike the browser's own prompt. */}
+      <ConfirmDialog
+        open={retireOpen}
+        onOpenChange={setRetireOpen}
+        title={t('detail.retire.title', { code: dress.code })}
+        description={t('detail.retire.confirm')}
+        confirmLabel={t('detail.actions.retire')}
+        destructive
+        onConfirm={() => {
+          setRetireOpen(false);
+          retireDress.mutate({ id: dressId });
+        }}
+      />
       <DressFormDialog open={editOpen} onOpenChange={setEditOpen} dress={dress} />
     </>
   );

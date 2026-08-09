@@ -36,6 +36,9 @@
     }
   },
   "cancel": {
+    "title": "Huỷ lượt thuê?",
+    "confirmAction": "Huỷ lượt thuê",
+    "confirmFor": "Huỷ lượt thuê của {{customer}}? Lịch của váy sẽ được giải phóng ngay để khách khác đặt, và không thể hoàn tác.",
     "confirm": "Huỷ lượt thuê này? Lịch của váy sẽ được giải phóng để khách khác đặt.",
     "success": "Đã huỷ lượt thuê.",
     "error": "Có lỗi xảy ra, vui lòng thử lại.",

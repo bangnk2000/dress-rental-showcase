@@ -10,6 +10,7 @@
   "actions": {
     "save": "Save",
     "cancel": "Cancel",
+    "back": "Go back",
     "create": "Create",
     "retry": "Retry"
   },

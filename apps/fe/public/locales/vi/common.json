@@ -10,6 +10,7 @@
   "actions": {
     "save": "Lưu",
     "cancel": "Hủy",
+    "back": "Quay lại",
     "create": "Tạo mới",
     "retry": "Thử lại"
   },

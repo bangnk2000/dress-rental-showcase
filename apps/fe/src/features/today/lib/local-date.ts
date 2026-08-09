@@ -7,3 +7,14 @@ export function localDateIso(date: Date = new Date()): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
 }
+
+/**
+ * The day N days from an ISO date, as an ISO date. Built through the local Date constructor (not
+ * `Date.parse`, which reads a bare yyyy-mm-dd as UTC) so stepping the board never lands a day off
+ * for a tablet east of Greenwich.
+ */
+export function shiftDateIso(iso: string, days: number): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  if (!year || !month || !day) return iso;
+  return localDateIso(new Date(year, month - 1, day + days));
+}
