@@ -1,5 +1,48 @@
 # Session Handoff
 
+## 2026-08-10..11 (27) — the whole batch shipped: five features, five commits, all gates green
+
+- Done: the owner answered "tôi đồng ý" to every §6 recommendation, all five specs flipped to
+  `approved`, and the batch was implemented in the recommended order on
+  `feat/spec-drafts-batch-3` — one commit per feature, each with spec §7 re-synced as-built,
+  ADR 0001 §3/§4 + SRS + aggregate docs updated, and BE unit + real-Postgres e2e + FE vitest run
+  before committing. Ledger is 25/25 `pass`.
+  1. `identity/manage-users` (`4acfee7`, **breaking /auth/login**): username replaces email
+     (seed owner = `owner`/`SEED_OWNER_USERNAME`), accounts lock/unlock (never delete),
+     owner-set reset-password, one `user:manage` permission. Everything that signs in changed in
+     the same commit: seed, smoke.sh, Playwright, e2e harness, MSW, CI env, both login forms.
+  2. `rentals/pickup-before-return` (`0f5f88c`, FR-RENT-10): return only from `out`; a rental
+     whose start ≤ shopToday is BORN `out` (both events, one transaction); cancel opens to
+     `out` but EVERY cancel passes an empty-ledger guard under the rental row lock
+     (`saveCancelled`, take-turns with record-collection) → `rejected_cancel_has_payments`.
+     smoke.sh was REWRITTEN to relative dates (anchor D0=today+3 — the fixed 2026-08 fixtures
+     had rotted, and pre-ADR-0001 409 expects became 422s); the Playwright happy path now books
+     TOMORROW and steps the board +1 day, the only flow that still browser-proves the pickup tap.
+  3. `catalog/dress-category` (`5fcbb5f`, FR-CAT-07): second aggregate root, UNIQUE lower(name)
+     under race + raw SQL, FK RESTRICT delete with `rejected_category_in_use` + dressCount,
+     ?categoryId= filter, CSV auto-create; staff manage, owner deletes.
+  4. `catalog/purchase-price` (`8b23f57`, FR-CAT-05): the repo's FIRST field-level authorization
+     — staff requests CARRYING the field get a named 403; responses omit the KEY for staff
+     (queries carry `readerRole`). Depcruise caught the real lesson: `CurrentSubject` must come
+     from `libs/authz`, not identity/guards.
+  5. `catalog/price-history` (`2345531`, FR-CAT-06): append-only log written in the SAME
+     transaction via `insertWithHistory`/`saveWithPriceHistory`; v1 at create + migration
+     backfill; atomicity e2e-proven (a refused write leaves no orphan row); changer name via a
+     read-side LEFT JOIN (documented deviation from the drafted port — one JOIN ≠ a port).
+- Final numbers: be **148 unit** · **76 e2e** on real Postgres (9 suites) · fe **96 vitest** ·
+  qr-admin 17 · contract:check + fe/be arch + lint + both builds green ·
+  `pnpm --filter fe e2e` **1 passed (18.9s)** against the real stack. Four new migrations
+  (username/active, categories, purchase_price, price_history) applied on both dev and test DBs.
+- Watch out: the branch now carries the five spec drafts AND the five implementations — merge it
+  as ONE PR (or fast-forward), remembering lesson (25): delete the head branch after merge.
+- Watch out: smoke.sh is now date-relative and outcome-correct, but it is still a MANUAL runtime
+  proof (not in CI/init.sh) — run it against a fresh compose DB when touching rentals flows.
+- Watch out: the LATE_FEE_PER_DRESS_PER_DAY=200000 fix in the local `.env` is machine-local;
+  a fresh clone copies `.env.example`, which was always correct.
+- Next: unchanged backlog — rental `notes` displayed nowhere, no rental detail route,
+  `payments/correct-movement` awaiting the owner's ruling; plus release lane r2 (r1 predates
+  SIX shipped features now).
+
 ## 2026-08-10 (26) — five feature specs drafted from the owner's next batch (no product code)
 
 - Done: the owner's five asks became five design-tier spec DRAFTS through the
