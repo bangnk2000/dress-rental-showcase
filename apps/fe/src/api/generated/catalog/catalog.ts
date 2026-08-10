@@ -38,6 +38,7 @@ import type {
   DressResponseDto,
   IdResponse,
   ListDressesHttpControllerListParams,
+  PurchasePriceForbiddenOutcomeDto,
   RenameCategoryOutcomeDto,
   RetireDressOutcomeDto,
   UpdateDressOutcomeDto,
@@ -86,7 +87,7 @@ export const createDressHttpControllerCreate = (
 
 
 
-export const getCreateDressHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto | CreateDressOutcomeDto,
+export const getCreateDressHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | CreateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDressHttpControllerCreate>>, TError,{data: CreateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createDressHttpControllerCreate>>, TError,{data: CreateDressRequestDto}, TContext> => {
 
@@ -115,12 +116,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateDressHttpControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof createDressHttpControllerCreate>>>
     export type CreateDressHttpControllerCreateMutationBody = CreateDressRequestDto
-    export type CreateDressHttpControllerCreateMutationError = ApiErrorResponseDto | CreateDressOutcomeDto
+    export type CreateDressHttpControllerCreateMutationError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | CreateDressOutcomeDto
 
     /**
  * @summary Add a dress to the catalog
  */
-export const useCreateDressHttpControllerCreate = <TError = ApiErrorResponseDto | CreateDressOutcomeDto,
+export const useCreateDressHttpControllerCreate = <TError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | CreateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDressHttpControllerCreate>>, TError,{data: CreateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createDressHttpControllerCreate>>,
@@ -299,7 +300,7 @@ export const updateDressHttpControllerUpdate = (
 
 
 
-export const getUpdateDressHttpControllerUpdateMutationOptions = <TError = ApiErrorResponseDto | UpdateDressOutcomeDto,
+export const getUpdateDressHttpControllerUpdateMutationOptions = <TError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | UpdateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext> => {
 
@@ -328,12 +329,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateDressHttpControllerUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>>
     export type UpdateDressHttpControllerUpdateMutationBody = UpdateDressRequestDto
-    export type UpdateDressHttpControllerUpdateMutationError = ApiErrorResponseDto | UpdateDressOutcomeDto
+    export type UpdateDressHttpControllerUpdateMutationError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | UpdateDressOutcomeDto
 
     /**
  * @summary Update a dress (partial; omitted fields are kept)
  */
-export const useUpdateDressHttpControllerUpdate = <TError = ApiErrorResponseDto | UpdateDressOutcomeDto,
+export const useUpdateDressHttpControllerUpdate = <TError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | UpdateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>,

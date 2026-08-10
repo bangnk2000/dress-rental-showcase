@@ -19,6 +19,7 @@ function makeDress(): DressEntity {
       notes: null,
       photoUrls: [],
       categoryId: null,
+      purchasePrice: null,
     },
     DRESS_ID,
     new Date('2026-01-01'),

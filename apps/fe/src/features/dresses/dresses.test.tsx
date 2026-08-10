@@ -4,14 +4,17 @@ import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
 import { beforeEach, expect, test } from 'vitest';
 
+import { clearTokens, setTokens } from '@/api/mutator/auth-tokens';
 import { Toaster } from '@/components/ui/sonner';
 import {
   getLastCreatedCategory,
+  getLastUpdateDressBody,
   makeDress,
   resetCatalog,
   seedCategories,
   seedDresses,
 } from '@/test/msw/handlers/catalog';
+import { testTokenPair } from '@/test/msw/handlers/identity';
 import { makeBookedRange, resetRentals, seedBookedRanges } from '@/test/msw/handlers/rentals';
 import { renderWithProviders } from '@/test/render';
 
@@ -44,6 +47,7 @@ function renderList(route = '/dresses') {
 beforeEach(() => {
   resetCatalog();
   resetRentals();
+  clearTokens(); // owner-only tests opt back in with setTokens
 });
 
 function renderDetail(route: string) {
@@ -394,4 +398,50 @@ test('FR-CAT-07: creating a category posts the trimmed name; a duplicate lands a
   await user.type(screen.getByLabelText('Tên danh mục mới'), 'dạ hội');
   await user.click(screen.getByRole('button', { name: 'Thêm danh mục' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Danh mục "dạ hội" đã tồn tại');
+});
+
+test('FR-CAT-05: the OWNER sees the purchase-price field, sends it, and the detail shows it', async () => {
+  setTokens(testTokenPair); // the me handler answers owner for an authorized request
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', purchasePrice: 8_000_000 })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  // The server sent the key → the detail line renders for the owner.
+  expect(screen.getByText('Giá nhập')).toBeInTheDocument();
+  expect(screen.getByText('8.000.000 ₫')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Sửa' }));
+  const priceInput = await screen.findByLabelText('Giá nhập (VND) — chỉ chủ tiệm thấy');
+  expect(priceInput).toHaveValue('8000000'); // prefilled
+  await user.clear(priceInput);
+  await user.type(priceInput, '9000000');
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  await screen.findByText('Đã cập nhật váy');
+  expect(getLastUpdateDressBody()?.purchasePrice).toBe(9_000_000);
+});
+
+test('FR-CAT-05: STAFF gets no field and their full-form edit carries NO purchasePrice key', async () => {
+  // No token → the me query stays unresolved → the dialog treats the user as staff, and the
+  // seeded dress (like a real staff response) carries no purchasePrice key.
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  expect(screen.queryByText('Giá nhập')).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Sửa' }));
+  await screen.findByLabelText('Mã váy');
+  expect(screen.queryByLabelText('Giá nhập (VND) — chỉ chủ tiệm thấy')).not.toBeInTheDocument();
+
+  const nameInput = screen.getByLabelText('Tên váy');
+  await user.clear(nameInput);
+  await user.type(nameInput, 'Đầm staff sửa');
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  await screen.findByText('Đã cập nhật váy');
+  // Key-level: presence (even null) would be the refused act on the server.
+  expect('purchasePrice' in (getLastUpdateDressBody() ?? {})).toBe(false);
 });

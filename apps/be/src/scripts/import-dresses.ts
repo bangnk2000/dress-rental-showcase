@@ -84,6 +84,9 @@ async function main(): Promise<void> {
           notes: row.notes,
           photoUrls: [],
           categoryId: row.category ? await resolveCategoryId(row.category) : null,
+          purchasePrice: row.purchasePrice,
+          // The seed import is run BY the owner (README step 3) — FR-CAT-05's field rule holds.
+          actorRole: 'owner',
         }),
       );
       if (result.isOk()) {

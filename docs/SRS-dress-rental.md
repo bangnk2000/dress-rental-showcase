@@ -50,6 +50,13 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 - **FR-CAT-03** Tạo / cập nhật váy; **retire** (owner-only) — váy retired không tạo đơn mới,
   lịch sử giữ nguyên.
 - **FR-CAT-04** Seed một lần từ CSV xuất Google Sheets (~200 váy) — `pnpm --filter be import:dresses`.
+- **FR-CAT-05** Giá nhập của váy — **chỉ chủ tiệm nhập và nhìn thấy**. Ghi: request của staff
+  MANG field này (kể cả null) bị từ chối nêu tên (403 `forbidden` +
+  `purchase_price_owner_only`); staff không gửi field thì mọi thứ như cũ. Đọc: key
+  `purchasePrice` chỉ tồn tại trên wire cho owner (staff = vắng mặt; null = owner chưa nhập —
+  hai câu khác nhau). Không tham gia bất kỳ tính toán nào. CSV import (owner chạy) có cột
+  `purchase_price`. Quyết định + lý do:
+  [design/catalog/purchase-price.md](./design/catalog/purchase-price.md) §6.
 - **FR-CAT-07** Danh mục váy: mỗi váy thuộc **0..1 danh mục** (null = chưa phân loại, hợp lệ
   vĩnh viễn). Tên duy nhất không phân biệt hoa thường. Staff tạo/sửa tên; **xoá là owner-only**
   và chỉ xoá được danh mục TRỐNG (`rejected_category_in_use` + dressCount, FK RESTRICT làm lưới).
@@ -134,6 +141,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-AUTH-04, FR-AUTH-01 (đổi định danh) | `identity/manage-users` | [identity/manage-users.md](./design/identity/manage-users.md) (spec `as-built`), [identity-aggregate.md](./design/identity-aggregate.md) | pass |
 | FR-CAT-01, 02, 04 | `catalog/list-dresses` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-CAT-01, 03 | `catalog/manage-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
+| FR-CAT-05 | `catalog/purchase-price` | [catalog/purchase-price.md](./design/catalog/purchase-price.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-CAT-07 | `catalog/dress-category` | [catalog/dress-category.md](./design/catalog/dress-category.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-RENT-01, 02 | `rentals/create-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-RENT-03 | `rentals/availability-check` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |

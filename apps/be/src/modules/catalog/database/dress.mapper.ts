@@ -24,6 +24,8 @@ export class DressMapper implements Mapper<DressEntity, DressModel, DressRespons
         notes: record.notes,
         photoUrls: [...record.photo_urls],
         categoryId: record.category_id,
+        purchasePrice:
+          record.purchase_price === null ? null : Money.create(record.purchase_price),
       },
     });
   }
@@ -41,6 +43,7 @@ export class DressMapper implements Mapper<DressEntity, DressModel, DressRespons
       notes: props.notes,
       photo_urls: [...props.photoUrls],
       category_id: props.categoryId,
+      purchase_price: props.purchasePrice?.amount ?? null,
       created_at: props.createdAt,
       updated_at: props.updatedAt,
     };

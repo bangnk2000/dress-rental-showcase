@@ -57,6 +57,8 @@ export class ListDressesQueryHandler
           notes: row.notes,
           photoUrls: [...row.photo_urls],
           categoryId: row.category_id,
+          // FR-CAT-05 R2: OMITTED for staff; null = the owner has not entered it.
+          ...(query.readerRole === 'owner' ? { purchasePrice: row.purchase_price } : {}),
           createdAt: toDate(row.created_at).toISOString(),
         }),
       ),

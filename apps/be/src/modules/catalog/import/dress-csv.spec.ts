@@ -55,6 +55,7 @@ describe('parseDressCsv', () => {
         depositAmount: 3_000_000,
         notes: 'Hàng mới',
         category: null,
+        purchasePrice: null,
       },
       {
         record: 3,
@@ -65,8 +66,18 @@ describe('parseDressCsv', () => {
         depositAmount: 2_000_000,
         notes: null,
         category: null,
+        purchasePrice: null,
       },
     ]);
+  });
+
+  it('an optional purchase_price column parses vi formats; a bad value fails only that row', () => {
+    const { rows, errors } = parseDressCsv(
+      'code,name,rental_price,deposit,purchase_price\nVD-301,Váy A,1000000,2000000,"8.000.000"\nVD-302,Váy B,1000000,2000000,\nVD-303,Váy C,1000000,2000000,tám triệu\n',
+    );
+
+    expect(rows.map((row) => row.purchasePrice)).toEqual([8_000_000, null]);
+    expect(errors).toEqual([{ record: 4, message: "Bad purchase_price: 'tám triệu'" }]);
   });
 
   it('an optional category column rides along as a NAME (blank = null)', () => {

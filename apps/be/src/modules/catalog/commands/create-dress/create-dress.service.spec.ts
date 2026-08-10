@@ -1,6 +1,9 @@
 import { CreateDressCommand } from './create-dress.command';
 import { CreateDressService } from './create-dress.service';
-import { DressCodeAlreadyExistsError } from '../../domain/dress.errors';
+import {
+  DressCodeAlreadyExistsError,
+  PurchasePriceOwnerOnlyError,
+} from '../../domain/dress.errors';
 import { DressEntity } from '../../domain/dress.entity';
 import { DressCodeConflictError } from '../../application/ports/dress-code-conflict.error';
 import { CategoryRepositoryPort } from '../../application/ports/category.repository.port';
@@ -38,6 +41,8 @@ const baseCommand = new CreateDressCommand({
   notes: null,
   photoUrls: [],
   categoryId: null,
+  purchasePrice: null,
+  actorRole: 'staff',
 });
 
 describe('CreateDressService', () => {
@@ -82,6 +87,7 @@ describe('CreateDressService', () => {
         notes: null,
         photoUrls: [],
         categoryId: null,
+        purchasePrice: null,
       },
       '00000000-0000-4000-8000-000000000002',
       new Date('2026-01-01'),
@@ -94,5 +100,51 @@ describe('CreateDressService', () => {
     expect(result.isErr()).toBe(true);
     expect(result.unwrapErr()).toBeInstanceOf(DressCodeAlreadyExistsError);
     expect(repo.insert).not.toHaveBeenCalled();
+  });
+});
+
+describe('FR-CAT-05 purchase price at create', () => {
+  it('a STAFF create carrying a purchase price is refused before anything is written', async () => {
+    const repo = makeRepo();
+    const result = await new CreateDressService(repo, makeCategoryRepo()).execute(
+      new CreateDressCommand({
+        code: 'vd-015',
+        name: 'Váy có giá nhập',
+        sizeLabel: null,
+        rentalPrice: 1_000_000,
+        depositAmount: 2_000_000,
+        notes: null,
+        photoUrls: [],
+        categoryId: null,
+        purchasePrice: 5_000_000,
+        actorRole: 'staff',
+      }),
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapErr()).toBeInstanceOf(PurchasePriceOwnerOnlyError);
+    expect(repo.insert).not.toHaveBeenCalled();
+  });
+
+  it('the OWNER creates with a purchase price stored as Money', async () => {
+    const repo = makeRepo();
+    const result = await new CreateDressService(repo, makeCategoryRepo()).execute(
+      new CreateDressCommand({
+        code: 'vd-016',
+        name: 'Váy của chủ',
+        sizeLabel: null,
+        rentalPrice: 1_000_000,
+        depositAmount: 2_000_000,
+        notes: null,
+        photoUrls: [],
+        categoryId: null,
+        purchasePrice: 5_000_000,
+        actorRole: 'owner',
+      }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    const inserted = (repo.insert as jest.Mock).mock.calls[0][0] as DressEntity;
+    expect(inserted.getProps().purchasePrice?.amount).toBe(5_000_000);
   });
 });

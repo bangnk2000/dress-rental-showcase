@@ -447,6 +447,16 @@
               }
             }
           },
+          "403": {
+            "description": "Named denial: forbidden + reason purchase_price_owner_only — staff may not set the purchase price (FR-CAT-05)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePriceForbiddenOutcomeDto"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Business rejection: rejected_dress_code_taken (carries dressCode) | rejected_category_not_found",
             "content": {
@@ -590,6 +600,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Named denial: forbidden + reason purchase_price_owner_only — staff may not set the purchase price (FR-CAT-05)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePriceForbiddenOutcomeDto"
                 }
               }
             }
@@ -2069,6 +2089,12 @@
             "nullable": true,
             "format": "uuid",
             "description": "Category id (FR-CAT-07); omit or null = unclassified"
+          },
+          "purchasePrice": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "description": "What the shop paid (VND, FR-CAT-05). OWNER-ONLY: a staff request carrying this field is refused with the named 403 outcome."
           }
         },
         "required": [
@@ -2076,6 +2102,27 @@
           "name",
           "rentalPrice",
           "depositAmount"
+        ]
+      },
+      "PurchasePriceForbiddenOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "forbidden"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "purchase_price_owner_only"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "reason"
         ]
       },
       "CreateDressOutcomeDto": {
@@ -2155,6 +2202,12 @@
             "nullable": true,
             "format": "uuid",
             "description": "Category id; omit = keep, explicit null = clear the assignment"
+          },
+          "purchasePrice": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "description": "What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omit = keep, null = clear; a staff request carrying this field is refused with the named 403 outcome."
           }
         }
       },
@@ -2246,6 +2299,11 @@
             "type": "string",
             "nullable": true,
             "description": "Category id (0..1 per dress; null = unclassified). Names come from GET /categories — a tiny cached list, so the FE joins client-side instead of every dress row carrying the name."
+          },
+          "purchasePrice": {
+            "type": "number",
+            "nullable": true,
+            "description": "What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omitted entirely for staff (absence = not your field; null = the owner has not entered it). Feeds no computation."
           },
           "createdAt": {
             "type": "string",

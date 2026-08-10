@@ -86,6 +86,7 @@ Quyền quản lý user chặn ở guard (`user:manage`, owner-only, fail-closed
 | `catalog/rename-category` | `CategoryNotFoundError` \| `CategoryNameTakenError` | `rejected_category_not_found` \| `rejected_category_name_taken` | `name?` | FR-CAT-07 |
 | `catalog/delete-category` | `CategoryNotFoundError` \| `CategoryInUseError` | `rejected_category_not_found` \| `rejected_category_in_use` | `dressCount?` | FR-CAT-07 |
 | `catalog/create-dress`, `catalog/update-dress` | `CategoryNotFoundError` (gán danh mục đã bị xoá) | `rejected_category_not_found` | — | FR-CAT-07 |
+| `catalog/create-dress`, `catalog/update-dress` | `PurchasePriceOwnerOnlyError` | `forbidden` (**403**) + `reason: 'purchase_price_owner_only'` — request của staff MANG field giá nhập | — | FR-CAT-05 |
 
 (bảng dress có sẵn ở dưới)
 
@@ -175,6 +176,7 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_category_name_taken` | giữ form quản lý danh mục, message inline kèm `name` | `dresses:categories.errors.nameTaken` |
 | `rejected_category_in_use` | toast nêu `dressCount` + refetch | `dresses:categories.errors.inUse` |
 | `rejected_category_not_found` (gán vào váy) | toast + refetch danh sách danh mục (ai đó vừa xoá) | `dresses:categories.errors.generic` |
+| `forbidden` (`purchase_price_owner_only`) | phòng hờ — UI không render field cho staff; toast chung nếu vẫn tới | `dresses:form.error` |
 | `rejected_dress_not_found` (catalog) | đóng dialog + toast "váy không còn", invalidate list | `dresses:errors.notFound` |
 | `rejected_dress_already_retired` | toast + invalidate detail (state đã đúng, chỉ lệch cache) | `dresses:detail.retire.alreadyRetired` |
 | `rejected_dress_not_found` (rentals) | giữ form, message form-level liệt kê `dressIds` | `rentals:form.errors.dressNotFound` |

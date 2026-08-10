@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class DressResponseDto {
   @ApiProperty({ example: '6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a' })
@@ -35,6 +35,14 @@ export class DressResponseDto {
       'Category id (0..1 per dress; null = unclassified). Names come from GET /categories — a tiny cached list, so the FE joins client-side instead of every dress row carrying the name.',
   })
   readonly categoryId!: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: Number,
+    description:
+      'What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omitted entirely for staff (absence = not your field; null = the owner has not entered it). Feeds no computation.',
+  })
+  readonly purchasePrice?: number | null;
 
   @ApiProperty({ example: '2026-07-30T10:00:00.000Z' })
   readonly createdAt!: string;

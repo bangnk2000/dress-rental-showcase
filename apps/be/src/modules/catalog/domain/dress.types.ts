@@ -16,6 +16,8 @@ export interface DressProps {
   photoUrls: string[];
   /** 0..1 category (FR-CAT-07); null = unclassified, a valid state forever. */
   categoryId: string | null;
+  /** What the shop PAID (FR-CAT-05) — owner-only to write/see; feeds no computation (R3). */
+  purchasePrice: Money | null;
 }
 
 export interface CreateDressProps {
@@ -27,4 +29,5 @@ export interface CreateDressProps {
   notes: string | null;
   photoUrls: string[];
   categoryId: string | null;
+  purchasePrice: Money | null;
 }

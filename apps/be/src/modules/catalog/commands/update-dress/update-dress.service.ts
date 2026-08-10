@@ -14,12 +14,19 @@ import {
 } from '../../application/ports/dress.repository.port';
 import { DressCode } from '../../domain/dress-code.value-object';
 import { CategoryNotFoundError } from '../../domain/category.errors';
-import { DressCodeAlreadyExistsError, DressNotFoundError } from '../../domain/dress.errors';
+import {
+  DressCodeAlreadyExistsError,
+  DressNotFoundError,
+  PurchasePriceOwnerOnlyError,
+} from '../../domain/dress.errors';
 import { UpdateDressCommand } from './update-dress.command';
 
 export type UpdateDressResult = Result<
   AggregateID,
-  DressNotFoundError | DressCodeAlreadyExistsError | CategoryNotFoundError
+  | DressNotFoundError
+  | DressCodeAlreadyExistsError
+  | CategoryNotFoundError
+  | PurchasePriceOwnerOnlyError
 >;
 
 @CommandHandler(UpdateDressCommand)
@@ -32,6 +39,12 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
   ) {}
 
   async execute(command: UpdateDressCommand): Promise<UpdateDressResult> {
+    // FR-CAT-05 R1: presence of the field is what matters — a staff request CARRYING it (even
+    // null) is refused by name; a staff request WITHOUT it keeps the old behaviour untouched.
+    if (command.purchasePrice !== undefined && command.actorRole !== 'owner') {
+      return Err(new PurchasePriceOwnerOnlyError());
+    }
+
     const dress = await this.dressRepo.findOneById(command.dressId);
     if (!dress) return Err(new DressNotFoundError());
 
@@ -68,6 +81,12 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
         notes: command.notes === undefined ? props.notes : command.notes,
         photoUrls: command.photoUrls === undefined ? props.photoUrls : command.photoUrls,
         categoryId: command.categoryId === undefined ? props.categoryId : command.categoryId,
+        purchasePrice:
+          command.purchasePrice === undefined
+            ? props.purchasePrice
+            : command.purchasePrice === null
+              ? null
+              : Money.create(command.purchasePrice),
       },
       now,
     );

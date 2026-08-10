@@ -48,7 +48,8 @@
       "notes": "Ghi chú",
       "photoUrls": "Ảnh (mỗi dòng một liên kết)",
       "photoUrlsPlaceholder": "https://...",
-      "category": "Danh mục"
+      "category": "Danh mục",
+      "purchasePrice": "Giá nhập (VND) — chỉ chủ tiệm thấy"
     },
     "errors": {
       "codeRequired": "Vui lòng nhập mã váy",
@@ -92,7 +93,9 @@
       "deposit": "Tiền cọc",
       "notes": "Ghi chú",
       "category": "Danh mục",
-      "categoryNone": "Chưa phân loại"
+      "categoryNone": "Chưa phân loại",
+      "purchasePrice": "Giá nhập",
+      "purchasePriceNone": "Chưa nhập"
     },
     "calendar": {
       "title": "Lịch đặt",

@@ -49,6 +49,8 @@ export const dressFormSchema = z.object({
     ),
   /** Category id, or the NONE sentinel — Radix Select items cannot carry an empty value. */
   categoryId: z.string(),
+  /** Owner-only (FR-CAT-05); '' = no value. The dialog only SENDS it for the owner. */
+  purchasePrice: z.string().trim().regex(/^[0-9]*$/, 'form.errors.amountInvalid'),
 });
 
 export const CATEGORY_NONE = 'none';
@@ -64,4 +66,5 @@ export const dressFormDefaults: DressFormValues = {
   notes: '',
   photoUrls: '',
   categoryId: CATEGORY_NONE,
+  purchasePrice: '',
 };

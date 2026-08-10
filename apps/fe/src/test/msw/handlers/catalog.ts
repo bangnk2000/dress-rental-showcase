@@ -62,6 +62,12 @@ export function getLastCreatedCategory(): string | null {
   return lastCreatedCategory;
 }
 
+/** The most recent PATCH /dresses/:id body, for key-level assertions (FR-CAT-05). */
+let lastUpdateDressBody: UpdateDressRequestDto | null = null;
+export function getLastUpdateDressBody(): UpdateDressRequestDto | null {
+  return lastUpdateDressBody;
+}
+
 export const catalogHandlers: HttpHandler[] = [
   // PATCH /api/v1/dresses/:id — partial update; both rejections are outcome bodies (ADR 0001 §3).
   http.patch('/api/v1/dresses/:id', async ({ params, request }) => {
@@ -70,6 +76,7 @@ export const catalogHandlers: HttpHandler[] = [
       return HttpResponse.json({ status: 'rejected_dress_not_found' }, { status: 422 });
     }
     const body = (await request.json()) as UpdateDressRequestDto;
+    lastUpdateDressBody = body;
     if (
       body.code !== undefined &&
       dresses.some(

@@ -78,6 +78,18 @@ function DressDetail({ dressId }: { dressId: string }) {
     { label: t('detail.info.category'), value: categoryName },
     { label: t('detail.info.rentalPrice'), value: formatVnd(dress.rentalPrice) },
     { label: t('detail.info.deposit'), value: formatVnd(dress.depositAmount) },
+    // The SERVER decides visibility (FR-CAT-05): staff responses carry no key at all.
+    ...(dress.purchasePrice !== undefined
+      ? [
+          {
+            label: t('detail.info.purchasePrice'),
+            value:
+              dress.purchasePrice === null
+                ? t('detail.info.purchasePriceNone')
+                : formatVnd(dress.purchasePrice),
+          },
+        ]
+      : []),
     { label: t('detail.info.notes'), value: dress.notes ?? '—' },
   ];
 

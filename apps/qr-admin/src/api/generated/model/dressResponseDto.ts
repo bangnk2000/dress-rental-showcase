@@ -26,5 +26,10 @@ export interface DressResponseDto {
      * @nullable
      */
   categoryId: string | null;
+  /**
+     * What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omitted entirely for staff (absence = not your field; null = the owner has not entered it). Feeds no computation.
+     * @nullable
+     */
+  purchasePrice?: number | null;
   createdAt: string;
 }

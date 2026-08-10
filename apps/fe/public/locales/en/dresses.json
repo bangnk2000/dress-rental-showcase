@@ -48,7 +48,8 @@
       "notes": "Notes",
       "photoUrls": "Photos (one link per line)",
       "photoUrlsPlaceholder": "https://...",
-      "category": "Category"
+      "category": "Category",
+      "purchasePrice": "Purchase price (VND) — owner only"
     },
     "errors": {
       "codeRequired": "Please enter a dress code",
@@ -92,7 +93,9 @@
       "deposit": "Deposit",
       "notes": "Notes",
       "category": "Category",
-      "categoryNone": "Unclassified"
+      "categoryNone": "Unclassified",
+      "purchasePrice": "Purchase price",
+      "purchasePriceNone": "Not entered"
     },
     "calendar": {
       "title": "Booking calendar",

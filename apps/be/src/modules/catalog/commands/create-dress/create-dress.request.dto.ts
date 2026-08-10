@@ -64,4 +64,15 @@ export class CreateDressRequestDto {
   @IsOptional() // skips null too: null IS the valid "unclassified" value
   @IsUUID()
   readonly categoryId?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: Number,
+    description:
+      'What the shop paid (VND, FR-CAT-05). OWNER-ONLY: a staff request carrying this field is refused with the named 403 outcome.',
+  })
+  @IsOptional() // skips null too: null = "no value"
+  @IsInt()
+  @Min(0)
+  readonly purchasePrice?: number | null;
 }

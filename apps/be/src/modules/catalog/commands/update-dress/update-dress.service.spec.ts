@@ -3,7 +3,11 @@ import { CategoryRepositoryPort } from '../../application/ports/category.reposit
 import { DressRepositoryPort } from '../../application/ports/dress.repository.port';
 import { DressCode } from '../../domain/dress-code.value-object';
 import { DressEntity } from '../../domain/dress.entity';
-import { DressCodeAlreadyExistsError, DressNotFoundError } from '../../domain/dress.errors';
+import {
+  DressCodeAlreadyExistsError,
+  DressNotFoundError,
+  PurchasePriceOwnerOnlyError,
+} from '../../domain/dress.errors';
 import { UpdateDressCommand } from './update-dress.command';
 import { UpdateDressService } from './update-dress.service';
 
@@ -20,6 +24,7 @@ function makeDress(): DressEntity {
       notes: 'ghi chú cũ',
       photoUrls: ['https://example.com/a.jpg'],
       categoryId: null,
+      purchasePrice: null,
     },
     DRESS_ID,
     new Date('2026-01-01'),
@@ -54,7 +59,7 @@ it('returns Err(DressNotFoundError) for an unknown dress', async () => {
   const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
-    new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới' }),
+    new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới', actorRole: 'staff' }),
   );
 
   expect(result.isErr()).toBe(true);
@@ -67,7 +72,7 @@ it('merges: sent fields change, omitted fields are kept', async () => {
   const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
-    new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới', rentalPrice: 2_000_000 }),
+    new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới', rentalPrice: 2_000_000, actorRole: 'staff' }),
   );
 
   expect(result.isOk()).toBe(true);
@@ -91,6 +96,7 @@ it('explicit null clears the nullable fields; photoUrls replaces the list', asyn
       sizeLabel: null,
       notes: null,
       photoUrls: ['https://example.com/b.jpg', 'https://example.com/c.jpg'],
+      actorRole: 'staff',
     }),
   );
 
@@ -106,7 +112,7 @@ it('changing to a taken code returns Err(DressCodeAlreadyExistsError)', async ()
   const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
-    new UpdateDressCommand({ dressId: DRESS_ID, code: 'VD-099' }),
+    new UpdateDressCommand({ dressId: DRESS_ID, code: 'VD-099', actorRole: 'staff' }),
   );
 
   expect(result.isErr()).toBe(true);
@@ -119,9 +125,63 @@ it('re-sending the same code (any case) skips the uniqueness check', async () =>
   const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
-    new UpdateDressCommand({ dressId: DRESS_ID, code: 'vd-012', name: 'Tên mới' }),
+    new UpdateDressCommand({ dressId: DRESS_ID, code: 'vd-012', name: 'Tên mới', actorRole: 'staff' }),
   );
 
   expect(result.isOk()).toBe(true);
   expect(repo.findOneByCode).not.toHaveBeenCalled();
+});
+
+it('FR-CAT-05: a STAFF request carrying purchasePrice (even null) is refused by name', async () => {
+  const repo = makeRepo();
+  const service = new UpdateDressService(repo, makeCategoryRepo());
+
+  const result = await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, purchasePrice: 5_000_000, actorRole: 'staff' }),
+  );
+
+  expect(result.isErr()).toBe(true);
+  expect(result.unwrapErr()).toBeInstanceOf(PurchasePriceOwnerOnlyError);
+  expect(repo.findOneById).not.toHaveBeenCalled(); // refused before the row is even loaded
+  expect(repo.save).not.toHaveBeenCalled();
+
+  const clearAttempt = await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, purchasePrice: null, actorRole: 'staff' }),
+  );
+  expect(clearAttempt.unwrapErr()).toBeInstanceOf(PurchasePriceOwnerOnlyError);
+});
+
+it('FR-CAT-05: the OWNER sets, keeps (omit) and clears (null) the purchase price', async () => {
+  const repo = makeRepo();
+  const service = new UpdateDressService(repo, makeCategoryRepo());
+
+  await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, purchasePrice: 5_000_000, actorRole: 'owner' }),
+  );
+  let saved = (repo.save as jest.Mock).mock.calls[0][0] as DressEntity;
+  expect(saved.getProps().purchasePrice?.amount).toBe(5_000_000);
+
+  await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, purchasePrice: null, actorRole: 'owner' }),
+  );
+  saved = (repo.save as jest.Mock).mock.calls[1][0] as DressEntity;
+  expect(saved.getProps().purchasePrice).toBeNull();
+});
+
+it('FR-CAT-05: a staff edit WITHOUT the field keeps the stored value untouched', async () => {
+  const withPrice = makeDress();
+  withPrice.updateDetails(
+    { ...withPrice.getProps(), purchasePrice: Money.create(4_000_000) },
+    new Date('2026-01-02'),
+  );
+  const repo = makeRepo({ findOneById: jest.fn().mockResolvedValue(withPrice) });
+  const service = new UpdateDressService(repo, makeCategoryRepo());
+
+  const result = await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới', actorRole: 'staff' }),
+  );
+
+  expect(result.isOk()).toBe(true);
+  const saved = (repo.save as jest.Mock).mock.calls[0][0] as DressEntity;
+  expect(saved.getProps().purchasePrice?.amount).toBe(4_000_000);
 });

@@ -49,4 +49,10 @@ export interface CreateDressRequestDto {
      * @nullable
      */
   categoryId?: string | null;
+  /**
+     * What the shop paid (VND, FR-CAT-05). OWNER-ONLY: a staff request carrying this field is refused with the named 403 outcome.
+     * @minimum 0
+     * @nullable
+     */
+  purchasePrice?: number | null;
 }

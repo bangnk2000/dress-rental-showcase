@@ -4,9 +4,11 @@
  * in the VOs and surface per-row when the import script dispatches commands.
  *
  * Expected header (any order, case-insensitive):
- *   code,name,size,rental_price,deposit,notes,category — size, notes, category optional.
+ *   code,name,size,rental_price,deposit,notes,category,purchase_price
+ *   — size, notes, category, purchase_price optional.
  * Prices tolerate vi formatting: "1.500.000", "1,500,000", "1500000 ₫".
  * category is a NAME ('Dạ hội'); the import script resolves or auto-creates it (FR-CAT-07 §6.Q2).
+ * purchase_price is the owner-only field (FR-CAT-05) — the import script runs as the owner.
  */
 
 export interface DressCsvRow {
@@ -19,6 +21,7 @@ export interface DressCsvRow {
   depositAmount: number;
   notes: string | null;
   category: string | null;
+  purchasePrice: number | null;
 }
 
 export interface DressCsvError {
@@ -32,7 +35,16 @@ export interface DressCsvResult {
   errors: DressCsvError[];
 }
 
-const KNOWN_HEADERS = ['code', 'name', 'size', 'rental_price', 'deposit', 'notes', 'category'];
+const KNOWN_HEADERS = [
+  'code',
+  'name',
+  'size',
+  'rental_price',
+  'deposit',
+  'notes',
+  'category',
+  'purchase_price',
+];
 const REQUIRED_HEADERS = ['code', 'name', 'rental_price', 'deposit'];
 
 /** RFC4180: quoted fields may contain commas, newlines and escaped ("") quotes. */
@@ -146,6 +158,8 @@ export function parseDressCsv(content: string): DressCsvResult {
     const name = cell('name');
     const rentalPrice = parseVndAmount(cell('rental_price'));
     const depositAmount = parseVndAmount(cell('deposit'));
+    const purchasePriceCell = cell('purchase_price');
+    const purchasePrice = purchasePriceCell ? parseVndAmount(purchasePriceCell) : null;
 
     if (!code) errors.push({ record: recordNumber, message: 'Missing code' });
     else if (!name) errors.push({ record: recordNumber, message: 'Missing name' });
@@ -153,6 +167,8 @@ export function parseDressCsv(content: string): DressCsvResult {
       errors.push({ record: recordNumber, message: `Bad rental_price: '${cell('rental_price')}'` });
     else if (depositAmount === null)
       errors.push({ record: recordNumber, message: `Bad deposit: '${cell('deposit')}'` });
+    else if (purchasePriceCell && purchasePrice === null)
+      errors.push({ record: recordNumber, message: `Bad purchase_price: '${purchasePriceCell}'` });
     else
       rows.push({
         record: recordNumber,
@@ -163,6 +179,7 @@ export function parseDressCsv(content: string): DressCsvResult {
         depositAmount,
         notes: cell('notes') || null,
         category: cell('category') || null,
+        purchasePrice,
       });
   });
 

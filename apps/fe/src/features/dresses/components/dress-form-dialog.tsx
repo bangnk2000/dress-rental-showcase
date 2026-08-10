@@ -13,6 +13,7 @@ import {
   useListCategoriesHttpControllerList,
   useUpdateDressHttpControllerUpdate,
 } from '@/api/generated/catalog/catalog';
+import { useMeHttpControllerMe } from '@/api/generated/identity/identity';
 import type {
   CreateDressRequestDto,
   DressResponseDto,
@@ -65,11 +66,16 @@ function toFormValues(dress: DressResponseDto): DressFormValues {
     notes: dress.notes ?? '',
     photoUrls: dress.photoUrls.join('\n'),
     categoryId: dress.categoryId ?? CATEGORY_NONE,
+    // Staff responses have no key at all — the form value stays '' and is never sent back.
+    purchasePrice: dress.purchasePrice != null ? String(dress.purchasePrice) : '',
   };
 }
 
-/** Form values (strings) → create body; blank optional fields are omitted. */
-function toCreateDressRequest(values: DressFormValues): CreateDressRequestDto {
+/**
+ * Form values (strings) → create body; blank optional fields are omitted. purchasePrice rides
+ * along ONLY for the owner (FR-CAT-05) — a staff request carrying it would be a named 403.
+ */
+function toCreateDressRequest(values: DressFormValues, isOwner: boolean): CreateDressRequestDto {
   const photoUrls = parsePhotoUrls(values.photoUrls);
   return {
     code: values.code,
@@ -80,11 +86,16 @@ function toCreateDressRequest(values: DressFormValues): CreateDressRequestDto {
     ...(values.notes ? { notes: values.notes } : {}),
     ...(photoUrls.length > 0 ? { photoUrls } : {}),
     ...(values.categoryId !== CATEGORY_NONE ? { categoryId: values.categoryId } : {}),
+    ...(isOwner && values.purchasePrice ? { purchasePrice: Number(values.purchasePrice) } : {}),
   };
 }
 
-/** Edit sends the full form: blank nullable fields become explicit nulls (PATCH clears them). */
-function toUpdateDressRequest(values: DressFormValues): UpdateDressRequestDto {
+/**
+ * Edit sends the full form: blank nullable fields become explicit nulls (PATCH clears them).
+ * EXCEPT purchasePrice for staff: the field must be ABSENT from their request (presence — even
+ * null — is the refused act, FR-CAT-05).
+ */
+function toUpdateDressRequest(values: DressFormValues, isOwner: boolean): UpdateDressRequestDto {
   return {
     code: values.code,
     name: values.name,
@@ -94,6 +105,9 @@ function toUpdateDressRequest(values: DressFormValues): UpdateDressRequestDto {
     notes: values.notes ? values.notes : null,
     photoUrls: parsePhotoUrls(values.photoUrls),
     categoryId: values.categoryId === CATEGORY_NONE ? null : values.categoryId,
+    ...(isOwner
+      ? { purchasePrice: values.purchasePrice ? Number(values.purchasePrice) : null }
+      : {}),
   };
 }
 
@@ -110,6 +124,11 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
   // The category options load only while the dialog is open; the list is tiny and cached.
   const categoriesQuery = useListCategoriesHttpControllerList({ query: { enabled: open } });
   const categories = categoriesQuery.data?.data ?? [];
+
+  // Display gate only — the BE refuses a staff request carrying the field either way. The me
+  // query is already in the cache (the session provider hydrated it).
+  const { data: me } = useMeHttpControllerMe();
+  const isOwner = me?.role === 'owner';
 
   // Re-prime on every open: the SAME dialog instance serves create and edit,
   // and the dress in the cache may have changed since the last open.
@@ -181,9 +200,9 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
 
   const onSubmit = form.handleSubmit((values) => {
     if (dress) {
-      updateDress.mutate({ id: dress.id, data: toUpdateDressRequest(values) });
+      updateDress.mutate({ id: dress.id, data: toUpdateDressRequest(values, isOwner) });
     } else {
-      createDress.mutate({ data: toCreateDressRequest(values) });
+      createDress.mutate({ data: toCreateDressRequest(values, isOwner) });
     }
   });
 
@@ -290,6 +309,23 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
                 )}
               />
             </div>
+            {/* NOT rendered for staff (not disabled — disabled invites "why is it grey?"):
+                the field simply is not theirs (FR-CAT-05). */}
+            {isOwner ? (
+              <FormField
+                control={form.control}
+                name="purchasePrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('form.fields.purchasePrice')}</FormLabel>
+                    <FormControl>
+                      <Input inputMode="numeric" autoComplete="off" {...field} />
+                    </FormControl>
+                    <DressFormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
             <FormField
               control={form.control}
               name="photoUrls"

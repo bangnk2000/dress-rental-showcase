@@ -132,3 +132,26 @@ Mục 1 (naming), 4 (state coverage), 5 (read efficiency), 8 (idempotency): khô
 
 > A responsible human confirms this risk list before FE/BE implementation starts. Blockers
 > must be resolved and re-checked; the agent does not approve.
+
+## 7. Re-sync as-built (2026-08-10)
+
+Implement khớp spec. Tiền lệ field-level đã đặt:
+
+- **Ghi**: luật so `actorRole` khi field CÓ MẶT (kể cả null) chạy TRƯỚC mọi bước khác trong
+  service; từ chối nêu tên qua 403 outcome. Staff không gửi field → hành vi cũ nguyên vẹn
+  (unit test riêng cho ca "staff sửa tên, giá nhập giữ nguyên").
+- **Đọc**: shaping ở MỘT chỗ — query nhận `readerRole` từ controller (`@CurrentSubject`), hai
+  query handler spread-conditional. Lưu ý arch: `CurrentSubject` import từ
+  `libs/authz/current-subject.decorator` (bản trong identity/guards là NỘI BỘ identity —
+  depcruise bắt đúng lỗi này khi implement).
+
+| Spec | Code |
+| --- | --- |
+| Migration | `1755200000000_dress_purchase_price.js` — nullable + CHECK ≥ 0; down DROP COLUMN |
+| R1 (403 nêu tên) | `PurchasePriceOwnerOnlyError` → `{ status:'forbidden', reason:'purchase_price_owner_only' }` (403) ở cả create lẫn update; `PurchasePriceForbiddenOutcomeDto` |
+| R2 (omit cho staff) | `readerRole` trên GetDressQuery/ListDressesQuery; e2e so KEY-level hai token |
+| R3 | không call-site nào ngoài catalog đọc cột — chỉ hai projection |
+| §6.Q1 CSV | cột `purchase_price` (parser + sample + test); importer chạy `actorRole:'owner'` |
+| §6.Q2 (chỉ chi tiết) | detail line render theo SỰ TỒN TẠI của key server trả (không check role ở FE); bảng list không có cột |
+| UI §3 | ô "Giá nhập" chỉ render cho owner trong DressFormDialog; staff edit gửi full form KHÔNG kèm field (vitest so key body PATCH) |
+| Traceability §5 | be 146 unit (+5) · 72 e2e (+4 `purchase-price.e2e-spec.ts`) · fe 94 vitest (+2) |

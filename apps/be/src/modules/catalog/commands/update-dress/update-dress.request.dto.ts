@@ -73,4 +73,15 @@ export class UpdateDressRequestDto {
   @IsOptional() // skips null too: null IS the valid "clear it" value
   @IsUUID()
   readonly categoryId?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: Number,
+    description:
+      'What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omit = keep, null = clear; a staff request carrying this field is refused with the named 403 outcome.',
+  })
+  @IsOptional() // skips null too: null = "clear it"
+  @IsInt()
+  @Min(0)
+  readonly purchasePrice?: number | null;
 }

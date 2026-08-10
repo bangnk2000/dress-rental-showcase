@@ -6,7 +6,10 @@ import { Money } from '../../../../libs/ddd/money.value-object';
 import { DressCode } from '../../domain/dress-code.value-object';
 import { DressEntity } from '../../domain/dress.entity';
 import { CategoryNotFoundError } from '../../domain/category.errors';
-import { DressCodeAlreadyExistsError } from '../../domain/dress.errors';
+import {
+  DressCodeAlreadyExistsError,
+  PurchasePriceOwnerOnlyError,
+} from '../../domain/dress.errors';
 import { DressCodeConflictError } from '../../application/ports/dress-code-conflict.error';
 import {
   CATEGORY_REPOSITORY,
@@ -20,7 +23,7 @@ import { CreateDressCommand } from './create-dress.command';
 
 export type CreateDressResult = Result<
   AggregateID,
-  DressCodeAlreadyExistsError | CategoryNotFoundError
+  DressCodeAlreadyExistsError | CategoryNotFoundError | PurchasePriceOwnerOnlyError
 >;
 
 @CommandHandler(CreateDressCommand)
@@ -33,6 +36,12 @@ export class CreateDressService implements ICommandHandler<CreateDressCommand, C
   ) {}
 
   async execute(command: CreateDressCommand): Promise<CreateDressResult> {
+    // FR-CAT-05 R1: the purchase price is the owner's field. Refused BY NAME, never silently
+    // dropped — dropping would tell the UI "saved" about a value that was not.
+    if (command.purchasePrice !== null && command.actorRole !== 'owner') {
+      return Err(new PurchasePriceOwnerOnlyError());
+    }
+
     const code = DressCode.create(command.code);
 
     // Uniqueness precondition; the DB unique constraint backs it against races.
@@ -56,6 +65,8 @@ export class CreateDressService implements ICommandHandler<CreateDressCommand, C
         notes: command.notes,
         photoUrls: command.photoUrls,
         categoryId: command.categoryId,
+        purchasePrice:
+          command.purchasePrice === null ? null : Money.create(command.purchasePrice),
       },
       this.dressRepo.nextId(),
       new Date(),
