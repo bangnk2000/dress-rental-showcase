@@ -64,7 +64,9 @@ export function RentalsRoute() {
                     defaultValue: String(mapped.currentStatus ?? ''),
                   }),
                 })
-              : t('errors.rentalNotFound'),
+              : mapped.status === 'rejected_cancel_has_payments'
+                ? t('cancel.hasPayments')
+                : t('errors.rentalNotFound'),
           );
           await Promise.all([
             queryClient.invalidateQueries({

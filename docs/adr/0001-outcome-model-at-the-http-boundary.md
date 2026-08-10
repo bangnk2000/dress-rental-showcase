@@ -98,12 +98,13 @@ Quyền quản lý user chặn ở guard (`user:manage`, owner-only, fail-closed
 | `rentals/pickup-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-04 |
 | `rentals/pickup-rental` | `RentalPickupNotAllowedError` | `rejected_pickup_not_allowed` | `currentStatus` | FR-RENT-04, BR-3 |
 | `rentals/return-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-05 |
-| `rentals/return-rental` | `RentalReturnNotAllowedError` | `rejected_return_not_allowed` | `currentStatus` | FR-RENT-05, BR-3 |
+| `rentals/return-rental` | `RentalReturnNotAllowedError` | `rejected_return_not_allowed` (từ FR-RENT-10 gồm cả `booked` — chưa giao thì chưa nhận về) | `currentStatus` | FR-RENT-05, FR-RENT-10, BR-3 |
 | `rentals/return-rental` | `LateFeeWaiverNotAllowedError` | `forbidden` (**403**) + `reason: 'late_fee_waiver_requires_owner'` | `suggestedLateFee`, `submittedLateFee` | FR-RENT-09 |
 | `rentals/return-rental` | `LateFeeWaiverNoteRequiredError` | `rejected_waiver_note_required` | `suggestedLateFee`, `submittedLateFee` | FR-RENT-09 |
 | `rentals/return-rental` | `ReturnDepositBasisChangedError` | `rejected_deposit_basis_changed` | `collectedDeposit` | FR-PAY-02 |
 | `rentals/cancel-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-06 |
-| `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` | `currentStatus` | FR-RENT-06, BR-3 |
+| `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` (từ FR-RENT-10 chỉ còn `returned`/`cancelled` — đơn `out` sổ trống được huỷ) | `currentStatus` | FR-RENT-06, FR-RENT-10, BR-3 |
+| `rentals/cancel-rental` | `RentalCancelHasPaymentsError` | `rejected_cancel_has_payments` — sổ có tiền thì lối ra duy nhất là return | — | FR-RENT-10 |
 
 ### payments
 
@@ -169,10 +170,11 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_dress_unavailable` | giữ form, message form-level "trùng lịch (gồm đệm giặt)" | `rentals:form.errors.dressUnavailable` |
 | `rejected_rental_not_found` | toast + invalidate board/list (đơn đã bị người khác xử lý) | `rentals:errors.rentalNotFound` / `today:errors.rentalNotFound` |
 | `rejected_pickup_not_allowed` | toast nêu `currentStatus` + invalidate board | `today:errors.pickupNotAllowed` |
-| `rejected_return_not_allowed` | đóng dialog, toast nêu `currentStatus` + invalidate | `today:errors.returnNotAllowed` |
+| `rejected_return_not_allowed` | đóng dialog, toast nêu `currentStatus` + invalidate; `currentStatus='booked'` có câu RIÊNG chỉ việc ("giao trước khi nhận về") | `today:errors.returnNotAllowed` / `today:errors.returnNotPickedUp` |
 | `forbidden` (`late_fee_waiver_requires_owner`) | GIỮ dialog, field error dưới phí trễ; số đề xuất vẫn hiển thị ở banner phía trên (message form là i18n key, không nội suy tham số) | `today:errors.lateFeeWaiverForbidden` |
 | `rejected_waiver_note_required` | GIỮ dialog, focus field Ghi chú + message bắt buộc lý do | `today:errors.waiverNoteRequired` |
-| `rejected_cancel_not_allowed` | toast nêu `currentStatus` + invalidate list | `rentals:cancel.notAllowed` |
+| `rejected_cancel_not_allowed` | toast nêu `currentStatus` + invalidate list/board | `rentals:cancel.notAllowed` / `today:cancel.notAllowed` |
+| `rejected_cancel_has_payments` | toast "sổ đã có tiền — đi đường return" + invalidate | `rentals:cancel.hasPayments` / `today:cancel.hasPayments` |
 | `rejected_deposit_already_recorded` / `rejected_rental_fee_already_recorded` | GIỮ dialog, field error trên ô tương ứng + invalidate sổ của đơn (danh sách phía trên hiện ngay dòng đã có) | `rentals:collect.errors.alreadyRecorded` |
 | `rejected_nothing_to_record` | message trên ô Tiền cọc; thực tế nút đã disabled khi cả hai ô trống | `rentals:collect.errors.nothingToRecord` |
 | `rejected_rental_closed` | đóng dialog, toast nêu `currentStatus` + invalidate list | `rentals:collect.rentalClosed` |

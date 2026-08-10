@@ -45,6 +45,7 @@ function makeRepo(rental: RentalEntity | null): RentalRepositoryPort {
     insert: jest.fn().mockResolvedValue(undefined),
     save: jest.fn().mockResolvedValue(undefined),
     saveReturned: jest.fn().mockResolvedValue(undefined),
+    saveCancelled: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(rental),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
     nextId: jest.fn(() => 'unused'),
@@ -117,22 +118,27 @@ test('out → returned: records the nonzero movements with the note', async () =
   ]);
 });
 
-test('a booked rental may be returned directly (pickup tap skipped)', async () => {
-  freezeShopDay('2026-08-03'); // on time → suggested 0
+test('FR-RENT-10 R1: a booked rental CANNOT be returned — nothing was handed over yet', async () => {
+  freezeShopDay('2026-08-03');
   const rental = makeRental();
-  const { service, recorder } = makeService(rental);
+  const { service, repo, recorder } = makeService(rental);
 
   const result = await service.execute(makeCommand());
 
-  expect(result.isOk()).toBe(true);
-  expect(rental.status).toBe('returned');
-  // nothing to settle → no payments written at all
-  expect(recorder.recordSettlement).toHaveBeenCalledWith(RENTAL_ID, []);
+  expect(result.isErr()).toBe(true);
+  const error = result.unwrapErr();
+  expect(error).toBeInstanceOf(RentalReturnNotAllowedError);
+  expect((error as RentalReturnNotAllowedError).currentStatus).toBe('booked');
+  expect(rental.status).toBe('booked');
+  // No status flip, no money: the settlement never starts.
+  expect(repo.saveReturned).not.toHaveBeenCalled();
+  expect(recorder.recordSettlement).not.toHaveBeenCalled();
 });
 
 test('AC2: omitting lateFee charges the SUGGESTED fee, per dress per late day', async () => {
   freezeShopDay('2026-08-06'); // 3 days late × 2 dresses × 200.000 = 1.200.000
   const rental = makeRental(2);
+  rental.markPickedUp(new Date('2026-08-01T02:00:00Z'));
   const { service, recorder } = makeService(rental);
 
   const result = await service.execute(makeCommand({ note: 'Khách trả muộn 3 ngày' }));
@@ -146,6 +152,7 @@ test('AC2: omitting lateFee charges the SUGGESTED fee, per dress per late day', 
 test('AC3: staff charging LESS than suggested is refused, and nothing is written', async () => {
   freezeShopDay('2026-08-06');
   const rental = makeRental();
+  rental.markPickedUp(new Date('2026-08-01T02:00:00Z'));
   const { service, repo, recorder } = makeService(rental);
 
   const result = await service.execute(
@@ -163,7 +170,9 @@ test('AC3: staff charging LESS than suggested is refused, and nothing is written
 
 test('AC3: an owner waiver without a reason is refused', async () => {
   freezeShopDay('2026-08-06');
-  const { service, repo } = makeService(makeRental());
+  const pickedUp = makeRental();
+  pickedUp.markPickedUp(new Date('2026-08-01T02:00:00Z'));
+  const { service, repo } = makeService(pickedUp);
 
   const result = await service.execute(
     makeCommand({ actorRole: 'owner', lateFee: 0, note: '   ' }),
@@ -176,6 +185,7 @@ test('AC3: an owner waiver without a reason is refused', async () => {
 test('AC3: an owner waiver WITH a reason records the reduced amount', async () => {
   freezeShopDay('2026-08-06');
   const rental = makeRental();
+  rental.markPickedUp(new Date('2026-08-01T02:00:00Z'));
   const { service, recorder } = makeService(rental);
 
   const result = await service.execute(
@@ -191,7 +201,9 @@ test('AC3: an owner waiver WITH a reason records the reduced amount', async () =
 
 test('charging MORE than suggested is a private arrangement and stays allowed for staff', async () => {
   freezeShopDay('2026-08-04'); // suggested 200.000
-  const { service, recorder } = makeService(makeRental());
+  const overpaid = makeRental();
+  overpaid.markPickedUp(new Date('2026-08-01T02:00:00Z'));
+  const { service, recorder } = makeService(overpaid);
 
   const result = await service.execute(
     makeCommand({ lateFee: 500_000, note: 'Khách đồng ý bù thêm' }),

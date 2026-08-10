@@ -18,7 +18,11 @@ import { RentalStatusBadge } from './rental-status-badge';
 
 interface RentalTableProps {
   rentals: RentalListItemDto[];
-  /** When set, booked rows get a cancel action (the route owns the mutation). */
+  /**
+   * When set, booked AND out rows get a cancel action (the route owns the mutation). Out rows:
+   * a same-day create is BORN delivered (FR-RENT-10), so a mis-created rental is `out` from
+   * birth — this is its escape hatch. The server refuses once money is on file.
+   */
   onCancel?: (rental: RentalListItemDto) => void;
   /**
    * When set, EVERY row gets a money action. Not only settled rentals: since FR-PAY-02 the
@@ -80,7 +84,7 @@ export function RentalTable({ rentals, onCancel, onShowPayments }: RentalTablePr
                     {t('list.actions.payments')}
                   </Button>
                 ) : null}
-                {onCancel && rental.status === 'booked' ? (
+                {onCancel && (rental.status === 'booked' || rental.status === 'out') ? (
                   <Button variant="outline" size="sm" onClick={() => onCancel(rental)}>
                     {t('list.actions.cancel')}
                   </Button>

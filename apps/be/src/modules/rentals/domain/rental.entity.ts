@@ -87,12 +87,13 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
   }
 
   /**
-   * Customer brings the dresses back: out → returned. A booked rental may be
-   * returned directly (staff skipped the pickup tap); the items keep blocking
-   * through the cleaning buffer, which IS the derived "cleaning" state.
+   * Customer brings the dresses back: out → returned, ONLY. A rental that was never handed
+   * over has nothing to take back — settling it would record money for a handover that never
+   * happened (FR-RENT-10 R1; the old booked→returned shortcut is deliberately gone). The items
+   * keep blocking through the cleaning buffer, which IS the derived "cleaning" state.
    */
   markReturned(now: Date): Result<void, RentalReturnNotAllowedError> {
-    if (this.props.status !== 'booked' && this.props.status !== 'out') {
+    if (this.props.status !== 'out') {
       return Err(new RentalReturnNotAllowedError(this.props.status));
     }
     this.props.status = 'returned';
@@ -102,12 +103,13 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
   }
 
   /**
-   * Cancel a booking that never went out: booked → cancelled, and every item
-   * stops blocking — the calendar frees for re-booking while the rows stay
-   * as history. An 'out' rental must be RETURNED, not cancelled.
+   * Cancel: booked|out → cancelled, and every item stops blocking — the calendar frees for
+   * re-booking while the rows stay as history. An OUT rental may cancel only while its ledger
+   * is EMPTY (a mis-created born-out rental, FR-RENT-10 §6.Q2) — that money rule lives in the
+   * application/repository layer, since the aggregate cannot see the payments table.
    */
   cancel(now: Date): Result<void, RentalCancelNotAllowedError> {
-    if (this.props.status !== 'booked') {
+    if (this.props.status !== 'booked' && this.props.status !== 'out') {
       return Err(new RentalCancelNotAllowedError(this.props.status));
     }
     this.props.status = 'cancelled';

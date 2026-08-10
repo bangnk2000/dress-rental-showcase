@@ -12,6 +12,7 @@ import { RequirePermission } from '../../../../libs/authz/require-permission.dec
 import { IdResponse } from '../../../../libs/ddd/id.response.dto';
 import { BusinessOutcomeException } from '../../../../libs/exceptions';
 import {
+  RentalCancelHasPaymentsError,
   RentalCancelNotAllowedError,
   RentalNotFoundError,
 } from '../../domain/rental.errors';
@@ -28,13 +29,16 @@ export class CancelRentalHttpController {
   @Post(':id/cancel')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('rental:cancel')
-  @ApiOperation({ summary: 'Cancel a booked rental — frees the calendar, keeps history' })
+  @ApiOperation({
+    summary:
+      'Cancel a booked or out rental with an EMPTY ledger — frees the calendar, keeps history',
+  })
   @ApiOkResponse({ type: IdResponse })
   @ApiResponse({
     status: 422,
     type: CancelRentalOutcomeDto,
     description:
-      'Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus)',
+      'Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus) | rejected_cancel_has_payments',
   })
   async cancel(@Param('id', ParseUUIDPipe) id: string): Promise<IdResponse> {
     const result: CancelRentalResult = await this.commandBus.execute(
@@ -52,6 +56,9 @@ export class CancelRentalHttpController {
             status: 'rejected_cancel_not_allowed',
             currentStatus: error.currentStatus,
           });
+        }
+        if (error instanceof RentalCancelHasPaymentsError) {
+          throw new BusinessOutcomeException({ status: 'rejected_cancel_has_payments' });
         }
         throw error;
       },

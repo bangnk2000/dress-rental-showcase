@@ -146,3 +146,32 @@ không field mới, không endpoint mới, không đổi replay semantics.
 
 > A responsible human confirms this risk list before FE/BE implementation starts. Blockers
 > must be resolved and re-checked; the agent does not approve.
+
+## 7. Re-sync as-built (2026-08-10)
+
+Implement khớp spec với các quyết định phát sinh, đều ghi rõ:
+
+1. **Auto-pickup = `create()` rồi `markPickedUp()`** ngay trong service — không thêm nhánh
+   factory; stream event tự nhiên (Created + PickedUp cùng transaction, không bao giờ có đơn
+   `out` thiếu event).
+2. **Ledger guard phủ CẢ cancel đơn `booked`** — từ FR-PAY-02, đơn booked cũng cầm được tiền
+   cọc; luật "sổ có tiền thì đi đường return" là một luật, không phân biệt trạng thái. Check
+   chạy dưới row lock trong `RentalRepository.saveCancelled` (cùng pattern `saveReturned`);
+   record-collection lock cùng hàng nên hai luồng take turns, không deadlock.
+3. **List `/rentals` thêm nút Huỷ cho hàng `out`** — đó là chỗ thao tác tự nhiên cho đơn giao
+   ngay bị tạo nhầm (board chỉ hiện đơn đến hạn); BE là người quyết có tiền hay không.
+4. **smoke.sh viết lại sang NGÀY TƯƠNG ĐỐI** (anchor D0 = today+3) — ngày cố định 08/2026 đã
+   thối theo lịch; tiện thể sửa các expect 409 còn sót từ trước ADR 0001 thành 422 outcome
+   (script vốn đã không chạy nổi từ khi outcome model land). Thêm section FR-RENT-10:
+   born-out, pickup 422, collect→cancel 422, return là lối ra.
+5. **Playwright happy path đổi kịch bản**: đặt cho NGÀY MAI rồi bấm "Ngày sau" trên board —
+   luồng duy nhất mà browser còn chứng minh được nút giao váy; born-out để unit/e2e/smoke lo.
+
+| Spec | Code |
+| --- | --- |
+| R1 (return chỉ từ out) | `rental.entity.ts::markReturned`; e2e `pickup-gate.e2e-spec.ts` AC1 |
+| R2/R3 (born-out theo shopToday) | `create-rental.service.ts` (so `period.start <= shopToday()`); 3 unit case (same-day, backdated, múi giờ Hà Nội) + e2e |
+| §6.Q2 (cancel + sổ tiền) | entity.cancel mở cho out; `saveCancelled` + `LedgerNotEmptyError` → `RentalCancelHasPaymentsError` → `rejected_cancel_has_payments`; e2e cả hai chiều (sổ trống 200 + giải phóng lịch, có tiền 422 + item vẫn block) |
+| §6.Q3 (board card booked) | `today-route.tsx::returnAction` status-aware: nhãn + Giao váy + Huỷ (ConfirmDialog); vitest 2 case |
+| §3 UI states | return dialog câu riêng cho `currentStatus='booked'`; form note `rentals:form.startsToday`; toast `form.successDelivered` |
+| Traceability §5 | be 130 unit (+4) · 62 e2e (+7, `pickup-gate.e2e-spec.ts`) · fe 89 vitest (+2, 1 sửa) · Playwright 1 passed (17.5s) trên stack thật · smoke.sh viết lại |

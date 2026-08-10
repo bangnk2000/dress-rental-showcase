@@ -1,8 +1,10 @@
 import { Money } from '../../../../libs/ddd/money.value-object';
+import { LedgerNotEmptyError } from '../../application/ports/ledger-not-empty.error';
 import { RentalRepositoryPort } from '../../application/ports/rental.repository.port';
 import { RentalEntity } from '../../domain/rental.entity';
 import { RentalPeriod } from '../../domain/rental-period.value-object';
 import {
+  RentalCancelHasPaymentsError,
   RentalCancelNotAllowedError,
   RentalNotFoundError,
 } from '../../domain/rental.errors';
@@ -42,6 +44,7 @@ function makeRepo(rental: RentalEntity | null): RentalRepositoryPort {
     insert: jest.fn().mockResolvedValue(undefined),
     save: jest.fn().mockResolvedValue(undefined),
     saveReturned: jest.fn().mockResolvedValue(undefined),
+    saveCancelled: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(rental),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
     nextId: jest.fn(() => 'unused'),
@@ -50,7 +53,7 @@ function makeRepo(rental: RentalEntity | null): RentalRepositoryPort {
 
 const command = new CancelRentalCommand({ rentalId: RENTAL_ID });
 
-test('booked → cancelled: EVERY item stops blocking and the aggregate saves', async () => {
+test('booked → cancelled: EVERY item stops blocking, saved through the ledger guard', async () => {
   const rental = makeRental();
   const repo = makeRepo(rental);
 
@@ -59,24 +62,36 @@ test('booked → cancelled: EVERY item stops blocking and the aggregate saves', 
   expect(result.isOk()).toBe(true);
   expect(rental.status).toBe('cancelled');
   expect(rental.items.every((item) => !item.blocking)).toBe(true);
-  expect(repo.save).toHaveBeenCalledWith(rental);
+  expect(repo.saveCancelled).toHaveBeenCalledWith(rental);
+  expect(repo.save).not.toHaveBeenCalled(); // never the unguarded write
 });
 
-test('an out rental must be returned, not cancelled', async () => {
+test('an OUT rental with an empty ledger cancels too — the born-out escape hatch (FR-RENT-10 §6.Q2)', async () => {
   const rental = makeRental();
   rental.markPickedUp(new Date('2026-08-01T02:00:00Z'));
   const repo = makeRepo(rental);
 
   const result = await new CancelRentalService(repo).execute(command);
 
+  expect(result.isOk()).toBe(true);
+  expect(rental.status).toBe('cancelled');
+  expect(rental.items.every((item) => !item.blocking)).toBe(true);
+});
+
+test('recorded money refuses the cancel with its own outcome — settle through return instead', async () => {
+  const rental = makeRental();
+  const repo = makeRepo(rental);
+  (repo.saveCancelled as jest.Mock).mockRejectedValue(new LedgerNotEmptyError());
+
+  const result = await new CancelRentalService(repo).execute(command);
+
   expect(result.isErr()).toBe(true);
-  expect(result.unwrapErr()).toBeInstanceOf(RentalCancelNotAllowedError);
-  expect(rental.items.every((item) => item.blocking)).toBe(true);
-  expect(repo.save).not.toHaveBeenCalled();
+  expect(result.unwrapErr()).toBeInstanceOf(RentalCancelHasPaymentsError);
 });
 
 test('a returned rental cannot be cancelled', async () => {
   const rental = makeRental();
+  rental.markPickedUp(new Date('2026-08-01T02:00:00Z'));
   rental.markReturned(new Date('2026-08-03T10:00:00Z'));
 
   const result = await new CancelRentalService(makeRepo(rental)).execute(command);

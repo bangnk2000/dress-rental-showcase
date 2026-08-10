@@ -265,7 +265,7 @@ describe('recording money collected (real Postgres)', () => {
       'SELECT status FROM rentals WHERE id = $1',
       [rentalId],
     );
-    expect(rows.rows[0]!.status).toBe('booked'); // never flipped to returned
+    expect(rows.rows[0]!.status).toBe('out'); // born-out (FR-RENT-10), never flipped to returned
     expect((await ledgerOf(rentalId)).summary.depositRefund).toBe(0);
   });
 

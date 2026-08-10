@@ -43,7 +43,8 @@
     "confirm": "Cancel this rental? The dresses' calendar will be freed for other bookings.",
     "success": "Rental cancelled.",
     "error": "Something went wrong, please retry.",
-    "notAllowed": "Cannot cancel: the rental is \"{{status}}\"."
+    "notAllowed": "Cannot cancel: the rental is \"{{status}}\".",
+    "hasPayments": "Money is already recorded on this rental — take back & settle instead."
   },
   "payments": {
     "title": "Money of the rental",
@@ -72,8 +73,10 @@
       "notes": "Notes"
     },
     "bufferHint": "After the return date the dress is held for cleaning before it can be rented again.",
+    "startsToday": "The pick-up date is today or already past — the rental is recorded as DELIVERED on creation.",
     "submit": "Create rental",
     "success": "Rental created",
+    "successDelivered": "Rental created and recorded as handed out.",
     "error": "Could not create the rental. Please try again.",
     "errors": {
       "customerNameRequired": "Please enter the customer name",

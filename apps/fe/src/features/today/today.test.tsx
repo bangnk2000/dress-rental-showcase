@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
@@ -7,6 +7,7 @@ import { beforeEach, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
 import {
+  getLastCancelRentalId,
   getLastPickupRentalId,
   getLastReturn,
   getLastTodayBoardDate,
@@ -682,4 +683,32 @@ test('a non-numeric amount blocks the settlement with a translated error', async
     await screen.findByText('Số tiền phải là số nguyên không âm'),
   ).toBeInTheDocument();
   expect(getLastReturn().rentalId).toBeNull();
+});
+
+test('FR-RENT-10: a booked rental on due-back loses the return action and offers hand-out or cancel', async () => {
+  seedTodayBoard({ dueBack: [makeTodayRental({ rentalId: 'rental-np', status: 'booked' })] });
+  renderToday();
+
+  expect(await screen.findByText('Khách chưa lấy váy')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Nhận về & tất toán/ })).not.toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Đã giao váy cho Nguyễn Thị Hoa' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Huỷ lượt thuê của Nguyễn Thị Hoa' }),
+  ).toBeInTheDocument();
+});
+
+test('cancelling a no-show goes through the app confirm dialog and hits the API', async () => {
+  seedTodayBoard({ overdue: [makeTodayRental({ rentalId: 'rental-ns', status: 'booked' })] });
+  const user = userEvent.setup();
+  renderToday();
+
+  await user.click(
+    await screen.findByRole('button', { name: 'Huỷ lượt thuê của Nguyễn Thị Hoa' }),
+  );
+  const dialog = await screen.findByRole('alertdialog');
+  await user.click(within(dialog).getByRole('button', { name: 'Huỷ lượt thuê' }));
+
+  await waitFor(() => expect(getLastCancelRentalId()).toBe('rental-ns'));
 });

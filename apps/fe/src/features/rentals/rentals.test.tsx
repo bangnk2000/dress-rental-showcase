@@ -97,11 +97,16 @@ test('searching adds a dress, and creating toasts then navigates to /rentals', a
   renderNewRental();
 
   await fillCustomerAndDates(user);
+  // The fixture dates (2026-08-01..) are in the PAST → FR-RENT-10 announces the rental will be
+  // born delivered, both under the date field and in the success toast.
+  expect(
+    screen.getByText('Ngày nhận là hôm nay hoặc đã qua — đơn sẽ ghi là ĐÃ GIAO ngay khi tạo.'),
+  ).toBeInTheDocument();
   await pickDress(user, 'DR-001');
   expect(screen.getByText('Tạm tính tiền thuê')).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
 
-  expect(await screen.findByText('Đã tạo lượt thuê')).toBeInTheDocument();
+  expect(await screen.findByText('Đã tạo lượt thuê và ghi nhận giao váy.')).toBeInTheDocument();
   expect(await screen.findByText('rentals-list-stub')).toBeInTheDocument();
   // the request carried the form exactly: dates inclusive, no price override
   expect(getLastCreateRentalBody()).toEqual({

@@ -12,6 +12,7 @@ import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { AggregateID } from '../../../libs/ddd/entity.base';
 import { LOGGER_PORT, LoggerPort } from '../../../libs/ports/logger.port';
 import { DepositBasisChangedError } from '../application/ports/deposit-basis-changed.error';
+import { LedgerNotEmptyError } from '../application/ports/ledger-not-empty.error';
 import { RentalItemsOverlapError } from '../application/ports/rental-overlap.error';
 import { RentalRepositoryPort } from '../application/ports/rental.repository.port';
 import { RentalEntity } from '../domain/rental.entity';
@@ -29,6 +30,7 @@ import {
 
 const dressIdSchema = z.object({ dress_id: z.string() });
 const collectedDepositSchema = z.object({ collected: z.number().int() });
+const movementCountSchema = z.object({ movements: z.number().int() });
 
 /**
  * The aggregate spans rentals + rental_items, so the single-table helpers of
@@ -84,6 +86,27 @@ export class RentalRepository
       `);
       if (collected !== expectedDepositCollected) {
         throw new DepositBasisChangedError(collected);
+      }
+    });
+  }
+
+  /**
+   * A cancel is only legal while the ledger is empty (FR-RENT-10 §6.Q2). Checked HERE, under the
+   * rental's row lock and in the SAME transaction as the status flip — record-collection locks
+   * the very same row before inserting, so either its money lands first and this count sees it,
+   * or the cancel commits first and the collection's own closed-rental rule refuses it. Lock
+   * order is rentals → payments on both sides, so no deadlock.
+   */
+  async saveCancelled(entity: RentalEntity): Promise<void> {
+    await this.writeAggregate(entity, true, async (conn, record) => {
+      await conn.query(sql.unsafe`
+        SELECT id FROM rentals WHERE id = ${record.rental.id} FOR UPDATE
+      `);
+      const { movements } = await conn.one(sql.type(movementCountSchema)`
+        SELECT count(*)::int AS movements FROM payments WHERE rental_id = ${record.rental.id}
+      `);
+      if (movements > 0) {
+        throw new LedgerNotEmptyError();
       }
     });
   }

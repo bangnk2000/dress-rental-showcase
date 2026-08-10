@@ -43,7 +43,8 @@
     "confirm": "Huỷ lượt thuê này? Lịch của váy sẽ được giải phóng để khách khác đặt.",
     "success": "Đã huỷ lượt thuê.",
     "error": "Có lỗi xảy ra, vui lòng thử lại.",
-    "notAllowed": "Không huỷ được: lượt thuê đang ở trạng thái \"{{status}}\"."
+    "notAllowed": "Không huỷ được: lượt thuê đang ở trạng thái \"{{status}}\".",
+    "hasPayments": "Lượt thuê đã có tiền trong sổ — nhận về & tất toán thay vì huỷ."
   },
   "payments": {
     "title": "Tiền của lượt thuê",
@@ -72,8 +73,10 @@
       "notes": "Ghi chú"
     },
     "bufferHint": "Sau ngày trả, váy được giữ thêm thời gian giặt ủi trước khi cho thuê tiếp.",
+    "startsToday": "Ngày nhận là hôm nay hoặc đã qua — đơn sẽ ghi là ĐÃ GIAO ngay khi tạo.",
     "submit": "Tạo lượt thuê",
     "success": "Đã tạo lượt thuê",
+    "successDelivered": "Đã tạo lượt thuê và ghi nhận giao váy.",
     "error": "Không tạo được lượt thuê. Vui lòng thử lại.",
     "errors": {
       "customerNameRequired": "Vui lòng nhập tên khách",

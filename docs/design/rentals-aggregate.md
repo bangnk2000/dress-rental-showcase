@@ -1,6 +1,6 @@
 # rentals — Tactical Design
 
-> Status: **as-built 2026-08-10** (ADR 0001 + BR-1/2/3 proof tests trên Postgres thật + FR-RENT-09 phí trễ hạn) · SRS: FR-RENT-01..09, BR-1..3, BR-5..6 · Context **Core**
+> Status: **as-built 2026-08-10** (ADR 0001 + BR-1/2/3 proof tests trên Postgres thật + FR-RENT-09 phí trễ hạn + FR-RENT-10 pickup gate) · SRS: FR-RENT-01..10, BR-1..3, BR-5..6 · Context **Core**
 
 ## Vai trò & ranh giới
 
@@ -22,13 +22,14 @@ Aggregate trải **2 bảng** (`rentals` + `rental_items`) — repository overri
 
 | From | Action (method) | To | Ghi chú |
 | --- | --- | --- | --- |
+| *(create, start ≤ shopToday)* | `create()` + `markPickedUp(now)` | out | **FR-RENT-10**: đơn giao ngay/nhập bù sinh ra đã `out`; cả hai event cùng transaction |
 | booked | `markPickedUp(now)` | out | FR-RENT-04 |
-| booked, out | `markReturned(now)` | returned | items TIẾP TỤC block hết buffer = "đang vệ sinh" (BR-5) |
-| booked | `cancel(now)` | cancelled | `item.unblock(now)` từng item → giải phóng lịch, giữ history (FR-RENT-06) |
+| out | `markReturned(now)` | returned | **CHỈ từ out** (FR-RENT-10 bỏ lối tắt booked→returned); items TIẾP TỤC block hết buffer = "đang vệ sinh" (BR-5) |
+| booked, out | `cancel(now)` | cancelled | `item.unblock(now)` từng item → giải phóng lịch, giữ history (FR-RENT-06). Đơn `out` (và cả `booked`) chỉ huỷ được khi **sổ tiền TRỐNG** — check dưới row lock trong `saveCancelled` (repository), race với record-collection lấy cùng lock nên take turns |
 
 Mọi transition khác → `Err(...NotAllowedError)` → controller render outcome
-`rejected_{pickup,return,cancel}_not_allowed` (422) kèm `currentStatus`
-([ADR 0001](../adr/0001-outcome-model-at-the-http-boundary.md) §3).
+`rejected_{pickup,return,cancel}_not_allowed` (422) kèm `currentStatus`; sổ có tiền →
+`rejected_cancel_has_payments` ([ADR 0001](../adr/0001-outcome-model-at-the-http-boundary.md) §3).
 
 ## Bảng invariant-enforcement (mục load-bearing — spec 14 §3.1)
 

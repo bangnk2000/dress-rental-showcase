@@ -48,6 +48,11 @@ function bookingKey(startDate: string, endDate: string, dressIds: string[]): str
   return [startDate, endDate, [...dressIds].sort().join(',')].join('|');
 }
 
+/** The SHOP's calendar day — the same rule the API applies to decide born-delivered. */
+function shopTodayIso(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+}
+
 /** Form values + picked dresses → request body; blank notes are omitted. */
 function toCreateRentalRequest(
   values: RentalFormValues,
@@ -118,7 +123,11 @@ export function NewRentalRoute() {
             queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
           }),
         ]);
-        toast.success(t('form.success'));
+        toast.success(
+          form.getValues('startDate') <= shopTodayIso()
+            ? t('form.successDelivered')
+            : t('form.success'),
+        );
         void navigate('/rentals');
       },
       onError: (error, variables) => {
@@ -221,6 +230,11 @@ export function NewRentalRoute() {
                   <FormControl>
                     <Input type="date" autoComplete="off" {...field} />
                   </FormControl>
+                  {/* FR-RENT-10: same-day (or backdated) rentals are born DELIVERED — say so
+                      before submit, so the status on the list is no surprise. */}
+                  {field.value && field.value <= shopTodayIso() ? (
+                    <p className="text-sm text-muted-foreground">{t('form.startsToday')}</p>
+                  ) : null}
                   <RentalFormMessage />
                 </FormItem>
               )}

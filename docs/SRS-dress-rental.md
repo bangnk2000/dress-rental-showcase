@@ -62,11 +62,12 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 - **FR-RENT-03** Availability: trả lời "váy X có trống từ A đến B không"; chi tiết váy hiển thị
   các khoảng đã đặt trên lịch.
 - **FR-RENT-04** Pickup: đơn `booked` → `out` khi khách lấy váy.
-- **FR-RENT-05** Return + settle: đơn `booked|out` → `returned`; ghi các dòng tiền
-  `deposit_refund` / `late_fee` / `damage_fee` (+ ghi chú) vào `payments`. Váy tiếp tục bị
-  block hết buffer (= "đang vệ sinh"), sau đó tự do.
-- **FR-RENT-06** Cancel: đơn `booked` → `cancelled`; items chuyển `blocking=false` — **giải
-  phóng lịch, giữ lịch sử**.
+- **FR-RENT-05** Return + settle: đơn `out` → `returned` (**CHỈ từ `out`** — FR-RENT-10 bỏ
+  lối tắt booked→returned); ghi các dòng tiền `deposit_refund` / `late_fee` / `damage_fee`
+  (+ ghi chú) vào `payments`. Váy tiếp tục bị block hết buffer (= "đang vệ sinh"), sau đó tự do.
+- **FR-RENT-06** Cancel: đơn `booked` — hoặc `out` với **sổ tiền TRỐNG** (FR-RENT-10 §6.Q2) —
+  → `cancelled`; items chuyển `blocking=false` — **giải phóng lịch, giữ lịch sử**. Sổ có tiền
+  → `rejected_cancel_has_payments`: lối ra duy nhất là return.
 - **FR-RENT-07** Bảng "Hôm nay": váy phải giao hôm nay (due out), phải nhận về hôm nay
   (due back), và **OVERDUE** — màn hình nhân viên mở mỗi sáng, có nút thao tác trực tiếp.
 - **FR-RENT-08** Danh sách đơn: search tên/điện thoại khách, filter status, phân trang;
@@ -76,6 +77,11 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   `GET /rentals/:id/late-fee` và pre-fill để nhân viên nói với khách trước khi xác nhận. Thu **ít
   hơn** số đề xuất chỉ chủ tiệm được làm và **phải ghi lý do**; thu nhiều hơn thì tự do. Quyết định
   + lý do: [design/rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) §6.
+- **FR-RENT-10** Trạng thái đơn phản ánh váy đang ở đâu: (a) **chưa giao thì chưa nhận về** —
+  return chỉ hợp lệ từ `out`; (b) đơn tạo với ngày nhận là **hôm nay hoặc đã qua** (giờ tiệm,
+  `Asia/Ho_Chi_Minh`) sinh ra ở trạng thái `out` — khách đang ở quầy hoặc là nhập bù; (c) đơn
+  `booked` trên due-back/overdue là khách chưa lấy — board mời giao trễ hoặc huỷ. Quyết định +
+  lý do: [design/rentals/pickup-before-return.md](./design/rentals/pickup-before-return.md) §6.
 
 ### payments
 - **FR-PAY-01** Xem các dòng tiền của một đơn (`GET /rentals/:id/payments`), kèm `summary` cộng
@@ -132,6 +138,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-PAY-01 | `payments/list-payments` | [payments-aggregate.md](./design/payments-aggregate.md) | pass |
 | FR-PAY-02 | `payments/record-collection` | [payments/record-collection.md](./design/payments/record-collection.md) (spec `as-built`), [payments-aggregate.md](./design/payments-aggregate.md) | pass |
 | FR-RENT-09 | `rentals/settle-late-fee` | [rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Phí trễ hạn | pass |
+| FR-RENT-10 (siết FR-RENT-05, nới FR-RENT-06) | `rentals/pickup-before-return` | [rentals/pickup-before-return.md](./design/rentals/pickup-before-return.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được
