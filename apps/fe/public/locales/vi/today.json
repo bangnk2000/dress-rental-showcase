@@ -19,12 +19,18 @@
     "returned": "Đã trả",
     "cancelled": "Đã huỷ"
   },
+  "date": {
+    "previous": "Ngày trước",
+    "next": "Ngày sau",
+    "today": "Hôm nay"
+  },
   "actions": {
     "pickup": "Đã giao váy",
-    "return": "Nhận về & tất toán"
+    "pickupFor": "Đã giao váy cho {{customer}}",
+    "return": "Nhận về & tất toán",
+    "returnFor": "Nhận về & tất toán cho {{customer}}"
   },
   "pickupSuccess": "Đã ghi nhận giao váy cho khách.",
-  "alreadyProcessed": "Lượt thuê này đã được xử lý trước đó.",
   "actionError": "Có lỗi xảy ra, vui lòng thử lại.",
   "returnDialog": {
     "title": "Tất toán lượt thuê",
@@ -40,6 +46,28 @@
     "errors": {
       "amountInvalid": "Số tiền phải là số nguyên không âm",
       "noteTooLong": "Ghi chú tối đa 2000 ký tự"
+    },
+    "lateFee": {
+      "loading": "Đang tính phí trễ hạn…",
+      "onTime": "Trả đúng hạn — không có phí trễ.",
+      "late": "Trễ {{days}} ngày · {{dresses}} váy → đề xuất {{amount}}",
+      "unavailable": "Không tính được phí trễ hạn. Vui lòng nhập tay."
+    },
+    "deposit": {
+      "standard": "Chưa ghi nhận tiền cọc — dưới đây là cọc chuẩn {{count}} váy: {{amount}}",
+      "afterFees": "Trừ phí {{fees}} → hoàn lại khách {{amount}}",
+      "manual": "Bạn đang nhập {{amount}} — khác số tính ở trên.",
+      "use": "Điền {{amount}} vào ô hoàn cọc",
+      "collected": "Đã thu cọc: {{amount}}",
+      "unavailable": "Không đọc được sổ tiền của đơn nên chưa biết đã thu cọc bao nhiêu. Thử lại trước khi tất toán — tránh hoàn nhầm số tiền tiệm chưa từng nhận.",
+      "changed": "Sổ tiền của đơn vừa thay đổi — đã thu cọc {{amount}}. Kiểm tra lại số hoàn cọc rồi xác nhận."
     }
+  },
+  "errors": {
+    "pickupNotAllowed": "Không giao được: lượt thuê đang ở trạng thái \"{{status}}\".",
+    "returnNotAllowed": "Không nhận về được: lượt thuê đang ở trạng thái \"{{status}}\".",
+    "rentalNotFound": "Lượt thuê này không còn tồn tại. Bảng đã được làm mới.",
+    "lateFeeWaiverForbidden": "Chỉ chủ tiệm được giảm phí trễ so với số đề xuất.",
+    "waiverNoteRequired": "Giảm phí trễ thì phải ghi lý do."
   }
 }

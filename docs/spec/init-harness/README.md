@@ -92,6 +92,10 @@ curl -fsSL https://raw.githubusercontent.com/walkinglabs/learn-harness-engineeri
   — the stack **design templates** that fill [06-design-first.md](./06-design-first.md)'s
   `DESIGN_TEMPLATE` slot (context/aggregate design for the backend, slice + UX design for the
   frontend).
+- [`../init-feature-spec/`](../init-feature-spec/README.md) — **upstream**: the capability spec
+  whose acceptance criteria seed the ledger's `acceptance` field (02 §2.2).
+- [`../init-release/`](../init-release/README.md) — **downstream**: reads the ledger as release
+  evidence.
 - Future `init-*` sets get a binding for free via the template in
   [05-composition-contract.md](./05-composition-contract.md).
 

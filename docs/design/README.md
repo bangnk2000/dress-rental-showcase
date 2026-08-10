@@ -21,6 +21,24 @@ design của nó ở [qr-admin.md](./qr-admin.md). SRS phase QR: [../SRS-qr-url.
 
 Yêu cầu sản phẩm: [../SRS-dress-rental.md](../SRS-dress-rental.md) (FR/BR/NFR + bảng truy vết).
 
+## Spec use-case (capability có rejection — lane B2.1)
+
+| Use case | Status | Spec |
+| --- | --- | --- |
+| `rentals/settle-late-fee` (FR-RENT-09) | **as-built 2026-08-10** — spec duyệt trước khi code, §6 ghi 4 quyết định của chủ tiệm | [rentals/settle-late-fee.md](./rentals/settle-late-fee.md) |
+
+Chỉ spec `approved` mới được feed scaffold prompt. Spec ở đây là **intent**: nó nói cái SẼ xây và
+outcome catalog mà cả hai phía cùng dùng, không phải mô tả lại code đã có.
+
+## Quyết định cross-cutting (ADR)
+
+| ADR | Quyết định | Phạm vi |
+| --- | --- | --- |
+| [0001](../adr/0001-outcome-model-at-the-http-boundary.md) | Business outcome sống sót qua HTTP boundary: outcome body 422/403 vs error envelope; **outcome catalog cho toàn bộ use case** + UI state matrix | 4 context BE + `apps/fe` + `apps/qr-admin` |
+
+ADR là nơi ghi quyết định **cross-cutting** (shape trên dây, quy ước lỗi, ranh giới context). Một
+quyết định chỉ thuộc một context thì ghi trong design doc của context đó, không mở ADR.
+
 ---
 
 ## Quy trình: từ SRS → phân tích → feature → task
@@ -52,10 +70,34 @@ Invariant mới ở bậc design-tier PHẢI có đủ 2 cột: **cơ chế DB**
 chấp nhận "app check") và **proof test** (spec 09 §Invariant proof tests). FE có màn hình
 tương tác mới → thêm mục UX flow/URL-state/invalidation theo `init-react/14-design-first.md` §2.
 
+#### B2.1 — Có từ chối nghiệp vụ → outcome catalog TRƯỚC khi code
+
+Capability nào có **rejection / denial có tên** (không phải read CRUD thuần) thì phải có
+**outcome catalog** được duyệt trước, theo `docs/spec/init-feature-spec/`
+(`01-feature-spec-template.md` §2–§3):
+
+| Tình huống | Artifact | Nơi lưu |
+| --- | --- | --- |
+| Capability MỚI có rejection | use-case spec đầy đủ: glossary slice, outcome catalog, UI state matrix, contract check | `docs/design/<context>/<use-case>.md`, header `status: draft \| approved \| as-built` |
+| Thêm outcome vào use case đã có | thêm hàng vào catalog của [ADR 0001](../adr/0001-outcome-model-at-the-http-boundary.md) §3 + §4, và bảng invariant của context | ADR 0001 + design doc context |
+| Quyết định cross-cutting (đổi shape trên dây, đổi quy ước lỗi, đổi ranh giới) | **ADR** | `docs/adr/NNNN-<slug>.md` |
+
+Ràng buộc bắt buộc, không thương lượng:
+
+- Code outcome là snake_case Ubiquitous Language, **ổn định sau khi approve** — đổi tên là
+  breaking contract change, phải có ADR mới.
+- Catalog đã duyệt được **paste nguyên văn** vào field `outcomes:` của CẢ HAI INPUT CONTRACT
+  (`init-nestjs-hexagonal/10` và `init-react/10`); BE điền thêm `useCaseSpec:` trỏ tới file spec
+  (bắt buộc khi `outcomes` có nhiều hơn happy path) và `idempotency:`.
+- Ranh giới duy nhất giữa hai shape trên dây: **returned `Result` Err → outcome body (422/403)**,
+  **thrown → error envelope**. Không tạo shape thứ ba, không dùng `GENERIC.*` cho rejection
+  (ADR 0001 §2).
+
 ### B3 — Từ design ra feature
 
 - **1 use-case slice = 1 entry `feature_list.json`**, id `<context>/<use-case>` (hạ tầng:
-  `infra/<name>`); `description` dẫn FR-id + mục design doc liên quan.
+  `infra/<name>`); `description` dẫn FR-id + mục design doc liên quan (+ spec use-case / ADR nếu
+  có ở B2.1). Brief có AC → điền `acceptance`, và evidence phải nói AC nào được lệnh nào chứng minh.
 - Feature chạm API = **MỘT entry cho cả BE + contract + FE**, evidence mang proof của CẢ HAI
   phía (bất biến của root AGENTS) — không tách "BE xong" / "FE xong" thành 2 entry.
 - Prerequisite phát hiện muộn = entry `todo` riêng + `dependencies`; feature hiện tại chuyển
@@ -82,5 +124,8 @@ hơn không có SRS).
 - Feature trong `feature_list.json` không truy ngược được về FR-id nào — làm thứ không ai yêu cầu.
 - FR ở SRS quá 1 phase không có hàng trong bảng truy vết — yêu cầu chết, xóa hoặc lên lịch.
 - Entry design-tier `in-progress` mà design doc không có diff nào gần đó — design gate bị lách.
-- Bảng invariant có hàng mà cột proof-test trống qua nhiều session (tình trạng hiện tại của
-  BR-1/BR-2 — gap #5 trong `apps/be/AGENTS.md`, candidate hàng đầu).
+- Bảng invariant có hàng mà cột proof-test trống qua nhiều session (BR-1/BR-2 từng như vậy suốt
+  gap #5; **đã đóng 2026-08-09** bằng `apps/be/test/` + `pnpm --filter be test:e2e` — mọi hàng mới
+  phải có proof test ngay, đừng để nợ lại).
+- Rejection nghiệp vụ dùng chung một mã với rejection khác (kiểu 409 `GENERIC.CONFLICT` trước ADR
+  0001) — FE không render được state đúng; mỗi rejection PHẢI có code riêng trong catalog.

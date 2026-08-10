@@ -1,6 +1,7 @@
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateRoot } from '../../../libs/ddd/aggregate-root.base';
 import { ArgumentInvalidException } from '../../../libs/exceptions';
+import { LateFeeQuote } from './late-fee.value-object';
 import { RentalItemEntity } from './rental-item.entity';
 import { RentalPeriod } from './rental-period.value-object';
 import { CreateRentalProps, RentalProps, RentalStatus } from './rental.types';
@@ -60,10 +61,24 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
     return this.props.items;
   }
 
+  /**
+   * FR-RENT-09: what the shop should charge if the dresses come back on `referenceDate`.
+   * The rule lives in the domain (LateFeeQuote) and is priced per DRESS, so it belongs to the
+   * aggregate that knows how many dresses the rental holds.
+   */
+  lateFeeQuote(referenceDate: string, dailyRateAmount: number): LateFeeQuote {
+    return LateFeeQuote.compute({
+      dueDate: this.props.period.end,
+      referenceDate,
+      dressCount: this.props.items.length,
+      dailyRateAmount,
+    });
+  }
+
   /** Staff hands the dresses to the customer: booked → out. */
   markPickedUp(now: Date): Result<void, RentalPickupNotAllowedError> {
     if (this.props.status !== 'booked') {
-      return Err(new RentalPickupNotAllowedError(undefined, { status: this.props.status }));
+      return Err(new RentalPickupNotAllowedError(this.props.status));
     }
     this.props.status = 'out';
     this.setUpdatedAt(now);
@@ -78,7 +93,7 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
    */
   markReturned(now: Date): Result<void, RentalReturnNotAllowedError> {
     if (this.props.status !== 'booked' && this.props.status !== 'out') {
-      return Err(new RentalReturnNotAllowedError(undefined, { status: this.props.status }));
+      return Err(new RentalReturnNotAllowedError(this.props.status));
     }
     this.props.status = 'returned';
     this.setUpdatedAt(now);
@@ -93,7 +108,7 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
    */
   cancel(now: Date): Result<void, RentalCancelNotAllowedError> {
     if (this.props.status !== 'booked') {
-      return Err(new RentalCancelNotAllowedError(undefined, { status: this.props.status }));
+      return Err(new RentalCancelNotAllowedError(this.props.status));
     }
     this.props.status = 'cancelled';
     for (const item of this.props.items) {

@@ -1,8 +1,8 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
-import { beforeEach, expect, test, vi } from 'vitest';
+import { beforeEach, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
 import { makeDress, resetCatalog, seedDresses } from '@/test/msw/handlers/catalog';
@@ -73,6 +73,21 @@ test('renders dress rows from the API through Suspense', async () => {
     'href',
     '/dresses/d1',
   );
+});
+
+test('a dress with a photo shows it in the list; one without falls back to the placeholder', async () => {
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001', photoUrls: ['https://example.test/a.jpg'] }),
+    makeDress({ id: 'd2', code: 'DR-002', photoUrls: [] }),
+  ]);
+  const { container } = renderList();
+  await screen.findByText('DR-001');
+
+  // The photo is decorative (alt=""): the code next to it is what a screen reader reads, so this
+  // asserts the DOM rather than an accessible role.
+  const images = container.querySelectorAll('img');
+  expect(images).toHaveLength(1);
+  expect(images[0]).toHaveAttribute('src', 'https://example.test/a.jpg');
 });
 
 test('shows the no-dresses empty state when the catalog is empty', async () => {
@@ -153,7 +168,7 @@ test('creating a dress toasts, closes the dialog, and the invalidated list shows
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 });
 
-test('a duplicate code maps the 409 to a field error on code', async () => {
+test('the rejected_dress_code_taken outcome becomes a field error on code', async () => {
   seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
   const user = userEvent.setup();
   renderList();
@@ -289,7 +304,7 @@ test('an invalid photo link line blocks the save with a translated error', async
   ).toBeInTheDocument();
 });
 
-test('editing to a taken code maps the 409 to a field error', async () => {
+test('editing to a taken code renders the rejected_dress_code_taken field error', async () => {
   seedDresses([
     makeDress({ id: 'd1', code: 'DR-001' }),
     makeDress({ id: 'd2', code: 'DR-002' }),
@@ -310,17 +325,20 @@ test('editing to a taken code maps the 409 to a field error', async () => {
 
 test('retiring a dress (confirmed) flips the badge and removes the retire button', async () => {
   seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
-  const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
   const user = userEvent.setup();
   renderDetail('/dresses/d1');
   await screen.findByRole('button', { name: 'Ngừng khai thác' });
 
   await user.click(screen.getByRole('button', { name: 'Ngừng khai thác' }));
 
+  // one-way action → the app's own confirmation, naming the dress it is about to retire
+  const dialog = await screen.findByRole('alertdialog');
+  expect(within(dialog).getByText('Ngừng khai thác DR-001?')).toBeInTheDocument();
+  await user.click(within(dialog).getByRole('button', { name: 'Ngừng khai thác' }));
+
   expect(await screen.findByText('Đã ngừng khai thác váy')).toBeInTheDocument();
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: 'Ngừng khai thác' })).not.toBeInTheDocument(),
   );
   expect(screen.getByText('Ngừng khai thác')).toBeInTheDocument(); // the status badge
-  confirmSpy.mockRestore();
 });

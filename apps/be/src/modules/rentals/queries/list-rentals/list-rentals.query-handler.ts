@@ -58,7 +58,7 @@ export class ListRentalsQueryHandler
     const items =
       rentalIds.length > 0
         ? await this.pool.any(sql.type(rentalListItemRowSchema)`
-            SELECT rental_id, dress_id FROM rental_items
+            SELECT rental_id, dress_id, price FROM rental_items
             WHERE rental_id = ANY(${sql.array(rentalIds, 'uuid')})
             ORDER BY id
           `)

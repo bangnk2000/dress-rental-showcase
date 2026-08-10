@@ -101,7 +101,6 @@ handler never invokes another command, so there is nothing cross-handler to mock
 
 ```ts
 import { Test } from '@nestjs/testing';
-import { Err, Ok } from 'oxide.ts';
 import { CreateUserService } from './create-user.service';
 import { CreateUserCommand } from './create-user.command';
 import {
@@ -109,6 +108,7 @@ import {
   UserRepositoryPort,
 } from '../../application/ports/user.repository.port';
 import { UserAlreadyExistsError } from '../../domain/user.errors';
+import { UserBuilder } from '../../../../../tests/builders/user.builder';
 
 describe('CreateUserService', () => {
   let service: CreateUserService;
@@ -133,7 +133,7 @@ describe('CreateUserService', () => {
 
   it('persists a new user and returns Ok(id)', async () => {
     repo.findOneByEmail.mockResolvedValue(null);
-    repo.insert.mockResolvedValue(Ok(undefined));
+    repo.insert.mockResolvedValue(undefined); // insert returns Promise<void>, not a Result
 
     const result = await service.execute(
       new CreateUserCommand({ email: 'ada@example.com', country: 'US', postalCode: '94016', street: '1 Market St' }),
@@ -168,6 +168,7 @@ change. Use builders (object mothers) under `tests/builders/`. A builder produce
 aggregate by default and exposes `with*` overrides:
 
 ```ts
+// tests/builders/user.builder.ts
 export class UserBuilder {
   private email = 'ada@example.com';
   private address = new Address({ country: 'US', postalCode: '94016', street: '1 Market St' });
@@ -241,14 +242,18 @@ system's strongest promise; a migration adding a constraint that no test provoke
 claim.
 
 ```ts
-it('rejects an overlapping booking with the same 409 the pre-check produces', async () => {
+it('rejects an overlapping booking with the same domain error the pre-check produces', async () => {
   await repo.insert(bookingFor('dress-1', '2026-08-01', '2026-08-05'));
   // Bypass the handler pre-check on purpose: this exercises the CONSTRAINT path.
   await expect(
     repo.insert(bookingFor('dress-1', '2026-08-03', '2026-08-07')),
-  ).rejects.toThrow(ConflictException); // exclusion violation → mapped domain error
+  ).rejects.toThrow(OverlappingBookingError); // exclusion violation → mapped domain error
 });
 ```
+
+The constraint path must map to the SAME domain error / outcome the pre-check produces (e.g.
+the handler returns `Err(DuplicateRegistrationError)` → the controller renders
+`{ status: 'rejected_duplicate_registration' }`, 422) — never a bare SQL error or generic 500.
 
 When the invariant is race-sensitive, the sequential version above is not enough — fire the two
 writes **concurrently** (`Promise.allSettled` of two inserts) and assert exactly one wins. And
@@ -260,7 +265,8 @@ nothing about the invariants the design doc promises, no matter how green it is.
 
 Acceptance tests express **use cases in ubiquitous language** so domain experts can read them. Each
 `.feature` maps to a vertical slice and is driven through the HTTP controller (`*.http.controller.ts`),
-asserting the same status mapping the controller applies (409 Conflict, 400 Bad Request, 404).
+asserting the same outcome/status mapping the controller applies (`body.status` for business
+outcomes, `body.error.code` for faults).
 
 ```gherkin
 # features/user/create-user.feature
@@ -277,7 +283,8 @@ Feature: Registering a user
   Scenario: A duplicate email is rejected
     Given a user already exists with email "ada@example.com"
     When I register the email "ada@example.com"
-    Then the response status is 409
+    Then the response status is 422
+    And the response body "status" is "rejected_email_taken"
 ```
 
 Step definitions are thin glue over supertest against the booted Nest app:
@@ -295,8 +302,13 @@ Then('the response status is {int}', function (status: number) {
 ```
 
 Smaller modules may skip Cucumber and write the same assertions directly as supertest specs under
-`tests/e2e/<context>/`. The 409/400/404 mapping comes from the Result-to-HTTP match in
-`06-interface-layer.md`; e2e is where you prove that mapping holds end-to-end.
+`tests/e2e/<context>/`. The outcome/status mapping comes from the outcome catalog in
+`06-interface-layer.md` §5; e2e asserts `body.status` (outcomes) and `body.error.code` (faults),
+not bare HTTP status — e2e is where you prove that mapping holds end-to-end.
+
+Until real provider contract tests exist (e.g. consumer-driven pacts with the FE), the
+committed-OpenAPI drift gate (`pnpm openapi:check`, `14-design-first.md` §4) is the named
+type-level provider-contract evidence that release readiness (`init-release`) cites.
 
 ## Mocking Ports via DI
 

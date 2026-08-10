@@ -121,7 +121,7 @@ Domain and Application layers NEVER import the SDK; the LLM is always behind `Ll
 
 ## 7. Error Handling Discipline
 
-- **Business / domain errors are RETURNED**, not thrown. They are recoverable, explicit, and documented in the return type as `Result<T, DomainError>` (via `oxide.ts` `Ok`/`Err` or `@badrap/result`). Example: `UserAlreadyExistsError` flows back from a handler; the controller `match()`es it to **409 Conflict**.
+- **Business / domain errors are RETURNED**, not thrown. They are recoverable, explicit, and documented in the return type as `Result<T, DomainError>` (via `oxide.ts` `Ok`/`Err` or `@badrap/result`). Example: `UserAlreadyExistsError` flows back from a handler; the controller `match()`es it to the outcome body `{ status: 'rejected_email_taken' }` (**422**) via `BusinessOutcomeException` (`06-interface-layer.md` §5).
 - **Technical failures are THROWN** (fail-fast): DB down, malformed config, broken invariant that should never occur. A **global exception filter** maps thrown exceptions (`ConflictException`, `NotFoundException`, `ArgumentInvalidException` from `libs/exceptions`) to HTTP responses.
 - Rule of thumb: *if a caller can sensibly react to it, return a `Result`; if not, throw.* See `04-application-layer.md` and `06-interface-layer.md`.
 

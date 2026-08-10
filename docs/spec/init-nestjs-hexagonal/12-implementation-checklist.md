@@ -34,7 +34,7 @@ Lock these before writing code; they shape every later phase.
 ## Phase 1 — Init Nest app + tsconfig + lint/format (Required)
 
 - [ ] `npx @nestjs/cli@^11 new <app>` (NestJS 11; Express 5 by default). Remove generated boilerplate you won't keep.
-- [ ] Configure `tsconfig.json`: `target: ES2023` (Node 20+), `module: commonjs` (NestJS 11 default; ESM lands in v12), `strict: true`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, path aliases (`@libs/*`, `@modules/*`).
+- [ ] Configure `tsconfig.json`: `target: ES2023` (Node 20+), `module: commonjs` (NestJS 11 default; ESM lands in v12), `strict: true`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, path aliases (`@libs/*`, `@modules/*`, `@contracts/*` → `libs/contracts/*`).
 - [ ] Enable decorator support: `experimentalDecorators` + `emitDecoratorMetadata` (required for `@nestjs/cqrs` and DI).
 - [ ] Add **ESLint** + **Prettier**; wire the typescript-eslint parser to the project `tsconfig`.
 - [ ] Add the **eslint boundaries** rules so layering is lint-enforced (`01-architecture-principles.md`, `07-cross-cutting.md`).
@@ -76,7 +76,12 @@ Install in grouped batches so the agent can reason about each concern.
   ```
 - [ ] Architecture guardrails + scaffolding (dev):
   ```bash
-  pnpm add -D dependency-cruiser plop
+  pnpm add -D dependency-cruiser plop eslint-plugin-boundaries eslint-plugin-check-file husky lint-staged
+  ```
+- [ ] Migrations + CLI transport:
+  ```bash
+  pnpm add nest-commander              # *.cli.controller.ts transport
+  pnpm add -D node-pg-migrate          # pnpm migrate / migrate:down / migrate:create
   ```
 - [ ] Testing (dev):
   ```bash
@@ -93,13 +98,16 @@ The shared DDD kernel; framework-free where the spec demands (`03-domain-layer.m
 - [ ] `libs/ddd/entity.base.ts` — `Entity`: `readonly id/createdAt/updatedAt`, equality by id, `validate()`, no public setters.
 - [ ] `libs/ddd/aggregate-root.base.ts` — `AggregateRoot extends Entity`: `addEvent()` / `publishEvents()`; consistency boundary.
 - [ ] `libs/ddd/value-object.base.ts` — immutable, structural equality, guard-based validation in constructor.
-- [ ] `libs/ddd/domain-event.base.ts`, `command.base.ts`, `query.base.ts` — base contracts.
+- [ ] `libs/ddd/domain-event.base.ts`, `command.base.ts`, `query.base.ts` — base contracts — plus the shared exports `IdResponse`, `Paginated`, `PaginatedQueryBase`, `AggregateID`.
 - [ ] `libs/ddd/repository.port.ts` + `libs/ddd/mapper.interface.ts` — `toDomain()` / `toPersistence()` / `toResponse()`.
 - [ ] `libs/db/sql-repository.base.ts` — `SqlRepositoryBase`; publishes aggregate events INSIDE the DB transaction (`05-infrastructure-layer.md`).
 - [ ] `libs/ports/logger.port.ts` — `LoggerPort` DI token.
-- [ ] `libs/exceptions/` — `exception.base.ts` + `ArgumentInvalidException`, `NotFoundException`, `ConflictException` (THROWN technical failures only).
+- [ ] `libs/config/` — zod-validated config module; the ONLY place that reads `process.env` (`07-cross-cutting.md`).
+- [ ] `libs/observability/request-context.ts` — request-scoped correlation context.
+- [ ] `libs/contracts/` — created empty, wired to the `@contracts/*` alias; cross-context query classes land in `libs/contracts/<owner-context>/` (`14-design-first.md` §3.2).
+- [ ] `libs/exceptions/` — `exception.base.ts` (with `details[]`) + `ArgumentInvalidException`, `NotFoundException`, `ConflictException`, `ForbiddenException`, `UnauthorizedException` (THROWN technical failures → error envelope), `BusinessOutcomeException` (outcome bodies `{ status, ...payload }`), and `exception.filter.ts` rendering both wire shapes (`07-cross-cutting.md`).
 - [ ] `libs/guard.ts`, `libs/utils/`, `libs/decorators/` — guard clauses and shared helpers.
-- [ ] Inject **time and id generation** as ports — domain never reads `Date.now()` / random directly (`03-domain-layer.md`).
+- [ ] Time and ids enter **at the edge**: the handler passes `new Date()` and `repo.nextId()` into domain factories — the domain never reads the clock or generates ids (`03-domain-layer.md`).
 - [ ] Unit-test the base classes (equality, event buffering, guard failures) before any module depends on them.
 
 ## Phase 4 — AI-agent-first scaffolding (Required)
@@ -109,25 +117,28 @@ This is the differentiator — it lets any agent extend the repo without breakin
 - [ ] `AGENTS.md` (repo root, universal): layer + dependency rules, file-naming map, allowed dependencies per layer, exact commands (build/test/lint/scaffold/migrate), do / do-not list, and "where do I add a new use case".
 - [ ] `CLAUDE.md` (repo root, Claude Code specific): same guardrails, plus the default model `claude-sonnet-4-6` and the LlmPort rule (SDK is always an adapter).
 - [ ] `.dependency-cruiser.cjs`: forbid inner→outer imports, forbid cross-module imports (modules talk via command/query bus or events only), forbid domain importing any framework / IO / SDK.
-- [ ] `plopfile.cjs`: deterministic generators for a full vertical slice — command + handler + controller + request/response DTOs + query side — so any agent emits an identical, correct slice (`10-module-scaffold-prompt.md`).
+- [ ] `plopfile.cjs`: deterministic generators — `plop module` emits the `src/modules/<context>/` skeleton + `<context>.module.ts`; `plop slice` emits command + handler + controller + request/response DTOs (incl. the response DTO) + spec; query-side templates mirror it (`10-module-scaffold-prompt.md`).
 - [ ] **CI guardrail step**: run `depcruise`, `eslint` (incl. boundaries + naming), `tsc --noEmit`, and tests on every PR so an agent cannot silently break layering (`07-cross-cutting.md`).
 - [ ] Add a naming lint rule enforcing the file map (`*.command.ts`, `*.service.ts`, `*.query-handler.ts`, `*.repository.ts`, `*.mapper.ts`, `*.http.controller.ts`, `*.request.dto.ts`, `*.response.dto.ts`, `*.domain-event.ts`, `*.errors.ts`).
+- [ ] **Docs skeleton** (`14-design-first.md` §1): `docs/design/README.md` — the design-doc index (contexts + cross-context contract matrix), `docs/design/adr/` with a template stub, and a `docs/SRS-<product>.md` stub carrying the FR-ids the ledger traces to. Created NOW, empty but addressed, so design docs and use-case specs have a home before the first design-tier slice needs one.
+- [ ] **Truth docs wired** (`14-design-first.md` §4): `scripts/gen-map.mjs` emitting `docs/architecture-map.md` (`pnpm map` / `pnpm map:check`) and the offline OpenAPI emit writing `docs/openapi.json` (`pnpm openapi:emit` / `pnpm openapi:check`); both `*:check` diff gates run in CI.
 - [ ] **Session harness** (`13-harness-engineering.md`): `feature_list.json` seeded from the planned use cases (all `"todo"`); `init.sh` (install → build → lint → arch → test → DB/migrate → e2e → harness-file presence); `session-handoff.md`, `claude-progress.md`, `clean-state-checklist.md` skeletons; `scripts/check-architecture.sh` greps wired into `pnpm arch`. Do this BEFORE the first slice — the first slice is built under the harness.
 
 ## Phase 5 — Scaffold the first bounded context + use-case slice (Required)
 
 Use the generator from Phase 4 so the structure is exact. Folder map per `02-folder-structure.md`.
 
+- [ ] Spec gate: any use case with business outcomes beyond the happy path has its use-case spec written and `approved` (`14-design-first.md`, template: `init-feature-spec`) — its outcome catalog feeds the scaffold input's `outcomes` field.
 - [ ] `plop module <context>` — creates `modules/<context>/` with `domain/`, `commands/`, `queries/`, `application/event-handlers/`, `database/`.
 - [ ] Build the domain first (`03-domain-layer.md`):
   - [ ] `domain/<aggregate>.entity.ts` with static `create()` factory and invariant `validate()`.
   - [ ] Value objects only for primitives with real rules (`<vo>.value-object.ts`) — YAGNI otherwise.
-  - [ ] `domain/<event>.domain-event.ts` and `domain/<context>.errors.ts` (e.g. `UserAlreadyExistsError`) returned via `Result`.
+  - [ ] `domain/events/<event>.domain-event.ts` and `domain/<context>.errors.ts` (e.g. `UserAlreadyExistsError`) returned via `Result`.
 - [ ] Build the write slice `commands/<use-case>/` (`04-application-layer.md`):
   - [ ] `<use-case>.command.ts` (state-changing intent).
   - [ ] `<use-case>.service.ts implements ICommandHandler<Cmd>` returning `Result<Success, DomainError>`.
   - [ ] `<use-case>.request.dto.ts` (class-validator) + `<use-case>.response.dto.ts` (intended fields only).
-  - [ ] `<use-case>.http.controller.ts` — dispatches via `commandBus.execute()`, then `match()`es the Result and maps domain errors to HTTP status (409 / 400 / 404 …) per `06-interface-layer.md`.
+  - [ ] `<use-case>.http.controller.ts` — dispatches via `commandBus.execute()`, then `match()`es the Result and renders each domain error as its outcome body (`BusinessOutcomeException`, stable snake_case `status` code from the outcome catalog) per `06-interface-layer.md` §5.
 - [ ] Build a read slice `queries/<use-case>/` — `*.query.ts` + `*.query-handler.ts implements IQueryHandler`; the read side MAY bypass domain/repository and hit the DB directly for performance.
 - [ ] Confirm the **Command → Event → Command** rule: never call a command from a command directly; use a `*.domain-event-handler.ts` in `application/event-handlers/`.
 
@@ -136,9 +147,9 @@ Use the generator from Phase 4 so the structure is exact. Folder map per `02-fol
 - [ ] Register `CqrsModule` + `EventEmitterModule` in the context module; register handlers, controllers, repositories.
 - [ ] Define **DI tokens** for every port (e.g. `USER_REPOSITORY`, `LOGGER_PORT`, `LLM_PORT`) and bind them to concrete adapters in the module providers.
 - [ ] Wire `@nestjs/config` with a **zod-validated** config schema; fail fast on boot if env is invalid (`07-cross-cutting.md`).
-- [ ] Register a **global exception filter** mapping THROWN exceptions to responses; business errors stay as returned `Result` values (`01-architecture-principles.md`).
+- [ ] Register a **global exception filter** rendering the two wire shapes — outcome pass-through + error envelope (`07-cross-cutting.md`); business errors stay as returned `Result` values until the controller renders them.
 - [ ] Wire `nestjs-pino` as the `LoggerPort` implementation; inject via token, never import pino in domain/application.
-- [ ] Add a global `ValidationPipe` (whitelist + transform) so request DTOs are validated and stripped at the edge.
+- [ ] Add a global `ValidationPipe` (whitelist + forbidNonWhitelisted + transform) so request DTOs are validated and stripped at the edge.
 
 ## Phase 7 — Persistence + first migration (Required)
 
@@ -150,7 +161,7 @@ Per `05-infrastructure-layer.md`.
 - [ ] Ensure the repository calls `publishEvents()` INSIDE the DB transaction so events and state commit atomically.
 - [ ] Create the **first migration** (Slonik raw SQL migration or TypeORM/Prisma migration) and a repeatable migrate script.
 - [ ] The migration carries the **constraints from the invariant-enforcement table** (`14-design-first.md` §3.1): `UNIQUE` / `CHECK` / `EXCLUDE USING gist` for every critical invariant, plus the chosen concurrency mechanism (version column / `FOR UPDATE`) where concurrent saves are possible.
-- [ ] The repository **maps each constraint violation** to the same domain error / 409 its pre-check produces — race path and friendly path are indistinguishable to clients.
+- [ ] The repository **maps each constraint violation** to the same domain error its pre-check produces — race path and friendly path render the same outcome body, indistinguishable to clients.
 - [ ] Add a local stack (`docker-compose.yml` with the SQL engine) so dev and CI run against the same DB version.
 - [ ] Smoke-test: create an aggregate through the command, read it back through the query side.
 
@@ -161,7 +172,7 @@ Per `09-testing-strategy.md`.
 - [ ] **Unit** (Jest): domain entities/value-objects/services, command handlers with mocked ports — assert `Ok`/`Err` outcomes and invariant violations.
 - [ ] **Integration** (Jest): repository + mapper against a real test DB; verify events publish in-transaction.
 - [ ] **Invariant proof tests** (`09-testing-strategy.md`): one test per row of the invariant-enforcement table that provokes the constraint (duplicate / overlap / concurrent double-write) and asserts the mapped error. CI runs them against a real Postgres service container — not mocks.
-- [ ] **Acceptance / e2e**: Cucumber/Gherkin features driving `supertest` against the HTTP controller; assert mapped status codes (409 / 400 / 404).
+- [ ] **Acceptance / e2e**: Cucumber/Gherkin features driving `supertest` against the HTTP controller; assert outcome bodies (`status` codes, 422/403) and envelope codes (`error.code`, 400/401/404) — not bare HTTP status.
 - [ ] Add a **coverage gate** in CI (fail under threshold) so agents cannot merge untested slices.
 - [ ] Add a test that asserts the **dependency-cruiser** rules pass — layering is part of the test suite, not just a lint nicety.
 
@@ -179,7 +190,7 @@ Per `09-testing-strategy.md`.
 A first-class `modules/ai-agent/` context; the LLM is ALWAYS an adapter behind a port (`08-ai-agent-first.md`).
 
 - [ ] `modules/ai-agent/domain/`: `Agent`, `Conversation`, `Message`, `Tool`, `PromptTemplate` as entities / value-objects with invariants.
-- [ ] `application/ports/llm.port.ts` — `LlmPort` interface (prompt in, structured completion / tool-calls out); domain & application NEVER import `@anthropic-ai/sdk`.
+- [ ] `LlmPort` consumed from `libs/ports/llm.port.ts` (canonical shared port, `LLM_PORT` token; prompt in, structured completion / tool-calls out); domain & application NEVER import `@anthropic-ai/sdk`.
 - [ ] `adapters/claude-llm.adapter.ts` — `ClaudeLlmAdapter implements LlmPort` using `@anthropic-ai/sdk`; anti-corruption layer translating SDK types to domain types.
   - [ ] Default model `claude-sonnet-4-6`; allow `claude-opus-4-8` (deep reasoning), `claude-haiku-4-5-20251001` (fast/cheap), `claude-fable-5` via config — never legacy `claude-3-*`.
 - [ ] Implement **tool-calling** as domain `Tool` definitions invoked through the port; results flow back as `Message`s.

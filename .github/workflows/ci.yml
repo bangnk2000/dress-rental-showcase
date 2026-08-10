@@ -20,6 +20,25 @@ jobs:
 
   be:
     runs-on: ubuntu-latest
+    services:
+      # The invariant-proof suite must run against a REAL Postgres: the constraints under test
+      # (EXCLUDE overlap, UNIQUE, CHECK) do not exist anywhere else.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dress
+          POSTGRES_PASSWORD: dress
+          POSTGRES_DB: dress_rental
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U dress -d dress_rental"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://dress:dress@localhost:5432/dress_rental
+      JWT_SECRET: ci-jwt-secret-value-0123456789
+      JWT_REFRESH_SECRET: ci-jwt-refresh-secret-0123456789
+      CLEANING_BUFFER_DAYS: '2'
+      LOG_LEVEL: fatal
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -28,8 +47,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter be lint && pnpm --filter be arch
       - run: pnpm --filter be test
-      # + migrate/test:e2e with postgres service once apps/be lands
-      #   (docs/spec/init-nestjs-hexagonal/09-testing-strategy.md)
+      # Creates dress_rental_test, migrates it, then proves the DB-level invariants
+      # (docs/spec/init-nestjs-hexagonal/09-testing-strategy.md — "Invariant proof tests").
+      - run: pnpm --filter be test:e2e
 
   fe:
     runs-on: ubuntu-latest
@@ -54,3 +74,48 @@ jobs:
       - run: pnpm --filter qr-admin lint && pnpm --filter qr-admin arch
       - run: pnpm --filter qr-admin test
       - run: pnpm --filter qr-admin build
+
+  e2e:
+    # The browser proof (infra/e2e-ci): the vi-locale happy path in a real Chromium against the
+    # real stack. Playwright starts the BE and the FE production build itself
+    # (apps/fe/playwright.config.ts); this job only has to provide a migrated + seeded database.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dress
+          POSTGRES_PASSWORD: dress
+          POSTGRES_DB: dress_rental
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U dress -d dress_rental"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://dress:dress@localhost:5432/dress_rental
+      JWT_SECRET: ci-jwt-secret-value-0123456789
+      JWT_REFRESH_SECRET: ci-jwt-refresh-secret-0123456789
+      CLEANING_BUFFER_DAYS: '2'
+      LATE_FEE_PER_DRESS_PER_DAY: '200000'
+      SEED_OWNER_EMAIL: owner@example.com
+      # The happy path signs in with this exact pair (apps/fe/e2e/happy-path.spec.ts).
+      SEED_OWNER_PASSWORD: changeme
+      LOG_LEVEL: fatal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter fe exec playwright install --with-deps chromium
+      - run: pnpm --filter be migrate
+      - run: pnpm --filter be seed
+      - run: pnpm --filter fe e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/fe/playwright-report
+            apps/fe/test-results
+          retention-days: 7

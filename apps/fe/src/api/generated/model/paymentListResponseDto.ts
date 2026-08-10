@@ -5,8 +5,10 @@
  * OpenAPI spec version: 0
  */
 import type { PaymentDto } from './paymentDto';
+import type { PaymentSummaryDto } from './paymentSummaryDto';
 
 export interface PaymentListResponseDto {
   /** Movements, oldest first */
   data: PaymentDto[];
+  summary: PaymentSummaryDto;
 }

@@ -7,6 +7,7 @@
     "statusAll": "All statuses",
     "createButton": "Add dress",
     "columns": {
+      "photo": "Photo",
       "code": "Code",
       "name": "Name",
       "size": "Size",
@@ -71,6 +72,7 @@
       "retire": "Retire"
     },
     "retire": {
+      "title": "Retire {{code}}?",
       "confirm": "Retire this dress? It can no longer be rented (cannot be undone).",
       "success": "Dress retired",
       "alreadyRetired": "This dress was already retired",
@@ -107,5 +109,8 @@
       "conflict": "Busy from {{start}} to {{end}} (held until the end of {{blockedUntil}})",
       "error": "Could not check availability. Please try again."
     }
+  },
+  "errors": {
+    "notFound": "This dress is no longer in the catalog. The list has been refreshed."
   }
 }

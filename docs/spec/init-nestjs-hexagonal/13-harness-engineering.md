@@ -64,7 +64,7 @@ the `00-system-prompt.md` output (section 2: each command/query use case becomes
       "name": "Create invoice (command)",
       "description": "POST /invoices: Invoice aggregate with Money VO, invariants amount>0 + draft start, InvoiceCreated event",
       "status": "pass",                        // todo | in-progress | pass | fail | blocked
-      "evidence": "pnpm build/lint/arch green; create-invoice.service.spec.ts 5 cases (Ok + 2 Err paths); e2e: POST /invoices → 201 + row in DB, duplicate → 409; event handler fired (log assert).",
+      "evidence": "pnpm build/lint/arch green; create-invoice.service.spec.ts 5 cases (Ok + 2 Err paths); e2e: POST /invoices → 201 + row in DB, duplicate → 422 { status: 'rejected_duplicate_invoice' }; event handler fired (log assert).",
       "testedAt": "2026-07-06T00:00:00Z"
     },
     {
@@ -72,7 +72,7 @@ the `00-system-prompt.md` output (section 2: each command/query use case becomes
       "name": "Global exception filter",
       "description": "Thrown technical exceptions map to HTTP; Result errors untouched",
       "status": "pass",
-      "evidence": "e2e asserts 404/409/400 mapping; unit test for filter",
+      "evidence": "e2e asserts outcome bodies (status codes) + envelope codes (error.code); unit test for filter",
       "testedAt": "2026-07-05T00:00:00Z"
     }
   ]
@@ -126,7 +126,9 @@ pnpm test
 echo "[5/7] DB up + migrations from zero"
 docker compose up -d db && pnpm migrate
 echo "[6/7] e2e (acceptance)"
-pnpm test:e2e
+# init.sh is the resume gate from Phase 4 onward; the e2e suite only lands in Phase 8
+# (12-implementation-checklist.md) — defer, don't fail, until it exists.
+if [ -d tests/e2e ]; then pnpm test:e2e; else echo "e2e: deferred (Phase 8)"; fi
 echo "[7/7] harness files present"
 for f in AGENTS.md CLAUDE.md feature_list.json session-handoff.md \
          claude-progress.md clean-state-checklist.md .dependency-cruiser.cjs plopfile.cjs; do
@@ -167,7 +169,7 @@ merge them.
 dependency-cruiser (`08-ai-agent-first.md` A.4) is the primary gate; this script adds
 belt-and-braces greps that survive a miswired config. Exit 1 on any violation:
 
-1. **Domain purity**: `grep -rE "from '(@nestjs|@anthropic-ai|slonik|typeorm|@prisma)" src/modules/*/domain src/libs/ddd` → empty; `grep -rE "Date\.now\(\)|crypto\.randomUUID" src/modules/*/domain` → empty.
+1. **Domain purity**: `grep -rE "from '(@nestjs|@anthropic-ai|slonik|typeorm|@prisma)" src/modules/*/domain` → empty. (Not `src/libs/ddd`: its `aggregate-root.base.ts` imports `EventEmitter2` deliberately — the one sanctioned framework seam, per 07 "framework-free where possible".) Also `grep -rE "Date\.now\(\)|crypto\.randomUUID" src/modules/*/domain` → empty.
 2. **Application purity**: `grep -rE "from '.*(database|adapters)/" src/modules/*/commands src/modules/*/queries src/modules/*/application` → empty (handlers import ports, not concretes).
 3. **Module privacy**: `grep -rE "from '.*modules/([a-z-]+)/" src/modules` cross-checked against the importing module → empty.
 4. **SDK containment**: `grep -rl "@anthropic-ai/sdk" src | grep -v '\.adapter\.ts$'` → empty.
@@ -210,7 +212,7 @@ Adapted to this stack; run before committing and at session end:
 - [ ] Persistence model separate from entity; events published INSIDE the tx
 ## Runtime
 - [ ] docker compose up + pnpm migrate from zero succeeds
-- [ ] Changed endpoints exercised: expected 2xx AND the mapped error codes (409/400/404)
+- [ ] Changed endpoints exercised: expected 2xx AND the outcome bodies / envelope codes (06 §5)
 - [ ] Domain events observed for changed commands (log/handler assertion)
 ## Repository
 - [ ] No unintended files staged; no .env or secrets; migrations committed with their slice

@@ -26,8 +26,25 @@
               }
             }
           },
-          "401": {
-            "description": "Invalid credentials"
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_invalid_credentials. NOT 401 — 401 means only that a guard rejected an access token (ADR 0001)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginOutcomeDto"
+                }
+              }
+            }
           }
         },
         "summary": "Staff login with email + password",
@@ -61,8 +78,15 @@
               }
             }
           },
-          "401": {
-            "description": "Invalid or expired refresh token"
+          "422": {
+            "description": "Business rejection: rejected_invalid_refresh_token — terminal, the client clears the session (ADR 0001)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshTokenOutcomeDto"
+                }
+              }
+            }
           }
         },
         "summary": "Exchange a refresh token for a new token pair",
@@ -123,8 +147,25 @@
               }
             }
           },
-          "409": {
-            "description": "Dress code already exists"
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_dress_code_taken (carries dressCode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateDressOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -243,11 +284,25 @@
               }
             }
           },
-          "404": {
-            "description": "Dress not found"
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
           },
-          "409": {
-            "description": "New dress code already exists"
+          "422": {
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_code_taken (carries dressCode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateDressOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -323,13 +378,24 @@
             }
           },
           "403": {
-            "description": "Only the owner may retire a dress"
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner may retire a dress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
           },
-          "404": {
-            "description": "Dress not found"
-          },
-          "409": {
-            "description": "Dress is already retired"
+          "422": {
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_already_retired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetireDressOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -368,11 +434,25 @@
               }
             }
           },
-          "404": {
-            "description": "A dress in the rental does not exist"
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
           },
-          "409": {
-            "description": "A dress is retired, or already booked for an overlapping period (rental + cleaning buffer)"
+          "422": {
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_retired | rejected_dress_unavailable (overlap incl. cleaning buffer, pre-check AND race)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateRentalOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -483,11 +563,15 @@
               }
             }
           },
-          "404": {
-            "description": "Rental not found"
-          },
-          "409": {
-            "description": "Rental is not in the booked status"
+          "422": {
+            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelRentalOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -525,11 +609,15 @@
               }
             }
           },
-          "404": {
-            "description": "Rental not found"
-          },
-          "409": {
-            "description": "Rental is not in the booked status"
+          "422": {
+            "description": "Business rejection: rejected_rental_not_found | rejected_pickup_not_allowed (carries currentStatus)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PickupRentalOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -577,11 +665,35 @@
               }
             }
           },
-          "404": {
-            "description": "Rental not found"
+          "400": {
+            "description": "Invalid settlement body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
           },
-          "409": {
-            "description": "Rental is already returned or cancelled"
+          "403": {
+            "description": "Named denial: forbidden + reason late_fee_waiver_requires_owner — staff may not charge less than the suggested late fee",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReturnRentalOutcomeDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_rental_not_found | rejected_return_not_allowed (currentStatus) | rejected_deposit_basis_changed (collectedDeposit) | rejected_waiver_note_required (carries suggested + submitted late fee)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReturnRentalOutcomeDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -589,7 +701,7 @@
             "bearer": []
           }
         ],
-        "summary": "Return a rental: settle the deposit and record late/damage fees",
+        "summary": "Return a rental: settle the deposit and record late/damage fees. Omitting lateFee charges the suggested late fee (FR-RENT-09)",
         "tags": [
           "rentals"
         ]
@@ -734,6 +846,52 @@
         ]
       }
     },
+    "/api/v1/rentals/{id}/late-fee": {
+      "get": {
+        "operationId": "QuoteLateFeeHttpController_quote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LateFeeQuoteResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rental not found — a read that finds nothing is a fault, not an outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Late fee the shop should charge if the dresses come back today (FR-RENT-09) — read before settling",
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
     "/api/v1/rentals/{rentalId}/payments": {
       "get": {
         "operationId": "ListPaymentsHttpController_list",
@@ -768,6 +926,63 @@
           }
         ],
         "summary": "The money movements of a rental (deposit refund, fees)",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/api/v1/rentals/{rentalId}/payments/collect": {
+      "post": {
+        "description": "Writes 1..2 movements in one transaction. Returns the RENTAL id — the call creates several rows, so there is no single movement id.",
+        "operationId": "RecordCollectionHttpController_collect",
+        "parameters": [
+          {
+            "name": "rentalId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordCollectionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_rental_not_found | rejected_rental_closed (currentStatus) | rejected_nothing_to_record | rejected_deposit_already_recorded (recordedAmount) | rejected_rental_fee_already_recorded (recordedAmount)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordCollectionOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Record money COLLECTED for a rental: deposit and/or rental fee (FR-PAY-02)",
         "tags": [
           "payments"
         ]
@@ -993,6 +1208,77 @@
           "refreshToken"
         ]
       },
+      "ApiErrorDetailDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "Request field the detail points at"
+          },
+          "rule": {
+            "type": "string",
+            "description": "Violated rule, e.g. 'min', 'format'"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "ApiErrorBodyDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "GENERIC.VALIDATION",
+            "description": "Stable machine code — branch on this, never parse `message`"
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorDetailDto"
+            }
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "Echo of the x-request-id header"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "ApiErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "LoginOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_invalid_credentials"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "RefreshTokenRequestDto": {
         "type": "object",
         "properties": {
@@ -1003,6 +1289,20 @@
         },
         "required": [
           "refreshToken"
+        ]
+      },
+      "RefreshTokenOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_invalid_refresh_token"
+            ]
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "MeResponseDto": {
@@ -1106,6 +1406,25 @@
           "id"
         ]
       },
+      "CreateDressOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_dress_code_taken"
+            ]
+          },
+          "dressCode": {
+            "type": "string",
+            "description": "The dress code that is already in use"
+          }
+        },
+        "required": [
+          "status",
+          "dressCode"
+        ]
+      },
       "UpdateDressRequestDto": {
         "type": "object",
         "properties": {
@@ -1160,6 +1479,40 @@
             }
           }
         }
+      },
+      "UpdateDressOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_dress_not_found",
+              "rejected_dress_code_taken"
+            ],
+            "type": "string"
+          },
+          "dressCode": {
+            "type": "string",
+            "description": "The dress code that is already in use"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "RetireDressOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_dress_not_found",
+              "rejected_dress_already_retired"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "DressResponseDto": {
         "type": "object",
@@ -1326,6 +1679,78 @@
           "items"
         ]
       },
+      "CreateRentalOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_dress_not_found",
+              "rejected_dress_retired",
+              "rejected_dress_unavailable"
+            ],
+            "type": "string"
+          },
+          "dressIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "dressIds"
+        ]
+      },
+      "CancelRentalOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_rental_not_found",
+              "rejected_cancel_not_allowed"
+            ],
+            "type": "string"
+          },
+          "currentStatus": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "PickupRentalOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_rental_not_found",
+              "rejected_pickup_not_allowed"
+            ],
+            "type": "string"
+          },
+          "currentStatus": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "ReturnRentalRequestDto": {
         "type": "object",
         "properties": {
@@ -1347,6 +1772,12 @@
             "example": 3000000,
             "description": "Deposit amount handed back to the customer, in VND (integer)"
           },
+          "expectedDepositCollected": {
+            "type": "number",
+            "minimum": 0,
+            "example": 3000000,
+            "description": "The deposit total the client computed its refund from. When present the server verifies it against the ledger under the rental row lock and refuses a settlement whose basis moved (FR-PAY-02)."
+          },
           "note": {
             "type": "string",
             "minLength": 1,
@@ -1354,6 +1785,52 @@
             "example": "Rách nhẹ đường viền, đã thoả thuận phí"
           }
         }
+      },
+      "ReturnRentalOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_rental_not_found",
+              "rejected_return_not_allowed",
+              "rejected_waiver_note_required",
+              "rejected_deposit_basis_changed",
+              "forbidden"
+            ],
+            "type": "string"
+          },
+          "currentStatus": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "late_fee_waiver_requires_owner"
+            ],
+            "description": "Why the denial happened — only set for status=forbidden"
+          },
+          "suggestedLateFee": {
+            "type": "number",
+            "description": "Late fee the shop should charge, so the UI can state the number (FR-RENT-09)"
+          },
+          "submittedLateFee": {
+            "type": "number",
+            "description": "Late fee the client tried to charge"
+          },
+          "collectedDeposit": {
+            "type": "number",
+            "description": "Deposit currently on file, so the screen can re-derive the refund it offered (rejected_deposit_basis_changed, FR-PAY-02)"
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "BookedRangeDto": {
         "type": "object",
@@ -1447,12 +1924,24 @@
           "name": {
             "type": "string",
             "example": "Váy cưới ren trắng"
+          },
+          "depositAmount": {
+            "type": "number",
+            "example": 3000000,
+            "description": "The catalog STANDARD deposit for this dress in VND — a reference figure. What was actually collected is the `deposit` total of GET /rentals/:id/payments (FR-PAY-02)"
+          },
+          "agreedPrice": {
+            "type": "number",
+            "example": 1500000,
+            "description": "The price agreed with THIS customer for this dress in VND (rental_items.price), which may differ from the catalog price"
           }
         },
         "required": [
           "dressId",
           "code",
-          "name"
+          "name",
+          "depositAmount",
+          "agreedPrice"
         ]
       },
       "TodayBoardRentalDto": {
@@ -1651,6 +2140,54 @@
           "page"
         ]
       },
+      "LateFeeQuoteResponseDto": {
+        "type": "object",
+        "properties": {
+          "rentalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dueDate": {
+            "type": "string",
+            "example": "2026-08-07",
+            "description": "Last rental day (inclusive)"
+          },
+          "referenceDate": {
+            "type": "string",
+            "example": "2026-08-10",
+            "description": "The shop's calendar day used for the quote"
+          },
+          "daysLate": {
+            "type": "number",
+            "example": 3,
+            "description": "Calendar days after dueDate; 0 when on time"
+          },
+          "dressCount": {
+            "type": "number",
+            "example": 2,
+            "description": "Dresses in the rental — the fee is per dress"
+          },
+          "dailyRateAmount": {
+            "type": "number",
+            "example": 200000,
+            "description": "VND per dress per day (shop configuration)"
+          },
+          "suggestedLateFee": {
+            "type": "number",
+            "example": 1200000,
+            "description": "daysLate × dressCount × dailyRateAmount"
+          }
+        },
+        "required": [
+          "rentalId",
+          "dueDate",
+          "referenceDate",
+          "daysLate",
+          "dressCount",
+          "dailyRateAmount",
+          "suggestedLateFee"
+        ]
+      },
       "PaymentDto": {
         "type": "object",
         "properties": {
@@ -1692,6 +2229,43 @@
           "createdAt"
         ]
       },
+      "PaymentSummaryDto": {
+        "type": "object",
+        "properties": {
+          "deposit": {
+            "type": "number",
+            "example": 3000000,
+            "description": "Deposit collected, VND"
+          },
+          "rentalFee": {
+            "type": "number",
+            "example": 1500000,
+            "description": "Rental fee collected, VND"
+          },
+          "depositRefund": {
+            "type": "number",
+            "example": 2800000,
+            "description": "Deposit handed back, VND"
+          },
+          "lateFee": {
+            "type": "number",
+            "example": 200000,
+            "description": "Late fees charged, VND"
+          },
+          "damageFee": {
+            "type": "number",
+            "example": 0,
+            "description": "Damage fees charged, VND"
+          }
+        },
+        "required": [
+          "deposit",
+          "rentalFee",
+          "depositRefund",
+          "lateFee",
+          "damageFee"
+        ]
+      },
       "PaymentListResponseDto": {
         "type": "object",
         "properties": {
@@ -1701,10 +2275,69 @@
             "items": {
               "$ref": "#/components/schemas/PaymentDto"
             }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PaymentSummaryDto"
           }
         },
         "required": [
-          "data"
+          "data",
+          "summary"
+        ]
+      },
+      "RecordCollectionRequestDto": {
+        "type": "object",
+        "properties": {
+          "deposit": {
+            "type": "number",
+            "minimum": 1,
+            "example": 3000000,
+            "description": "Deposit actually collected, in VND (integer ≥ 1)"
+          },
+          "rentalFee": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1500000,
+            "description": "Rental fee actually collected, in VND (integer ≥ 1)"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "Khách chuyển khoản trước",
+            "description": "Written onto every movement this call records"
+          }
+        }
+      },
+      "RecordCollectionOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_rental_not_found",
+              "rejected_rental_closed",
+              "rejected_nothing_to_record",
+              "rejected_deposit_already_recorded",
+              "rejected_rental_fee_already_recorded"
+            ],
+            "type": "string"
+          },
+          "currentStatus": {
+            "enum": [
+              "returned",
+              "cancelled"
+            ],
+            "type": "string",
+            "description": "Why the rental is closed (rejected_rental_closed)"
+          },
+          "recordedAmount": {
+            "type": "number",
+            "example": 3000000,
+            "description": "The amount already on file for that kind (rejected_*_already_recorded)"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "CreateUrlCodeRequestDto": {

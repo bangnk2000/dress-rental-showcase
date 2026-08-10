@@ -1,7 +1,8 @@
 /**
  * MSW handlers for the rentals tag. Tests mark dresses as unavailable through
- * seedBlockedDresses; the handler answers 409 like the real API (which has no
- * contract-typed error body), otherwise 201 with an IdResponse.
+ * seedBlockedDresses; the handler then answers with the same outcome body the real API renders —
+ * `{ status: 'rejected_dress_unavailable', dressIds }` at 422 (ADR 0001) — otherwise 201 with an
+ * IdResponse. Rejections of pickup/return/cancel are seeded per test via server.use overrides.
  */
 import { http, HttpResponse, type HttpHandler } from 'msw';
 
@@ -11,8 +12,10 @@ import type {
   BookedRangeListResponseDto,
   CreateRentalRequestDto,
   IdResponse,
+  LateFeeQuoteResponseDto,
   PaymentDto,
   PaymentListResponseDto,
+  RecordCollectionRequestDto,
   RentalListItemDto,
   RentalListResponseDto,
   ReturnRentalRequestDto,
@@ -45,6 +48,9 @@ let rentalListCount: number | null = null;
 let lastRentalListParams: Record<string, string> | null = null;
 let lastCancelRentalId: string | null = null;
 let rentalPayments = new Map<string, PaymentDto[]>();
+let lateFeeQuotes = new Map<string, LateFeeQuoteResponseDto>();
+let lastCollectBody: RecordCollectionRequestDto | null = null;
+let lastCollectRentalId: string | null = null;
 
 /** Dresses that already have an overlapping booking — POST /rentals answers 409. */
 export function seedBlockedDresses(dressIds: string[]): void {
@@ -82,7 +88,15 @@ export function makeTodayRental(
     status: TodayBoardRentalDtoStatus.booked,
     startDate: '2099-08-01',
     endDate: '2099-08-03',
-    dresses: [{ dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng' }],
+    dresses: [
+      {
+        dressId: 'd1',
+        code: 'VD-001',
+        name: 'Váy cưới ren trắng',
+        depositAmount: 3_000_000,
+        agreedPrice: 1_500_000,
+      },
+    ],
     ...overrides,
   };
 }
@@ -90,6 +104,23 @@ export function makeTodayRental(
 /** The board served for GET today-board, whatever date is asked. */
 export function seedTodayBoard(board: Partial<TodayBoardLists>): void {
   todayBoard = { ...emptyBoard(), ...board };
+}
+
+/** The late-fee suggestion the server would answer for a rental (FR-RENT-09). */
+export function seedLateFeeQuote(
+  rentalId: string,
+  overrides: Partial<LateFeeQuoteResponseDto> = {},
+): void {
+  lateFeeQuotes.set(rentalId, {
+    rentalId,
+    dueDate: '2026-08-03',
+    referenceDate: '2026-08-06',
+    daysLate: 3,
+    dressCount: 1,
+    dailyRateAmount: 200_000,
+    suggestedLateFee: 600_000,
+    ...overrides,
+  });
 }
 
 /** The date param of the most recent GET today-board — asserts the FE sends its own day. */
@@ -119,7 +150,15 @@ export function makeRentalListItem(
     endDate: '2099-08-03',
     notes: null,
     createdAt: '2099-07-30T09:00:00.000Z',
-    dresses: [{ dressId: 'd1', code: 'VD-001', name: 'Váy cưới ren trắng' }],
+    dresses: [
+      {
+        dressId: 'd1',
+        code: 'VD-001',
+        name: 'Váy cưới ren trắng',
+        depositAmount: 3_000_000,
+        agreedPrice: 1_500_000,
+      },
+    ],
     ...overrides,
   };
 }
@@ -156,6 +195,28 @@ export function seedRentalPayments(rentalId: string, payments: PaymentDto[]): vo
   rentalPayments.set(rentalId, [...payments]);
 }
 
+/** The body of the most recent POST /rentals/:id/payments/collect. */
+export function getLastCollectBody(): RecordCollectionRequestDto | null {
+  return lastCollectBody;
+}
+
+export function getLastCollectRentalId(): string | null {
+  return lastCollectRentalId;
+}
+
+/** The same arithmetic the API projection does, so a seeded ledger and its summary agree. */
+function summaryOf(payments: readonly PaymentDto[]): PaymentListResponseDto['summary'] {
+  const total = (kind: PaymentDto['kind']): number =>
+    payments.reduce((sum, payment) => (payment.kind === kind ? sum + payment.amount : sum), 0);
+  return {
+    deposit: total('deposit'),
+    rentalFee: total('rental_fee'),
+    depositRefund: total('deposit_refund'),
+    lateFee: total('late_fee'),
+    damageFee: total('damage_fee'),
+  };
+}
+
 /** Reset the in-memory rentals state — call from beforeEach. */
 export function resetRentals(): void {
   blockedDressIds = new Set();
@@ -166,11 +227,14 @@ export function resetRentals(): void {
   lastPickupRentalId = null;
   lastReturnRentalId = null;
   lastReturnBody = null;
+  lateFeeQuotes = new Map();
   rentalList = [];
   rentalListCount = null;
   lastRentalListParams = null;
   lastCancelRentalId = null;
   rentalPayments = new Map();
+  lastCollectBody = null;
+  lastCollectRentalId = null;
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -236,12 +300,36 @@ export const rentalsHandlers: HttpHandler[] = [
     return HttpResponse.json(body);
   }),
 
-  // GET /api/v1/rentals/:id/payments — the seeded movements (payments tag).
-  http.get('/api/v1/rentals/:id/payments', ({ params }) => {
-    const body: PaymentListResponseDto = {
-      data: rentalPayments.get(params.id as string) ?? [],
+  // GET /api/v1/rentals/:id/late-fee — the server-owned suggestion the return dialog reads
+  // (FR-RENT-09). Tests seed it with seedLateFeeQuote; default = returned on time.
+  http.get('/api/v1/rentals/:id/late-fee', ({ params }) => {
+    const rentalId = params.id as string;
+    const seeded = lateFeeQuotes.get(rentalId);
+    const body: LateFeeQuoteResponseDto = seeded ?? {
+      rentalId,
+      dueDate: '2026-08-03',
+      referenceDate: '2026-08-03',
+      daysLate: 0,
+      dressCount: 1,
+      dailyRateAmount: 200_000,
+      suggestedLateFee: 0,
     };
     return HttpResponse.json(body);
+  }),
+
+  // GET /api/v1/rentals/:id/payments — the seeded movements (payments tag).
+  http.get('/api/v1/rentals/:id/payments', ({ params }) => {
+    const data = rentalPayments.get(params.id as string) ?? [];
+    const body: PaymentListResponseDto = { data, summary: summaryOf(data) };
+    return HttpResponse.json(body);
+  }),
+
+  // POST /api/v1/rentals/:id/payments/collect — 200 IdResponse, capturing what was sent.
+  http.post('/api/v1/rentals/:id/payments/collect', async ({ params, request }) => {
+    lastCollectRentalId = params.id as string;
+    lastCollectBody = (await request.json()) as RecordCollectionRequestDto;
+    const response: IdResponse = { id: params.id as string };
+    return HttpResponse.json(response);
   }),
 
   // POST /api/v1/rentals/:id/cancel — 200 IdResponse, capturing the id.
@@ -266,12 +354,19 @@ export const rentalsHandlers: HttpHandler[] = [
     return HttpResponse.json(response);
   }),
 
-  // POST /api/v1/rentals — 201 IdResponse, or 409 when a dress is blocked.
+  // POST /api/v1/rentals — 201 IdResponse, or the rejected_dress_unavailable outcome naming the
+  // offending dresses (ADR 0001 §3).
   http.post('/api/v1/rentals', async ({ request }) => {
     const body = (await request.json()) as CreateRentalRequestDto;
     lastCreateRentalBody = body;
-    if (body.items.some((item) => blockedDressIds.has(item.dressId))) {
-      return new HttpResponse(null, { status: 409 });
+    const blocked = body.items
+      .map((item) => item.dressId)
+      .filter((dressId) => blockedDressIds.has(dressId));
+    if (blocked.length > 0) {
+      return HttpResponse.json(
+        { status: 'rejected_dress_unavailable', dressIds: blocked },
+        { status: 422 },
+      );
     }
     const response: IdResponse = { id: 'rental-1' };
     return HttpResponse.json(response, { status: 201 });

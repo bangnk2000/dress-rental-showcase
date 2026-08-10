@@ -49,7 +49,7 @@ Seeded from the Features & Routes table of the `00-system-prompt.md` output; upd
       "name": "Invoices — list + create",
       "description": "Authenticated /invoices route: suspense list, validated create form, invalidation",
       "status": "pass",                       // todo | in-progress | pass | fail | blocked
-      "evidence": "pnpm check/lint/arch/test green (4 slice tests). Verified in pnpm dev: anonymous redirected; create → toast + list refresh; empty state on fresh account.",
+      "evidence": "pnpm check/lint/arch/test green (5 slice tests). Verified in pnpm dev: anonymous redirected; create → toast + list refresh; duplicate → field error (outcome rejected_duplicate_invoice); empty state on fresh account.",
       "testedAt": "2026-07-06T00:00:00Z"
     }
   ]
@@ -72,11 +72,11 @@ A feature is "done" when ALL of:
 
 1. `pnpm check` — TypeScript compiles, zero errors.
 2. `pnpm lint && pnpm arch` — boundaries, naming, generated-code purity all green.
-3. `pnpm test` — the slice's tests exist and pass (happy/empty/error/validation minimum,
-   `09-testing-strategy.md` §4).
+3. `pnpm test` — the slice's tests exist and pass (happy/empty/error/validation minimum + one
+   designed state per business outcome code — slice catalog; `09-testing-strategy.md` §4).
 4. **Runtime verification** — the behavior was exercised in the running app (`pnpm dev`, or
-   `pnpm preview` for PWA behavior) and the three states render. UI work is not done at
-   "compiles".
+   `pnpm preview` for PWA behavior) and the three states + one designed state per business
+   outcome code (slice catalog) render. UI work is not done at "compiles".
 5. `feature_list.json` updated with status `pass` + evidence + timestamp.
 6. Docs touched if behavior/architecture changed (`docs/` at Enterprise tier; AGENTS.md if
    commands/rules changed).
@@ -134,8 +134,9 @@ merge them.
 
 ### `scripts/check-architecture.sh` (Required — wired as `pnpm arch`)
 
-Belt-and-braces greps that survive ESLint misconfiguration (`08-ai-agent-first.md` §3c). Exit 1 on
-any violation; each check prints PASS/VIOLATION per file:
+SEVEN belt-and-braces checks that survive ESLint misconfiguration. Exit 1 on any violation; each
+check prints PASS/VIOLATION per file. `08-ai-agent-first.md` §3c summarizes five of these; this
+section is the full spec:
 
 1. **Generated purity**: `pnpm generate:api && git diff --exit-code src/api/generated openapi.json`.
 2. **HTTP door**: `grep -rE "from ['\"]axios" src --include='*.ts*' | grep -v '^src/api/'` → empty.
@@ -180,6 +181,7 @@ Adapted to this stack; run before committing and at session end:
 - [ ] No cross-feature or app/ imports introduced (pnpm arch confirms)
 ## Runtime
 - [ ] pnpm dev: app boots clean (no console errors), changed routes render all three states
+      + one designed state per business outcome code (slice catalog)
 - [ ] Auth: anonymous redirect + sign-in + sign-out (with cache clear) still work if touched
 - [ ] Language switch works for changed namespaces; no raw keys visible in the UI
 - [ ] PWA (if in scope, and if touched): pnpm build && pnpm preview → update prompt + offline shell

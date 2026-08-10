@@ -19,12 +19,18 @@
     "returned": "Returned",
     "cancelled": "Cancelled"
   },
+  "date": {
+    "previous": "Previous day",
+    "next": "Next day",
+    "today": "Today"
+  },
   "actions": {
     "pickup": "Handed out",
-    "return": "Take back & settle"
+    "pickupFor": "Handed out to {{customer}}",
+    "return": "Take back & settle",
+    "returnFor": "Take back & settle for {{customer}}"
   },
   "pickupSuccess": "Hand-out recorded.",
-  "alreadyProcessed": "This rental was already processed.",
   "actionError": "Something went wrong, please retry.",
   "returnDialog": {
     "title": "Settle rental",
@@ -40,6 +46,28 @@
     "errors": {
       "amountInvalid": "Amount must be a non-negative integer",
       "noteTooLong": "Note is limited to 2000 characters"
+    },
+    "lateFee": {
+      "loading": "Calculating the late fee…",
+      "onTime": "Returned on time — no late fee.",
+      "late": "{{days}} day(s) late · {{dresses}} dress(es) → suggested {{amount}}",
+      "unavailable": "Could not calculate the late fee. Please enter it manually."
+    },
+    "deposit": {
+      "standard": "No deposit recorded — the standard deposit for {{count}} dress(es) is {{amount}}",
+      "afterFees": "Less {{fees}} in fees → {{amount}} back to the customer",
+      "manual": "You entered {{amount}} — different from the amount above.",
+      "use": "Put {{amount}} in the refund field",
+      "collected": "Deposit collected: {{amount}}",
+      "unavailable": "The rental ledger could not be read, so the deposit collected is unknown. Retry before settling — otherwise the refund could exceed what the shop actually took.",
+      "changed": "The rental ledger just changed — {{amount}} collected. Check the refund amount, then confirm."
     }
+  },
+  "errors": {
+    "pickupNotAllowed": "Cannot hand out: the rental is \"{{status}}\".",
+    "returnNotAllowed": "Cannot take back: the rental is \"{{status}}\".",
+    "rentalNotFound": "This rental no longer exists. The board has been refreshed.",
+    "lateFeeWaiverForbidden": "Only the shop owner may charge less than the suggested late fee.",
+    "waiverNoteRequired": "Reducing the late fee requires a reason."
   }
 }

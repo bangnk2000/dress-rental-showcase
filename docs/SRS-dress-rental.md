@@ -28,7 +28,10 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 
 ### identity
 - **FR-AUTH-01** Đăng nhập email/password → access + refresh token (2 secret riêng).
-- **FR-AUTH-02** Refresh token; 401 của login/refresh là terminal (FE không retry).
+- **FR-AUTH-02** Refresh token. Sai mật khẩu / refresh token không hợp lệ là **outcome nghiệp vụ**
+  (`rejected_invalid_credentials` / `rejected_invalid_refresh_token`, 422 — [ADR
+  0001](./adr/0001-outcome-model-at-the-http-boundary.md)), FE không retry. **401 chỉ còn một
+  nghĩa**: guard chặn vì thiếu/hết hạn access token → refresh-and-retry một lần.
 - **FR-AUTH-03** Xem hồ sơ đang đăng nhập (`GET /auth/me`).
 
 ### catalog
@@ -45,7 +48,9 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   `[start, end]`; mỗi váy bị block thêm **buffer vệ sinh** (`CLEANING_BUFFER_DAYS`) sau ngày trả.
 - **FR-RENT-02** Chống trùng lịch: một váy không thể có hai khoảng block giao nhau (kể cả
   buffer) — **enforce ở tầng DB** bằng EXCLUDE constraint; app chỉ pre-check để báo lỗi đẹp
-  (BR-1). Race giữa hai request đồng thời phải bị DB chặn → 409.
+  (BR-1). Race giữa hai request đồng thời phải bị DB chặn, và **cả hai đường (pre-check lẫn
+  race) trả cùng một outcome** `rejected_dress_unavailable` (422) kèm `dressIds` — một quy tắc
+  nghiệp vụ chỉ có một mã trên dây ([ADR 0001](./adr/0001-outcome-model-at-the-http-boundary.md)).
 - **FR-RENT-03** Availability: trả lời "váy X có trống từ A đến B không"; chi tiết váy hiển thị
   các khoảng đã đặt trên lịch.
 - **FR-RENT-04** Pickup: đơn `booked` → `out` khi khách lấy váy.
@@ -58,22 +63,35 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   (due back), và **OVERDUE** — màn hình nhân viên mở mỗi sáng, có nút thao tác trực tiếp.
 - **FR-RENT-08** Danh sách đơn: search tên/điện thoại khách, filter status, phân trang;
   mang action cancel (hàng booked) và dialog payments (hàng returned).
+- **FR-RENT-09** Phí trễ hạn **tự tính**: `số ngày trễ × số váy × 200.000₫` (đơn giá cố định ở env
+  `LATE_FEE_PER_DRESS_PER_DAY`; đệm giặt KHÔNG tính là trễ). Dialog tất toán đọc số này từ
+  `GET /rentals/:id/late-fee` và pre-fill để nhân viên nói với khách trước khi xác nhận. Thu **ít
+  hơn** số đề xuất chỉ chủ tiệm được làm và **phải ghi lý do**; thu nhiều hơn thì tự do. Quyết định
+  + lý do: [design/rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) §6.
 
 ### payments
-- **FR-PAY-01** Xem các dòng tiền của một đơn (`GET /rentals/:id/payments`). Write side nằm
-  trong return flow của rentals qua `PaymentRecorderPort` — quyết định thiết kế, xem
+- **FR-PAY-01** Xem các dòng tiền của một đơn (`GET /rentals/:id/payments`), kèm `summary` cộng
+  sẵn theo từng kind. Write side của TẤT TOÁN nằm trong return flow của rentals qua
+  `PaymentRecorderPort` — quyết định thiết kế, xem
   [design/payments-aggregate.md](./design/payments-aggregate.md).
+- **FR-PAY-02** Ghi nhận **tiền đã thu** của một đơn: tiền cọc và/hoặc tiền thuê, bằng một hành
+  động đứng riêng dùng được bất cứ lúc nào khi đơn còn MỞ (`booked|out`). Gợi ý số tiền từ Σ cọc
+  chuẩn và Σ giá thoả thuận, nhân viên sửa được; sổ ghi số **thực thu**. Mỗi đơn tối đa MỘT dòng
+  cọc và MỘT dòng tiền thuê (chặn ở DB). Kể từ đây, hoàn cọc lúc trả váy tính trên **cọc đã thu**;
+  cọc chuẩn chỉ là số tham chiếu khi đơn chưa ghi nhận cọc. Quyết định + lý do:
+  [design/payments/record-collection.md](./design/payments/record-collection.md) §6.
 
 ## 4. Business rules (BR — bảng enforce chi tiết nằm trong design docs)
 
 | # | Rule | Enforce |
 | --- | --- | --- |
-| BR-1 | Một váy không bị đặt trùng khoảng thời gian, tính cả buffer vệ sinh | DB `EXCLUDE USING gist` + pre-check → 409 |
+| BR-1 | Một váy không bị đặt trùng khoảng thời gian, tính cả buffer vệ sinh | DB `EXCLUDE USING gist` (+ proof test trên Postgres thật) + pre-check → outcome `rejected_dress_unavailable` (422) |
 | BR-2 | Một váy không xuất hiện hai lần trong cùng một đơn | DTO `@ArrayUnique` + entity `validate()` + DB `UNIQUE (rental_id, dress_id)` |
 | BR-3 | Vòng đời đơn: `booked → out → returned`; `booked → cancelled`; không đường nào khác | State machine trong `RentalEntity` + DB CHECK status |
 | BR-4 | Tiền là VND integer ≥ 0 (không thập phân) | `Money` VO + DB CHECK |
 | BR-5 | "Đang vệ sinh" = váy còn trong buffer sau return; KHÔNG phải cột status | Suy diễn từ `blocked_period` |
 | BR-6 | Settlement ghi SAU khi flip status returned; nếu ghi lỗi thì nhập tay lại | Trade-off MVP có chủ ý (comment trong `return-rental.service.ts`) |
+| BR-7 | Mỗi đơn tối đa MỘT dòng `deposit` và MỘT dòng `rental_fee`; chỉ ghi được khi đơn còn mở | Partial `UNIQUE INDEX` trên `payments` (+ proof test trên Postgres thật) + pre-check → outcome `rejected_*_already_recorded` / `rejected_rental_closed` (422) |
 
 ## 5. Yêu cầu phi chức năng (NFR)
 
@@ -103,6 +121,8 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-RENT-06 | `rentals/cancel-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-RENT-08 | `rentals/list-rentals` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-PAY-01 | `payments/list-payments` | [payments-aggregate.md](./design/payments-aggregate.md) | pass |
+| FR-PAY-02 | `payments/record-collection` | [payments/record-collection.md](./design/payments/record-collection.md) (spec `as-built`), [payments-aggregate.md](./design/payments-aggregate.md) | pass |
+| FR-RENT-09 | `rentals/settle-late-fee` | [rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Phí trễ hạn | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

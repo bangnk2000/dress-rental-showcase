@@ -70,6 +70,7 @@ project-root/
     │       ├── home-route.tsx
     │       └── not-found-route.tsx
     ├── api/                        # generated API layer — machine-owned port
+    │   ├── errors.ts               # mapApiError — the one seam that reads wire error shapes (04 §3)
     │   ├── mutator/
     │   │   └── custom-instance.ts  # THE adapter: axios instance, auth header, 401→refresh
     │   └── generated/              # Orval output (tags-split) — READ-ONLY, regenerate only
@@ -103,6 +104,7 @@ project-root/
     │   └── invoices/
     │       ├── index.ts
     │       ├── components/
+    │       │   ├── invoices-route.tsx        # route component app/ composes (the public surface export)
     │       │   ├── invoice-list.tsx          # useSuspenseListInvoices + table
     │       │   ├── invoice-form.tsx          # RHF + zodResolver + useCreateInvoice
     │       │   └── invoice-status-badge.tsx
@@ -196,7 +198,7 @@ a concept to a filename purely from this table — the eslint naming rule enforc
 | Building Block | File Pattern | Example |
 | --- | --- | --- |
 | Component | `<name>.tsx` (kebab) | `invoice-form.tsx` → `export function InvoiceForm` |
-| Route component | `<name>-route.tsx` | `app/routes/home-route.tsx` |
+| Route component | `<name>-route.tsx` | `features/invoices/components/invoices-route.tsx` (slice-owned); `app/routes/` only for app-owned pages (home, not-found) |
 | Layout | `<name>-layout.tsx` | `app/layouts/root-layout.tsx` |
 | Hook | `use-<name>.ts(x)` | `use-invoice-filters.ts` → `useInvoiceFilters` |
 | Store (client state) | `<name>.store.ts` | `theme.store.ts` |
@@ -221,7 +223,8 @@ a concept to a filename purely from this table — the eslint naming rule enforc
 | --- | --- | --- | --- |
 | `src/main.tsx` | Bootstrap | createRoot, css import, PWA register, i18n import | Required |
 | `src/app/` | Composition root | providers, router, layouts, routes, index.css | Required |
-| `src/api/mutator/` | HTTP adapter | `custom-instance.ts` (auth, refresh, errors) | Required |
+| `src/api/mutator/` | HTTP adapter | `custom-instance.ts` (auth, refresh, timeout) | Required |
+| `src/api/errors.ts` | Error seam | `mapApiError` — the one seam that reads wire error shapes (04 §3) | Required |
 | `src/api/generated/` | Generated port | Orval output per tag + `model/` | Required (machine-owned) |
 | `src/components/ui/` | UI primitives | shadcn components | Required |
 | `src/components/feedback/` | Boundary UI | error fallback, spinner, empty state | Required |

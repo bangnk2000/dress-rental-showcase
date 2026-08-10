@@ -18,7 +18,8 @@ that fill — or to scaffold by hand when no generator exists yet.
 > dependencies). You add exactly ONE feature slice — or one capability inside an existing slice —
 > wired into the router. You follow the existing conventions; you do not redesign the architecture.
 > Read `AGENTS.md` / `CLAUDE.md` at the repo root first, plus `session-handoff.md` and
-> `feature_list.json`; then `01-architecture-principles.md` and `02-folder-structure.md`.
+> `feature_list.json`; then `01-architecture-principles.md`, `02-folder-structure.md`, and
+> `14-design-first.md`.
 
 ---
 
@@ -38,6 +39,11 @@ operations:         # generated hooks to use (from src/api/generated/<tag>/)
   - useListInvoicesSuspense     # route primary data → Suspense variant
   - useCreateInvoice            # form mutation
 specChange:         # none | "openapi.json updated — run pnpm generate:api first"
+outcomes:           # business outcome codes this slice renders DISTINCTLY (paste from the
+                    # approved use-case spec catalog; each code -> designed state, 14 §2 template §4)
+                    # (success codes are handled in `onSuccess`; rejection codes in `onError` via `mapApiError` — 04 §3)
+  - accepted: "toast + reset + list refresh"
+  - rejected_duplicate_invoice: "keep form, field error on customerId"
 form:               # null, or the form fields + client-side rules (zod)
   - customerId: string, required
   - amount: number, > 0, coerced from input
@@ -67,17 +73,17 @@ Paths are relative to repo root.
 | `src/features/<feature>/index.ts` | Public surface: export ONLY what `app/` composes (route component, guard needs) |
 | `public/locales/<lng>/<feature>.json` | The namespace, per configured language |
 | `src/types/i18next.d.ts` | + one `resources` line registering the namespace |
-| `feature_list.json` | + entry `{ id, name, description, status: "in-progress" }` |
+| `feature_list.json` | add or UPDATE the plop-created `todo` entry to `in-progress` — never a duplicate entry |
 
 ### B. The capability (always)
 
 | Path | Responsibility | Ref |
 | --- | --- | --- |
-| `src/features/<feature>/components/<view>.tsx` | Data view: Suspense hook + kernel primitives; renders loading/empty/error per the three-state rule | 03 §5, 04 §5 |
+| `src/features/<feature>/components/<view>.tsx` | Data view: Suspense hook + kernel primitives; renders loading/empty/error per the three-state rule, plus submitting and one designed state per code in `outcomes` | 03 §5, 04 §5 |
 | `src/features/<feature>/components/<form>.tsx` | RHF + zodResolver + generated mutation; server errors → `form.setError` | 03 §4 |
 | `src/features/<feature>/schemas/<form>.schema.ts` | Zod FORM schema; messages are i18n keys | 03 §4 |
 | `src/features/<feature>/hooks/use-<x>.ts` | Only if listed in `clientState` (URL params / composed logic) | 01 §4 |
-| `src/features/<feature>/<feature>.test.tsx` | RTL + MSW: happy path, empty, error, form validation + submit | 09 |
+| `src/features/<feature>/<feature>.test.tsx` | RTL + MSW: happy path, empty, error, form validation + submit, and each `outcomes` code renders its designed state | 09 |
 | `src/test/msw/handlers/<tag>.ts` | Handlers for the operations used, shaped from generated models | 09 §2 |
 
 ### C. Wiring (always — an unwired slice does nothing)
@@ -103,8 +109,10 @@ Paths are relative to repo root.
   hand-written axios calls, no hand-rolled query keys — use generated hooks + key functions.
 - **Server state stays in the cache**: no `useEffect`-copying into state; mutations invalidate via
   generated key functions.
-- **Errors**: expected failures render (form/field errors, toasts); unexpected throw to the route
-  error boundary. No status-code switches in components (`04-data-layer.md` §3).
+- **Errors**: branch on `mapApiError` output (`04-data-layer.md` §3) — every code in `outcomes`
+  renders its designed state; faults with `details[]` map to field errors; unexpected faults
+  throw to the route error boundary. No raw status-code switches in components, and never one
+  generic message for all rejections.
 - **Every user-facing string** through `t('<feature>:<key>')`; plurals via `_one/_other`; schema
   messages are keys.
 - **Naming is mechanical**: kebab-case files, `use-*.ts`, `*.schema.ts`, `*.store.ts`, `*.test.tsx`
@@ -124,6 +132,7 @@ Paths are relative to repo root.
       surfaced no unmocked calls.
 - [ ] Route reachable in the running app (`pnpm dev`): guard behavior verified (anonymous
       redirected if `guard: authenticated`), the three states (loading/empty/error) render.
+- [ ] Each code in `outcomes` renders its designed state; double-click sends ONE request.
 - [ ] Mutation invalidates its list query (create → list refreshes without reload).
 - [ ] All strings translated in EVERY configured language file (locale key parity holds).
 - [ ] No import from another feature, no deep import past any `index.ts`, no edit under
@@ -142,6 +151,9 @@ routes: [/invoices]
 apiTags: [invoices]
 operations: [useListInvoicesSuspense, useCreateInvoice]
 specChange: none
+outcomes:
+  - accepted: "toast + reset + list refresh"
+  - rejected_duplicate_invoice: "keep form, field error on customerId"
 form:
   - customerId: string, required
   - amount: number, > 0, coerced from input

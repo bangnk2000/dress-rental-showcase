@@ -51,7 +51,8 @@ A feature moves to `pass` only when ALL hold:
    processes real input). Compiling is not running.
 4. New behavior has tests at the level the binding demands; changed persistence/codegen verified
    from zero (fresh DB migration, clean regeneration diff).
-5. `feature_list.json` updated: `pass` + evidence naming commands AND observations + `testedAt`.
+5. `feature_list.json` updated: `pass` + evidence naming commands AND observations + `testedAt`;
+   when `acceptance` is filled, evidence names the ACs it proves (02 §2.2).
 6. Docs touched if behavior or commands changed (`AGENTS.md` if the rules changed). For a
    design-tier feature, the design doc got its as-built re-sync note
    ([06-design-first.md](./06-design-first.md) §6.4).

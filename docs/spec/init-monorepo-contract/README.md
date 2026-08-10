@@ -43,7 +43,7 @@ runtime, and the single merged harness.
 | [README.md](./README.md) | This index: purpose, usage flow, composition rules | Start here / orientation |
 | [00-system-prompt.md](./00-system-prompt.md) | Master prompt: CREATE a contract monorepo (or RETROFIT two existing repos) | Feed first, always |
 | [01-workspace-structure.md](./01-workspace-structure.md) | pnpm workspace layout, root scripts, version floors, deltas vs the stack sets' defaults | When laying out the repo |
-| [02-contract-pipeline.md](./02-contract-pipeline.md) | The offline `openapi:emit` script, Orval wiring, BE spec-quality discipline | When wiring or debugging the pipeline |
+| [02-contract-pipeline.md](./02-contract-pipeline.md) | The offline `openapi:emit` script, Orval wiring, BE spec-quality discipline + the per-feature rhythm (spec-first step 0 → BE → emit → FE) | When wiring or debugging the pipeline |
 | [03-ci-and-runtime.md](./03-ci-and-runtime.md) | The three drift gates in CI, ship-together deploy (one artifact, no version skew) | When setting up CI/CD |
 | [04-harness-binding.md](./04-harness-binding.md) | The ONE root harness binding (merges both stack bindings per [init-harness 05](../init-harness/05-composition-contract.md)) | When creating the session harness |
 | [05-polyrepo-variant.md](./05-polyrepo-variant.md) | The same contract across TWO repos: pinned `openapi.json` + `.contract-version`, `contract:pull`, oasdiff breaking gate, drift notification, pinned-image e2e | Only when BE and FE cannot share a repo |
@@ -77,4 +77,7 @@ its gates live in [02 §5](./02-contract-pipeline.md) and [04](./04-harness-bind
   The two apps' `13-harness-engineering.md` bindings are NOT instantiated separately; their slot
   values are merged into the single root binding in [04](./04-harness-binding.md).
 - The contract pipeline is one-way. "FE needs a field" is ALWAYS a BE change first — never a
-  hand-edit to `openapi.json` or the generated client, not even "temporarily".
+  hand-edit to `openapi.json` or the generated client, not even "temporarily". Which fields and
+  outcomes exist is decided upstream in the approved use-case spec
+  ([02 §5 step 0](./02-contract-pipeline.md)) — the pipeline owns the artifact direction, not
+  the semantics.

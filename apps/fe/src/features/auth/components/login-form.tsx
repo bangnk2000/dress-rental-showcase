@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
-import { isUnauthorizedError } from '@/api/errors';
+import { outcomeStatus } from '@/api/errors';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -57,7 +57,13 @@ export function LoginForm() {
       // Redirect happens declaratively: the session flip re-renders
       // SignInRoute, which Navigates to `state.from ?? '/'`.
     } catch (error) {
-      setErrorKey(isUnauthorizedError(error) ? 'errors.invalidCredentials' : 'errors.generic');
+      // Wrong credentials is an OUTCOME, not a 401 — 401 now means only "guard rejected the
+      // access token" (ADR 0001 §2).
+      setErrorKey(
+        outcomeStatus(error) === 'rejected_invalid_credentials'
+          ? 'errors.invalidCredentials'
+          : 'errors.generic',
+      );
     }
   });
 

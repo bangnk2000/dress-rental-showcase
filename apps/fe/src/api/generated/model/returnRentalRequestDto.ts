@@ -22,6 +22,11 @@ export interface ReturnRentalRequestDto {
      */
   depositRefund?: number;
   /**
+     * The deposit total the client computed its refund from. When present the server verifies it against the ledger under the rental row lock and refuses a settlement whose basis moved (FR-PAY-02).
+     * @minimum 0
+     */
+  expectedDepositCollected?: number;
+  /**
      * @minLength 1
      * @maxLength 2000
      */

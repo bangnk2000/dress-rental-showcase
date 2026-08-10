@@ -13,7 +13,8 @@ apps/fe/src/api/generated/          ← generated, committed (init-react 04 rule
 ```
 
 Direction is absolute. "The FE needs field X" means: add X to the BE DTO → `pnpm contract` →
-the typed hook now has X. Hand-editing either generated artifact is the harness's cardinal sin
+the typed hook now has X. (Where the semantics of X were decided: §5 step 0 — the approved
+use-case spec.) Hand-editing either generated artifact is the harness's cardinal sin
 (04 STACK_INVARIANTS) and is caught by CI within one PR (03 §1).
 
 ## 2. The Emit Script — `apps/be/scripts/emit-openapi.ts`
@@ -92,6 +93,7 @@ They belong in `apps/be`'s `AGENTS.md` (04 carries them as STACK_INVARIANTS):
 | `@ApiTags('<module>')` on every controller, tag == bounded-context name | Orval `tags-split` scatters hooks into a `default/` folder; FE feature slices lose their 1:1 API slice mapping |
 | operationId = `Controller_method` (pinned in §2); renames are breaking changes, done deliberately | FE hooks silently renamed → mass mechanical diff obscuring the real change |
 | Pagination/error envelopes are SHARED generic DTOs (`PageDto<T>` via `@ApiExtraModels`/`getSchemaPath`) | Orval generates N duplicate page models, one per endpoint |
+| Business rejections are outcome bodies `{ status: '<code>', ...payload }` declared per-operation (`@ApiResponse({ status: 422, type })`); transport faults use the ONE shared envelope `{ error: { code, message, details?, correlationId } }` (init-nestjs `07-cross-cutting.md`) | FE cannot distinguish outcomes from the wire — every rejection collapses into one generic message |
 
 ## 4. FE Side — nothing new
 
@@ -104,6 +106,11 @@ FE to "work around" the contract — stop; it's a BE change (§1).
 
 For a feature touching the API (the common case — id conventions in 04):
 
+0. **Spec first, when the feature has business outcomes**: the use-case spec is approved and
+   its contract check has run ([`../init-feature-spec/`](../init-feature-spec/README.md)).
+   BE-first is the *mechanism* of this pipeline; the approved spec stays the *semantic* source —
+   "FE needs a field" is still a BE change first, but which fields and outcomes exist was
+   decided in the spec, not invented while typing DTOs.
 1. **BE slice first** (init-nestjs 10-module-scaffold): DTOs, controller, use-case + tests.
 2. `pnpm contract` at root — emit + regenerate. New hooks appear; changed types turn the FE
    red exactly where it must adapt. **Commit the BE change and both artifacts together.**

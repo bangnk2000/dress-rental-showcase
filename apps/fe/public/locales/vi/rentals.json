@@ -26,7 +26,8 @@
     },
     "actions": {
       "cancel": "Huỷ",
-      "payments": "Thanh toán"
+      "payments": "Tiền",
+      "paymentsFor": "Tiền của lượt thuê — {{customer}}"
     },
     "empty": {
       "noRentals": "Chưa có lượt thuê nào",
@@ -36,23 +37,31 @@
     }
   },
   "cancel": {
+    "title": "Huỷ lượt thuê?",
+    "confirmAction": "Huỷ lượt thuê",
+    "confirmFor": "Huỷ lượt thuê của {{customer}}? Lịch của váy sẽ được giải phóng ngay để khách khác đặt, và không thể hoàn tác.",
     "confirm": "Huỷ lượt thuê này? Lịch của váy sẽ được giải phóng để khách khác đặt.",
     "success": "Đã huỷ lượt thuê.",
-    "alreadyProcessed": "Lượt thuê này không còn ở trạng thái chờ giao.",
-    "error": "Có lỗi xảy ra, vui lòng thử lại."
+    "error": "Có lỗi xảy ra, vui lòng thử lại.",
+    "notAllowed": "Không huỷ được: lượt thuê đang ở trạng thái \"{{status}}\"."
   },
   "payments": {
-    "title": "Thanh toán của lượt thuê",
-    "description": "Các khoản đã ghi nhận khi tất toán cho {{customer}}.",
+    "title": "Tiền của lượt thuê",
+    "description": "Các khoản đã ghi nhận cho {{customer}}.",
     "loading": "Đang tải…",
-    "empty": "Chưa có khoản thanh toán nào được ghi nhận.",
+    "empty": "Chưa ghi nhận khoản tiền nào.",
     "kinds": {
       "deposit": "Tiền cọc",
       "deposit_refund": "Hoàn cọc",
       "rental_fee": "Tiền thuê",
       "late_fee": "Phí trễ hạn",
       "damage_fee": "Phí hư hỏng"
-    }
+    },
+    "totals": {
+      "collected": "Tổng đã thu",
+      "refunded": "Đã hoàn khách"
+    },
+    "unavailable": "Không đọc được sổ tiền của lượt thuê này. Thử lại — chưa chắc là chưa ghi nhận khoản nào."
   },
   "form": {
     "fields": {
@@ -76,7 +85,9 @@
       "endBeforeStart": "Ngày trả phải từ ngày nhận trở đi",
       "notesTooLong": "Ghi chú tối đa 2000 ký tự",
       "noDresses": "Vui lòng chọn ít nhất một váy",
-      "unavailable": "Có váy đã được thuê trong khoảng ngày này (tính cả thời gian giặt ủi). Vui lòng đổi ngày hoặc chọn váy khác."
+      "dressUnavailable": "Có váy đã được thuê trong khoảng ngày này (tính cả thời gian giặt ủi). Vui lòng đổi ngày hoặc chọn váy khác.",
+      "dressRetired": "Có váy đã ngừng khai thác. Vui lòng bỏ váy đó khỏi đơn.",
+      "dressNotFound": "Có váy không còn trong danh mục. Vui lòng chọn lại."
     }
   },
   "picker": {
@@ -86,6 +97,43 @@
     "add": "Thêm",
     "remove": "Bỏ chọn",
     "selectedEmpty": "Chưa chọn váy nào",
-    "total": "Tạm tính tiền thuê"
+    "total": "Tạm tính tiền thuê",
+    "availability": {
+      "free": "Còn trống",
+      "busy": "Vướng lịch",
+      "busyUntil": "Váy này bận tới hết {{date}} (đã tính thời gian giặt ủi)."
+    },
+    "rejected": {
+      "unavailable": "Váy này đã có lịch trong khoảng ngày vừa chọn.",
+      "retired": "Váy này đã ngừng khai thác.",
+      "notFound": "Váy này không còn trong danh mục."
+    }
+  },
+  "errors": {
+    "rentalNotFound": "Lượt thuê này không còn tồn tại. Danh sách đã được làm mới."
+  },
+  "collect": {
+    "title": "Ghi nhận tiền đã thu",
+    "submit": "Ghi nhận",
+    "success": "Đã ghi nhận tiền.",
+    "error": "Không ghi được. Vui lòng thử lại.",
+    "allRecorded": "Đã ghi nhận đủ tiền cọc và tiền thuê của lượt thuê này.",
+    "alreadyRecorded": "{{label}}: đã ghi nhận {{amount}}.",
+    "rentalClosed": "Không ghi được: lượt thuê đang ở trạng thái \"{{status}}\".",
+    "fields": {
+      "deposit": "Tiền cọc",
+      "rentalFee": "Tiền thuê",
+      "note": "Ghi chú"
+    },
+    "hints": {
+      "standardDeposit": "Cọc chuẩn của các váy trong đơn: {{amount}}",
+      "agreedTotal": "Tiền thuê đã thoả thuận: {{amount}}"
+    },
+    "errors": {
+      "amountInvalid": "Chỉ nhập chữ số (VND)",
+      "noteTooLong": "Ghi chú tối đa 2000 ký tự",
+      "alreadyRecorded": "Khoản này đã được ghi nhận trước đó — xem danh sách ở trên.",
+      "nothingToRecord": "Nhập ít nhất một khoản để ghi nhận."
+    }
   }
 }

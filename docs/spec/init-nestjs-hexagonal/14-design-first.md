@@ -9,8 +9,10 @@ Why it exists: aggregate boundaries and cross-context contracts are the two most
 things to change after code ships. A context whose boundary was decided in a design review costs
 one document; one decided by accretion costs a migration, a bus refactor, and a week of
 re-testing. Design-tier work (new context, new aggregate, new invariant, new cross-context
-contract, anything concurrency-sensitive) gets a doc first; standard CRUD slices use the filled
-input contract of `10-module-scaffold-prompt.md` as their mini design doc.
+contract, anything concurrency-sensitive) gets a doc first; standard CRUD slices with a single
+happy path use the filled input contract of `10-module-scaffold-prompt.md` as their mini design
+doc — but any use case with business outcomes beyond the happy path also carries a use-case spec
+(§2, "The use-case specification"), standard tier included.
 
 ## 1. The Artifacts
 
@@ -18,6 +20,7 @@ input contract of `10-module-scaffold-prompt.md` as their mini design doc.
 | --- | --- | --- |
 | SRS / requirements brief | `docs/SRS-<product>.md` | Product or phase; the FR-ids that design docs and `feature_list.json` trace back to |
 | Context design doc | `docs/design/<context>-aggregate.md` | ONE bounded context — written before the context's first design-tier slice |
+| Use-case specification | `docs/design/<context>/<use-case>.md` | ONE capability — Required when it has business rejections, side effects, or a retry story (template: [`../init-feature-spec/`](../init-feature-spec/README.md)) |
 | ADR | `docs/design/adr/NNNN-<slug>.md` | One cross-cutting decision (incl. deliberate deviations from this spec) |
 | Truth docs (generated) | `docs/architecture-map.md` (slice/event/contract inventory via a `gen-map` script) + `docs/openapi.json` | Whole repo; each wired to a `*:check` CI gate (regenerate + `git diff --exit-code`) |
 
@@ -62,6 +65,27 @@ and gets NO outbox/relay/subscriber infrastructure until one exists (01 §8 YAGN
 Keep it under ~2 pages per context. The doc records decisions and their why; the generated
 architecture map records what currently exists — never duplicate the second into the first.
 
+### The use-case specification (per capability)
+
+The context doc designs the AGGREGATE; it does not specify a capability's behavior at the
+boundary. Every use case with at least one business rejection, side effect/event, or retry story
+gets a **use-case spec** at `docs/design/<context>/<use-case>.md` — standard tier included. Only
+pure CRUD with a single happy path may rely on the filled scaffold INPUT CONTRACT alone.
+
+Minimum fields (full template + authoring workflow:
+[`../init-feature-spec/01-feature-spec-template.md`](../init-feature-spec/01-feature-spec-template.md)):
+
+- Actor + authorization (which denial maps to which outcome).
+- Business input, preconditions, numbered business flow — each rejection step names its outcome.
+- Domain rules/invariants with AC references; rows feed the invariant-enforcement table above.
+- **Outcome catalog** — `status` code | meaning | HTTP | payload the FE needs. This table is the
+  single source for the controller's outcome map (`06-interface-layer.md` §5) and for the FE
+  slice's `outcomes` input; codes are snake_case Ubiquitous Language, stable once approved.
+- Side effects/domain events, idempotency (required? replay semantics), concurrency behavior.
+
+Same status header as the context doc (`draft | approved | as-built`); a scaffold prompt may not
+run against a `draft` spec.
+
 ## 3. The Three Hard Rules (MUST — same weight as the Dependency Rule)
 
 ### 3.1 Critical invariants are enforced by the database, not only by application code
@@ -75,8 +99,9 @@ capacity, balance ≥ 0. For every critical invariant:
   between the read and the write; the constraint has none.
 - **The application pre-checks** the same rule before writing — but only to produce a precise
   domain error message. The pre-check is a courtesy; the constraint is the enforcement.
-- **The repository maps the constraint violation** to the same domain error / 409 the pre-check
-  produces, so the race-condition path and the friendly path are indistinguishable to clients.
+- **The repository maps the constraint violation** to the same domain error the pre-check
+  produces — so both paths surface as the same outcome body (`06-interface-layer.md` §5) and
+  the race-condition path and the friendly path are indistinguishable to clients.
 
 ```sql
 -- migration: the invariant "a dress cannot be double-booked" lives HERE, not in a handler
@@ -90,7 +115,7 @@ ALTER TABLE rental_items ADD CONSTRAINT rental_items_no_overlap
 try { await this.writeInTransaction(entity, insert); }
 catch (e) {
   if (isExclusionViolation(e, 'rental_items_no_overlap'))
-    throw new ConflictException('RENTALS.DRESS_UNAVAILABLE');
+    throw new DressUnavailableError(); // handler → Err → same outcome body as the pre-check
   throw e;
 }
 ```
@@ -135,7 +160,7 @@ Wire these at bootstrap (Phase 4 of `12-implementation-checklist.md`):
   callers, per-slice test presence. `pnpm map` regenerates; `pnpm map:check` diffs in CI.
 - **`docs/openapi.json`** — emitted deterministically without booting infra
   (see `../init-monorepo-contract/02-contract-pipeline.md` §2 for the offline-emit pattern);
-  `pnpm openapi:check` diffs in CI.
+  `pnpm openapi:emit` regenerates; `pnpm openapi:check` diffs in CI.
 
 These two make the design docs safe to keep small: intent in `docs/design/`, current state
 generated, drift structurally impossible.

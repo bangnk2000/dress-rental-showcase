@@ -135,7 +135,8 @@ export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 ```
 
 FORM schema, not API schema: messages are i18n keys; `z.coerce` handles `<input>` strings. The
-request type stays `CreateInvoiceBody` from the generated models — mapped in `onSubmit`.
+request type stays `CreateInvoiceBody` from the generated models — form values match the DTO 1:1
+here; when they diverge, map explicitly in `onSubmit` (03 §4).
 
 ## 6. Form — `src/features/invoices/components/invoice-form.tsx`
 
@@ -145,6 +146,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCreateInvoice, getListInvoicesQueryKey } from '@/api/generated/invoices/invoices';
+import { mapApiError } from '@/api/errors';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -167,7 +169,15 @@ export function InvoiceForm() {
         form.reset();
         toast({ description: t('form.created') });
       },
-      onError: () => form.setError('root', { message: 'invoices:form.errors.createFailed' }),
+      onError: (e) => {
+        const err = mapApiError(e); // src/api/errors.ts (04-data-layer.md §3)
+        // each business outcome renders its designed state — never one generic message
+        if (err.kind === 'outcome' && err.status === 'rejected_duplicate_invoice') {
+          form.setError('customerId', { message: 'invoices:form.errors.duplicateInvoice' });
+          return;
+        }
+        form.setError('root', { message: 'invoices:form.errors.createFailed' });
+      },
     },
   });
 
@@ -198,6 +208,11 @@ export function InvoiceForm() {
             </FormItem>
           )}
         />
+        {form.formState.errors.root && (
+          <p role="alert" className="text-sm text-destructive">
+            {t(form.formState.errors.root.message as string)}
+          </p>
+        )}
         <Button type="submit" disabled={createInvoice.isPending}>
           {createInvoice.isPending ? t('form.creating') : t('form.create')}
         </Button>
@@ -253,6 +268,7 @@ one boundary handles Suspense (data + i18n namespace) and errors together.
       "customerRequired": "Customer is required",
       "amountPositive": "Amount must be greater than zero",
       "currencyInvalid": "Currency must be a 3-letter code",
+      "duplicateInvoice": "An invoice for this customer already exists.",
       "createFailed": "Could not create the invoice. Please try again."
     }
   }
@@ -289,6 +305,8 @@ export const invoiceHandlers = [
 ```
 
 Shapes typed from **generated models** — the mock cannot drift from the contract silently.
+Business-outcome responses (`422` with `{ status: '<code>' }`) are mocked per test via
+`server.use` (see the duplicate-invoice test below); the default handlers stay happy-path.
 
 ## 10. Test — `src/features/invoices/invoices.test.tsx`
 
@@ -327,10 +345,23 @@ test('creates an invoice and refreshes the list', async () => {
   await user.click(screen.getByRole('button', { name: /create invoice/i }));
   expect(await screen.findByText('globex')).toBeInTheDocument();  // invalidation → refetch
 });
+
+test('renders the duplicate-invoice outcome on its field, not a generic message', async () => {
+  server.use(http.post('*/api/invoices', () =>
+    HttpResponse.json({ status: 'rejected_duplicate_invoice' }, { status: 422 })));
+  const user = userEvent.setup();
+  renderWithProviders(<InvoicesRoute />);
+  await user.type(await screen.findByLabelText(/customer/i), 'acme');
+  await user.clear(screen.getByLabelText(/amount/i));
+  await user.type(screen.getByLabelText(/amount/i), '120');
+  await user.click(screen.getByRole('button', { name: /create invoice/i }));
+  expect(await screen.findByText(/already exists/i)).toBeInTheDocument(); // designed outcome state
+});
 ```
 
 The real pipeline runs (generated hook → mutator → axios → MSW); accessible queries only; the
-last test proves the invalidation wiring, not just the POST.
+invalidation test proves the wiring, and the outcome test proves each business rejection gets
+its designed state (`09-testing-strategy.md` §4) — never one generic message.
 
 ## 11. Harness bookkeeping — `feature_list.json` entry (on completion)
 
@@ -340,13 +371,13 @@ last test proves the invalidation wiring, not just the POST.
   "name": "Invoices — list + create",
   "description": "Authenticated /invoices route: suspense-loaded list, validated create form, list invalidation",
   "status": "pass",
-  "evidence": "pnpm check/lint/arch/test green (4 slice tests). Verified in pnpm dev: anonymous → redirected to /sign-in; create → toast + list refresh without reload; empty state renders on fresh account.",
+  "evidence": "pnpm check/lint/arch/test green (5 slice tests). Verified in pnpm dev: anonymous → redirected to /sign-in; create → toast + list refresh without reload; duplicate → field error (outcome rejected_duplicate_invoice); empty state renders on fresh account.",
   "testedAt": "2026-07-06T00:00:00Z"
 }
 ```
 
 Evidence names what was **run and observed** — a build passing is not evidence that a route works
-(`13-harness-engineering.md` §3).
+(`13-harness-engineering.md` §2).
 
 ---
 
@@ -357,7 +388,8 @@ Evidence names what was **run and observed** — a build passing is not evidence
   the generated key function.
 - **Every string** is namespaced; the badge shows enum-to-i18n mapping.
 - **Three non-happy states designed**: route boundary (error), `EmptyState` (empty), route
-  Suspense fallback (loading).
-- **Tests mock the network, not the code**, and cover all four behaviors the capability promises.
+  Suspense fallback (loading) — plus one designed state per business outcome
+  (`rejected_duplicate_invoice` → field error, never a generic toast).
+- **Tests mock the network, not the code**, and cover all five behaviors the capability promises.
 - Deleting the feature = deleting the folder + one router line + one locale file + one d.ts line —
   the architecture's deletability test passes.

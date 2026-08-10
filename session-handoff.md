@@ -1,5 +1,325 @@
 # Session Handoff
 
+## 2026-08-10 (24) — everything pushed as 5 stacked PRs, each reviewed by codex until clean
+
+- Done: the 18 commits that had never left this machine are now **five stacked PRs** on
+  `bangnk2000/dress-rental`, one per feature session, each reviewed by the **codex CLI in WSL**
+  (`codex exec review --base <parent>`) and fixed until the review came back with nothing. Every
+  branch is pushed; nothing is merged — that is the owner's call.
+
+  | PR | Branch | Base | codex findings fixed |
+  | --- | --- | --- | --- |
+  | [#1](https://github.com/bangnk2000/dress-rental/pull/1) | `feat/qr-url-phase` | `master` | 5 |
+  | [#2](https://github.com/bangnk2000/dress-rental/pull/2) | `feat/outcome-model-and-invariant-proof` | #1 | 2 |
+  | [#3](https://github.com/bangnk2000/dress-rental/pull/3) | `feat/e2e-ci-and-release-record` | #2 | 0 |
+  | [#4](https://github.com/bangnk2000/dress-rental/pull/4) | `feat/ui-review-batch` | #3 | 4 |
+  | [#5](https://github.com/bangnk2000/dress-rental/pull/5) | `feat/payments-record-collection` | #4 | 9 |
+
+- **The review paid for itself in the money paths.** What it found, in the order it matters:
+  - `payments/record-collection` checked the rental status in the service, then inserted in a
+    separate transaction — a concurrent return could close the rental in between and the money
+    landed on a closed rental anyway. The check now runs `SELECT … FOR UPDATE` inside the write.
+  - The return dialog treated a **failed** ledger read, and later a ledger **still loading**, as
+    "no deposit collected", so it offered a refund based on the catalog for money the shop may
+    never have taken. An unknown basis now blocks and says why.
+  - Even with a re-read at submit time, a collection could still commit between that read and the
+    write. The settlement now sends the basis it used and the return write verifies it under the
+    rental's row lock (`rejected_deposit_basis_changed`), which is the only place that cannot be
+    raced past. The two operations lock the same row, so they take turns.
+  - Same class in `catalog`: a duplicate code caught by the UNIQUE index surfaced as a 409
+    envelope while the identical pre-check answered a 422 outcome — the form lost its field error
+    depending on who won the race. ADR 0001 now states the rule for every precondition with a
+    constraint behind it, and each such rule owes a concurrent `test:e2e` case.
+  - `apps/qr-admin` stored a refresh token and never used it: every reload signed the owner out.
+    Fixing that created the need for a sign-out, which did not exist either (a staff member was
+    stuck on the denied screen forever).
+  - The rest: a booking rejection outliving the booking it described, a QR preview downloadable
+    under the next row's filename, the QR history omitting the creator FR-QR-03 requires, and a
+    `0` typed into a collect field 400-ing the whole request.
+- Verification at the stack tip: `bash init.sh` fully green — be **114 unit** · **46 e2e** ·
+  fe **83** · qr-admin **17** · contract:check, check, lint, arch, both builds — plus
+  `pnpm --filter fe e2e` green against the real stack.
+- **Watch out — the stack is stacked.** Each PR's base is the previous branch, so merge in order
+  #1 → #5 (GitHub retargets the next one automatically). Reviewing #5 alone shows only its own
+  diff, which is the point.
+- **Watch out — local `master` is stale**: it sits at `bdd211d`, five commits ahead of
+  `origin/master`, and those commits are the QR phase now under review in PR #1. Do not push it;
+  let the PRs land and reset it to `origin/master` afterwards.
+- Watch out: `codex exec review --base X` resolves X LOCALLY. Reviewing PR #1 against `master`
+  silently produced an empty diff (local master already contained those commits) — use
+  `origin/master`. The default model also needs codex ≥ 0.147; the copy at
+  `~/.local/share/pnpm/bin/codex` is current, and an older 0.139 shim shadows it earlier in PATH.
+- Next: unchanged from below — rental `notes` are displayed nowhere, there is still no rental
+  detail route, and `payments/correct-movement` (fixing a wrongly recorded amount) is the open
+  operational hole the owner has to rule on.
+
+## 2026-08-10 (23) — `payments/record-collection` = pass (the deposit gap is closed)
+
+- Done: the gap three features and the readiness pass all pointed at — **money coming IN was never
+  recorded** — is closed as one design-tier feature through the spec-before-code lane. Ledger is
+  25/25 `pass`.
+- The lane worked as designed: [record-collection.md](docs/design/payments/record-collection.md) was
+  written FIRST with the business rules as **blocker questions**, and the shop owner answered four
+  (§6): (1) a **standalone action, usable any time** — not folded into create or pickup, because
+  some customers transfer the deposit days early; (2) amounts **pre-filled** (Σ catalog deposit,
+  Σ agreed price) but **editable**, and the ledger records what was actually TAKEN; (3) **fees are
+  deducted from the deposit** — this closes the open question `rentals/settlement-clarity` left
+  behind, and it upgrades a guess into an approved rule; (4) **rental fee is in scope** with the
+  deposit, so cash reconciliation has both halves.
+- BE: `payments` grew its **first aggregate + command** — exactly the trigger its own design doc
+  predicted. `POST /rentals/:rentalId/payments/collect` writes 1..2 rows in one transaction;
+  `payment:collect` is open to staff on purpose (the person holding the cash is at the counter,
+  unlike the owner-only late-fee waiver).
+- The rule with teeth is **BR-7: one deposit and one rental fee per rental**, enforced by two
+  partial UNIQUE indexes, not by app code. `payments-collection.e2e-spec.ts` provokes it three ways:
+  a second call, TWO CONCURRENT calls that both read an empty ledger ([200, 422], exactly one row),
+  and a raw INSERT that bypasses the app. The race is translated to `CollectionConflictError` at the
+  adapter edge and answered with the SAME outcome as the pre-check — the create-rental pattern.
+- Read side: `GET /rentals/:id/payments` now carries `summary` (per-kind totals, computed in the
+  projection), and `RentalDressDto` gained `agreedPrice` from `rental_items.price`. FE: the payments
+  dialog became THE money screen of a rental (ledger + totals + collect form), reachable from every
+  row — the button is `Tiền` now, since "Thanh toán" on a rental booked five minutes ago read wrong.
+- **Watch out — the browser caught what no unit test could:** the return dialog did not invalidate
+  the rental's payments query, so after settling, the money screen showed a pre-settlement ledger for
+  the full 60s `staleTime`. The repo's invalidate rule now has a third vee: *a mutation that moves
+  money also invalidates that rental's payments key* (recorded in `apps/fe/AGENTS.md` §Screen rules).
+- **Watch out — the migration is the first one that is genuinely reversible**: `down` is DROP INDEX,
+  no data lost, unlike 0001–0003 whose down is DROP TABLE. Release risk #3 stays true for the others.
+- Verification: be **109 unit** (+14) · **42 e2e** (+12) · fe **71** vitest (+5) · qr-admin 13 ·
+  `contract:check` / `check` / `lint` / `arch` / both builds green · `pnpm --filter fe e2e`
+  **1 passed (15.6s)** against the real stack — the happy path now records 2.000.000₫ of deposit
+  against a 3.000.000₫ standard and proves the refund follows the money, not the catalog.
+- Deliberately left open (in the spec §6 and payments-aggregate.md, both need an owner decision):
+  **correcting a wrongly recorded amount** (append-only + `amount ≥ 0` means no compensating row is
+  possible — a real operational hole once the shop is live), and **collecting a deposit in
+  instalments** (BR-7 forbids it today).
+- Next, in the order I would take them: (1) rental `notes` are captured at booking and displayed
+  nowhere; (2) no rental detail route — it is the natural home for notes, the ledger, and a money
+  button reachable from the board (the board cannot open today's dialog: `features/today` importing
+  `features/rentals` would break the no-cross-feature rule); (3) `payments/correct-movement` if the
+  owner wants it before go-live; (4) the remaining P2/P3 UI items (overdue card showing days late,
+  one search model instead of two, `EmptyState` heading level, language switcher out of the primary
+  header, shorter Vietnamese date format, offline indicator); (5) the release lane still stops at
+  go/no-go with P1–P7 missing, and r1 now lists FIVE features it does not cover.
+
+## 2026-08-10 (22) — UI/UX review of `apps/fe`, then its top four findings shipped
+
+- Done: read the whole FE (~4.9k lines of TSX) and wrote up 22 improvement points, then implemented
+  the four highest-value groups as four tracked features. Ledger is 24/24 `pass`.
+- `rentals/settlement-clarity` (`8283e11`, cross-contract): the only screen that moves cash asked
+  staff to type a seven-digit refund from memory — no separators, no sum, no statement of what was
+  taken. `RentalDressDto` gained `depositAmount` through the existing `DressLookupPort`; the dialog
+  pre-fills the refund with `deposit − suggested late fee`, states the arithmetic live, flags a
+  refund that disagrees with it, and reads every amount field back grouped via `FormDescription`
+  (already wired to `aria-describedby`). **Watch out:** pre-filling `deposit − fees` encodes a
+  deduction convention taken from `smoke.sh` and the Playwright happy path, NOT an owner decision
+  like the late-fee rules — recorded as an open question in
+  [payments-aggregate.md](docs/design/payments-aggregate.md) and in the commit.
+- `rentals/dress-availability-in-picker` (`03bf04e`, FE-only): every chosen dress now checks itself
+  against the form's dates (`Còn trống` / `Vướng lịch` + the `blockedUntilDate` the staff cannot
+  deduce), and a rejection marks exactly the dresses the server named — `dressIds` was designed for
+  this in ADR 0001 and the form was throwing it away. Search results are deliberately NOT checked
+  (a query per keystroke per row). The flag clears when the dates or the selection change.
+- `catalog/dress-thumbnails` (`13273d1`, FE-only): photos existed since `catalog/manage-dress` and
+  showed up only on the detail page — not on the two screens where dresses are CHOSEN. New kernel
+  `PhotoThumbnail` (decorative `alt=""`, dead links degrade to a placeholder) in the catalog table
+  and both picker lists.
+- `fe:board-and-confirm-ergonomics` (`1eaba2f`, FE-only): day stepping inside `useTransition` (the
+  board no longer blanks), ± day + `Hôm nay`, 44px board actions, per-row spinner gated on
+  `mutation.variables` instead of `isPending`, customer in the accessible name, and `window.confirm`
+  replaced by `ui/alert-dialog` + `ConfirmDialog` for both irreversible actions. The dismiss button
+  says `Quay lại`: on the rentals list the confirmed action is itself a cancel.
+- Verification: fe **66** tests (+9 net, 3 rewritten to drive the real dialog), be **95** unit + 30
+  e2e, qr-admin 13, root `contract:check` / `check` / `lint` / `arch` / both builds green, and
+  `pnpm --filter fe e2e` green against the real stack (1 passed, 15.9s) — the happy path exercises
+  both resized board buttons and the new pre-filled refund.
+- Watch out: adding an `aria-label` changes the accessible NAME, so vitest queries for those buttons
+  had to move to regex — the visible label is still a prefix of the name (WCAG 2.5.3). And the
+  `Hôm nay` test asserts the date INPUT, not the last request: that board is already cached, so
+  returning costs no round trip.
+- Watch out: `docs/releases/2026-08-10-r1/` was written BEFORE these four features. Its README now
+  lists them as explicitly not covered — before go/no-go, either ship r1 at the SHA the readiness
+  pass examined, or write the four missing readiness files (the first one carries a contract change).
+- Next, from the same review, in the order I would take them: (1) the deposit COLLECTION is still
+  never recorded — three features and the readiness pass all point at it, and it is what stops the
+  shop reconciling cash; (2) rental `notes` are captured at booking and displayed nowhere; (3) no
+  rental detail route at all; (4) the remaining P2/P3 items (overdue card showing days late, one
+  search model instead of two, `EmptyState` heading level, language switcher out of the primary
+  header, `dateStyle: 'medium'` → a shorter Vietnamese format, offline indicator).
+
+## 2026-08-10 (21) — `infra/e2e-ci` = pass + the first release record (`docs/releases/2026-08-10-r1/`)
+
+- Done (`infra/e2e-ci`): the browser proof is no longer manual. `apps/fe/playwright.config.ts` now
+  declares two `webServer`s — `pnpm --filter be build && start` on :3000 (readiness probed via
+  `/api/v1/dresses` answering 401, since there is no health route) and
+  `pnpm build && vite preview --port 4173 --strictPort` — so `pnpm --filter fe e2e` starts the stack
+  it needs and is the SAME command locally and in CI. Two deliberate boundaries: the DATABASE is
+  never started by the tests (migrate + seed stay an explicit act), and `E2E_BASE_URL` means "I run
+  the servers myself" (`webServer` becomes `undefined`, nothing is started). The browser now
+  exercises the PRODUCTION build, service worker included — `vite.config.ts` gained the matching
+  `preview.proxy` for `/api`, which is also what production needs from Nginx (NFR-03).
+- Done (CI): new `e2e` job — own postgres service, `playwright install --with-deps chromium`,
+  `pnpm --filter be migrate`, `pnpm --filter be seed` (`SEED_OWNER_PASSWORD=changeme`, the pair the
+  spec signs in with), `pnpm --filter fe e2e`, and report + trace uploaded on failure. An `html`
+  reporter was added so there is something to upload besides the raw trace.
+- Verification: cold run against only `docker compose up -d` + migrate + seed = **1 passed (18.2s)**;
+  again with `CI=1` (reuseExistingServer off) = **1 passed (17.1s)**. `E2E_BASE_URL` pointed at a
+  dead port emitted **0 `[WebServer]` lines** and failed in seconds — proving nothing is started —
+  and produced BOTH `playwright-report/` and `test-results/<test>/trace.zip`, the two paths the job
+  uploads. Root gates green: contract emit + `generate:api` clean, check, lint, arch, be 95 unit +
+  30 e2e, fe 57, qr-admin 13, both builds. **AC2 is the one gap: the job has never run on GitHub —
+  push the branch and read the run.**
+- Done (release lane, first use): `docs/releases/2026-08-10-r1/` — 20 per-feature readiness files,
+  `release-plan.md` (§0 release-wide rows + risks R1–R4, §1 prerequisites P1–P7, §2 ordered steps,
+  §3 compatibility matrix), `rollback.md`, a seeded `record.md`, plus a local index README. Owner
+  decisions taken as input: all 20 features are the candidates, target is VPS + PM2 + Nginx, bangnk
+  is owner AND on-call. The lane prepares only — it ends at "STOP — awaiting go/no-go".
+- What the readiness pass actually found (the useful output, not the paperwork):
+  1. **No deployment artifact exists in the repo at all** — no PM2 definition, Nginx conf, TLS,
+     backup procedure, production secrets or catalog CSV (P1–P7). Every deploy step names a command
+     whose artifact still has to be created.
+  2. **NFR-03 is load-bearing, not a preference**: `configureApp()` never calls `enableCors()`, so
+     unless Nginx serves the SPAs and proxies `/api` on ONE origin, every call fails. `apps/qr-admin`
+     additionally sets no `base`, so a subpath deploy breaks its assets — it needs its own host.
+  3. **Every migration `down` is a `DROP`** (tables, or `photo_urls`). Schema reversal is safe
+     exactly once — before the shop enters data. After that the only reversal is restore-from-backup,
+     and the backup does not exist. This is why P5 blocks.
+  4. **R1–R4 are `missing` on every feature**: no observability of any kind, no feature flag, one
+     person as owner+on-call, no cross-version contract test.
+  5. Two features are thinner than a uniform `pass` suggests: `qr/create-url-code` has no live-DB and
+     no browser proof (the ledger says so), and `qr/styled-svg-rendering` has never been printed and
+     scanned. Both recorded in their own readiness files.
+- Watch out: `bash init.sh` still aborts in this environment on `pnpm install --frozen-lockfile`
+  (`ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`) — the gates were run individually with
+  `npm_config_verify_deps_before_run=false`. Nothing is committed yet: the working tree carries this
+  session's changes.
+- Next: (1) push the branch so the CI `e2e` job proves itself — that is the cheapest open item in the
+  release; (2) the release's own prerequisites P1–P7 are real work and the natural next feature
+  (`infra/deploy-vps` would give PM2 + Nginx + backup an entry in the ledger instead of living only
+  in the plan); (3) still open from before: the `qr` context has no invariant proof, and the deposit
+  COLLECTION is never recorded — the readiness pass surfaced that second one from three different
+  features, which is a strong signal.
+
+## 2026-08-10 (20) — `rentals/settle-late-fee` = pass (first capability through the spec-before-code lane)
+
+- Done (the point of the exercise): the `init-feature-spec` lane was used for real. The spec
+  ([docs/design/rentals/settle-late-fee.md](docs/design/rentals/settle-late-fee.md)) was written
+  FIRST at status `draft` with the fee formula and waiver authority left as **blocker questions** —
+  the lane forbids inventing business rules — and the contract check on the draft shape found 2
+  blockers, 2 major, 2 minor. The shop owner answered (§6): **200.000₫/ngày/váy flat**, no grace, no
+  cap; the **cleaning buffer does not count as late**; **only the owner may charge less, and must
+  give a reason**; the meaning change of `lateFee` is accepted in place. Then, and only then, code.
+- Done (BE): the rule is a pure value object (`domain/late-fee.value-object.ts`) reached through
+  `RentalEntity.lateFeeQuote()`; the read side (`GET /rentals/:id/late-fee`) calls the SAME domain
+  method rather than growing a second copy in SQL. `shopToday()` (`Asia/Ho_Chi_Minh`) is the
+  reference day — money must not depend on the VPS clock, which is why the fee does NOT take the
+  device date the way the today board does. Waiver rules land in `return-rental.service.ts` AFTER
+  the state machine decides, so an already-returned rental still answers
+  `rejected_return_not_allowed` rather than a fee complaint.
+- Done (contract + FE): the repo's **first 403 outcome** — `{ status: 'forbidden', reason:
+  'late_fee_waiver_requires_owner', suggestedLateFee, submittedLateFee }` — plus
+  `rejected_waiver_note_required` (422), both added to [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md)
+  §3–§4 before implementation. The return dialog reads the quote, states it in an `aria-live`
+  banner, pre-fills the field, disables submit until the number is known, and keeps both waiver
+  rejections in place instead of closing.
+- Verification: be **95 unit + 30 e2e** (8 new in `test/late-fee.e2e-spec.ts` proving the 403 leaves
+  the rental `out` with no payments row), fe **57** (4 new dialog states), qr-admin 13, root
+  check/lint/arch/builds green, Playwright happy path still green against the real stack.
+- Side fix (found by the first failing test, worth knowing): `lib/format.ts` read the i18n
+  singleton, so under test money formatted `₫1,200,000` (en) while every label was Vietnamese. It
+  now reads `<html lang>` — one source for text and numbers. No test had asserted formatted currency
+  before, which is why it hid for so long.
+- Next: the ledger is 19/19 `pass` again. Strongest candidates — (1) a first release record through
+  `docs/spec/init-release/` into `docs/releases/<id>/` (the VPS/PM2 deploy is manual today, so the
+  readiness checklist + rollback plan is the missing half); (2) CI job for Playwright so the browser
+  proof stops being manual; (3) `qr` context still has no invariant proof spec.
+
+## 2026-08-09 (19) — `infra/outcome-model` + `infra/invariant-proof-e2e` = pass (both MUST gaps closed)
+
+- Done (design gate first, per the process): [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md)
+  approved before any code — decision, full outcome catalog (§3), UI state matrix (§4), rejected
+  alternatives. `docs/SRS-dress-rental.md` (FR-AUTH-02, FR-RENT-02, BR-1) and the rentals / catalog /
+  identity / qr-admin design docs were re-synced in the SAME change, and `docs/design/README.md`
+  gained **B2.1** (outcome catalog before code, `useCaseSpec` + `outcomes` inputs, spec-file/ADR
+  conventions) plus an ADR index.
+- Done (`infra/outcome-model`): ONE wire rule — returned `Result` Err → outcome body
+  `{ status, ...payload }` at 422/403; thrown → `{ error: { code, message, details?, correlationId } }`.
+  `libs/exceptions` gained `BusinessOutcomeException`, `ErrorDetail`, `ApiErrorResponseDto`; the
+  global filter renders exactly those two shapes and hides internals on 500. Nine command
+  controllers map each domain error to its own snake_case code with a typed payload
+  (`dressIds` / `currentStatus` / `dressCode`) and declare `@ApiResponse({ status: 422, type })`.
+  The EXCLUDE race is translated in `rental.repository` → `RentalItemsOverlapError` and converted in
+  `create-rental.service` back to the SAME `rejected_dress_unavailable` (re-queried ids), so one
+  business rule has one code. Login/refresh reject as outcomes, so **401 now means only "the guard
+  rejected the access token"**. FE: `src/api/errors.ts` is the single `mapApiError` seam, the three
+  `features/*/lib/is-conflict-error.ts` files are deleted, every code has a designed state + vi/en
+  key; `apps/qr-admin/src/api/errors.ts` is the same seam (`error-message.ts` gone).
+- Done (`infra/invariant-proof-e2e`): `apps/be/test/` — 22 tests on real Postgres via
+  `pnpm --filter be test:e2e`, covering the overlap pre-check, the cleaning buffer, a concurrent
+  race ([201, 422] with one row), a raw INSERT that bypasses the app, catalog/staff UNIQUE + status
+  CHECKs, and that 404/401 stay fault envelopes. CI has a postgres service; `init.sh` calls the real
+  gate; `apps/be` lint now also covers `test/`.
+- Done: `apps/qr-admin/AGENTS.md` created (the app-level contract that was missing), with its four
+  deliberate deviations (vi-only, no PWA/router, no plop, hand-written error copy).
+- Verification: `pnpm --filter be test` 82 · `pnpm --filter be test:e2e` 22 · `pnpm --filter fe test`
+  53 · `pnpm --filter qr-admin test` 13 · root `check`, `lint`, `arch` (every rule except the
+  freshness item), `pnpm --filter fe build`, `pnpm --filter qr-admin build` all green. `pnpm contract`
+  re-run is idempotent (md5 identical).
+- Committed on branch `feat/outcome-model-and-invariant-proof` (`761f310` + follow-up), so
+  `contract:check`, the arch freshness item and a full `bash init.sh` are **green** — the generated
+  layer landed together with the BE change, as the contract invariant requires.
+- Playwright DID run against the real stack and passes. Two rough edges were fixed to make it
+  runnable as documented: `scripts/seed-owner.cjs` now loads `apps/be/.env` (README step 3 always
+  claimed it did, but the script only read `process.env`), and the board locators in
+  `e2e/happy-path.spec.ts` are scoped to the run's own rows — the old page-wide lookups broke as soon
+  as the target database held any other rental (an overdue leftover produced two return buttons).
+  The api must be started from `apps/be` (ConfigModule resolves `.env` from the cwd).
+- Watch out: in this environment pnpm 11 wants to purge `node_modules` before every script; the
+  workaround is `pnpm --config.verifyDepsBeforeRun=false <script>`. Also `nest build` had been
+  relying on an undeclared `@types/qrcode` — now a real devDependency, which a clean
+  `--frozen-lockfile` install would otherwise break.
+- Next: no tracked backlog. Strongest candidates — (1) a first release record through
+  `docs/spec/init-release/` into `docs/releases/<id>/`, since the ledger is all `pass`; (2) an
+  `Idempotency-Key` ADR if double-submit needs more than the DB constraint; (3) migrate Deviation #4
+  (cross-context table reads) to contract queries if a schema change ever bites.
+
+## 2026-08-09 (18) — spec re-sync + harness docs caught up (no product code)
+
+- Done: `docs/spec/` re-synced from upstream `knowledge-system` commit `815fa0f`. The four existing
+  sets are refreshed byte-for-byte and two NEW sets are vendored — `init-feature-spec` (use-case
+  spec + outcome catalog + UI state matrix, approved before code) and `init-release` (readiness,
+  release/rollback plan, compatibility matrix → `docs/releases/<release-id>/`). New
+  `docs/spec/README.md` is the vendor manifest: provenance, what each set owns, the four upstream-only
+  `ddd-*` docs that are deliberately NOT vendored, and the exact re-sync recipe including the single
+  local delta (8 rewritten links).
+- Done: stale harness/init docs updated to the repo as-committed — root `AGENTS.md` (spec entry
+  points incl. `apps/qr-admin` → init-react, design gate before `in-progress`, optional `acceptance`
+  field, gate list that no longer implies a green `be test:e2e`), `clean-state-checklist.md`
+  (both generated clients, design as-built note, "don't patch vendored spec"), `claude-progress.md`
+  (backfilled sessions 4–17, which existed only in this handoff), root `README.md` doc index (+ QR
+  SRS, + spec index), `init.sh` and `ci.yml` comments (dead "README.md step 2/4" pointers replaced;
+  the `test:e2e` no-op is now stated instead of implied).
+- Done: the spec change with teeth is the **outcome model** — a business rejection must leave BE as
+  an outcome body `{ status: '<snake_case_code>' }` at 422/403 via `BusinessOutcomeException`, faults
+  as `{ error: { code, message, details?, correlationId } }`, and FE must read wire shapes in exactly
+  one `mapApiError` seam. This repo does neither (409 + flat `GENERIC.CONFLICT`; three feature-local
+  `is-conflict-error.ts` + `qr-admin/src/api/error-message.ts` branching on status). Recorded as
+  `apps/be/AGENTS.md` GAP #6 and `apps/fe/AGENTS.md` GAP #8, each naming the other.
+- Verification: doc-only session, no source or generated artifact touched — `packages/contract/`,
+  `apps/fe/src/api/generated/` and `apps/qr-admin/src/api/generated/` are untouched, so no root gate
+  outcome can change. `feature_list.json` gained only its `rules` line (acceptance + design gate); no
+  entry was added, since nothing shipped. Vendored files verified identical to upstream
+  (`diff -rq` per set) except the 8 documented link rewrites.
+- Next: unchanged top candidate — spec gap #5: real-Postgres invariant proof for
+  `rental_items_no_overlap` (compose/testcontainers) + CI postgres service + the missing
+  `pnpm --filter be test:e2e` script. Then the outcome model (BE #6 + FE #8) as ONE cross-contract
+  feature: outcome catalog per use case → `BusinessOutcomeException` + envelope + `@ApiResponse` →
+  `pnpm contract` → FE `mapApiError` + per-outcome copy. Do not ship half of it.
+- Watch out: `docs/spec/` is vendored — never "improve" a file there; fix it upstream in
+  `knowledge-system` and re-sync per `docs/spec/README.md`. `apps/qr-admin` still has no app-level
+  `AGENTS.md`; until it gets one, `apps/fe/AGENTS.md` ring/contract rules apply to it minus
+  i18n/PWA/routing. Creating that file is a small, worthwhile next doc task.
+
 ## 2026-08-06 (17) — `qr/styled-svg-rendering` = pass
 
 - Done: downloaded and previewed QR SVGs now use the shop's fixed red-pink styling: red-pink QR

@@ -70,6 +70,8 @@ Status vocabulary (normalize upstream's `not-started` → `todo`):
       "name": "{{HUMAN_NAME}}",
       "description": "{{BEHAVIOR + DONE CRITERIA, concrete enough to verify}}",
       "dependencies": [],                  // ids that must pass first
+      "acceptance": [],                    // optional: acceptance criteria ids/text; when present,
+                                           // evidence names which AC each command proved
       "status": "todo",
       "evidence": "",                      // REQUIRED non-empty for pass/fail: commands run + behavior observed
       "testedAt": null                     // ISO timestamp when status last verified
@@ -84,6 +86,12 @@ Rules:
 - Max ONE `in-progress`. `fail`/`blocked` entries name the failing command or blocker.
 - `evidence` names what was **run** and what was **observed** ("`pnpm test` 12 green; `POST
   /invoices` → 201 + DB row"). "Build passes" is not evidence for an endpoint.
+- When `acceptance` is filled, evidence references the ACs it proves ("AC3: duplicate submit →
+  one order, `Idempotency-Replayed` header observed") — that line IS the traceability link
+  `acceptance criterion → test → evidence`.
+- `pass` is the ledger's terminal state; "ready for release → released" is owned by a release
+  workflow (e.g. the [init-release](../init-release/README.md) set), which reads this ledger
+  as its evidence source.
 - Cheap CI lint (valid JSON, one in-progress, evidence non-empty for `pass`) catches ledger rot.
 
 ## 2.3 `init.sh` (Verification) — every resume starts here

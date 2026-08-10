@@ -18,6 +18,7 @@ function makeRentalRepo(overrides: Partial<RentalRepositoryPort> = {}): RentalRe
   return {
     insert: jest.fn().mockResolvedValue(undefined),
     save: jest.fn().mockResolvedValue(undefined),
+    saveReturned: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(null),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
     nextId: jest.fn(() => `00000000-0000-4000-8000-00000000010${seq++}`),
@@ -50,6 +51,7 @@ const snapshotA: DressSnapshot = {
   name: 'Váy cưới ren trắng',
   retired: false,
   rentalPrice: 1_500_000,
+  depositAmount: 3_000_000,
 };
 const snapshotB: DressSnapshot = {
   id: DRESS_B,
@@ -57,6 +59,7 @@ const snapshotB: DressSnapshot = {
   name: 'Đầm dạ hội đỏ',
   retired: false,
   rentalPrice: 1_200_000,
+  depositAmount: 2_000_000,
 };
 const bothDresses: DressSnapshot[] = [snapshotA, snapshotB];
 

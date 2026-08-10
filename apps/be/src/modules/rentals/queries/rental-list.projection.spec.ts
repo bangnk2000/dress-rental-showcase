@@ -10,8 +10,22 @@ const RENTAL_1 = '00000000-0000-4000-8000-000000000101';
 const RENTAL_2 = '00000000-0000-4000-8000-000000000102';
 
 const dresses: DressSnapshot[] = [
-  { id: DRESS_A, code: 'VD-002', name: 'Đầm dạ hội đỏ', retired: false, rentalPrice: 1_200_000 },
-  { id: DRESS_B, code: 'VD-001', name: 'Váy cưới ren trắng', retired: false, rentalPrice: 1_500_000 },
+  {
+    id: DRESS_A,
+    code: 'VD-002',
+    name: 'Đầm dạ hội đỏ',
+    retired: false,
+    rentalPrice: 1_200_000,
+    depositAmount: 2_000_000,
+  },
+  {
+    id: DRESS_B,
+    code: 'VD-001',
+    name: 'Váy cưới ren trắng',
+    retired: false,
+    rentalPrice: 1_500_000,
+    depositAmount: 3_000_000,
+  },
 ];
 
 function makeRow(overrides: Partial<RentalListRow>): RentalListRow {
@@ -34,9 +48,11 @@ test('joins items + dress snapshots per rental, dresses sorted by code', () => {
       makeRow({ id: RENTAL_2, customer_name: 'Trần Văn B', status: 'returned' }),
     ],
     [
-      { rental_id: RENTAL_1, dress_id: DRESS_A },
-      { rental_id: RENTAL_1, dress_id: DRESS_B },
-      { rental_id: RENTAL_2, dress_id: DRESS_B },
+      { rental_id: RENTAL_1, dress_id: DRESS_A, price: 1_200_000 },
+      // Agreed BELOW the catalog's 1.500.000 — the list must show what was agreed, not the price
+      // the catalog carries today.
+      { rental_id: RENTAL_1, dress_id: DRESS_B, price: 1_400_000 },
+      { rental_id: RENTAL_2, dress_id: DRESS_B, price: 1_500_000 },
     ],
     dresses,
   );
@@ -49,6 +65,10 @@ test('joins items + dress snapshots per rental, dresses sorted by code', () => {
     createdAt: '2026-07-30T09:00:00.000Z',
   });
   expect(items[0]!.dresses.map((dress) => dress.code)).toEqual(['VD-001', 'VD-002']);
+  // The agreed price rides from the ITEM row, so VD-001 shows 1.400.000 here and 1.500.000 in
+  // the other rental — the same dress, two agreements.
+  expect(items[0]!.dresses.map((dress) => dress.agreedPrice)).toEqual([1_400_000, 1_200_000]);
+  expect(items[1]!.dresses.map((dress) => dress.agreedPrice)).toEqual([1_500_000]);
   expect(items[1]!.dresses.map((dress) => dress.code)).toEqual(['VD-001']);
   expect(items[1]!.status).toBe('returned');
 });

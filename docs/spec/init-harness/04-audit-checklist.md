@@ -35,6 +35,10 @@ Run every check; classify CRITICAL (harness doesn't function without it) vs RECO
 ### Scope
 - [ ] **CRITICAL** — Feature entries carry concrete done criteria (verifiable descriptions).
 - [ ] REC — Dependencies between features are recorded; blocked items name their blocker.
+- [ ] REC — Design gate honored: design-tier features reference an `approved` design doc via
+      the scaffold input's `useCaseSpec` pointer, the feature description, or evidence
+      (06-design-first.md); tier inflation (design-shaped work labeled standard/mechanical to
+      dodge the doc) is flagged as a finding.
 
 ### Lifecycle
 - [ ] REC — `session-handoff.md` exists and is no more than one session stale.

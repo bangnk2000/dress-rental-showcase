@@ -8,6 +8,7 @@ import {
   DRESS_LOOKUP,
   DressLookupPort,
 } from '../../application/ports/dress-lookup.port';
+import { RentalItemsOverlapError } from '../../application/ports/rental-overlap.error';
 import {
   RENTAL_REPOSITORY,
   RentalRepositoryPort,
@@ -48,17 +49,17 @@ export class CreateRentalService
     const byId = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
     const missing = dressIds.filter((id) => !byId.has(id));
     if (missing.length > 0) {
-      return Err(new RentalDressNotFoundError(undefined, { dressIds: missing }));
+      return Err(new RentalDressNotFoundError(missing));
     }
     const retired = snapshots.filter((s) => s.retired).map((s) => s.id);
     if (retired.length > 0) {
-      return Err(new RentalDressRetiredError(undefined, { dressIds: retired }));
+      return Err(new RentalDressRetiredError(retired));
     }
 
     // Availability precondition; the DB EXCLUDE constraint backs it against races.
     const blocked = await this.rentalRepo.findBlockedDressIds(dressIds, blockedPeriod);
     if (blocked.length > 0) {
-      return Err(new DressUnavailableError(undefined, { dressIds: blocked }));
+      return Err(new DressUnavailableError(blocked));
     }
 
     const rental = RentalEntity.create(
@@ -79,7 +80,18 @@ export class CreateRentalService
       bufferDays,
     );
 
-    await this.rentalRepo.insert(rental);
+    try {
+      await this.rentalRepo.insert(rental);
+    } catch (error) {
+      if (error instanceof RentalItemsOverlapError) {
+        // A concurrent request won the race and the EXCLUDE constraint refused this write. Same
+        // business rule as the pre-check above, so it MUST be the same outcome (ADR 0001 §2) —
+        // re-query so the payload names the dresses that are actually taken now.
+        const blockedNow = await this.rentalRepo.findBlockedDressIds(dressIds, blockedPeriod);
+        return Err(new DressUnavailableError(blockedNow.length > 0 ? blockedNow : dressIds, error));
+      }
+      throw error;
+    }
     return Ok(rental.id);
   }
 }

@@ -25,8 +25,9 @@ duplicating its deep content.
 - **Server state lives in TanStack Query, client state in React** (or a small store when it earns
   its keep). Never copy server data into `useState`/a store — the generated hooks ARE the data layer.
 - **The API layer is generated, never hand-written.** Orval 8 turns `openapi.json` into typed
-  TanStack Query v5 hooks. Generated files are read-only; cross-cutting behavior (auth header,
-  401→refresh, errors) lives in ONE mutator (`custom-instance.ts`). See `04-data-layer.md`.
+  TanStack Query v5 hooks. Generated files are read-only; auth header, 401→refresh, timeout live
+  in ONE mutator (`custom-instance.ts`); error normalization lives in `src/api/errors.ts`
+  (`mapApiError`) — the only two files that read wire shapes. See `04-data-layer.md`.
 - UI primitives come from shadcn/ui and are OWNED by the repo under `components/ui/` (added via
   CLI, then yours to edit). Styling is Tailwind v4, CSS-first — design tokens in `@theme`, no
   `tailwind.config.js`. See `03-ui-layer.md`.
@@ -76,12 +77,12 @@ Everything else (naming, i18n namespace granularity, optional features) is assum
    toast, auth session + route guards.
 5. **Generate the folder tree.** Emit only the features and building blocks actually needed, on
    top of the canonical layout from `02-folder-structure.md` (`app/`, `features/<name>/`,
-   `components/ui/`, `lib/`, `api/generated/` + `api/mutator/`).
+   `components/ui/`, `lib/`, `api/generated/` + `api/mutator/` + `api/errors.ts`).
 6. **Explain folders and mark priorities.** One table row per significant path; Priority ∈
    {Required, Optional, Prod-only, Experimental}.
 7. **List the key files to create first** per the file-naming map (`*.tsx` kebab-case components,
    `use-*.ts` hooks, `*.store.ts`, `*.schema.ts`, `*.test.tsx`, `orval.config.ts`,
-   `custom-instance.ts`).
+   `custom-instance.ts`, `api/errors.ts`).
 8. **Specify the harness.** AGENTS.md + CLAUDE.md at the root, `feature_list.json` seeded from
    section 2's feature table, `init.sh`, ESLint boundaries + `check-architecture.sh` in CI, plop
    scaffolding. See `08-ai-agent-first.md` and `13-harness-engineering.md`.
@@ -157,6 +158,8 @@ list): init Vite → Tailwind v4 + shadcn → Orval pipeline → providers/route
 - Features map cleanly to `features/<name>/`; no cross-feature imports implied; nothing imports `app/`.
 - The dependency rule holds: `app` → `features` → shared/`api`; generated code is consumed, never edited.
 - Server data flows ONLY through generated TanStack Query hooks; no server data copied into stores.
+- `src/api/errors.ts` exists; components branch on `mapApiError` output, never raw status codes.
+- Every business outcome code in a slice's catalog renders a designed state.
 - File names follow the map exactly (kebab-case files, `use-*.ts`, `*.store.ts`, `*.schema.ts`, `*.test.tsx`).
 - Auth flow matches the stated model (credential ID-token verify vs auth-code exchange); tokens
   handled only in the mutator/auth module, never scattered.

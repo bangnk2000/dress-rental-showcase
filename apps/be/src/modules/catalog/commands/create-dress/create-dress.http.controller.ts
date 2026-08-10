@@ -10,9 +10,10 @@ import {
 import { match } from 'oxide.ts';
 import { RequirePermission } from '../../../../libs/authz/require-permission.decorator';
 import { IdResponse } from '../../../../libs/ddd/id.response.dto';
-import { ConflictException } from '../../../../libs/exceptions';
+import { ApiErrorResponseDto, BusinessOutcomeException } from '../../../../libs/exceptions';
 import { DressCodeAlreadyExistsError } from '../../domain/dress.errors';
 import { CreateDressCommand } from './create-dress.command';
+import { CreateDressOutcomeDto } from './create-dress.outcome.dto';
 import { CreateDressRequestDto } from './create-dress.request.dto';
 import { CreateDressResult } from './create-dress.service';
 
@@ -26,7 +27,12 @@ export class CreateDressHttpController {
   @RequirePermission('dress:create')
   @ApiOperation({ summary: 'Add a dress to the catalog' })
   @ApiCreatedResponse({ type: IdResponse })
-  @ApiResponse({ status: 409, description: 'Dress code already exists' })
+  @ApiResponse({
+    status: 422,
+    type: CreateDressOutcomeDto,
+    description: 'Business rejection: rejected_dress_code_taken (carries dressCode)',
+  })
+  @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Invalid request body' })
   async create(@Body() body: CreateDressRequestDto): Promise<IdResponse> {
     const result: CreateDressResult = await this.commandBus.execute(
       new CreateDressCommand({
@@ -44,7 +50,10 @@ export class CreateDressHttpController {
       Ok: (id) => new IdResponse(id),
       Err: (error: Error) => {
         if (error instanceof DressCodeAlreadyExistsError) {
-          throw new ConflictException(error.message);
+          throw new BusinessOutcomeException({
+            status: 'rejected_dress_code_taken',
+            dressCode: error.dressCode,
+          });
         }
         throw error;
       },

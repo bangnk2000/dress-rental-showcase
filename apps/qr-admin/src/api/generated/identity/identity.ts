@@ -24,8 +24,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiErrorResponseDto,
+  LoginOutcomeDto,
   LoginRequestDto,
   MeResponseDto,
+  RefreshTokenOutcomeDto,
   RefreshTokenRequestDto,
   TokenPairResponseDto
 } from '../model';
@@ -72,7 +75,7 @@ export const loginHttpControllerLogin = (
 
 
 
-export const getLoginHttpControllerLoginMutationOptions = <TError = void,
+export const getLoginHttpControllerLoginMutationOptions = <TError = ApiErrorResponseDto | LoginOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginHttpControllerLogin>>, TError,{data: LoginRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof loginHttpControllerLogin>>, TError,{data: LoginRequestDto}, TContext> => {
 
@@ -101,12 +104,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type LoginHttpControllerLoginMutationResult = NonNullable<Awaited<ReturnType<typeof loginHttpControllerLogin>>>
     export type LoginHttpControllerLoginMutationBody = LoginRequestDto
-    export type LoginHttpControllerLoginMutationError = void
+    export type LoginHttpControllerLoginMutationError = ApiErrorResponseDto | LoginOutcomeDto
 
     /**
  * @summary Staff login with email + password
  */
-export const useLoginHttpControllerLogin = <TError = void,
+export const useLoginHttpControllerLogin = <TError = ApiErrorResponseDto | LoginOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginHttpControllerLogin>>, TError,{data: LoginRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof loginHttpControllerLogin>>,
@@ -136,7 +139,7 @@ export const refreshTokenHttpControllerRefresh = (
 
 
 
-export const getRefreshTokenHttpControllerRefreshMutationOptions = <TError = void,
+export const getRefreshTokenHttpControllerRefreshMutationOptions = <TError = RefreshTokenOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshTokenHttpControllerRefresh>>, TError,{data: RefreshTokenRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof refreshTokenHttpControllerRefresh>>, TError,{data: RefreshTokenRequestDto}, TContext> => {
 
@@ -165,12 +168,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type RefreshTokenHttpControllerRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof refreshTokenHttpControllerRefresh>>>
     export type RefreshTokenHttpControllerRefreshMutationBody = RefreshTokenRequestDto
-    export type RefreshTokenHttpControllerRefreshMutationError = void
+    export type RefreshTokenHttpControllerRefreshMutationError = RefreshTokenOutcomeDto
 
     /**
  * @summary Exchange a refresh token for a new token pair
  */
-export const useRefreshTokenHttpControllerRefresh = <TError = void,
+export const useRefreshTokenHttpControllerRefresh = <TError = RefreshTokenOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshTokenHttpControllerRefresh>>, TError,{data: RefreshTokenRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof refreshTokenHttpControllerRefresh>>,

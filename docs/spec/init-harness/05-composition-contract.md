@@ -17,7 +17,7 @@ A binding MUST fill these seven slots:
 | `RUNTIME_PROOF` | What counts as runtime evidence for this stack | "endpoint exercised against running app: status codes + DB row + event observed" |
 | `SCAFFOLD` | Deterministic generation command, or `none` | `pnpm plop slice -- --context <c> --name <n>` |
 | `STACK_INVARIANTS` | The 3–7 rules `AGENTS.md` must carry inline | "no inner→outer imports; SDK only in adapters" |
-| `DOCS_POINTERS` | Where deep facts live (the stack init's own files, `docs/`) | `docs/spec/01…09`, `docs/ARCHITECTURE.md` |
+| `DOCS_POINTERS` | Where deep facts live (the stack init's own files, `docs/`) | `docs/spec/00-system-prompt.md`, `docs/design/README.md` |
 
 Optional slots: `RUNTIME_SETUP` (DB up, migrations, codegen drift check for `init.sh`),
 `EXTRA_CHECKLIST` (stack lines for `clean-state-checklist.md`), `BENCHMARKS` (budgeted perf
@@ -53,7 +53,7 @@ When `init-harness` and a stack init are loaded together:
 | `RUNTIME_PROOF` | endpoint exercised on the compose stack: status codes, persisted row, domain event observed |
 | `SCAFFOLD` | `pnpm plop slice -- --context <ctx> --name <verb-noun>` |
 | `STACK_INVARIANTS` | inward deps only; no cross-module imports; SDK only in `*.adapter.ts`; Result-vs-throw |
-| `DOCS_POINTERS` | `docs/spec/00–14` + `docs/design/` (intent docs, 06-design-first.md) + `docs/ARCHITECTURE.md` (enterprise tier) |
+| `DOCS_POINTERS` | `docs/spec/00-system-prompt.md` (entry file; 01–14 reached from it) + `docs/design/README.md` (design index) + `docs/ARCHITECTURE.md` (enterprise tier) |
 | `DESIGN_TEMPLATE` (opt.) | [`14-design-first.md`](../init-nestjs-hexagonal/14-design-first.md): context design doc + invariant-enforcement table; design-tier = new context/aggregate/invariant/contract |
 
 ### B — `init-react` → [13-harness-engineering.md](../init-react/13-harness-engineering.md)
@@ -66,7 +66,7 @@ When `init-harness` and a stack init are loaded together:
 | `RUNTIME_PROOF` | behavior exercised in `pnpm dev` / `pnpm preview`: three states render (data/empty/error); PWA update prompt if touched |
 | `SCAFFOLD` | feature scaffold per `10-feature-scaffold-prompt.md` |
 | `STACK_INVARIANTS` | no cross-feature imports; generated API code untouched by hand; app/ boundaries |
-| `DOCS_POINTERS` | `docs/spec/00–14` of `init-react` + `docs/design/` (intent docs, 06-design-first.md) |
+| `DOCS_POINTERS` | `docs/spec/00-system-prompt.md` of `init-react` (entry file) + `docs/design/README.md` (design index) |
 | `DESIGN_TEMPLATE` (opt.) | [`14-design-first.md`](../init-react/14-design-first.md): bootstrap brief + slice design doc (UX flow, URL state, data/invalidation map) + UI Foundation; design-tier = new interaction/navigation pattern |
 
 ## 5.4 Binding Template — for the NEXT init
@@ -87,7 +87,7 @@ lifecycle invariants come from init-harness and are not restated here.
 | RUNTIME_PROOF          | <what must be observed at runtime> |
 | SCAFFOLD               | <command or none> |
 | STACK_INVARIANTS       | <3–7 rules AGENTS.md carries inline> |
-| DOCS_POINTERS          | <where deep facts live> |
+| DOCS_POINTERS          | <entry files — README/index, never bare folders> |
 | (optional) RUNTIME_SETUP / EXTRA_CHECKLIST / BENCHMARKS / OWNERSHIP_BOUNDARIES | … |
 
 ## Notes

@@ -28,7 +28,32 @@ export class PaymentDto {
   readonly createdAt!: string;
 }
 
+/**
+ * Per-kind totals of the movements above. BE owns this arithmetic so the screens that spend it —
+ * the return dialog refunds the deposit ACTUALLY collected (FR-PAY-02 R7) — read one number
+ * instead of each summing a movement list their own way.
+ */
+export class PaymentSummaryDto {
+  @ApiProperty({ example: 3000000, description: 'Deposit collected, VND' })
+  readonly deposit!: number;
+
+  @ApiProperty({ example: 1500000, description: 'Rental fee collected, VND' })
+  readonly rentalFee!: number;
+
+  @ApiProperty({ example: 2800000, description: 'Deposit handed back, VND' })
+  readonly depositRefund!: number;
+
+  @ApiProperty({ example: 200000, description: 'Late fees charged, VND' })
+  readonly lateFee!: number;
+
+  @ApiProperty({ example: 0, description: 'Damage fees charged, VND' })
+  readonly damageFee!: number;
+}
+
 export class PaymentListResponseDto {
   @ApiProperty({ type: [PaymentDto], description: 'Movements, oldest first' })
   readonly data!: PaymentDto[];
+
+  @ApiProperty({ type: PaymentSummaryDto })
+  readonly summary!: PaymentSummaryDto;
 }

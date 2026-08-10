@@ -7,8 +7,22 @@ const RENTAL_1 = '00000000-0000-4000-8000-000000000101';
 const RENTAL_2 = '00000000-0000-4000-8000-000000000102';
 
 const dresses: DressSnapshot[] = [
-  { id: DRESS_A, code: 'VD-002', name: 'Đầm dạ hội đỏ', retired: false, rentalPrice: 1_200_000 },
-  { id: DRESS_B, code: 'VD-001', name: 'Váy cưới ren trắng', retired: false, rentalPrice: 1_500_000 },
+  {
+    id: DRESS_A,
+    code: 'VD-002',
+    name: 'Đầm dạ hội đỏ',
+    retired: false,
+    rentalPrice: 1_200_000,
+    depositAmount: 2_000_000,
+  },
+  {
+    id: DRESS_B,
+    code: 'VD-001',
+    name: 'Váy cưới ren trắng',
+    retired: false,
+    rentalPrice: 1_500_000,
+    depositAmount: 3_000_000,
+  },
 ];
 
 function makeRow(overrides: Partial<TodayBoardRow>): TodayBoardRow {
@@ -19,6 +33,7 @@ function makeRow(overrides: Partial<TodayBoardRow>): TodayBoardRow {
     status: 'booked',
     period: '[2026-08-01,2026-08-04)',
     dress_id: DRESS_A,
+    price: 1_200_000,
     due_out: true,
     due_back: false,
     overdue: false,
@@ -29,7 +44,10 @@ function makeRow(overrides: Partial<TodayBoardRow>): TodayBoardRow {
 test('groups item rows into one entry per rental, dresses sorted by code', () => {
   const board = toTodayBoardDto(
     '2026-08-01',
-    [makeRow({ dress_id: DRESS_A }), makeRow({ dress_id: DRESS_B })],
+    [
+      makeRow({ dress_id: DRESS_A }),
+      makeRow({ dress_id: DRESS_B, price: 1_400_000 }),
+    ],
     dresses,
   );
 
@@ -43,6 +61,16 @@ test('groups item rows into one entry per rental, dresses sorted by code', () =>
     endDate: '2026-08-03', // half-open [.. ,08-04) → inclusive last day 08-03
   });
   expect(board.dueOut[0]!.dresses.map((dress) => dress.code)).toEqual(['VD-001', 'VD-002']);
+  // The STANDARD deposit rides along per dress: the return dialog sums it to suggest a refund,
+  // and no other read gives the board that number.
+  expect(board.dueOut[0]!.dresses.map((dress) => dress.depositAmount)).toEqual([
+    3_000_000, 2_000_000,
+  ]);
+  // The agreed price comes from the ITEM row (1.400.000 for VD-001 here), not from the dress
+  // snapshot's catalog price (1.500.000).
+  expect(board.dueOut[0]!.dresses.map((dress) => dress.agreedPrice)).toEqual([
+    1_400_000, 1_200_000,
+  ]);
 });
 
 test('splits rentals over the two lists by the SQL membership flags', () => {

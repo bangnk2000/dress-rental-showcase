@@ -1,9 +1,31 @@
 /* Seed the first owner account (idempotent). Usage: pnpm --filter be seed */
+const fs = require('node:fs');
+const path = require('node:path');
 const { Client } = require('pg');
 const { hashSync } = require('bcryptjs');
 const { randomUUID } = require('node:crypto');
 
+/**
+ * README step 3 promises this command reads DATABASE_URL / SEED_OWNER_* from apps/be/.env, and it
+ * runs outside Nest, so nothing else would load that file. Already-set env vars win (CI passes
+ * them directly).
+ */
+function loadEnvFile() {
+  const file = path.join(__dirname, '..', '.env');
+  if (!fs.existsSync(file)) return;
+  for (const rawLine of fs.readFileSync(file, 'utf8').split('\n')) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const separator = line.indexOf('=');
+    if (separator === -1) continue;
+    const key = line.slice(0, separator).trim();
+    if (process.env[key] !== undefined) continue;
+    process.env[key] = line.slice(separator + 1).trim().replace(/^["']|["']$/g, '');
+  }
+}
+
 async function main() {
+  loadEnvFile();
   const email = (process.env.SEED_OWNER_EMAIL ?? 'owner@example.com').toLowerCase();
   const password = process.env.SEED_OWNER_PASSWORD;
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { toast } from 'sonner';
 
+import { outcomeStatus } from '@/api/errors';
 import {
   getGetDressHttpControllerGetQueryKey,
   getListDressesHttpControllerListQueryKey,
@@ -11,6 +12,7 @@ import {
   useRetireDressHttpControllerRetire,
 } from '@/api/generated/catalog/catalog';
 import { useListBookedRangesHttpControllerListSuspense } from '@/api/generated/rentals/rentals';
+import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { formatVnd } from '@/lib/format';
@@ -19,7 +21,6 @@ import { AvailabilityChecker } from './components/availability-checker';
 import { BookingCalendar } from './components/booking-calendar';
 import { DressFormDialog } from './components/dress-form-dialog';
 import { DressStatusBadge } from './components/dress-status-badge';
-import { isConflictError } from './lib/is-conflict-error';
 
 export function DressDetailRoute() {
   const { id } = useParams<{ id: string }>();
@@ -32,25 +33,36 @@ function DressDetail({ dressId }: { dressId: string }) {
   const { data: dress } = useGetDressHttpControllerGetSuspense(dressId);
   const { data: ranges } = useListBookedRangesHttpControllerListSuspense(dressId);
   const [editOpen, setEditOpen] = useState(false);
+  const [retireOpen, setRetireOpen] = useState(false);
 
-  // Retire is owner-only on the server (403 for other staff) and one-way in MVP.
-  const retireDress = useRetireDressHttpControllerRetire<unknown>({
+  async function refreshDressQueries(): Promise<void> {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: getListDressesHttpControllerListQueryKey() }),
+      queryClient.invalidateQueries({ queryKey: getGetDressHttpControllerGetQueryKey(dressId) }),
+    ]);
+  }
+
+  // Retire is owner-only (guard → 403 envelope for other staff) and one-way in MVP. Both
+  // rejections mean the cached detail is stale, so refresh either way (ADR 0001 §4).
+  const retireDress = useRetireDressHttpControllerRetire({
     mutation: {
       onSuccess: async () => {
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: getListDressesHttpControllerListQueryKey(),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: getGetDressHttpControllerGetQueryKey(dressId),
-          }),
-        ]);
+        await refreshDressQueries();
         toast.success(t('detail.retire.success'));
       },
-      onError: (error) => {
-        toast.error(
-          isConflictError(error) ? t('detail.retire.alreadyRetired') : t('detail.retire.error'),
-        );
+      onError: async (error) => {
+        switch (outcomeStatus(error)) {
+          case 'rejected_dress_already_retired':
+            toast.error(t('detail.retire.alreadyRetired'));
+            await refreshDressQueries();
+            return;
+          case 'rejected_dress_not_found':
+            toast.error(t('errors.notFound'));
+            await refreshDressQueries();
+            return;
+          default:
+            toast.error(t('detail.retire.error'));
+        }
       },
     },
   });
@@ -76,11 +88,7 @@ function DressDetail({ dressId }: { dressId: string }) {
               <Button
                 variant="destructive"
                 disabled={retireDress.isPending}
-                onClick={() => {
-                  if (window.confirm(t('detail.retire.confirm'))) {
-                    retireDress.mutate({ id: dressId });
-                  }
-                }}
+                onClick={() => setRetireOpen(true)}
               >
                 {t('detail.actions.retire')}
               </Button>
@@ -126,6 +134,20 @@ function DressDetail({ dressId }: { dressId: string }) {
           <AvailabilityChecker dressId={dressId} />
         </section>
       </div>
+      {/* Retiring is one-way in the MVP — no endpoint reactivates a dress — so the confirmation
+          says which dress and stays in Vietnamese, unlike the browser's own prompt. */}
+      <ConfirmDialog
+        open={retireOpen}
+        onOpenChange={setRetireOpen}
+        title={t('detail.retire.title', { code: dress.code })}
+        description={t('detail.retire.confirm')}
+        confirmLabel={t('detail.actions.retire')}
+        destructive
+        onConfirm={() => {
+          setRetireOpen(false);
+          retireDress.mutate({ id: dressId });
+        }}
+      />
       <DressFormDialog open={editOpen} onOpenChange={setEditOpen} dress={dress} />
     </>
   );

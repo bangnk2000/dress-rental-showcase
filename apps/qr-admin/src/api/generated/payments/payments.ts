@@ -5,22 +5,29 @@
  * OpenAPI spec version: 0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
-  PaymentListResponseDto
+  IdResponse,
+  PaymentListResponseDto,
+  RecordCollectionOutcomeDto,
+  RecordCollectionRequestDto
 } from '../model';
 
 import { customInstance } from '../../mutator/custom-instance';
@@ -137,3 +144,69 @@ export function useListPaymentsHttpControllerList<TData = Awaited<ReturnType<typ
 
 
 
+/**
+ * Writes 1..2 movements in one transaction. Returns the RENTAL id — the call creates several rows, so there is no single movement id.
+ * @summary Record money COLLECTED for a rental: deposit and/or rental fee (FR-PAY-02)
+ */
+export const recordCollectionHttpControllerCollect = (
+    rentalId: string,
+    recordCollectionRequestDto: RecordCollectionRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/rentals/${rentalId}/payments/collect`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: recordCollectionRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getRecordCollectionHttpControllerCollectMutationOptions = <TError = RecordCollectionOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordCollectionHttpControllerCollect>>, TError,{rentalId: string;data: RecordCollectionRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordCollectionHttpControllerCollect>>, TError,{rentalId: string;data: RecordCollectionRequestDto}, TContext> => {
+
+const mutationKey = ['recordCollectionHttpControllerCollect'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordCollectionHttpControllerCollect>>, {rentalId: string;data: RecordCollectionRequestDto}> = (props) => {
+          const {rentalId,data} = props ?? {};
+
+          return  recordCollectionHttpControllerCollect(rentalId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordCollectionHttpControllerCollectMutationResult = NonNullable<Awaited<ReturnType<typeof recordCollectionHttpControllerCollect>>>
+    export type RecordCollectionHttpControllerCollectMutationBody = RecordCollectionRequestDto
+    export type RecordCollectionHttpControllerCollectMutationError = RecordCollectionOutcomeDto
+
+    /**
+ * @summary Record money COLLECTED for a rental: deposit and/or rental fee (FR-PAY-02)
+ */
+export const useRecordCollectionHttpControllerCollect = <TError = RecordCollectionOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordCollectionHttpControllerCollect>>, TError,{rentalId: string;data: RecordCollectionRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof recordCollectionHttpControllerCollect>>,
+        TError,
+        {rentalId: string;data: RecordCollectionRequestDto},
+        TContext
+      > => {
+      return useMutation(getRecordCollectionHttpControllerCollectMutationOptions(options), queryClient);
+    }

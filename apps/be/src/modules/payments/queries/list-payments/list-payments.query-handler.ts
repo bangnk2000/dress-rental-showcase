@@ -6,7 +6,11 @@ import {
   RENTAL_LOOKUP,
   RentalLookupPort,
 } from '../../application/ports/rental-lookup.port';
-import { paymentRowSchema, toPaymentDto } from '../payment.projection';
+import {
+  paymentRowSchema,
+  toPaymentDto,
+  toPaymentSummaryDto,
+} from '../payment.projection';
 import { PaymentListResponseDto } from './list-payments.response.dto';
 import { ListPaymentsQuery } from './list-payments.query';
 
@@ -21,7 +25,7 @@ export class ListPaymentsQueryHandler
 
   /** Null = unknown rental (controller maps it to 404). */
   async execute(query: ListPaymentsQuery): Promise<PaymentListResponseDto | null> {
-    if (!(await this.rentalLookup.exists(query.rentalId))) return null;
+    if ((await this.rentalLookup.findStatus(query.rentalId)) === null) return null;
 
     // A settlement inserts its rows in ONE transaction (same created_at) —
     // kind breaks the tie so the order stays deterministic.
@@ -33,6 +37,7 @@ export class ListPaymentsQueryHandler
 
     return Object.assign(new PaymentListResponseDto(), {
       data: rows.map(toPaymentDto),
+      summary: toPaymentSummaryDto(rows),
     });
   }
 }

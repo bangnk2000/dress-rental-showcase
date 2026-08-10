@@ -56,8 +56,7 @@ modules/user/
 │       └── find-users.response.dto.ts
 ├── application/
 │   ├── ports/
-│   │   ├── user.repository.port.ts
-│   │   └── llm.port.ts                      # only if the slice needs the LLM
+│   │   └── user.repository.port.ts          # LLM slices consume LlmPort from @libs/ports — no per-module llm port file
 │   └── event-handlers/
 │       └── user-created.domain-event-handler.ts
 ├── domain/                                  # see 03-domain-layer.md
@@ -68,7 +67,7 @@ modules/user/
 | --- | --- | --- | --- |
 | `commands/<use-case>/` | One write use case | command, service, DTOs, controller | Required |
 | `queries/<use-case>/` | One read use case | query, query-handler, response DTO | Required |
-| `application/ports/` | Infra abstractions (DI tokens) | `*.repository.port.ts`, `logger.port.ts`, `llm.port.ts` | Required |
+| `application/ports/` | Infra abstractions (DI tokens) | `*.repository.port.ts`; shared ports (`logger.port.ts`, `llm.port.ts`) are consumed from `@libs/ports` | Required |
 | `application/event-handlers/` | Domain-event reactions | `*.domain-event-handler.ts` | Optional |
 | `application/services/` | Multi-aggregate orchestration not tied to one command | cross-aggregate coordinators | Optional |
 
@@ -255,6 +254,23 @@ export class FindUsersQuery extends PaginatedQueryBase {
 ```
 
 ```ts
+// queries/find-users/user-list-item.dto.ts
+// Read model: EXPLICIT columns, shaped for the consumer. Never reuse the persistence model
+// here — `SELECT *` through `UserModel` is how internal columns leak into the API.
+import { z } from 'zod';
+
+export const userListItemSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  country: z.string(),
+  createdAt: z.string(),
+});
+export type UserListItemDto = z.infer<typeof userListItemSchema>;
+
+export const countSchema = z.object({ count: z.number() }); // total-count row for pagination
+```
+
+```ts
 // queries/find-users/find-users.query-handler.ts
 import { Inject } from '@nestjs/common';
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
@@ -263,26 +279,37 @@ import { DatabasePool, sql } from 'slonik';
 import { Paginated } from '@libs/ddd';
 import { DB_POOL } from '@libs/db';
 import { FindUsersQuery } from './find-users.query';
-import { UserModel, userSchema } from '../../database/user.persistence.model';
+import { UserListItemDto, userListItemSchema, countSchema } from './user-list-item.dto';
 
 @QueryHandler(FindUsersQuery)
 export class FindUsersQueryHandler
-  implements IQueryHandler<FindUsersQuery, Result<Paginated<UserModel>, Error>>
+  implements IQueryHandler<FindUsersQuery, Result<Paginated<UserListItemDto>, Error>>
 {
   constructor(@Inject(DB_POOL) private readonly pool: DatabasePool) {}
 
   // Read side: go straight to the DB. No aggregate, no repository, no domain.
-  async execute(query: FindUsersQuery): Promise<Result<Paginated<UserModel>, Error>> {
-    const records = await this.pool.query(sql.type(userSchema)`
-      SELECT * FROM users
-      WHERE country = ${query.country ?? sql.fragment`country`}
+  async execute(query: FindUsersQuery): Promise<Result<Paginated<UserListItemDto>, Error>> {
+    // Conditional filter = an EMPTY fragment when absent. (`WHERE country = country` looks
+    // equivalent but silently drops rows where country IS NULL — NULL = NULL is not true.)
+    const countryFilter = query.country
+      ? sql.fragment`WHERE country = ${query.country}`
+      : sql.fragment``;
+
+    const records = await this.pool.query(sql.type(userListItemSchema)`
+      SELECT id, email, country, created_at AS "createdAt" FROM users
+      ${countryFilter}
       LIMIT ${query.limit} OFFSET ${query.offset}
+    `);
+
+    // rowCount is the PAGE size, not the total — a separate COUNT(*) supplies the true total.
+    const total = await this.pool.oneFirst(sql.type(countSchema)`
+      SELECT count(*)::int AS count FROM users ${countryFilter}
     `);
 
     return Ok(
       new Paginated({
         data: [...records.rows],
-        count: records.rowCount,
+        count: total,
         limit: query.limit,
         page: query.page,
       }),
@@ -291,8 +318,8 @@ export class FindUsersQueryHandler
 }
 ```
 
-The query handler still returns a `Result` for API symmetry, but its work is read-only and never
-opens a write transaction.
+The query handler still returns a `Result` for API symmetry (the controller `unwrap()`s it — see
+`06-interface-layer.md` §6), but its work is read-only and never opens a write transaction.
 
 ## Ports and the DI-token pattern (`*.port.ts`)
 
@@ -328,18 +355,19 @@ export interface UserRepositoryPort extends RepositoryPort<UserEntity> {
 | --- | --- | --- | --- |
 | `*.repository.port.ts` | `USER_REPOSITORY` | `UserRepository extends SqlRepositoryBase` | Required |
 | `logger.port.ts` (in `libs/ports`) | `LOGGER_PORT` | `PinoLoggerAdapter` | Required |
-| `llm.port.ts` | `LLM_PORT` | `ClaudeLlmAdapter` (`@anthropic-ai/sdk`) | Optional |
+| `llm.port.ts` (in `libs/ports` — shared) | `LLM_PORT` | `ClaudeLlmAdapter` (`@anthropic-ai/sdk`; bound in `modules/ai-agent`) | Optional |
 
 ### The LLM port
 
-For AI-agent use cases, the application layer talks to an `LlmPort` only — it **never** imports
-`@anthropic-ai/sdk`. The adapter (`ClaudeLlmAdapter`, default model `claude-sonnet-4-6`) lives in
-Infrastructure and is the anti-corruption boundary. The `LlmPort` interface and its
+For AI-agent use cases, the application layer consumes `LlmPort` from `@libs/ports` (shared port;
+adapter bound in `modules/ai-agent`) — it **never** imports `@anthropic-ai/sdk`. The adapter
+(`ClaudeLlmAdapter`, default model `claude-sonnet-4-6`) lives in Infrastructure and is the
+anti-corruption boundary. The `LlmPort` interface and its
 `LlmCompletionRequest` / `LlmCompletion` / `LlmRefusalError` types are defined once in
 `08-ai-agent-first.md` and implemented by the adapter in `05-infrastructure-layer.md`:
 
 ```ts
-// application/ports/llm.port.ts — full type definitions in 08-ai-agent-first.md
+// libs/ports/llm.port.ts — full type definitions in 08-ai-agent-first.md
 import { Result } from 'oxide.ts';
 
 export const LLM_PORT = Symbol('LLM_PORT'); // DI token

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { apiErrorMessage } from '@/api/error-message';
+import { apiErrorMessage } from '@/api/errors';
 import { getQrSvgBlob } from '@/api/qr-image';
 import {
   createUrlCodeHttpControllerCreate,

@@ -9,4 +9,8 @@ export interface RentalDressDto {
   dressId: string;
   code: string;
   name: string;
+  /** The catalog STANDARD deposit for this dress in VND — a reference figure. What was actually collected is the `deposit` total of GET /rentals/:id/payments (FR-PAY-02) */
+  depositAmount: number;
+  /** The price agreed with THIS customer for this dress in VND (rental_items.price), which may differ from the catalog price */
+  agreedPrice: number;
 }

@@ -2,6 +2,7 @@ import { CreateDressCommand } from './create-dress.command';
 import { CreateDressService } from './create-dress.service';
 import { DressCodeAlreadyExistsError } from '../../domain/dress.errors';
 import { DressEntity } from '../../domain/dress.entity';
+import { DressCodeConflictError } from '../../application/ports/dress-code-conflict.error';
 import { DressRepositoryPort } from '../../application/ports/dress.repository.port';
 
 function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepositoryPort {
@@ -39,6 +40,21 @@ describe('CreateDressService', () => {
     expect(inserted.getProps().code.unpack()).toBe('VD-012'); // uppercased by the VO
     expect(inserted.getProps().status).toBe('active');
     expect(inserted.domainEvents).toHaveLength(1); // DressCreatedDomainEvent queued
+  });
+
+  it('answers the SAME rejection when the UNIQUE index catches the duplicate, not the pre-check', async () => {
+    // The pre-check saw a free code; a concurrent create took it first and the constraint refused
+    // this insert. Staff must get the field error either way — not a generic conflict.
+    const repo = makeRepo({
+      insert: jest.fn().mockRejectedValue(new DressCodeConflictError()),
+    });
+
+    const result = await new CreateDressService(repo).execute(baseCommand);
+
+    expect(result.isErr()).toBe(true);
+    const error = result.unwrapErr();
+    expect(error).toBeInstanceOf(DressCodeAlreadyExistsError);
+    expect(error.dressCode).toBe('VD-012');
   });
 
   it('returns Err(DressCodeAlreadyExistsError) when the code is taken', async () => {

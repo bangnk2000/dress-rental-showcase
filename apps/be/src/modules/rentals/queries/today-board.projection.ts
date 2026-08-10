@@ -17,6 +17,7 @@ export const todayBoardRowSchema = z.object({
   status: z.enum(['booked', 'out', 'returned', 'cancelled']),
   period: z.string(),
   dress_id: z.string(),
+  price: z.number().int(),
   due_out: z.boolean(),
   due_back: z.boolean(),
   overdue: z.boolean(),
@@ -65,7 +66,15 @@ export function toTodayBoardDto(
       // rental_items.dress_id is a FK — a miss means the lookup was fed wrong ids.
       throw new Error(`Dress ${row.dress_id} missing from lookup`);
     }
-    entry.dto.dresses.push({ dressId: dress.id, code: dress.code, name: dress.name });
+    entry.dto.dresses.push({
+      dressId: dress.id,
+      code: dress.code,
+      name: dress.name,
+      depositAmount: dress.depositAmount,
+      // The agreed price lives on the ITEM row, not on the dress: the catalog price may have
+      // moved since this rental was booked.
+      agreedPrice: row.price,
+    });
   }
 
   for (const entry of entries.values()) {

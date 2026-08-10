@@ -134,7 +134,7 @@ VITE_API_BASE_URL=http://localhost:3000
 | `pnpm check` | Build backend và kiểm tra TypeScript cho hai frontend. |
 | `pnpm lint` / `pnpm arch` / `pnpm test` | Chạy lint, kiểm tra kiến trúc và test toàn workspace. |
 | `pnpm build` | Tạo production build cho tất cả workspace. |
-| `pnpm --filter fe e2e` | Chạy Playwright cho luồng chính; cần DB, backend và FE đang chạy. |
+| `pnpm --filter fe e2e` | Chạy Playwright cho luồng chính. Chỉ cần database đã migrate + seed (bước 3); lệnh tự khởi động backend và bản build production của FE. Đặt `E2E_BASE_URL` nếu tự chạy stack. |
 | `bash init.sh` | Chạy chuỗi kiểm tra đầy đủ của harness. |
 
 Khi thay đổi API, luôn chạy `pnpm contract`; không chỉnh sửa trực tiếp
@@ -143,7 +143,15 @@ Khi thay đổi API, luôn chạy `pnpm contract`; không chỉnh sửa trực t
 
 ## Tài liệu dự án
 
-- [Hướng dẫn làm việc cho agent](AGENTS.md)
-- [Yêu cầu sản phẩm](docs/SRS-dress-rental.md)
-- [Tactical design](docs/design/README.md)
-- [Hợp đồng monorepo](docs/spec/init-monorepo-contract/README.md)
+- [Hướng dẫn làm việc cho agent](AGENTS.md) — harness của repo: trạng thái hiện tại, invariant,
+  gate, quy tắc phiên làm việc
+- [Yêu cầu sản phẩm](docs/SRS-dress-rental.md) và [Yêu cầu phase QR URL](docs/SRS-qr-url.md)
+- [Tactical design](docs/design/README.md) — thiết kế theo bounded context + quy trình
+  SRS → design → feature → task
+- [Hồ sơ phát hành](docs/releases/2026-08-10-r1/README.md) — readiness từng feature, kế hoạch
+  triển khai, phương án rollback cho lần lên production đầu tiên (chưa chạy, đang chờ go/no-go)
+- [Chỉ mục spec `init-*`](docs/spec/README.md) — sáu bộ prompt được vendor từ repo
+  `knowledge-system`: bộ nào là nguồn quy tắc cho phần nào, và cách re-sync
+  (mới nhất: 2026-08-09, commit upstream `815fa0f`)
+- [Hợp đồng monorepo](docs/spec/init-monorepo-contract/README.md) — hình dạng workspace + pipeline
+  contract một chiều

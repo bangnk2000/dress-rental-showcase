@@ -1,11 +1,19 @@
 import { ExceptionBase } from '../../../libs/exceptions';
 
+/**
+ * RETURNED (never thrown) business rejections of the catalog context — rendered as outcome bodies
+ * per docs/adr/0001-outcome-model-at-the-http-boundary.md §3. `dressCode` is the outcome payload:
+ * the FE puts the field error on the code input without a second request.
+ */
 export class DressCodeAlreadyExistsError extends ExceptionBase {
   static readonly message = 'A dress with this code already exists';
   public readonly code = 'CATALOG.DRESS_CODE_ALREADY_EXISTS';
 
-  constructor(cause?: Error, metadata?: unknown) {
-    super(DressCodeAlreadyExistsError.message, cause, metadata);
+  constructor(
+    readonly dressCode: string,
+    cause?: Error,
+  ) {
+    super(DressCodeAlreadyExistsError.message, cause, { dressCode });
   }
 }
 

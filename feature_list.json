@@ -1,6 +1,6 @@
 {
   "product": "dress-rental",
-  "rules": "ONE in-progress at a time. Evidence before pass. Cross-contract features carry BOTH sides' proof in one entry (docs/spec/init-monorepo-contract/04-harness-binding.md).",
+  "rules": "ONE in-progress at a time. Evidence before pass. Cross-contract features carry BOTH sides' proof in one entry (docs/spec/init-monorepo-contract/04-harness-binding.md). A design-tier entry may not go in-progress before its docs/design/ doc is approved (docs/spec/init-harness/06-design-first.md). New entries MAY carry an optional acceptance array (AC ids/text); when present, evidence names which AC each command proved (docs/spec/init-harness/02-artifacts-and-templates.md 2.2) — entries below predate it and were recorded as-built, so they have none. pass is terminal here; release readiness lives in docs/spec/init-release.",
   "features": [
     {
       "id": "infra/monorepo-skeleton",
@@ -100,6 +100,136 @@
       "status": "pass",
       "evidence": "2026-08-06: QR-library output now uses high error correction, red-pink modules and a white quiet zone. The adapter nests that untouched QR inside a fixed pale-pink rounded frame with five hearts and the Vietnamese thank-you caption, all outside the QR area. Verified focused Jest renderer test plus BE lint, build and architecture gate.",
       "dependencies": ["qr/create-url-code"]
+    },
+    {
+      "id": "infra/outcome-model",
+      "title": "Business outcomes survive the HTTP boundary: outcome bodies + error envelope across BE, contract, apps/fe and apps/qr-admin (ADR 0001; closes BE gap #6 + FE gap #8)",
+      "status": "pass",
+      "testedAt": "2026-08-09",
+      "evidence": "2026-08-09: design gate first — docs/adr/0001-outcome-model-at-the-http-boundary.md approved (catalog §3 + UI state matrix §4), SRS FR-AUTH-02/FR-RENT-02/BR-1 and the rentals/catalog/identity/qr-admin design docs re-synced to it. BE: libs/exceptions gains BusinessOutcomeException + ErrorDetail + ApiErrorResponseDto; the global filter renders the two shapes only; 9 command controllers map each returned domain error to its own snake_case code with a typed payload (dressIds / currentStatus / dressCode) and declare @ApiResponse 422 with a per-slice outcome DTO. AC3: the EXCLUDE race is translated by rental.repository -> RentalItemsOverlapError and converted in create-rental.service back to the SAME rejected_dress_unavailable outcome (re-queried dressIds). AC4: login/refresh reject as outcomes so 401 means only 'guard rejected the access token'. Contract re-emitted, both clients regenerated (idempotent re-run verified by md5). FE: src/api/errors.ts is now the single mapApiError seam (outcome vs fault); the three features/*/lib/is-conflict-error.ts files are deleted; dresses/rentals/today/auth render one designed state per code with new vi+en keys (parity checked by pnpm --filter fe arch). qr-admin: src/api/errors.ts replaces error-message.ts. AC1/AC2/AC5/AC6 proof: pnpm --filter be test (82 unit incl. new exception.filter.spec covering both shapes + create-rental controller mapping), pnpm --filter fe test (53, incl. per-outcome MSW cases and a fault-fallback case), pnpm --filter qr-admin test (13, incl. errors.test.ts), pnpm --filter be test:e2e (22 on real Postgres, asserting the exact outcome bodies over HTTP), plus root check/lint/arch/builds. After committing the regenerated layer, contract:check, the arch freshness item and a full `bash init.sh` are green. Real-browser runtime proof: `pnpm --filter fe e2e` (vi happy path vs migrated+seeded Postgres, BE :3000, Vite :5173) passes — sign-in, create-dress, booking, pickup, return-and-settle and the payments dialog all work on the new wire shapes; its board locators were scoped to the run's own rows so a non-empty database no longer breaks it.",
+      "acceptance": [
+        "AC1: every business rejection returns 422 (or 403 for a named denial) with body { status: '<snake_case_code>', ...payload } from the approved catalog in docs/adr/0001 §3 — no GENERIC.* code for a rejection",
+        "AC2: every technical fault returns { error: { code, message, details?, correlationId } }; ValidationPipe 400s carry details[] per field",
+        "AC3: both overlap paths (pre-check and the EXCLUDE-constraint race) return the same rejected_dress_unavailable outcome with dressIds",
+        "AC4: login/refresh rejections are outcomes; 401 means only 'guard rejected the access token', so the FE refresh-and-retry interceptor never has to guess",
+        "AC5: apps/fe reads wire shapes in exactly one seam (mapApiError); the three feature-local is-conflict-error.ts files are deleted and every catalog code renders its designed state per docs/adr/0001 §4",
+        "AC6: apps/qr-admin uses the same seam; no status-code branching left in either client"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "infra/invariant-proof-e2e",
+      "title": "Invariant proof tests on real Postgres + pnpm --filter be test:e2e + CI postgres service (closes BE gap #5)",
+      "status": "pass",
+      "testedAt": "2026-08-09",
+      "evidence": "2026-08-09: apps/be/test/ holds the suite (22 tests, all green against the compose Postgres 16 via `pnpm --filter be test:e2e`). AC1: booking an overlapping range — and one inside the cleaning buffer — returns 422 rejected_dress_unavailable, while the day after the buffer returns 201. AC2: two concurrent identical POSTs yield exactly [201, 422] with one rentals row, and a raw INSERT into a DIFFERENT rental (so UNIQUE cannot be the refuser) is rejected by rental_items_no_overlap. AC3: catalog UNIQUE(code) proven via API (422 rejected_dress_code_taken) and via raw INSERT; rental_items UNIQUE(rental_id,dress_id) via DTO 400 + raw INSERT with blocking=false; dresses/rentals status CHECKs and staff_users role CHECK + email UNIQUE via raw SQL; 404/401 stay fault envelopes. AC4: the script exists (builds dist then runs jest with test/jest-e2e.config.ts), global-setup creates + migrates <db>_test, e2e-database-url refuses the dev DB unless E2E_ALLOW_DEV_DB=1, CI gained a postgres service running it, and init.sh now calls the real gate. Design notes: the suite drives the BUILT api out-of-process (slonik is ESM-only and jest is CJS) and uses pg for raw SQL with a local ambient type file; apps/be lint now also covers test/.",
+      "acceptance": [
+        "AC1: a test provokes rental_items_no_overlap through the API (booking an overlapping period incl. cleaning buffer) and asserts the rejected_dress_unavailable outcome",
+        "AC2: a test provokes the same constraint by concurrent requests (race) and by a raw INSERT that bypasses the application, proving the DB — not the app — is the enforcer",
+        "AC3: catalog UNIQUE (code), rental_items UNIQUE (rental_id, dress_id) and the status CHECKs each have a proof test",
+        "AC4: pnpm --filter be test:e2e exists and runs the suite against a fresh compose/CI Postgres; CI has a postgres service and runs it"
+      ],
+      "dependencies": ["infra/outcome-model"]
+    },
+    {
+      "id": "rentals/settle-late-fee",
+      "title": "Auto-computed late fee at return, with owner-only waiver (FR-RENT-09)",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "2026-08-09: design gate — use-case spec drafted at docs/design/rentals/settle-late-fee.md + contract check on the draft shape (2 blockers, 2 major, 2 minor); held at todo because the fee formula and waiver authority are business rules the lane forbids inventing. 2026-08-10: the shop owner answered (spec §6) — 200,000 VND per dress per day flat, no grace, no cap; the cleaning buffer does NOT count as late; only owner may charge less and must give a reason; the meaning change of `lateFee` accepted in place. Spec flipped to approved, then implemented and re-synced to as-built (§7). AC1: the rule is a pure value object (domain/late-fee.value-object.ts, 8 unit tests incl. buffer-irrelevance and month boundaries) reached through RentalEntity.lateFeeQuote; reference day is shopToday() in Asia/Ho_Chi_Minh so money never depends on the VPS clock. AC2: omitting lateFee charges the suggestion — proven by unit test and by e2e (payments row = 400,000 for 2 days × 1 dress). AC3: a staff waiver answers 403 { status: forbidden, reason: late_fee_waiver_requires_owner, suggestedLateFee, submittedLateFee } with the rental still `out` and no payments row; an owner waiver without a note answers 422 rejected_waiver_note_required; with a note it records the reduced amount — all three over real HTTP in test/late-fee.e2e-spec.ts, plus staff charging exactly or more still succeeds. AC4: the dialog reads GET /rentals/:id/late-fee, shows 'Trễ 3 ngày · 2 váy → đề xuất 1.200.000 ₫' in an aria-live banner, pre-fills the field, disables submit until the quote lands, keeps both waiver rejections in place (field errors, note focused), and falls back to manual entry when the quote fails — 4 new vitest cases. Gates: be 95 unit + 30 e2e, fe 57, qr-admin 13, root check/lint/arch/build green; contract regenerated for both clients in the same commit. Side fix found while testing: lib/format.ts read the app i18n singleton, so money formatted en-style under test while the text was vi — it now reads <html lang>.",
+      "acceptance": [
+        "AC1: daysLate and the suggested fee follow the formula approved in spec §6 Q1-Q3 (cleaning buffer excluded), computed as a pure function - same inputs, same result",
+        "AC2: submitting the return without lateFee charges the suggested fee; payments records the amount actually charged",
+        "AC3: charging LESS than suggested is refused for staff with the named 403 outcome forbidden + reason late_fee_waiver_requires_owner (payload carries suggested + submitted), and accepted for owner",
+        "AC4: the return dialog shows days late and the suggested amount BEFORE submit, pre-filled and editable, with a fallback when the quote call fails"
+      ],
+      "dependencies": ["infra/outcome-model"]
+    },
+    {
+      "id": "infra/e2e-ci",
+      "title": "Playwright happy path runs in CI against the real stack (browser proof stops being manual)",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "AC1: `pnpm --filter fe e2e` now starts what it needs — apps/fe/playwright.config.ts declares two webServers (`pnpm --filter be build && start` on :3000, checked via /api/v1/dresses answering 401; `pnpm build && vite preview --port 4173 --strictPort`) — proven by a cold run against only `docker compose up -d` + migrate + seed: 1 passed (18.2s), and again with CI=1 (reuseExistingServer off): 1 passed (17.1s). The browser now exercises the PRODUCTION build, not the dev server, so the shipped artifact + service worker are covered; `vite.config.ts` gained the matching `preview.proxy` for /api. AC2: new `e2e` job in .github/workflows/ci.yml — own postgres service, playwright install --with-deps chromium, `pnpm --filter be migrate`, `pnpm --filter be seed` (SEED_OWNER_PASSWORD=changeme, the pair the spec signs in with), then `pnpm --filter fe e2e`; YAML parsed, 5 jobs. NOT yet observed on a real GitHub run — first push proves it. AC3: with E2E_BASE_URL set, `webServer` is undefined — run against a dead port emitted 0 `[WebServer]` lines and failed in seconds instead of booting Nest/Vite. AC4: the html reporter is configured (open: never), and the same failing run produced BOTH apps/fe/playwright-report/ and apps/fe/test-results/<test>/trace.zip, which is exactly what the job uploads on failure. Root gates after the change: contract emit + generate:api clean (no drift), check, lint, arch, be 95 unit + 30 e2e, fe 57, qr-admin 13, both builds green. init.sh itself aborted on `pnpm install --frozen-lockfile` (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY — the known local pnpm quirk), so its gates were run individually with npm_config_verify_deps_before_run=false.",
+      "acceptance": [
+        "AC1: `pnpm --filter fe e2e` starts the stack it needs itself (BE :3000 + the FE production build) and passes on a machine that has only a migrated + seeded database running",
+        "AC2: the same command runs as a CI job on every push/PR, with its own postgres service, and fails the build when the happy path fails",
+        "AC3: a developer who already runs the stack by hand keeps the documented flow — E2E_BASE_URL means 'I own the servers', and nothing is started for them",
+        "AC4: a failed CI run leaves a downloadable Playwright report/trace"
+      ],
+      "dependencies": ["infra/e2e-playwright"]
+    },
+    {
+      "id": "rentals/settlement-clarity",
+      "title": "The return dialog states the money: standard deposit out to the client, refund pre-filled, every amount read back grouped",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "UI/UX review finding P0: the return dialog asked staff to type a seven-digit refund from memory while the customer waited, with no thousand separators and no arithmetic on screen — the only screen in the app that moves real cash. AC1: `RentalDressDto` gained `depositAmount` (BE `DressSnapshot` + `DressLookupAdapter` now select `deposit_amount`; both read projections pass it through), documented in the DTO as the catalog STANDARD deposit and explicitly NOT what was collected — no deposit is recorded at booking time. Contract re-emitted and both clients regenerated in this commit. AC2: opening the dialog pre-fills `depositRefund` with `depositTotal − suggestedLateFee` (5.000.000 − 1.200.000 = 3.800.000 proven by a 2-dress vitest case; 3.000.000 in full when on time). AC3: a live reference block states `Cọc chuẩn N váy: X` and `Trừ phí F → hoàn lại khách Y`, recomputing as fees are typed (damage fee 500.000 → 2.500.000) and adding `Bạn đang nhập …` when the field disagrees with that arithmetic. AC4: each amount field renders its digits back grouped through `FormDescription`, which the shadcn form primitives already wire into `aria-describedby`. Gates: be 95 unit (today-board projection spec now asserts the deposit rides along per dress), fe 59 (+2 new cases, 1 rewritten for the pre-fill), qr-admin 13, root check/lint green, both builds green; `pnpm arch` freshness item red until this commit lands the generated layer, as designed. Assumption recorded for the shop owner: pre-filling `deposit − fees` encodes the deduction convention observed in `apps/be/scripts/smoke.sh` (lateFee 200.000 + refund 2.800.000 on a 3.000.000 deposit) and in the Playwright happy path; the field stays editable and the arithmetic is on screen, but the convention itself was never approved in writing the way the late-fee rules were.",
+      "acceptance": [
+        "AC1: the standard deposit of each dress reaches the board and list reads, labelled as a reference rather than as a recorded fact",
+        "AC2: opening the return dialog pre-fills the refund with the standard deposit minus the suggested late fee, and the field stays editable",
+        "AC3: a live block shows deposit, fees deducted and the resulting refund, and says so when the typed refund differs",
+        "AC4: every amount field reads its own digits back with thousand separators, associated with the input for assistive tech"
+      ],
+      "dependencies": ["rentals/settle-late-fee"]
+    },
+    {
+      "id": "rentals/dress-availability-in-picker",
+      "title": "The new-rental form answers 'which dress is the problem' — per-dress availability before submit, and the rejection points at the named dresses",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "UI/UX review findings #4 and #5: `rejected_dress_unavailable` carries `dressIds` by design (ADR 0001 §3) and the form threw the payload away, leaving one sentence about 'some dress' for staff to resolve by removing dresses one at a time; and the picker searched the catalog with no idea of the dates already typed above it. FE-only — no API changed. AC1: each SELECTED dress now runs `GET /dresses/:id/availability` for the form's range (own child component per row, so the hook count stays static), rendering a `Còn trống` / `Vướng lịch` badge plus `Váy này bận tới hết <blockedUntilDate>` — the cleaning-buffer date, which is exactly the case staff cannot deduce; proven by a vitest case whose seeded booking ENDS before the asked range and still blocks it through the buffer. AC2: search results are deliberately NOT checked — one query per keystroke per row for an answer nobody asked for; recorded in the component. AC3: on rejection the form reads `dressIds` through a shape-checking helper and marks only those rows (destructive tint + per-row reason); proven with 2 dresses where only the second is refused — exactly one flag, and it sits in that row's `<li>`. All three dress rejections (`unavailable` / `retired` / `notFound`) get their own row copy. AC4: the flag is dropped as soon as the selection or either date changes, since it answered for the old range — proven by a case that changes the start date and watches the flag disappear. Gates: fe 63 tests (+4 new), check/lint/arch green, be untouched (95), qr-admin 13.",
+      "acceptance": [
+        "AC1: a dress that cannot serve the typed date range says so in its row, with the date it is busy until, before anything is submitted",
+        "AC2: the availability check covers chosen dresses only, never the search results",
+        "AC3: a rejection marks exactly the dresses the server named, each with the reason for that code",
+        "AC4: a rejection is cleared as soon as the dates or the selection change"
+      ],
+      "dependencies": ["infra/outcome-model"]
+    },
+    {
+      "id": "catalog/dress-thumbnails",
+      "title": "Dress photos appear where staff choose dresses — catalog list and the rental picker",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "UI/UX review finding #6: a dress shop recognises stock by sight, and `photoUrls` (shipped with catalog/manage-dress) was visible only on the detail page — the catalog list and the picker where dresses are actually CHOSEN were text-only. FE-only, no API change: the list DTO already carries the links. AC1: new kernel component `components/media/photo-thumbnail.tsx` renders the first photo at row size or a neutral icon; it is decorative (`alt=\"\"`) because the dress code sits next to it in every caller, so announcing it again is noise. AC2: a dead link degrades to the placeholder instead of a broken-image glyph — the links are staff-pasted third-party URLs, so that is an ordinary state; the failed URL is remembered rather than a boolean flag, so a row that later receives a different photo tries again. AC3: wired into the catalog table (leading column, `sr-only` header) and into BOTH picker lists (search results and the chosen dresses, the latter through a new optional `photoUrl` on `SelectedDress`). Gates: fe 64 tests (+1 asserting the img src for a dress with a photo and its absence for one without — asserted on the DOM, since a decorative image has no `img` role), check/lint/arch green.",
+      "acceptance": [
+        "AC1: the catalog list and both picker lists show the dress photo at row size, or a neutral placeholder",
+        "AC2: a broken photo link renders the placeholder, never a broken image",
+        "AC3: the thumbnail adds nothing for a screen reader, since the dress code is already text next to it"
+      ],
+      "dependencies": ["catalog/manage-dress"]
+    },
+    {
+      "id": "fe:board-and-confirm-ergonomics",
+      "title": "The morning board behaves like a tablet screen: it steps days without blanking, its actions are thumb-sized and per-row, and destructive confirms are the app's own",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "UI/UX review findings #7–#11, FE-only. AC1 (#7): the board date now moves inside `useTransition`, so a new day keeps the current board on screen at 50% opacity instead of dropping the whole route to the Suspense spinner — this screen is opened dozens of times a day and blanking it read as a reload. AC2 (#8): ± day buttons and a `Hôm nay` button, disabled when already there; `shiftDateIso` builds the neighbouring day through the local Date constructor, never `Date.parse` (which reads a bare yyyy-mm-dd as UTC and would step a day short east of Greenwich). Its test asserts the date INPUT after returning to today, because that board is already cached — no request is made, which is the point. AC3 (#9): the two board actions are `h-11` (44px) instead of the 32px `sm` used for secondary actions; they are pressed with a thumb while the other hand holds a dress. AC4 (#10): one mutation object serves every row, so `isPending` greyed out the entire list with no clue which hand-out was in flight — the spinner now marks the row whose id is in `variables`, while all buttons stay disabled to stop a double action. AC5 (#18): both board actions carry the customer in their accessible name, and the visible label is a prefix of it (WCAG 2.5.3); the vitest queries moved to regex names because the accessible name genuinely changed. AC6 (#11): `window.confirm` is gone from both destructive actions — new `ui/alert-dialog` primitive + a `ConfirmDialog` wrapper. The native dialog was wrong on a shop tablet for three reasons now recorded in the component: its buttons follow the OS language rather than the app's Vietnamese, it blocks the JS thread, and inside an installed PWA it renders as browser chrome that reads as a malfunction. The dismiss button says `Quay lại` rather than `Hủy`, because on the rentals list the CONFIRMED action is itself a cancel and two buttons reading Huỷ/Hủy side by side is a coin toss. Gates: fe 66 tests (+2 new, 3 rewritten to drive the real dialog), be 95, qr-admin 13, check/lint/arch/builds green, and `pnpm --filter fe e2e` passes against the real stack (1 passed, 15.9s) — the happy path clicks both resized board buttons.",
+      "acceptance": [
+        "AC1: changing the board date keeps the previous board visible instead of blanking the route",
+        "AC2: the board steps one day at a time and returns to today in one tap",
+        "AC3: the two board actions meet the 44px touch target",
+        "AC4: only the row whose action is in flight shows a spinner, and no second action can start meanwhile",
+        "AC5: repeated board actions are distinguishable by accessible name",
+        "AC6: cancelling a rental and retiring a dress confirm through the app's own dialog, in Vietnamese, with a confirm button that states the action"
+      ],
+      "dependencies": ["rentals/today-board", "rentals/cancel-rental"]
+    },
+    {
+      "id": "payments/record-collection",
+      "title": "Money COLLECTED is written down: deposit and rental fee recorded on an open rental, and the return dialog refunds what was actually taken (FR-PAY-02)",
+      "status": "pass",
+      "testedAt": "2026-08-10",
+      "evidence": "Design-tier, spec-before-code through docs/spec/init-feature-spec → docs/design/payments/record-collection.md, written at `draft` with the business rules as BLOCKER questions; the shop owner answered four (§6): a standalone action usable any time, amounts pre-filled from the catalog standard + the agreed price but editable, fees ARE deducted from the deposit, and rental fee is in scope alongside the deposit. Only then code. The payments context grew its first aggregate + command, which is exactly the trigger its own design doc had predicted. AC1 (unit + e2e): `POST /rentals/:rentalId/payments/collect` writes 1..2 rows in ONE transaction with the note on each, and any staff may do it (`payment:collect`) because the person holding the cash is the one at the counter. AC2 is the one that earned a real-Postgres test: 'one deposit and one rental fee per rental' is enforced by two partial UNIQUE indexes (migration 1754900000000), and `payments-collection.e2e-spec.ts` provokes them three ways — a second call, TWO CONCURRENT calls that both read an empty ledger ([200, 422] with exactly one row), and a raw INSERT that bypasses the app entirely. The race is translated at the adapter edge into `CollectionConflictError`, then answered with the SAME outcome as the pre-check plus the amount now on file (ADR 0001 §2, the create-rental pattern). AC3: a returned or cancelled rental answers `rejected_rental_closed` + currentStatus and writes nothing. AC4: an empty call is `rejected_nothing_to_record` — a business outcome, since each field is valid alone and only the use case is wrong — while a 0₫ amount stays a 400 envelope. AC5 (vitest + Playwright): the return dialog now reads the ledger and refunds `deposit collected − suggested late fee`; with no deposit on file it falls back to the catalog and SAYS so instead of presenting a reference figure as money the shop holds. Read side gained `summary` (per-kind totals, computed in the projection so two screens spend one number) and `RentalDressDto.agreedPrice` from `rental_items.price`. Gates: be 114 unit · 46 e2e · fe 83 vitest · qr-admin 17 · contract:check, check, lint, arch, both builds green (BE + contract + both clients land in one commit) · `pnpm --filter fe e2e` green against the real stack, exercising record-then-refund end to end. Then reviewed by codex CLI on the PR, which found four further money defects — each fixed with a test that fails without the fix: (1) recording money re-checks the rental status under a row lock INSIDE the write transaction, because the service pre-check alone let a concurrent return close the rental between check and insert; (2) a ledger read that FAILED, and later one still in flight, both read as no-deposit-collected on the two money screens, so a refund could be offered for money the shop never took — an unknown basis now blocks and says so; (3) the settlement sends the basis it computed from and the return write verifies it under the same rental row lock, refusing with rejected_deposit_basis_changed and writing nothing, which is the only place that check cannot be raced past; (4) a 0 typed into one collect field made the API reject the whole request under @Min(1), losing the other, valid amount with it.",
+      "acceptance": [
+        "AC1: staff record the deposit and/or the rental fee of an open rental in one action; the ledger shows exactly the amounts entered, with the note on every row",
+        "AC2: a second recording of the same kind is refused and states the amount already on file — including when two devices submit at the same time",
+        "AC3: a returned or cancelled rental refuses money with its current status",
+        "AC4: calling the action with nothing to record is refused as a business outcome, not a 500",
+        "AC5: the return dialog computes the refund from the deposit ACTUALLY collected, and says so when no deposit was ever recorded"
+      ],
+      "dependencies": ["payments/list-payments", "rentals/return-rental", "rentals/list-rentals"]
     }
   ]
 }

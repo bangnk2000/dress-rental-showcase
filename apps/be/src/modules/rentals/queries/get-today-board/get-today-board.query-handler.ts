@@ -41,7 +41,7 @@ export class GetTodayBoardQueryHandler
     // parsed range objects that daterange.ts does not speak.
     const rows = await this.pool.any(sql.type(todayBoardRowSchema)`
       SELECT r.id AS rental_id, r.customer_name, r.customer_phone, r.status,
-             r.period::text AS period, ri.dress_id,
+             r.period::text AS period, ri.dress_id, ri.price,
              (r.status = 'booked' AND lower(r.period) = ${date}::date) AS due_out,
              (r.status IN ('booked', 'out')
                AND upper(r.period) - 1 = ${date}::date) AS due_back,

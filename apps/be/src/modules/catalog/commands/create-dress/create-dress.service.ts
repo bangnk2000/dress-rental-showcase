@@ -6,6 +6,7 @@ import { Money } from '../../../../libs/ddd/money.value-object';
 import { DressCode } from '../../domain/dress-code.value-object';
 import { DressEntity } from '../../domain/dress.entity';
 import { DressCodeAlreadyExistsError } from '../../domain/dress.errors';
+import { DressCodeConflictError } from '../../application/ports/dress-code-conflict.error';
 import {
   DRESS_REPOSITORY,
   DressRepositoryPort,
@@ -26,7 +27,7 @@ export class CreateDressService implements ICommandHandler<CreateDressCommand, C
 
     // Uniqueness precondition; the DB unique constraint backs it against races.
     const existing = await this.dressRepo.findOneByCode(code.unpack());
-    if (existing) return Err(new DressCodeAlreadyExistsError());
+    if (existing) return Err(new DressCodeAlreadyExistsError(code.unpack()));
 
     const dress = DressEntity.create(
       {
@@ -42,7 +43,16 @@ export class CreateDressService implements ICommandHandler<CreateDressCommand, C
       new Date(),
     );
 
-    await this.dressRepo.insert(dress);
+    try {
+      await this.dressRepo.insert(dress);
+    } catch (error) {
+      if (error instanceof DressCodeConflictError) {
+        // A concurrent request took the code after the pre-check above. Same business rule, so it
+        // MUST be the same outcome (ADR 0001 §2) rather than a generic conflict envelope.
+        return Err(new DressCodeAlreadyExistsError(code.unpack(), error));
+      }
+      throw error;
+    }
     return Ok(dress.id);
   }
 }
