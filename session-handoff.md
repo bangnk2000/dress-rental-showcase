@@ -1,5 +1,65 @@
 # Session Handoff
 
+## 2026-08-06 (17) — `qr/styled-svg-rendering` = pass
+
+- Done: downloaded and previewed QR SVGs now use the shop's fixed red-pink styling: red-pink QR
+  modules, pale-pink rounded frame, five hanging hearts and “Cảm ơn quý khách”. The QR library's
+  output is nested unchanged inside the framed SVG, with its own white quiet zone; decorations
+  therefore do not cover modules or alter the encoded direct URL. Error correction is `H`.
+- Verification: focused renderer Jest test, `pnpm --filter be lint`, `pnpm --filter be build`, and
+  `pnpm --filter be arch` all pass. No API contract changed; the existing authenticated Blob preview
+  and SVG download automatically receive the new rendering.
+- Next: close spec gap #5 — real-Postgres invariant proof plus CI postgres service and a real
+  `pnpm --filter be test:e2e` script.
+
+## 2026-08-04 (16) — `qr/create-url-code` = pass
+
+- Done: BE `qr` supporting context owns immutable `qr_links` records (`target_url`, optional
+  label, creator FK and created timestamp), strict `TargetUrl` validation, a `qrcode` SVG renderer
+  adapter, and owner-only create/list/get/render endpoints. It never resolves or fetches a target
+  URL. The API contract was emitted and both generated clients regenerated.
+- Done: standalone `apps/qr-admin` now signs an owner in, validates and creates QR URLs, lists
+  history newest-first, fetches protected SVGs as bearer-authenticated Blobs for preview/download,
+  and keeps QR server data in TanStack Query. It does not import `apps/fe`.
+- Verification: BE build/lint/arch/test (70 Jest tests); qr-admin check/lint/test/build. Contract
+  freshness/root gates run after committing generated artifacts. No compose/live-browser proof was
+  run; the existing BE real-Postgres `test:e2e` gap remains.
+- Next: close spec gap #5 — real-Postgres invariant proof plus CI postgres service and a real
+  `pnpm --filter be test:e2e` script.
+
+## 2026-08-04 (15) — `infra/qr-admin-bootstrap` = pass
+
+- Done: `apps/qr-admin/` is a separate Vite + React + TypeScript workspace, with no source
+  import from `apps/fe`. It owns its `orval.config.ts`, generated client at
+  `src/api/generated/`, bearer-aware API mutator and token-storage module, lightweight vi-first
+  bootstrap shell, and check/lint/architecture/test/build scripts. It intentionally omits PWA,
+  routing and feature UI until the QR endpoint contract exists.
+- Done: root `generate:api`, `contract:check` and `check`, `init.sh`, and CI now cover BOTH
+  frontend generated clients; CI adds an independent `qr-admin` quality job. Design/SRS status
+  is approved. Evidence is recorded in `feature_list.json`.
+- Next: promote **only** `qr/create-url-code`, then implement it as one BE `qr` context →
+  `pnpm contract` → QR admin login/create/list/authenticated SVG-blob preview slice. Do not
+  hand-edit either generated client, add a shell page as a substitute, or import `apps/fe`.
+- Watch out: the current OpenAPI contract has no `qr-links` tag yet, so generated output only
+  mirrors existing identity/catalog/rentals operations. The next feature must add BE endpoints
+  first, then regenerate both clients. The QR admin refresh protocol and authenticated blob
+  retrieval are deferred to that feature; its local token storage key is intentionally distinct
+  from `apps/fe`.
+
+## 2026-08-04 (14) — QR URL phase = design draft (awaiting approval)
+
+- Done: SRS/design gate only — `docs/SRS-qr-url.md`, `docs/design/qr-aggregate.md`, and
+  `docs/design/qr-admin.md`. QR encodes a direct http(s) target URL; no redirect, analytics,
+  public endpoint, logo/custom style, or relation to dress/rental. `qr` is a new BE supporting
+  context; `apps/qr-admin/` will be an independent Vite/React workspace sibling, not code inside
+  `apps/fe`. It uses the same JWT/OpenAPI pipeline but owns its generated client and gates.
+- Tracked, not started: `infra/qr-admin-bootstrap` then `qr/create-url-code`. Do **not** promote
+  either to `in-progress` until the user approves the draft. Feature implementation remains one
+  BE → contract → QR-admin entry after bootstrap.
+- Watch out: SVG needs bearer-authenticated blob fetching; do not use `<img src>` with a token or
+  put tokens in URL query parameters. `TargetUrl` permits direct http(s) only, forbids credentials,
+  and BE must never fetch it (no SSRF surface).
+
 ## 2026-07-30 (13) — `infra/e2e-playwright` = pass (BACKLOG EMPTY — everything tracked is done)
 
 - Done: Playwright in `apps/fe/e2e` — ONE serial vi-locale happy path against the real

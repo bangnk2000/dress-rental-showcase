@@ -50,9 +50,16 @@ repo are recorded as `apps/be/AGENTS.md` Deviations #4 (table-read adapters — 
 Intent docs backfilled 2026-08-02 (as-built, from code + feature_list): `docs/SRS-dress-rental.md`
 (FR/BR/NFR + traceability) and `docs/design/` (four per-context tactical designs with
 invariant-enforcement tables, plus the SRS → design → feature → task process in its README).
-Next: nothing tracked — top candidate: close spec gap #5 (invariant-proof e2e provoking the
-EXCLUDE constraint on real Postgres + CI postgres service + the missing `test:e2e` script);
-more candidates in session-handoff (13).
+QR URL phase has an independent `apps/qr-admin/` Vite/React workspace (not under or importing
+`apps/fe`), with its own generated client, mutator/token boundary and check/lint/arch/test/build
+gates. Root contract generation/check covers both clients. `apps/be` now has the owner-only `qr`
+context: immutable URL records in `qr_links`, strict direct http(s) URL validation, newest-first
+list/detail, and authenticated deterministic SVG rendering through a QR-library adapter (never
+fetching the target URL). Downloaded QR SVGs use the shop's fixed red-pink frame, hearts and thank-you
+decoration outside the QR quiet zone. QR admin implements owner login, create, history, bearer Blob
+preview and SVG download. The existing top candidate remains closing spec gap #5 (invariant-proof e2e against
+real Postgres + CI postgres service + missing `test:e2e` script); more candidates in
+session-handoff (17).
 
 ## Invariants (carry these into every session)
 
@@ -76,6 +83,7 @@ pnpm lint && pnpm arch
 pnpm test
 pnpm --filter be test:e2e   # compose stack
 pnpm --filter fe build
+pnpm --filter qr-admin build
 ```
 
 ## Session rules

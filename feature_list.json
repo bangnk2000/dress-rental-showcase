@@ -79,6 +79,27 @@
       "title": "Playwright e2e over the compose stack (deferred since fe-bootstrap): sign-in, create rental, today-board pickup/return happy path",
       "status": "pass",
       "evidence": "2026-07-30: @playwright/test in apps/fe (e2e/ dir, playwright.config.ts with locale vi-VN pinned — headless chromium defaults to en and the i18n detector follows navigator.language; chromium via pnpm --filter fe exec playwright install chromium). ONE serial happy-path spec (each step depends on the previous state): sign in owner → create dress (unique E2E-<run> code) → book it for TODAY single-day → morning board: customer on BOTH lists → pickup ('Đã giao váy', count 2→1, badge Đang thuê) → return dialog (refund 3,000,000 + note) → board empties → /rentals row shows Đã trả → payments dialog lists Hoàn cọc + the note. Runs against the REAL stack (fresh compose DB + BE dist + Vite :5173), green in ~5s: '1 passed'. THE E2E CAUGHT TWO REAL STALE-CACHE BUGS (staleTime 60s): (1) post-create navigation showed a /rentals list WITHOUT the new rental — new-rental onSuccess now invalidates list+board; (2) after pickup/return on the board, /rentals kept the old status — both mutations now invalidate the list too (parameterless keys prefix every filtered/dated query). Also: vitest include narrowed to src/** so it stops swallowing e2e/*.spec.ts; e2e/ + playwright.config.ts added to tsconfig include (tsc guards the spec); test-results/ + playwright-report/ gitignored. Root gates + init.sh still EXCLUDE e2e (needs browsers + running stack — AGENTS.md deviation 5 updated with the run recipe). Wait-for-settle guard on the first form fill (a fill during the lazy-route swap lands on a replaced input). FE gates: check/lint/test(48)/build green; BE untouched (60). Deferred: e2e not wired into CI; single chromium project (no firefox/webkit); no e2e for cancel/CSV-import flows."
+    },
+    {
+      "id": "infra/qr-admin-bootstrap",
+      "title": "Bootstrap standalone apps/qr-admin with its own generated API client and gates (SRS-QR NFR-QR-01..03)",
+      "status": "pass",
+      "evidence": "2026-08-04: standalone qr-admin workspace (no apps/fe source imports), own Vite/React TypeScript, local generated-client mutator/token boundary and lint/arch/test/build gates. Root contract/check/init/CI cover both generated clients. Verified pnpm contract:check, pnpm --filter qr-admin check/lint/arch/test/build, root check/lint/arch/test/build, and bash init.sh.",
+      "dependencies": []
+    },
+    {
+      "id": "qr/create-url-code",
+      "title": "Owner creates, lists, previews and downloads direct-URL QR SVGs (FR-QR-01..05)",
+      "status": "pass",
+      "evidence": "2026-08-04: `modules/qr` ships immutable `QrLinkEntity`/`TargetUrl`, Slonik `qr_links` repository + FK migration/index, owner-only qr:create/list/read policies and POST/GET list/GET detail/GET authenticated SVG endpoints. Target URL allows absolute http(s) only, forbids credentials/relative/data/javascript and caps 2048; `qrcode` SVG adapter receives only persisted target URL and never fetches it. Contract emitted then both Orval clients regenerated. Standalone qr-admin now has owner sign-in, Vietnamese create validation, TanStack history query/invalidation, selected blob preview and SVG download; it imports no apps/fe source. BE build/lint/arch/test = 70 Jest tests, QR-admin check/lint/test/build green; no live Postgres/browser proof run in this environment.",
+      "dependencies": ["infra/qr-admin-bootstrap"]
+    },
+    {
+      "id": "qr/styled-svg-rendering",
+      "title": "Render QR SVG in the shop's pink-red style with a decorative thank-you frame (FR-QR-06)",
+      "status": "pass",
+      "evidence": "2026-08-06: QR-library output now uses high error correction, red-pink modules and a white quiet zone. The adapter nests that untouched QR inside a fixed pale-pink rounded frame with five hearts and the Vietnamese thank-you caption, all outside the QR area. Verified focused Jest renderer test plus BE lint, build and architecture gate.",
+      "dependencies": ["qr/create-url-code"]
     }
   ]
 }
