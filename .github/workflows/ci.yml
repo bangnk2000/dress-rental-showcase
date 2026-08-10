@@ -3,8 +3,35 @@ on:
   pull_request:
   push: { branches: [master] }
 
+# A newer push to the same pull request makes the older run pointless, so drop
+# it. Runs on master are never cancelled: every master commit keeps its own proof.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # Decides which of the jobs below have inputs that actually changed. Every job
+  # gates on this, so a pull request that only touches one app pays for one job.
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      be: ${{ steps.filter.outputs.be }}
+      fe: ${{ steps.filter.outputs.fe }}
+      qr: ${{ steps.filter.outputs.qr }}
+      contract: ${{ steps.filter.outputs.contract }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - id: filter
+        run: bash .github/scripts/ci-scope.sh
+
+  # The three drift gates, kept together in one fast job (no DB, no browser) as
+  # docs/spec/init-monorepo-contract/03-ci-and-runtime.md §1 specifies. Gate 3
+  # (`pnpm check`) type checks every app, so ci-scope.sh runs this job whenever
+  # any app changes.
   contract:
+    needs: scope
+    if: needs.scope.outputs.contract == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +46,8 @@ jobs:
       - run: pnpm check
 
   be:
+    needs: scope
+    if: needs.scope.outputs.be == 'true'
     runs-on: ubuntu-latest
     services:
       # The invariant-proof suite must run against a REAL Postgres: the constraints under test
@@ -52,6 +81,8 @@ jobs:
       - run: pnpm --filter be test:e2e
 
   fe:
+    needs: scope
+    if: needs.scope.outputs.fe == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +95,8 @@ jobs:
       - run: pnpm --filter fe build
 
   qr-admin:
+    needs: scope
+    if: needs.scope.outputs.qr == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
