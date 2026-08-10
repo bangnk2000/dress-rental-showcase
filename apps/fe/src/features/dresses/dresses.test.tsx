@@ -5,7 +5,13 @@ import { Route, Routes, useLocation } from 'react-router';
 import { beforeEach, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
-import { makeDress, resetCatalog, seedDresses } from '@/test/msw/handlers/catalog';
+import {
+  getLastCreatedCategory,
+  makeDress,
+  resetCatalog,
+  seedCategories,
+  seedDresses,
+} from '@/test/msw/handlers/catalog';
 import { makeBookedRange, resetRentals, seedBookedRanges } from '@/test/msw/handlers/rentals';
 import { renderWithProviders } from '@/test/render';
 
@@ -341,4 +347,51 @@ test('retiring a dress (confirmed) flips the badge and removes the retire button
     expect(screen.queryByRole('button', { name: 'Ngừng khai thác' })).not.toBeInTheDocument(),
   );
   expect(screen.getByText('Ngừng khai thác')).toBeInTheDocument(); // the status badge
+});
+
+test('FR-CAT-07: rows show their category name and the manager lists counts', async () => {
+  seedCategories([
+    { id: 'cat-1', name: 'Dạ hội', dressCount: 1 },
+    { id: 'cat-2', name: 'Cưới', dressCount: 0 },
+  ]);
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001', categoryId: 'cat-1' }),
+    makeDress({ id: 'd2', code: 'DR-002' }),
+  ]);
+  renderList();
+
+  const rows = await screen.findAllByRole('row');
+  expect(rows[1]).toHaveTextContent('Dạ hội');
+  // The manager section carries both labels with their dress counts.
+  expect(screen.getByRole('heading', { name: 'Danh mục váy' })).toBeInTheDocument();
+  expect(screen.getByText('(1 váy)')).toBeInTheDocument();
+  expect(screen.getByText('(0 váy)')).toBeInTheDocument();
+});
+
+test('FR-CAT-07: the category filter lives in the URL and narrows the list', async () => {
+  seedCategories([{ id: 'cat-1', name: 'Dạ hội', dressCount: 1 }]);
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001', categoryId: 'cat-1' }),
+    makeDress({ id: 'd2', code: 'DR-002' }),
+  ]);
+  renderList('/dresses?categoryId=cat-1');
+
+  expect(await screen.findByText('DR-001')).toBeInTheDocument();
+  expect(screen.queryByText('DR-002')).not.toBeInTheDocument();
+});
+
+test('FR-CAT-07: creating a category posts the trimmed name; a duplicate lands as an inline error', async () => {
+  seedCategories([{ id: 'cat-1', name: 'Dạ hội', dressCount: 0 }]);
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  const user = userEvent.setup();
+  renderList();
+
+  const input = await screen.findByLabelText('Tên danh mục mới');
+  await user.type(input, '  Cưới  ');
+  await user.click(screen.getByRole('button', { name: 'Thêm danh mục' }));
+  await waitFor(() => expect(getLastCreatedCategory()).toBe('Cưới'));
+
+  await user.type(screen.getByLabelText('Tên danh mục mới'), 'dạ hội');
+  await user.click(screen.getByRole('button', { name: 'Thêm danh mục' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Danh mục "dạ hội" đã tồn tại');
 });

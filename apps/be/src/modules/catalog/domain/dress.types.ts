@@ -14,6 +14,8 @@ export interface DressProps {
   notes: string | null;
   /** Photo LINKS (staff paste them); binary upload is a deliberate MVP non-goal. */
   photoUrls: string[];
+  /** 0..1 category (FR-CAT-07); null = unclassified, a valid state forever. */
+  categoryId: string | null;
 }
 
 export interface CreateDressProps {
@@ -24,4 +26,5 @@ export interface CreateDressProps {
   depositAmount: Money;
   notes: string | null;
   photoUrls: string[];
+  categoryId: string | null;
 }

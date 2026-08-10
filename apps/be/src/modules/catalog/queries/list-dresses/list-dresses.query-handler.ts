@@ -27,6 +27,9 @@ export class ListDressesQueryHandler
     if (query.status) {
       filters.push(sql.fragment`status = ${query.status}`);
     }
+    if (query.categoryId) {
+      filters.push(sql.fragment`category_id = ${query.categoryId}`);
+    }
     const where =
       filters.length > 0
         ? sql.fragment`WHERE ${sql.join(filters, sql.fragment` AND `)}`
@@ -53,6 +56,7 @@ export class ListDressesQueryHandler
           status: row.status,
           notes: row.notes,
           photoUrls: [...row.photo_urls],
+          categoryId: row.category_id,
           createdAt: toDate(row.created_at).toISOString(),
         }),
       ),

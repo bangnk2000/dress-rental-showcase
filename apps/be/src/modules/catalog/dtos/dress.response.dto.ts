@@ -28,6 +28,14 @@ export class DressResponseDto {
   @ApiProperty({ type: [String], description: 'Photo links (staff-pasted; no upload in MVP)' })
   readonly photoUrls!: string[];
 
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description:
+      'Category id (0..1 per dress; null = unclassified). Names come from GET /categories — a tiny cached list, so the FE joins client-side instead of every dress row carrying the name.',
+  })
+  readonly categoryId!: string | null;
+
   @ApiProperty({ example: '2026-07-30T10:00:00.000Z' })
   readonly createdAt!: string;
 }

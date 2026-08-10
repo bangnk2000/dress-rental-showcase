@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Matches,
   Min,
@@ -54,4 +55,13 @@ export class CreateDressRequestDto {
   @Matches(/^https?:\/\/\S+$/, { each: true })
   @Length(1, 2000, { each: true })
   readonly photoUrls?: string[];
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: String,
+    description: 'Category id (FR-CAT-07); omit or null = unclassified',
+  })
+  @IsOptional() // skips null too: null IS the valid "unclassified" value
+  @IsUUID()
+  readonly categoryId?: string | null;
 }

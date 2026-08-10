@@ -148,3 +148,26 @@ Mục 2 (leakage), 8 (idempotency): không có finding.
 
 > A responsible human confirms this risk list before FE/BE implementation starts. Blockers
 > must be resolved and re-checked; the agent does not approve.
+
+## 7. Re-sync as-built (2026-08-10)
+
+Implement khớp spec, một lệch nhỏ có lý do:
+
+1. **`DressResponseDto.categoryId` thay vì object `{id,name}`** — FE nào cũng đã tải
+   `GET /categories` (filter + form + màn quản lý), join tên client-side từ danh sách ~10 dòng
+   cache sẵn KHÔNG phải N+1; denormalize tên vào từng dòng váy mới là trả giá vô ích. Ghi rõ
+   trong `@ApiProperty`.
+2. **Xoá danh mục không có domain event** — delete không đi qua aggregate instance; sự kiện chờ
+   nhu cầu thật (spec 01 §8).
+
+| Spec | Code |
+| --- | --- |
+| Migration | `1755100000000_categories.js` — UNIQUE lower(name), FK RESTRICT + index |
+| R1 (răng ở DB) | `CategoryName` VO + pre-check + `CategoryNameConflictError` dịch ở `category.repository.ts` |
+| R3/R4 (delete) | `delete-category.service.ts` pre-check count → `CategoryStillReferencedError` (FK) → cùng outcome, count tươi |
+| Gán/bỏ (R2) | `categoryId` optional-nullable trên create/update dress; pre-check tồn tại → `rejected_category_not_found` |
+| Filter (AC4) | `GET /dresses?categoryId=` + `use-dress-filters` (URL-owned) |
+| CSV (§6.Q2) | cột `category` + auto-create trong `import-dresses.ts` (cache tên→id, case-insensitive) |
+| Policy (§6.Q1) | `catalog.policies.ts`: create/update mọi staff, delete owner-only |
+| UI §3 | `category-manager.tsx` (section trong trang catalog: tạo nhanh + sửa tên inline + xoá qua ConfirmDialog), Select trong DressFormDialog, cột + filter trên bảng, dòng ở detail |
+| Traceability §5 | be 140 unit (+3 suite category) · 68 e2e (+6 `categories.e2e-spec.ts`) · fe 92 vitest (+3) |

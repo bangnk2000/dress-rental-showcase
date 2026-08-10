@@ -448,7 +448,7 @@
             }
           },
           "422": {
-            "description": "Business rejection: rejected_dress_code_taken (carries dressCode)",
+            "description": "Business rejection: rejected_dress_code_taken (carries dressCode) | rejected_category_not_found",
             "content": {
               "application/json": {
                 "schema": {
@@ -493,6 +493,16 @@
                 "active",
                 "retired"
               ]
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Only dresses in this category (FR-CAT-07)",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
             }
           },
           {
@@ -585,7 +595,7 @@
             }
           },
           "422": {
-            "description": "Business rejection: rejected_dress_not_found | rejected_dress_code_taken (carries dressCode)",
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_code_taken (carries dressCode) | rejected_category_not_found",
             "content": {
               "application/json": {
                 "schema": {
@@ -694,6 +704,208 @@
           }
         ],
         "summary": "Retire a dress (owner only; one-way in MVP)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/categories": {
+      "post": {
+        "operationId": "CreateCategoryHttpController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_category_name_taken (carries the trimmed name)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCategoryOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a dress category (any staff)",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "get": {
+        "operationId": "ListCategoriesHttpController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List categories with their dress counts (auth-only read; unpaginated by design)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/categories/{id}": {
+      "patch": {
+        "operationId": "RenameCategoryHttpController_rename",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_category_not_found | rejected_category_name_taken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenameCategoryOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename a category (any staff); dresses keep their assignment",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "delete": {
+        "operationId": "DeleteCategoryHttpController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner deletes categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_category_not_found | rejected_category_in_use (carries dressCount)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteCategoryOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an EMPTY category (owner only); one still holding dresses is refused",
         "tags": [
           "catalog"
         ]
@@ -854,7 +1066,7 @@
             }
           },
           "422": {
-            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus)",
+            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus) | rejected_cancel_has_payments",
             "content": {
               "application/json": {
                 "schema": {
@@ -869,7 +1081,7 @@
             "bearer": []
           }
         ],
-        "summary": "Cancel a booked rental — frees the calendar, keeps history",
+        "summary": "Cancel a booked or out rental with an EMPTY ledger — frees the calendar, keeps history",
         "tags": [
           "rentals"
         ]
@@ -1851,6 +2063,12 @@
               "minLength": 1,
               "pattern": "^https?:\\/\\/\\S+$"
             }
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Category id (FR-CAT-07); omit or null = unclassified"
           }
         },
         "required": [
@@ -1864,10 +2082,11 @@
         "type": "object",
         "properties": {
           "status": {
-            "type": "string",
             "enum": [
-              "rejected_dress_code_taken"
-            ]
+              "rejected_dress_code_taken",
+              "rejected_category_not_found"
+            ],
+            "type": "string"
           },
           "dressCode": {
             "type": "string",
@@ -1875,8 +2094,7 @@
           }
         },
         "required": [
-          "status",
-          "dressCode"
+          "status"
         ]
       },
       "UpdateDressRequestDto": {
@@ -1931,6 +2149,12 @@
               "minLength": 1,
               "pattern": "^https?:\\/\\/\\S+$"
             }
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Category id; omit = keep, explicit null = clear the assignment"
           }
         }
       },
@@ -1940,7 +2164,8 @@
           "status": {
             "enum": [
               "rejected_dress_not_found",
-              "rejected_dress_code_taken"
+              "rejected_dress_code_taken",
+              "rejected_category_not_found"
             ],
             "type": "string"
           },
@@ -2017,6 +2242,11 @@
               "type": "string"
             }
           },
+          "categoryId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Category id (0..1 per dress; null = unclassified). Names come from GET /categories — a tiny cached list, so the FE joins client-side instead of every dress row carrying the name."
+          },
           "createdAt": {
             "type": "string",
             "example": "2026-07-30T10:00:00.000Z"
@@ -2032,6 +2262,7 @@
           "status",
           "notes",
           "photoUrls",
+          "categoryId",
           "createdAt"
         ]
       },
@@ -2062,6 +2293,117 @@
           "count",
           "limit",
           "page"
+        ]
+      },
+      "CreateCategoryRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "Dạ hội",
+            "description": "1-50 chars; unique case-insensitively"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateCategoryOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_category_name_taken"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Dạ hội",
+            "description": "The trimmed name that collided"
+          }
+        },
+        "required": [
+          "status",
+          "name"
+        ]
+      },
+      "RenameCategoryOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_category_not_found",
+              "rejected_category_name_taken"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dạ hội"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "DeleteCategoryOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_category_not_found",
+              "rejected_category_in_use"
+            ],
+            "type": "string"
+          },
+          "dressCount": {
+            "type": "number",
+            "example": 12,
+            "description": "How many dresses still hold the category (rejected_category_in_use)"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "CategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dạ hội"
+          },
+          "dressCount": {
+            "type": "number",
+            "example": 12,
+            "description": "How many dresses hold this category"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "dressCount"
+        ]
+      },
+      "CategoryListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryDto"
+            }
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "CreateRentalItemRequestDto": {
@@ -2163,7 +2505,8 @@
           "status": {
             "enum": [
               "rejected_rental_not_found",
-              "rejected_cancel_not_allowed"
+              "rejected_cancel_not_allowed",
+              "rejected_cancel_has_payments"
             ],
             "type": "string"
           },

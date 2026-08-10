@@ -50,6 +50,11 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 - **FR-CAT-03** Tạo / cập nhật váy; **retire** (owner-only) — váy retired không tạo đơn mới,
   lịch sử giữ nguyên.
 - **FR-CAT-04** Seed một lần từ CSV xuất Google Sheets (~200 váy) — `pnpm --filter be import:dresses`.
+- **FR-CAT-07** Danh mục váy: mỗi váy thuộc **0..1 danh mục** (null = chưa phân loại, hợp lệ
+  vĩnh viễn). Tên duy nhất không phân biệt hoa thường. Staff tạo/sửa tên; **xoá là owner-only**
+  và chỉ xoá được danh mục TRỐNG (`rejected_category_in_use` + dressCount, FK RESTRICT làm lưới).
+  List váy filter theo danh mục; CSV import có cột `category` tự tạo theo tên. Quyết định + lý
+  do: [design/catalog/dress-category.md](./design/catalog/dress-category.md) §6.
 
 ### rentals
 - **FR-RENT-01** Tạo đơn thuê: khách (tên/điện thoại) + NHIỀU váy + khoảng ngày **inclusive**
@@ -129,6 +134,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-AUTH-04, FR-AUTH-01 (đổi định danh) | `identity/manage-users` | [identity/manage-users.md](./design/identity/manage-users.md) (spec `as-built`), [identity-aggregate.md](./design/identity-aggregate.md) | pass |
 | FR-CAT-01, 02, 04 | `catalog/list-dresses` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-CAT-01, 03 | `catalog/manage-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
+| FR-CAT-07 | `catalog/dress-category` | [catalog/dress-category.md](./design/catalog/dress-category.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-RENT-01, 02 | `rentals/create-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-RENT-03 | `rentals/availability-check` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-RENT-04, 07 | `rentals/today-board` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |

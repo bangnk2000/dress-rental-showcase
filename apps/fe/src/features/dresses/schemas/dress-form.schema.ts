@@ -47,7 +47,11 @@ export const dressFormSchema = z.object({
       (value) => parsePhotoUrls(value).every((line) => PHOTO_URL_LINE.test(line)),
       'form.errors.photoUrlInvalid',
     ),
+  /** Category id, or the NONE sentinel — Radix Select items cannot carry an empty value. */
+  categoryId: z.string(),
 });
+
+export const CATEGORY_NONE = 'none';
 
 export type DressFormValues = z.infer<typeof dressFormSchema>;
 
@@ -59,4 +63,5 @@ export const dressFormDefaults: DressFormValues = {
   depositAmount: '',
   notes: '',
   photoUrls: '',
+  categoryId: CATEGORY_NONE,
 };

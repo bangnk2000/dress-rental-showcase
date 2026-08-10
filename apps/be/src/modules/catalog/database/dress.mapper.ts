@@ -23,6 +23,7 @@ export class DressMapper implements Mapper<DressEntity, DressModel, DressRespons
         status: record.status,
         notes: record.notes,
         photoUrls: [...record.photo_urls],
+        categoryId: record.category_id,
       },
     });
   }
@@ -39,6 +40,7 @@ export class DressMapper implements Mapper<DressEntity, DressModel, DressRespons
       status: props.status,
       notes: props.notes,
       photo_urls: [...props.photoUrls],
+      category_id: props.categoryId,
       created_at: props.createdAt,
       updated_at: props.updatedAt,
     };
@@ -56,6 +58,7 @@ export class DressMapper implements Mapper<DressEntity, DressModel, DressRespons
       status: props.status,
       notes: props.notes,
       photoUrls: [...props.photoUrls],
+      categoryId: props.categoryId,
       createdAt: props.createdAt.toISOString(),
     });
   }

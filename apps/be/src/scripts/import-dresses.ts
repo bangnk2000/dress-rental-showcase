@@ -16,10 +16,16 @@ import { NestFactory } from '@nestjs/core';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { AppModule } from '../app.module';
+import { CreateCategoryCommand } from '../modules/catalog/commands/create-category/create-category.command';
+import { CreateCategoryService } from '../modules/catalog/commands/create-category/create-category.service';
 import { CreateDressCommand } from '../modules/catalog/commands/create-dress/create-dress.command';
 import {
   CreateDressService,
 } from '../modules/catalog/commands/create-dress/create-dress.service';
+import {
+  CATEGORY_REPOSITORY,
+  CategoryRepositoryPort,
+} from '../modules/catalog/application/ports/category.repository.port';
 import { DressCodeAlreadyExistsError } from '../modules/catalog/domain/dress.errors';
 import { DressCsvError, parseDressCsv } from '../modules/catalog/import/dress-csv';
 
@@ -41,6 +47,28 @@ async function main(): Promise<void> {
     abortOnError: false,
   });
   const createDress = app.get(CreateDressService);
+  const createCategory = app.get(CreateCategoryService);
+  const categoryRepo = app.get<CategoryRepositoryPort>(CATEGORY_REPOSITORY);
+
+  // Category names auto-create on first sight (FR-CAT-07 §6.Q2) — the import is a one-shot data
+  // entry lane; demanding hand-created categories first would be pointless friction. Names are
+  // matched case-insensitively, same rule as the API.
+  const categoryIds = new Map<string, string>();
+  async function resolveCategoryId(name: string): Promise<string> {
+    const key = name.trim().toLowerCase();
+    const cached = categoryIds.get(key);
+    if (cached) return cached;
+
+    const existing = await categoryRepo.findOneByName(name);
+    if (existing) {
+      categoryIds.set(key, existing.id);
+      return existing.id;
+    }
+    const created = await createCategory.execute(new CreateCategoryCommand({ name }));
+    const id = created.unwrap(); // taken is impossible: findOneByName just missed, single-process
+    categoryIds.set(key, id);
+    return id;
+  }
 
   let imported = 0;
   let skipped = 0;
@@ -55,6 +83,7 @@ async function main(): Promise<void> {
           depositAmount: row.depositAmount,
           notes: row.notes,
           photoUrls: [],
+          categoryId: row.category ? await resolveCategoryId(row.category) : null,
         }),
       );
       if (result.isOk()) {

@@ -21,5 +21,10 @@ export interface DressResponseDto {
   notes: string | null;
   /** Photo links (staff-pasted; no upload in MVP) */
   photoUrls: string[];
+  /**
+     * Category id (0..1 per dress; null = unclassified). Names come from GET /categories — a tiny cached list, so the FE joins client-side instead of every dress row carrying the name.
+     * @nullable
+     */
+  categoryId: string | null;
   createdAt: string;
 }

@@ -10,4 +10,5 @@ export type CreateDressOutcomeDtoStatus = typeof CreateDressOutcomeDtoStatus[key
 
 export const CreateDressOutcomeDtoStatus = {
   rejected_dress_code_taken: 'rejected_dress_code_taken',
+  rejected_category_not_found: 'rejected_category_not_found',
 } as const;

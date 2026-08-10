@@ -5,16 +5,21 @@ import { AggregateID } from '../../../../libs/ddd/entity.base';
 import { Money } from '../../../../libs/ddd/money.value-object';
 import { DressCodeConflictError } from '../../application/ports/dress-code-conflict.error';
 import {
+  CATEGORY_REPOSITORY,
+  CategoryRepositoryPort,
+} from '../../application/ports/category.repository.port';
+import {
   DRESS_REPOSITORY,
   DressRepositoryPort,
 } from '../../application/ports/dress.repository.port';
 import { DressCode } from '../../domain/dress-code.value-object';
+import { CategoryNotFoundError } from '../../domain/category.errors';
 import { DressCodeAlreadyExistsError, DressNotFoundError } from '../../domain/dress.errors';
 import { UpdateDressCommand } from './update-dress.command';
 
 export type UpdateDressResult = Result<
   AggregateID,
-  DressNotFoundError | DressCodeAlreadyExistsError
+  DressNotFoundError | DressCodeAlreadyExistsError | CategoryNotFoundError
 >;
 
 @CommandHandler(UpdateDressCommand)
@@ -22,11 +27,19 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
   constructor(
     @Inject(DRESS_REPOSITORY)
     private readonly dressRepo: DressRepositoryPort,
+    @Inject(CATEGORY_REPOSITORY)
+    private readonly categoryRepo: CategoryRepositoryPort,
   ) {}
 
   async execute(command: UpdateDressCommand): Promise<UpdateDressResult> {
     const dress = await this.dressRepo.findOneById(command.dressId);
     if (!dress) return Err(new DressNotFoundError());
+
+    // A NEW assignment must point at a category that still exists (null clears, no check).
+    if (command.categoryId !== undefined && command.categoryId !== null) {
+      const category = await this.categoryRepo.findOneById(command.categoryId);
+      if (!category) return Err(new CategoryNotFoundError());
+    }
 
     const now = new Date();
     const props = dress.getProps();
@@ -54,6 +67,7 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
             : Money.create(command.depositAmount),
         notes: command.notes === undefined ? props.notes : command.notes,
         photoUrls: command.photoUrls === undefined ? props.photoUrls : command.photoUrls,
+        categoryId: command.categoryId === undefined ? props.categoryId : command.categoryId,
       },
       now,
     );

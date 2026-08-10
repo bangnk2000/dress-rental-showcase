@@ -9,6 +9,7 @@ import {
   getGetDressHttpControllerGetQueryKey,
   getListDressesHttpControllerListQueryKey,
   useGetDressHttpControllerGetSuspense,
+  useListCategoriesHttpControllerListSuspense,
   useRetireDressHttpControllerRetire,
 } from '@/api/generated/catalog/catalog';
 import { useListBookedRangesHttpControllerListSuspense } from '@/api/generated/rentals/rentals';
@@ -67,8 +68,14 @@ function DressDetail({ dressId }: { dressId: string }) {
     },
   });
 
+  const { data: categoryList } = useListCategoriesHttpControllerListSuspense();
+  const categoryName = dress.categoryId
+    ? (categoryList.data.find((category) => category.id === dress.categoryId)?.name ?? '—')
+    : t('detail.info.categoryNone');
+
   const info = [
     { label: t('detail.info.size'), value: dress.sizeLabel ?? '—' },
+    { label: t('detail.info.category'), value: categoryName },
     { label: t('detail.info.rentalPrice'), value: formatVnd(dress.rentalPrice) },
     { label: t('detail.info.deposit'), value: formatVnd(dress.depositAmount) },
     { label: t('detail.info.notes'), value: dress.notes ?? '—' },

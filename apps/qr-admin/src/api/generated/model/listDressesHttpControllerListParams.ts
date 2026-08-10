@@ -15,6 +15,10 @@ export type ListDressesHttpControllerListParams = {
 q?: string;
 status?: ListDressesHttpControllerListStatus;
 /**
+ * Only dresses in this category (FR-CAT-07)
+ */
+categoryId?: string;
+/**
  * @minimum 1
  */
 page?: number;

@@ -16,7 +16,13 @@ export class ListDressesHttpController {
   @ApiOkResponse({ type: DressListResponseDto })
   async list(@Query() dto: ListDressesRequestDto): Promise<DressListResponseDto> {
     return this.queryBus.execute(
-      new ListDressesQuery({ q: dto.q, status: dto.status, page: dto.page, limit: dto.limit }),
+      new ListDressesQuery({
+        q: dto.q,
+        status: dto.status,
+        categoryId: dto.categoryId,
+        page: dto.page,
+        limit: dto.limit,
+      }),
     );
   }
 }

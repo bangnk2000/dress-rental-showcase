@@ -44,4 +44,9 @@ export interface CreateDressRequestDto {
      * @items.pattern ^https?:\/\/\S+$
      */
   photoUrls?: string[];
+  /**
+     * Category id (FR-CAT-07); omit or null = unclassified
+     * @nullable
+     */
+  categoryId?: string | null;
 }

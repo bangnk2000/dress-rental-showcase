@@ -48,4 +48,9 @@ export interface UpdateDressRequestDto {
      * @items.pattern ^https?:\/\/\S+$
      */
   photoUrls?: string[];
+  /**
+     * Category id; omit = keep, explicit null = clear the assignment
+     * @nullable
+     */
+  categoryId?: string | null;
 }

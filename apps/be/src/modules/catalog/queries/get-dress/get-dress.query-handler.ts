@@ -31,6 +31,7 @@ export class GetDressQueryHandler
       status: row.status,
       notes: row.notes,
       photoUrls: [...row.photo_urls],
+      categoryId: row.category_id,
       createdAt: toDate(row.created_at).toISOString(),
     });
   }

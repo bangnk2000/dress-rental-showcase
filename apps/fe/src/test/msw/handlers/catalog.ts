@@ -5,6 +5,8 @@
 import { http, HttpResponse, type HttpHandler } from 'msw';
 
 import type {
+  CategoryDto,
+  CreateCategoryRequestDto,
   CreateDressRequestDto,
   DressListResponseDto,
   DressResponseDto,
@@ -30,6 +32,7 @@ export function makeDress(overrides: Partial<DressResponseDto> = {}): DressRespo
     status: DressResponseDtoStatus.active,
     notes: null,
     photoUrls: [],
+    categoryId: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };
@@ -43,7 +46,20 @@ export function seedDresses(seed: DressResponseDto[]): void {
 /** Empty the in-memory catalog — call from beforeEach. */
 export function resetCatalog(): void {
   dresses = [];
+  categories = [];
   nextId = 1;
+}
+
+let categories: CategoryDto[] = [];
+
+export function seedCategories(seed: CategoryDto[]): void {
+  categories = [...seed];
+}
+
+/** The most recent POST /categories body, for assertions. */
+let lastCreatedCategory: string | null = null;
+export function getLastCreatedCategory(): string | null {
+  return lastCreatedCategory;
 }
 
 export const catalogHandlers: HttpHandler[] = [
@@ -123,6 +139,10 @@ export const catalogHandlers: HttpHandler[] = [
     if (status) {
       filtered = filtered.filter((dress) => dress.status === status);
     }
+    const categoryId = url.searchParams.get('categoryId');
+    if (categoryId) {
+      filtered = filtered.filter((dress) => dress.categoryId === categoryId);
+    }
 
     const start = (page - 1) * limit;
     const body: DressListResponseDto = {
@@ -154,5 +174,51 @@ export const catalogHandlers: HttpHandler[] = [
     dresses.push(dress);
     const response: IdResponse = { id: dress.id };
     return HttpResponse.json(response, { status: 201 });
+  }),
+
+  // GET /api/v1/categories — the tiny cached list dress rows join names from.
+  http.get('/api/v1/categories', () => HttpResponse.json({ data: categories })),
+
+  // POST /api/v1/categories — 201, or the rejected_category_name_taken outcome.
+  http.post('/api/v1/categories', async ({ request }) => {
+    const body = (await request.json()) as CreateCategoryRequestDto;
+    const name = body.name.trim();
+    if (categories.some((category) => category.name.toLowerCase() === name.toLowerCase())) {
+      return HttpResponse.json(
+        { status: 'rejected_category_name_taken', name },
+        { status: 422 },
+      );
+    }
+    lastCreatedCategory = name;
+    const created: CategoryDto = { id: `category-${categories.length + 1}`, name, dressCount: 0 };
+    categories.push(created);
+    return HttpResponse.json({ id: created.id }, { status: 201 });
+  }),
+
+  // PATCH /api/v1/categories/:id — rename.
+  http.patch('/api/v1/categories/:id', async ({ params, request }) => {
+    const category = categories.find((candidate) => candidate.id === params.id);
+    if (!category) {
+      return HttpResponse.json({ status: 'rejected_category_not_found' }, { status: 422 });
+    }
+    const body = (await request.json()) as CreateCategoryRequestDto;
+    category.name = body.name.trim();
+    return HttpResponse.json({ id: category.id });
+  }),
+
+  // DELETE /api/v1/categories/:id — refused with the count while dresses hold it.
+  http.delete('/api/v1/categories/:id', ({ params }) => {
+    const category = categories.find((candidate) => candidate.id === params.id);
+    if (!category) {
+      return HttpResponse.json({ status: 'rejected_category_not_found' }, { status: 422 });
+    }
+    if (category.dressCount > 0) {
+      return HttpResponse.json(
+        { status: 'rejected_category_in_use', dressCount: category.dressCount },
+        { status: 422 },
+      );
+    }
+    categories = categories.filter((candidate) => candidate.id !== params.id);
+    return HttpResponse.json({ id: params.id });
   }),
 ];

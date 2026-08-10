@@ -10,6 +10,7 @@ import {
   getGetDressHttpControllerGetQueryKey,
   getListDressesHttpControllerListQueryKey,
   useCreateDressHttpControllerCreate,
+  useListCategoriesHttpControllerList,
   useUpdateDressHttpControllerUpdate,
 } from '@/api/generated/catalog/catalog';
 import type {
@@ -29,9 +30,17 @@ import {
 } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 import {
+  CATEGORY_NONE,
   dressFormDefaults,
   dressFormSchema,
   parsePhotoUrls,
@@ -55,6 +64,7 @@ function toFormValues(dress: DressResponseDto): DressFormValues {
     depositAmount: String(dress.depositAmount),
     notes: dress.notes ?? '',
     photoUrls: dress.photoUrls.join('\n'),
+    categoryId: dress.categoryId ?? CATEGORY_NONE,
   };
 }
 
@@ -69,6 +79,7 @@ function toCreateDressRequest(values: DressFormValues): CreateDressRequestDto {
     ...(values.sizeLabel ? { sizeLabel: values.sizeLabel } : {}),
     ...(values.notes ? { notes: values.notes } : {}),
     ...(photoUrls.length > 0 ? { photoUrls } : {}),
+    ...(values.categoryId !== CATEGORY_NONE ? { categoryId: values.categoryId } : {}),
   };
 }
 
@@ -82,6 +93,7 @@ function toUpdateDressRequest(values: DressFormValues): UpdateDressRequestDto {
     depositAmount: Number(values.depositAmount),
     notes: values.notes ? values.notes : null,
     photoUrls: parsePhotoUrls(values.photoUrls),
+    categoryId: values.categoryId === CATEGORY_NONE ? null : values.categoryId,
   };
 }
 
@@ -94,6 +106,10 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
     resolver: zodResolver(dressFormSchema),
     defaultValues: dress ? toFormValues(dress) : dressFormDefaults,
   });
+
+  // The category options load only while the dialog is open; the list is tiny and cached.
+  const categoriesQuery = useListCategoriesHttpControllerList({ query: { enabled: open } });
+  const categories = categoriesQuery.data?.data ?? [];
 
   // Re-prime on every open: the SAME dialog instance serves create and edit,
   // and the dress in the cache may have changed since the last open.
@@ -217,6 +233,31 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
                   <FormControl>
                     <Input autoComplete="off" {...field} />
                   </FormControl>
+                  <DressFormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="categoryId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('form.fields.category')}</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={CATEGORY_NONE}>{t('form.categoryNone')}</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <DressFormMessage />
                 </FormItem>
               )}

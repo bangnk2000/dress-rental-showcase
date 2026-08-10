@@ -13,6 +13,7 @@ export class UpdateDressCommand extends Command {
   readonly depositAmount?: number;
   readonly notes?: string | null;
   readonly photoUrls?: string[];
+  readonly categoryId?: string | null;
 
   constructor(props: CommandProps<UpdateDressCommand>) {
     super(props);
@@ -24,5 +25,6 @@ export class UpdateDressCommand extends Command {
     this.depositAmount = props.depositAmount;
     this.notes = props.notes;
     this.photoUrls = props.photoUrls;
+    this.categoryId = props.categoryId;
   }
 }

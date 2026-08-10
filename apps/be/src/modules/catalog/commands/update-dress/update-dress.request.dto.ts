@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Matches,
   Min,
@@ -63,4 +64,13 @@ export class UpdateDressRequestDto {
   @Matches(/^https?:\/\/\S+$/, { each: true })
   @Length(1, 2000, { each: true })
   readonly photoUrls?: string[];
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: String,
+    description: 'Category id; omit = keep, explicit null = clear the assignment',
+  })
+  @IsOptional() // skips null too: null IS the valid "clear it" value
+  @IsUUID()
+  readonly categoryId?: string | null;
 }

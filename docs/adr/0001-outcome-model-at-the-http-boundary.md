@@ -82,6 +82,15 @@ Quyền quản lý user chặn ở guard (`user:manage`, owner-only, fail-closed
 
 | Use case | Domain error (returned) | Outcome code | Payload | FR |
 | --- | --- | --- | --- | --- |
+| `catalog/create-category` | `CategoryNameTakenError` | `rejected_category_name_taken` | `name` (đã trim) | FR-CAT-07 |
+| `catalog/rename-category` | `CategoryNotFoundError` \| `CategoryNameTakenError` | `rejected_category_not_found` \| `rejected_category_name_taken` | `name?` | FR-CAT-07 |
+| `catalog/delete-category` | `CategoryNotFoundError` \| `CategoryInUseError` | `rejected_category_not_found` \| `rejected_category_in_use` | `dressCount?` | FR-CAT-07 |
+| `catalog/create-dress`, `catalog/update-dress` | `CategoryNotFoundError` (gán danh mục đã bị xoá) | `rejected_category_not_found` | — | FR-CAT-07 |
+
+(bảng dress có sẵn ở dưới)
+
+| Use case | Domain error (returned) | Outcome code | Payload | FR |
+| --- | --- | --- | --- | --- |
 | `catalog/create-dress` | `DressCodeAlreadyExistsError` | `rejected_dress_code_taken` | `dressCode` | FR-CAT-01, 03 |
 | `catalog/update-dress` | `DressNotFoundError` | `rejected_dress_not_found` | — | FR-CAT-03 |
 | `catalog/update-dress` | `DressCodeAlreadyExistsError` | `rejected_dress_code_taken` | `dressCode` | FR-CAT-01, 03 |
@@ -163,6 +172,9 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_user_already_inactive` / `_already_active` | toast "trạng thái đã đổi trên thiết bị khác" + refetch list | `users:actions.staleState` |
 | `rejected_user_not_found` / `rejected_cannot_deactivate_self` | toast chung + refetch (UI không mời hai case này: hàng của mình không có nút khoá) | `users:actions.staleState` |
 | `rejected_dress_code_taken` | giữ dialog, field error trên `code`, kèm `dressCode` | `dresses:form.errors.codeTaken` |
+| `rejected_category_name_taken` | giữ form quản lý danh mục, message inline kèm `name` | `dresses:categories.errors.nameTaken` |
+| `rejected_category_in_use` | toast nêu `dressCount` + refetch | `dresses:categories.errors.inUse` |
+| `rejected_category_not_found` (gán vào váy) | toast + refetch danh sách danh mục (ai đó vừa xoá) | `dresses:categories.errors.generic` |
 | `rejected_dress_not_found` (catalog) | đóng dialog + toast "váy không còn", invalidate list | `dresses:errors.notFound` |
 | `rejected_dress_already_retired` | toast + invalidate detail (state đã đúng, chỉ lệch cache) | `dresses:detail.retire.alreadyRetired` |
 | `rejected_dress_not_found` (rentals) | giữ form, message form-level liệt kê `dressIds` | `rentals:form.errors.dressNotFound` |

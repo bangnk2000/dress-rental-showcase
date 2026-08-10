@@ -7,3 +7,8 @@ import { registerPolicy } from '../../libs/authz/policy-registry';
 registerPolicy('dress:create', () => true); // any authenticated staff
 registerPolicy('dress:update', () => true);
 registerPolicy('dress:retire', ({ subject }) => subject.role === 'owner');
+// Categories are a daily cleanup tool (FR-CAT-07 §6.Q1): staff create and rename freely;
+// DELETING one is the destructive act and stays with the owner.
+registerPolicy('category:create', () => true);
+registerPolicy('category:update', () => true);
+registerPolicy('category:delete', ({ subject }) => subject.role === 'owner');

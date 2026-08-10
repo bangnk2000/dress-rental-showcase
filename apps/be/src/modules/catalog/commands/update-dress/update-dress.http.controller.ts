@@ -11,6 +11,7 @@ import { match } from 'oxide.ts';
 import { RequirePermission } from '../../../../libs/authz/require-permission.decorator';
 import { IdResponse } from '../../../../libs/ddd/id.response.dto';
 import { ApiErrorResponseDto, BusinessOutcomeException } from '../../../../libs/exceptions';
+import { CategoryNotFoundError } from '../../domain/category.errors';
 import { DressCodeAlreadyExistsError, DressNotFoundError } from '../../domain/dress.errors';
 import { UpdateDressCommand } from './update-dress.command';
 import { UpdateDressOutcomeDto } from './update-dress.outcome.dto';
@@ -31,7 +32,7 @@ export class UpdateDressHttpController {
     status: 422,
     type: UpdateDressOutcomeDto,
     description:
-      'Business rejection: rejected_dress_not_found | rejected_dress_code_taken (carries dressCode)',
+      'Business rejection: rejected_dress_not_found | rejected_dress_code_taken (carries dressCode) | rejected_category_not_found',
   })
   @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Invalid request body' })
   async update(
@@ -48,6 +49,7 @@ export class UpdateDressHttpController {
         depositAmount: body.depositAmount,
         notes: body.notes,
         photoUrls: body.photoUrls,
+        categoryId: body.categoryId,
       }),
     );
 
@@ -62,6 +64,9 @@ export class UpdateDressHttpController {
             status: 'rejected_dress_code_taken',
             dressCode: error.dressCode,
           });
+        }
+        if (error instanceof CategoryNotFoundError) {
+          throw new BusinessOutcomeException({ status: 'rejected_category_not_found' });
         }
         throw error;
       },

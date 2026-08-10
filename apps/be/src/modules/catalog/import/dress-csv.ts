@@ -4,8 +4,9 @@
  * in the VOs and surface per-row when the import script dispatches commands.
  *
  * Expected header (any order, case-insensitive):
- *   code,name,size,rental_price,deposit,notes   — size and notes optional.
+ *   code,name,size,rental_price,deposit,notes,category — size, notes, category optional.
  * Prices tolerate vi formatting: "1.500.000", "1,500,000", "1500000 ₫".
+ * category is a NAME ('Dạ hội'); the import script resolves or auto-creates it (FR-CAT-07 §6.Q2).
  */
 
 export interface DressCsvRow {
@@ -17,6 +18,7 @@ export interface DressCsvRow {
   rentalPrice: number;
   depositAmount: number;
   notes: string | null;
+  category: string | null;
 }
 
 export interface DressCsvError {
@@ -30,7 +32,7 @@ export interface DressCsvResult {
   errors: DressCsvError[];
 }
 
-const KNOWN_HEADERS = ['code', 'name', 'size', 'rental_price', 'deposit', 'notes'];
+const KNOWN_HEADERS = ['code', 'name', 'size', 'rental_price', 'deposit', 'notes', 'category'];
 const REQUIRED_HEADERS = ['code', 'name', 'rental_price', 'deposit'];
 
 /** RFC4180: quoted fields may contain commas, newlines and escaped ("") quotes. */
@@ -160,6 +162,7 @@ export function parseDressCsv(content: string): DressCsvResult {
         rentalPrice,
         depositAmount,
         notes: cell('notes') || null,
+        category: cell('category') || null,
       });
   });
 

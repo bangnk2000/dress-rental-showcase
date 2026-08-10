@@ -15,7 +15,13 @@ import { formatVnd } from '@/lib/format';
 
 import { DressStatusBadge } from './dress-status-badge';
 
-export function DressTable({ dresses }: { dresses: DressResponseDto[] }) {
+interface DressTableProps {
+  dresses: DressResponseDto[];
+  /** id → name, built from the (tiny, cached) GET /categories list — no name on each dress row. */
+  categoryNameById: Map<string, string>;
+}
+
+export function DressTable({ dresses, categoryNameById }: DressTableProps) {
   const { t } = useTranslation('dresses');
 
   return (
@@ -29,6 +35,7 @@ export function DressTable({ dresses }: { dresses: DressResponseDto[] }) {
           <TableHead>{t('list.columns.code')}</TableHead>
           <TableHead>{t('list.columns.name')}</TableHead>
           <TableHead>{t('list.columns.size')}</TableHead>
+          <TableHead>{t('list.columns.category')}</TableHead>
           <TableHead className="text-right">{t('list.columns.rentalPrice')}</TableHead>
           <TableHead className="text-right">{t('list.columns.deposit')}</TableHead>
           <TableHead>{t('list.columns.status')}</TableHead>
@@ -50,6 +57,9 @@ export function DressTable({ dresses }: { dresses: DressResponseDto[] }) {
             </TableCell>
             <TableCell>{dress.name}</TableCell>
             <TableCell>{dress.sizeLabel ?? '—'}</TableCell>
+            <TableCell>
+              {dress.categoryId ? (categoryNameById.get(dress.categoryId) ?? '—') : '—'}
+            </TableCell>
             <TableCell className="text-right tabular-nums">
               {formatVnd(dress.rentalPrice)}
             </TableCell>

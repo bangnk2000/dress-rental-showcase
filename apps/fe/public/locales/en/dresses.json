@@ -13,7 +13,8 @@
       "size": "Size",
       "rentalPrice": "Rental price",
       "deposit": "Deposit",
-      "status": "Status"
+      "status": "Status",
+      "category": "Category"
     },
     "empty": {
       "noDresses": "No dresses yet",
@@ -25,7 +26,9 @@
       "label": "Page {{page}} / {{totalPages}}",
       "previous": "Previous page",
       "next": "Next page"
-    }
+    },
+    "categoryFilterLabel": "Category",
+    "categoryAll": "All categories"
   },
   "status": {
     "active": "Available",
@@ -44,7 +47,8 @@
       "depositAmount": "Deposit (VND)",
       "notes": "Notes",
       "photoUrls": "Photos (one link per line)",
-      "photoUrlsPlaceholder": "https://..."
+      "photoUrlsPlaceholder": "https://...",
+      "category": "Category"
     },
     "errors": {
       "codeRequired": "Please enter a dress code",
@@ -63,7 +67,8 @@
     "success": "Dress added to the catalog",
     "error": "Could not add the dress. Please try again.",
     "updateSuccess": "Dress updated",
-    "updateError": "Could not update the dress. Please try again."
+    "updateError": "Could not update the dress. Please try again.",
+    "categoryNone": "Unclassified"
   },
   "detail": {
     "title": "Dress detail",
@@ -85,7 +90,9 @@
       "size": "Size",
       "rentalPrice": "Rental price",
       "deposit": "Deposit",
-      "notes": "Notes"
+      "notes": "Notes",
+      "category": "Category",
+      "categoryNone": "Unclassified"
     },
     "calendar": {
       "title": "Booking calendar",
@@ -112,5 +119,28 @@
   },
   "errors": {
     "notFound": "This dress is no longer in the catalog. The list has been refreshed."
+  },
+  "categories": {
+    "title": "Dress categories",
+    "empty": "No categories yet.",
+    "dressCount": "({{count}} dresses)",
+    "create": "Add category",
+    "createPlaceholder": "New category name",
+    "rename": "Rename",
+    "renameLabel": "New name for {{name}}",
+    "renameSave": "Save",
+    "renameCancel": "Cancel",
+    "delete": "Delete",
+    "deleted": "Category deleted.",
+    "deleteConfirm": {
+      "title": "Delete category {{name}}?",
+      "description": "Only an empty category can be deleted. Dresses are not affected."
+    },
+    "errors": {
+      "nameTaken": "Category \"{{name}}\" already exists",
+      "inUse": "{{count}} dresses still hold this category — reassign them first.",
+      "ownerOnly": "Only the owner can delete categories.",
+      "generic": "Something went wrong, please retry."
+    }
   }
 }

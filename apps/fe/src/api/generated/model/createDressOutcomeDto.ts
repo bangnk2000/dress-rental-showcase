@@ -9,5 +9,5 @@ import type { CreateDressOutcomeDtoStatus } from './createDressOutcomeDtoStatus'
 export interface CreateDressOutcomeDto {
   status: CreateDressOutcomeDtoStatus;
   /** The dress code that is already in use */
-  dressCode: string;
+  dressCode?: string;
 }

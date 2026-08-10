@@ -1,4 +1,4 @@
-code,name,size,rental_price,deposit,notes
-VD-101,"Váy cưới ren trắng, đuôi dài",M,"1.500.000","3.000.000",Nhập từ Google Sheets
-VD-102,Đầm dạ hội đỏ,L,900000,2000000,
-VD-103,Váy cưới đuôi cá,S,"1,200,000","2,500,000",Sửa lai 06/2026
+code,name,size,rental_price,deposit,notes,category
+VD-101,"Váy cưới ren trắng, đuôi dài",M,"1.500.000","3.000.000",Nhập từ Google Sheets,Cưới
+VD-102,Đầm dạ hội đỏ,L,900000,2000000,,Dạ hội
+VD-103,Váy cưới đuôi cá,S,"1,200,000","2,500,000",Sửa lai 06/2026,Cưới

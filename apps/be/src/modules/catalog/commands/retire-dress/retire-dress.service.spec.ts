@@ -18,6 +18,7 @@ function makeDress(): DressEntity {
       depositAmount: Money.create(3_000_000),
       notes: null,
       photoUrls: [],
+      categoryId: null,
     },
     DRESS_ID,
     new Date('2026-01-01'),

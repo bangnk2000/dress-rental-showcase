@@ -1,4 +1,5 @@
 import { Money } from '../../../../libs/ddd/money.value-object';
+import { CategoryRepositoryPort } from '../../application/ports/category.repository.port';
 import { DressRepositoryPort } from '../../application/ports/dress.repository.port';
 import { DressCode } from '../../domain/dress-code.value-object';
 import { DressEntity } from '../../domain/dress.entity';
@@ -18,10 +19,23 @@ function makeDress(): DressEntity {
       depositAmount: Money.create(3_000_000),
       notes: 'ghi chú cũ',
       photoUrls: ['https://example.com/a.jpg'],
+      categoryId: null,
     },
     DRESS_ID,
     new Date('2026-01-01'),
   );
+}
+
+function makeCategoryRepo(): CategoryRepositoryPort {
+  return {
+    insert: jest.fn().mockResolvedValue(undefined),
+    save: jest.fn().mockResolvedValue(undefined),
+    findOneById: jest.fn().mockResolvedValue({} as never), // category exists unless overridden
+    findOneByName: jest.fn().mockResolvedValue(null),
+    countDresses: jest.fn().mockResolvedValue(0),
+    deleteById: jest.fn().mockResolvedValue(undefined),
+    nextId: jest.fn().mockReturnValue('00000000-0000-4000-8000-0000000000c1'),
+  };
 }
 
 function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepositoryPort {
@@ -37,7 +51,7 @@ function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepository
 
 it('returns Err(DressNotFoundError) for an unknown dress', async () => {
   const repo = makeRepo({ findOneById: jest.fn().mockResolvedValue(null) });
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
     new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới' }),
@@ -50,7 +64,7 @@ it('returns Err(DressNotFoundError) for an unknown dress', async () => {
 
 it('merges: sent fields change, omitted fields are kept', async () => {
   const repo = makeRepo();
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
     new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới', rentalPrice: 2_000_000 }),
@@ -69,7 +83,7 @@ it('merges: sent fields change, omitted fields are kept', async () => {
 
 it('explicit null clears the nullable fields; photoUrls replaces the list', async () => {
   const repo = makeRepo();
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   await service.execute(
     new UpdateDressCommand({
@@ -89,7 +103,7 @@ it('explicit null clears the nullable fields; photoUrls replaces the list', asyn
 
 it('changing to a taken code returns Err(DressCodeAlreadyExistsError)', async () => {
   const repo = makeRepo({ findOneByCode: jest.fn().mockResolvedValue(makeDress()) });
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
     new UpdateDressCommand({ dressId: DRESS_ID, code: 'VD-099' }),
@@ -102,7 +116,7 @@ it('changing to a taken code returns Err(DressCodeAlreadyExistsError)', async ()
 
 it('re-sending the same code (any case) skips the uniqueness check', async () => {
   const repo = makeRepo();
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
     new UpdateDressCommand({ dressId: DRESS_ID, code: 'vd-012', name: 'Tên mới' }),

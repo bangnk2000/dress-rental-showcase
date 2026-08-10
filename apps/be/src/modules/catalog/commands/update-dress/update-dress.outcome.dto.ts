@@ -5,8 +5,13 @@ import { ApiProperty } from '@nestjs/swagger';
  * for `rejected_dress_code_taken`.
  */
 export class UpdateDressOutcomeDto {
-  @ApiProperty({ enum: ['rejected_dress_not_found', 'rejected_dress_code_taken'] })
-  readonly status!: 'rejected_dress_not_found' | 'rejected_dress_code_taken';
+  @ApiProperty({
+    enum: ['rejected_dress_not_found', 'rejected_dress_code_taken', 'rejected_category_not_found'],
+  })
+  readonly status!:
+    | 'rejected_dress_not_found'
+    | 'rejected_dress_code_taken'
+    | 'rejected_category_not_found';
 
   @ApiProperty({ required: false, description: 'The dress code that is already in use' })
   readonly dressCode?: string;
