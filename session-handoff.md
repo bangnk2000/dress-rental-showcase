@@ -1,5 +1,28 @@
 # Session Handoff
 
+## 2026-08-10 (25) — master restored: the stacked work actually lands (repair session)
+
+- Done: the five stacked PRs had NOT landed on master. Merging #1 first without deleting its head
+  branch means GitHub never retargets the rest, so #2–#5 merged into their stacked BASE branches
+  instead: 27 commits (outcome-model 8, e2e-ci 2, ui-review-batch 8, payments-record-collection 9)
+  sat stranded in merge commits on the feature branches while master carried only the QR phase.
+  PR #6 (`develop`) contributed nothing: `bdd211d` is the pre-rebase copy of `51040dc` (identical
+  patch-id) left over on old local master. PRs #7–#8 were symptom patches on the incomplete
+  master — #7 re-added the `@types/qrcode` the stranded `a26e21f` already carried.
+- Fix: merged `b498a37` (the stack tip) into master; README conflict resolved to the stack side;
+  the auto-merge silently DROPPED `@types/qrcode` from `apps/be/package.json` (bdd211d's stale
+  deletion beat the stack's re-add — exactly the session-19 watch-out) — restored, so master's
+  tree is byte-identical to the verified stack tip. Then merged origin/master (#7–#8) on top —
+  clean; the lockfile was already identical on all three sides. Pushed as `3d96f1d`.
+- Verification: CI on master fully green — scope, contract, be, fe, qr-admin, and **e2e's first
+  ever GitHub run** (the AC2 gap session 21 left open is now closed).
+- Watch out: merging a stacked chain top-down requires deleting each head branch right after its
+  PR merges, or GitHub keeps the next PR pointed at the already-merged base branch.
+- Watch out: the `e2e` job has no `needs: scope` guard — it runs on every PR. Safe but unscoped;
+  `.github/scripts/ci-scope.sh` predates the job and emits no `e2e` output.
+- Next: unchanged from (24) — rental `notes` are displayed nowhere, there is still no rental
+  detail route, and `payments/correct-movement` awaits the owner's ruling.
+
 ## 2026-08-10 (24) — everything pushed as 5 stacked PRs, each reviewed by codex until clean
 
 - Done: the 18 commits that had never left this machine are now **five stacked PRs** on
