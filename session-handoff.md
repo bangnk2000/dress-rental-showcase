@@ -1,5 +1,38 @@
 # Session Handoff
 
+## 2026-08-10 (26) — five feature specs drafted from the owner's next batch (no product code)
+
+- Done: the owner's five asks became five design-tier spec DRAFTS through the
+  `init-feature-spec` lane, each with its contract check run on the draft shape and the business
+  rules held as §6 blocker questions — the lane forbids inventing them. Tracked as five `todo`
+  entries in `feature_list.json` (design gate holds them there until approval):
+  1. [rentals/pickup-before-return](docs/design/rentals/pickup-before-return.md) — return only
+     from `out`; a rental created for today is born delivered. REVERSES the as-built
+     booked→returned branch; smoke.sh + Playwright happy path pivot with it, same commit.
+  2. [catalog/purchase-price](docs/design/catalog/purchase-price.md) — owner-only field, the
+     repo's FIRST field-level authorization (403 outcome on staff write, key OMITTED on staff
+     read). Meaningless until manage-users ships — noted as ordering, not dependency.
+  3. [catalog/price-history](docs/design/catalog/price-history.md) — append-only
+     `dress_price_history`, same-transaction rows, backfill v1 per existing dress.
+  4. [catalog/dress-category](docs/design/catalog/dress-category.md) — second aggregate root in
+     catalog, UNIQUE lower(name), FK RESTRICT delete with `rejected_category_in_use`.
+  5. [identity/manage-users](docs/design/identity/manage-users.md) — owner creates/locks/resets
+     staff accounts, login moves to username/password (FIRST breaking change on /auth/login);
+     the feature that makes every owner-only rule real.
+- Blockers the owner must answer (full tables in each spec §6): backdated creates auto-out?;
+  escape hatch for a mis-created born-out rental; board action on a booked-but-due-back card;
+  CSV path for 200 purchase prices; purchase price on the list screen?; who reads price
+  history; who manages categories; CSV category column with auto-create?; username replaces
+  email outright?; display name; second owner; locked-login message; staff self-password.
+- Watch out: implementation order suggestion — manage-users EARLY (it gives owner-only meaning
+  and every later audit trail a real person), pickup-before-return next (daily-operation rule),
+  then category/purchase-price/price-history in any order; category is the smallest.
+- Watch out: new outcome codes across specs 1/2/4/5 must land in ADR 0001 §3 in the same PR as
+  their implementation; SRS gets FR-RENT-10/FR-CAT-05..07/FR-AUTH-04 only at approval, per the
+  settle-late-fee precedent.
+- Next: owner answers §6 → flip the chosen spec to `approved` → implement one feature per
+  branch/PR with the stacked-merge lesson from (25) in mind.
+
 ## 2026-08-10 (25) — master restored: the stacked work actually lands (repair session)
 
 - Done: the five stacked PRs had NOT landed on master. Merging #1 first without deleting its head

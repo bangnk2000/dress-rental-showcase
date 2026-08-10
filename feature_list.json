@@ -230,6 +230,70 @@
         "AC5: the return dialog computes the refund from the deposit ACTUALLY collected, and says so when no deposit was ever recorded"
       ],
       "dependencies": ["payments/list-payments", "rentals/return-rental", "rentals/list-rentals"]
+    },
+    {
+      "id": "rentals/pickup-before-return",
+      "title": "Return requires pickup first; a rental created for today is born delivered (FR-RENT-10 proposed, tightens FR-RENT-05)",
+      "status": "todo",
+      "evidence": "2026-08-10: spec drafted at docs/design/rentals/pickup-before-return.md (status draft) — design gate holds this at todo until the shop owner answers §6 blockers: backdated creates also auto-out?, escape hatch for a mis-created born-out rental (cancel is booked-only today), and what the board offers on a booked-but-due-back card. Reuses rejected_return_not_allowed + currentStatus (no new wire code). Warning recorded: smoke.sh fixtures and the Playwright happy path both pivot on these rules and must change in the same commit.",
+      "acceptance": [
+        "AC1: returning a booked rental is refused with rejected_return_not_allowed + currentStatus, leaves the rental untouched and writes no money",
+        "AC2: a rental created with start = shopToday() is born with status out and both RentalCreated + RentalPickedUp events",
+        "AC3: the reference day is shopToday() (Asia/Ho_Chi_Minh), never the device date"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "catalog/purchase-price",
+      "title": "Purchase price on a dress — owner enters it, owner alone sees it (FR-CAT-05 proposed; first field-level authorization)",
+      "status": "todo",
+      "evidence": "2026-08-10: spec drafted at docs/design/catalog/purchase-price.md (status draft) — blockers for the owner: how ~200 existing dresses get their value in (CSV column vs by hand), list column vs detail-only, and whether purchase price joins the price history. Derived decisions (vetoable): staff sending the field gets a named 403 outcome (purchase_price_owner_only), staff responses OMIT the field rather than null it. Meaningful-order note: owner-only visibility is empty while the whole shop shares one owner login — ship after (or with) identity/manage-users.",
+      "acceptance": [
+        "AC1: only the owner can write purchasePrice; a staff request carrying the field is refused with the named 403 outcome and changes nothing",
+        "AC2: staff responses do not contain the key at all; owner responses carry number or null",
+        "AC3: purchasePrice feeds no computation anywhere"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "catalog/price-history",
+      "title": "Append-only version history of rental price + standard deposit changes (FR-CAT-06 proposed)",
+      "status": "todo",
+      "evidence": "2026-08-10: spec drafted at docs/design/catalog/price-history.md (status draft) — blockers for the owner: who may read the history (staff vs owner-only decides whether role-shaped responses are needed), and whether a change note is required. Design: dress_price_history rows written in the SAME transaction as create/update (v1 at create, one row per actual change, no-op when values unchanged), backfill one row per existing dress at migrate (changed_by NULL), changedBy name joined via a new StaffLookupPort (deviation #4 pattern). Rentals are untouched — rental_items.price and collected-deposit basis already snapshot the money that matters.",
+      "acceptance": [
+        "AC1: every actual change of rentalPrice/depositAmount writes exactly one history row in the same transaction; an unchanged PATCH writes none",
+        "AC2: the history has no update/delete surface",
+        "AC3: each row carries the new values, who changed them and when",
+        "AC4: every dress has at least one row (v1 at create; backfill for existing dresses)"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "catalog/dress-category",
+      "title": "Dress categories: each dress belongs to one category or none; manage + assign + filter (FR-CAT-07 proposed)",
+      "status": "todo",
+      "evidence": "2026-08-10: spec drafted at docs/design/catalog/dress-category.md (status draft) — blockers for the owner: who manages categories (staff vs owner-only), and whether CSV import grows a category column with auto-create. Design: second aggregate root in catalog (CategoryEntity), UNIQUE lower(name), dresses.category_id nullable FK ON DELETE RESTRICT, delete refused with rejected_category_in_use + dressCount, three new outcomes for ADR 0001 §3, list filter ?categoryId= URL-owned like q/status.",
+      "acceptance": [
+        "AC1: category names are unique case-insensitively, enforced by the DB under race",
+        "AC2: a dress belongs to 0..1 category and can be reassigned or cleared",
+        "AC3: deleting a category that still holds dresses is refused with the count; an empty one deletes without touching any dress",
+        "AC4: the catalog list filters by category, state carried in the URL"
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "identity/manage-users",
+      "title": "Owner creates/locks/reset-passwords staff accounts; login moves to username/password (FR-AUTH-04 proposed + FR-AUTH-01 change)",
+      "status": "todo",
+      "evidence": "2026-08-10: spec drafted at docs/design/identity/manage-users.md (status draft) — blockers for the owner: username replaces email outright or both remain (breaking change on POST /auth/login either way it lands — seed, smoke.sh, Playwright and BOTH login forms change in the same PR), display name yes/no, second owner account yes/no, whether a locked login says so or stays generic, staff self-service password change now or later. Design: username UNIQUE lower(), active flag with deactivate/reactivate (no delete — FKs point at users forever), owner cannot deactivate self, reset-password is owner-set (no email infra), one user:manage owner-only permission, refresh checks active in the same user-loading query. This is the feature that makes every owner-only rule real — today the whole shop logs in as the seeded owner.",
+      "acceptance": [
+        "AC1: a created account signs in with its username/password; duplicate usernames (case-insensitive) are refused, race included",
+        "AC2: a locked account can neither log in nor refresh; reactivation restores it; live access tokens die only by TTL (stated trade-off)",
+        "AC3: the contract has no user delete",
+        "AC4: staff calling any user-management endpoint gets the fail-closed 403 envelope",
+        "AC5: after reset-password the old password is dead and the new one works"
+      ],
+      "dependencies": []
     }
   ]
 }
