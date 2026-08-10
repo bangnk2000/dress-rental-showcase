@@ -55,7 +55,9 @@ export function apiErrorMessage(error: unknown): string {
   if (mapped.kind === 'outcome') {
     switch (mapped.status) {
       case 'rejected_invalid_credentials':
-        return 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.';
+        return 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng thử lại.';
+      case 'rejected_account_locked':
+        return 'Tài khoản đã bị khoá — hỏi chủ tiệm để mở lại.';
       case 'rejected_invalid_refresh_token':
         return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
       default:

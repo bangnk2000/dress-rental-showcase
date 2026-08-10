@@ -80,7 +80,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const signIn = useCallback(
-    async (input: { email: string; password: string }) => {
+    async (input: { username: string; password: string }) => {
       const pair = await loginHttpControllerLogin(input);
       setTokens(pair);
       const user = await fetchMe();

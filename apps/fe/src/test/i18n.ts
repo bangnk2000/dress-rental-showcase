@@ -11,6 +11,7 @@ import common from '../../public/locales/vi/common.json';
 import dresses from '../../public/locales/vi/dresses.json';
 import rentals from '../../public/locales/vi/rentals.json';
 import today from '../../public/locales/vi/today.json';
+import users from '../../public/locales/vi/users.json';
 
 const i18nForTests = createInstance();
 
@@ -18,9 +19,9 @@ void i18nForTests.use(initReactI18next).init({
   lng: 'vi',
   fallbackLng: 'vi',
   defaultNS: 'common',
-  ns: ['common', 'auth', 'dresses', 'rentals', 'today'],
+  ns: ['common', 'auth', 'dresses', 'rentals', 'today', 'users'],
   resources: {
-    vi: { common, auth, dresses, rentals, today },
+    vi: { common, auth, dresses, rentals, today, users },
   },
   interpolation: { escapeValue: false },
   initAsync: false, // synchronous init — no act() noise from the ready flip

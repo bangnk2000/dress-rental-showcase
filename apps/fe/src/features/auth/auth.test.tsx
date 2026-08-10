@@ -52,7 +52,7 @@ test('successful login lands back on the protected route it was bounced from', a
   const user = userEvent.setup();
   renderAuthApp('/dresses');
 
-  await user.type(await screen.findByLabelText('Email'), testUser.email);
+  await user.type(await screen.findByLabelText('Tên đăng nhập'), testUser.username);
   await user.type(screen.getByLabelText('Mật khẩu'), TEST_PASSWORD);
   await user.click(screen.getByRole('button', { name: 'Đăng nhập' }));
 
@@ -64,12 +64,12 @@ test('invalid credentials: error message shown, still on the form', async () => 
   const user = userEvent.setup();
   renderAuthApp('/sign-in');
 
-  await user.type(await screen.findByLabelText('Email'), testUser.email);
+  await user.type(await screen.findByLabelText('Tên đăng nhập'), testUser.username);
   await user.type(screen.getByLabelText('Mật khẩu'), 'sai-mat-khau');
   await user.click(screen.getByRole('button', { name: 'Đăng nhập' }));
 
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Email hoặc mật khẩu không đúng',
+    'Tên đăng nhập hoặc mật khẩu không đúng',
   );
   expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeInTheDocument();
 });
@@ -80,6 +80,6 @@ test('validation errors render resolved from schema i18n keys', async () => {
 
   await user.click(await screen.findByRole('button', { name: 'Đăng nhập' }));
 
-  expect(await screen.findByText('Email không hợp lệ')).toBeInTheDocument();
+  expect(await screen.findByText('Vui lòng nhập tên đăng nhập')).toBeInTheDocument();
   expect(screen.getByText('Vui lòng nhập mật khẩu')).toBeInTheDocument();
 });

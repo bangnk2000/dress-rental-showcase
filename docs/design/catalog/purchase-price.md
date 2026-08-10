@@ -5,10 +5,10 @@
 | | |
 | --- | --- |
 | Bounded context | `catalog` (Supporting) |
-| Status | **draft** — chờ chủ tiệm trả lời §6 |
+| Status | **approved 2026-08-10** — chủ tiệm đồng ý toàn bộ gợi ý §6 |
 | AC source | Đề bài chủ tiệm 2026-08-10: *"thêm thông tin giá nhập cho váy, chỉ chủ shop được nhập và nhìn thấy"*. FR đề xuất: **FR-CAT-05** |
-| Rules approved by | *(trống — draft)* |
-| Contract approved by | *(trống — draft)* |
+| Rules approved by | Chủ tiệm — 2026-08-10 ("tôi đồng ý", chốt theo gợi ý agent ở §6) |
+| Contract approved by | Chủ tiệm (đại diện cả hai phía, cùng repo cùng commit) — 2026-08-10 |
 
 > Vì sao là design-tier: đây là quy tắc **field-level authorization ĐẦU TIÊN** của repo — từ
 > trước tới nay ABAC chỉ chặn theo HÀNH ĐỘNG (`dress:retire` owner-only), chưa bao giờ một
@@ -102,13 +102,13 @@ Accessibility/Responsive: không có pattern mới — form và grid hiện có.
 | — | CHECK (purchase_price >= 0) chặn INSERT thẳng | `test:e2e` raw SQL |
 | — | form owner có ô, form staff không render ô | vitest (FE, mock me) |
 
-## 6. Open questions — blocker cho chủ tiệm
+## 6. Decisions (chủ tiệm chốt 2026-08-10 — "tôi đồng ý", toàn bộ theo gợi ý agent)
 
-| # | Question | Owner | Gợi ý của agent |
-| --- | --- | --- | --- |
-| 1 | ~200 váy đang có sẽ nhập giá nhập bằng cách nào: thêm cột vào **CSV import** (re-run script) hay gõ tay từng váy qua dialog? | chủ tiệm | thêm cột optional `purchase_price` vào CSV importer (script vốn owner-chạy, không đụng field-level rule) — 200 lần gõ tay là không thực tế |
-| 2 | Owner có cần **cột Giá nhập trên bảng list** không, hay chỉ xem ở trang chi tiết? | chủ tiệm | chỉ chi tiết — bảng list dùng chung màn hình với staff đứng quầy, cột tiền nhạy cảm trên màn hình quầy dễ lộ qua vai |
-| 3 | Giá nhập có cần LỊCH SỬ thay đổi như giá thuê/cọc ([price-history](./price-history.md)) không? | chủ tiệm | không (MVP) — giá nhập gần như bất biến sau khi mua; cần thì thêm sau, bảng sử đã có chỗ |
+| # | Question | Quyết định |
+| --- | --- | --- |
+| 1 | Đường nhập cho ~200 váy cũ | **Cột optional `purchase_price` trong CSV importer** (re-run idempotent; import là script owner-chạy nên không đụng field-level rule) |
+| 2 | Hiện ở đâu | **Chỉ trang chi tiết** — không cột list; màn list dùng chung ở quầy |
+| 3 | Lịch sử giá nhập | **Không** (MVP) — gần như bất biến sau khi mua |
 
 Quyết định phái sinh (agent chốt, bác được):
 
@@ -122,7 +122,7 @@ Quyết định phái sinh (agent chốt, bác được):
 
 | Severity | Finding | Evidence | Suggested fix |
 | --- | --- | --- | --- |
-| blocker | Q1 (đường nhập liệu cho 200 váy cũ) chưa chốt — thiếu nó feature ship xong vẫn rỗng dữ liệu | §6.Q1 | chủ tiệm quyết; nếu CSV thì importer + sample CSV + parser test đổi cùng commit |
+| ~~blocker~~ **đã giải quyết** | Q1 chốt: CSV — importer + sample CSV + parser test đổi cùng commit | §6.Q1 | làm trong PR |
 | major | Response shaping theo vai là cơ chế MỚI — phải có e2e so sánh key-level giữa hai token, không chỉ unit | §5 AC2 | viết e2e hai-token ngay từ đầu |
 | major | OpenAPI một DTO cho hai vai (field optional) — người đọc contract không thấy luật vai | §4 | mô tả rõ trong `@ApiProperty({ description })`: "owner-only; omitted for staff" |
 | minor | `forbidden` reason mới phải vào ADR 0001 §3 catalog TRƯỚC khi code | §2 outcome | thêm dòng vào ADR cùng PR |

@@ -22,7 +22,7 @@ import {
 } from '../schemas/login-form.schema';
 import { useSession } from '../use-session';
 
-type LoginErrorKey = 'errors.invalidCredentials' | 'errors.generic';
+type LoginErrorKey = 'errors.invalidCredentials' | 'errors.accountLocked' | 'errors.generic';
 
 /**
  * Field-level message: the schema emits i18n KEYS as messages; this resolves
@@ -47,7 +47,7 @@ export function LoginForm() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { username: '', password: '' },
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -58,11 +58,15 @@ export function LoginForm() {
       // SignInRoute, which Navigates to `state.from ?? '/'`.
     } catch (error) {
       // Wrong credentials is an OUTCOME, not a 401 — 401 now means only "guard rejected the
-      // access token" (ADR 0001 §2).
+      // access token" (ADR 0001 §2). A locked account is only ever announced on a CORRECT
+      // password, so naming it here leaks nothing.
+      const status = outcomeStatus(error);
       setErrorKey(
-        outcomeStatus(error) === 'rejected_invalid_credentials'
+        status === 'rejected_invalid_credentials'
           ? 'errors.invalidCredentials'
-          : 'errors.generic',
+          : status === 'rejected_account_locked'
+            ? 'errors.accountLocked'
+            : 'errors.generic',
       );
     }
   });
@@ -74,15 +78,16 @@ export function LoginForm() {
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <FormField
           control={form.control}
-          name="email"
+          name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('email.label')}</FormLabel>
+              <FormLabel>{t('username.label')}</FormLabel>
               <FormControl>
                 <Input
-                  type="email"
-                  autoComplete="email"
-                  placeholder={t('email.placeholder')}
+                  type="text"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  placeholder={t('username.placeholder')}
                   {...field}
                 />
               </FormControl>

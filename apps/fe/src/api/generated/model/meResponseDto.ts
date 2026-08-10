@@ -8,7 +8,7 @@ import type { MeResponseDtoRole } from './meResponseDtoRole';
 
 export interface MeResponseDto {
   id: string;
-  email: string;
+  username: string;
   name: string;
   role: MeResponseDtoRole;
 }

@@ -5,10 +5,10 @@
 | | |
 | --- | --- |
 | Bounded context | `identity` (Generic) |
-| Status | **draft** — chờ chủ tiệm trả lời §6 |
+| Status | **approved 2026-08-10** — chủ tiệm đồng ý toàn bộ gợi ý §6 |
 | AC source | Đề bài chủ tiệm 2026-08-10: *"owner tạo account và cho đăng nhập bằng username/password"*. FR đề xuất: **FR-AUTH-04** + sửa **FR-AUTH-01** (định danh đăng nhập) |
-| Rules approved by | *(trống — draft)* |
-| Contract approved by | *(trống — draft)* |
+| Rules approved by | Chủ tiệm — 2026-08-10 ("tôi đồng ý", chốt theo gợi ý agent ở §6) |
+| Contract approved by | Chủ tiệm (đại diện cả hai phía, cùng repo cùng commit) — 2026-08-10 |
 
 > Vì sao là design-tier: identity từ "bảng + seed script" thành context có use case thật —
 > và đây là feature làm cho MỌI luật owner-only đang có (retire, waiver phí trễ, sắp tới
@@ -137,15 +137,15 @@ hiện/ẩn đúng chuẩn `aria-pressed`. Responsive: bảng cuộn ngang conta
 | — | /users route: staff bị redirect; bảng + create + khoá/mở + reset | vitest (FE) |
 | — | **smoke.sh + Playwright + seed đổi credentials đăng nhập theo Q1** — sửa cùng commit | e2e |
 
-## 6. Open questions — blocker cho chủ tiệm
+## 6. Decisions (chủ tiệm chốt 2026-08-10 — "tôi đồng ý", toàn bộ theo gợi ý agent)
 
-| # | Question | Owner | Gợi ý của agent |
-| --- | --- | --- | --- |
-| 1 | Định danh đăng nhập: chuyển HẲN sang username (email bỏ, account owner seed thành username `owner`), hay giữ email đăng nhập song song? | chủ tiệm | chuyển hẳn — staff của tiệm không có email công việc, một cột định danh là một sự thật; giữ song song = hai đường login phải test mãi mãi. Email nếu cần liên lạc thì là field thông tin, không phải định danh |
-| 2 | Có cần **tên hiển thị** (displayName — "Chị Lan") tách khỏi username không? Lịch sử giá và các vết sau này sẽ hiện tên này | chủ tiệm | có, optional — vết "lan-2" trong sổ đọc kém hơn "Chị Lan"; một cột nullable, rẻ |
-| 3 | Owner có cần tạo thêm **owner thứ hai** không (vợ/chồng cùng quản)? | chủ tiệm | chưa — endpoint chỉ tạo staff (R4); thêm owner là mở rộng một dòng khi có nhu cầu thật |
-| 4 | Login vào account bị khoá (đúng mật khẩu): message **nêu rõ "đã khoá"** hay chung chung như sai mật khẩu? | chủ tiệm | nêu rõ — người bị khoá nên biết mình bị khoá thay vì nghi mình gõ sai; đây là công cụ nội bộ 5 người, không có kẻ dò tài khoản |
-| 5 | Staff có được **tự đổi mật khẩu mình** không, hay mọi thay đổi qua owner? | chủ tiệm | MVP: qua owner (reset-password) — tự đổi là endpoint + màn hình riêng, thêm sau không tốn kiến trúc |
+| # | Question | Quyết định |
+| --- | --- | --- |
+| 1 | Định danh đăng nhập | **Chuyển hẳn sang username** — email bỏ khỏi định danh; account owner seed thành username `owner`. Một cột định danh là một sự thật; staff không có email công việc |
+| 2 | Tên hiển thị | **Có, optional** (`displayName` nullable) — vết trong sổ hiện "Chị Lan" thay vì "lan-2" |
+| 3 | Owner thứ hai | **Chưa** — endpoint chỉ tạo `staff` (R4); mở rộng khi có nhu cầu thật |
+| 4 | Login vào account bị khoá | **Nêu rõ** — outcome `rejected_account_locked` riêng; công cụ nội bộ, không có kẻ dò tài khoản |
+| 5 | Staff tự đổi mật khẩu | **MVP: qua owner** (reset-password); tự đổi là FR sau, không tốn kiến trúc |
 
 Quyết định phái sinh (agent chốt, bác được):
 
@@ -159,8 +159,8 @@ Quyết định phái sinh (agent chốt, bác được):
 
 | Severity | Finding | Evidence | Suggested fix |
 | --- | --- | --- | --- |
-| blocker | Q1 chưa chốt — `POST /auth/login` là **breaking change** (email → username), đụng seed, smoke.sh, Playwright, cả hai FE login form | §6.Q1 | chủ tiệm quyết; migration đặt username cho account seed hiện có ngay trong PR |
-| blocker | Q4 (lộ trạng thái khoá) đổi outcome catalog của login | §6.Q4 | chủ tiệm quyết |
+| ~~blocker~~ **đã giải quyết** | Q1 chốt: chuyển hẳn username — `POST /auth/login` breaking change, đụng seed, smoke.sh, Playwright, cả hai FE login form | §6.Q1 | migration đặt username cho account seed ngay trong PR; mọi kịch bản test đổi cùng commit |
+| ~~blocker~~ **đã giải quyết** | Q4 chốt: `rejected_account_locked` là outcome riêng của login | §6.Q4 | vào ADR 0001 §3 cùng PR |
 | major | 5 outcome mới + login thay đổi phải vào ADR 0001 §3 trước code | §2 | cập nhật ADR cùng PR |
 | major | `active` phải được đọc trong CÙNG query nạp user ở cả login lẫn refresh — hai chỗ, dễ sửa một quên một | §2 concurrency | một hàm nạp user chung cho cả hai service |
 | major | qr-admin cũng đăng nhập (owner) — login form + errors seam của NÓ đổi theo Q1 trong cùng đợt | apps/qr-admin | đổi cả hai client một PR |
@@ -171,3 +171,29 @@ Mục 2 (leakage — R5 chặn), 5 (read efficiency): không có finding.
 
 > A responsible human confirms this risk list before FE/BE implementation starts. Blockers
 > must be resolved and re-checked; the agent does not approve.
+
+## 7. Re-sync as-built (2026-08-10)
+
+Implement khớp spec với BA lệch nhỏ, đều ghi rõ:
+
+1. **`rejected_user_not_found` (422) thay cho 404 envelope** ở reset-password/deactivate/
+   reactivate — theo convention command-trên-aggregate-không-tồn-tại của repo (retire-dress,
+   record-collection đều 422), không phải 404.
+2. **displayName = cột `name` có sẵn** — bảng đã có tên hiển thị từ bootstrap, không thêm cột.
+3. **Self-lock chặn cho MỌI actor** (so `userId === actorId` trước cả khi load row) — luật bảo
+   vệ người quản lý cuối cùng, không phân biệt role.
+
+| Spec | Code |
+| --- | --- |
+| Migration | `1755000000000_staff_users_username_active.js` — username backfill từ local-part email, UNIQUE `lower(username)`, `active` default true, DROP email; down tái tạo email `<username>@example.com` (mất dữ liệu thật — nêu rõ) |
+| Entity + R3 | `domain/staff-user.entity.ts` (deactivate/reactivate Result, resetPassword) + 3 events |
+| `Username` VO | `domain/username.value-object.ts` |
+| R1 (răng ở DB) | pre-check + `UsernameConflictError` dịch ở `staff-user.repository.ts` |
+| Login/refresh | `login.service.ts` (locked check SAU khi so mật khẩu), `refresh-token.service.ts` (`!staff.active` → generic) |
+| 4 command + list | `commands/{create-user,deactivate-user,reactivate-user,reset-password}/`, `queries/list-users/` |
+| Policy | `identity.policies.ts` — `user:manage` owner-only |
+| Outcome catalog | ADR 0001 §3 bảng identity mở rộng + §4 state matrix |
+| FE | `features/users/` (route /users tự guard theo me.role, bảng + 3 dialog, hàng của mình không có nút khoá), login form username, nav owner-only |
+| qr-admin | login form username + copy `rejected_account_locked` trong errors seam |
+| Test đổi theo | seed (`SEED_OWNER_USERNAME`), smoke.sh, Playwright happy path, e2e harness (`OWNER_USERNAME`), MSW fixtures |
+| Traceability §5 | be 126 unit (+12) · 55 e2e (13 ca `identity-users.e2e-spec.ts`) · fe 87 vitest (+4) · qr-admin 17 |

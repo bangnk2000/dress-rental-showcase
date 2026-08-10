@@ -4,15 +4,19 @@ import { NavLink, Outlet } from 'react-router';
 import { PwaUpdatePrompt } from '@/components/feedback/pwa-update-prompt';
 import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { Toaster } from '@/components/ui/sonner';
-import { SignOutButton } from '@/features/auth';
+import { SignOutButton, useSession } from '@/features/auth';
 import { cn } from '@/lib/utils';
 
 export function RootLayout() {
   const { t } = useTranslation();
+  const { user } = useSession();
   const navItems = [
     { to: '/', label: t('nav.today'), end: true },
     { to: '/dresses', label: t('nav.dresses'), end: false },
     { to: '/rentals', label: t('nav.rentals'), end: false },
+    // Account management is owner-only; hiding the link is display — the route AND the BE
+    // policy both re-check.
+    ...(user?.role === 'owner' ? [{ to: '/users', label: t('nav.users'), end: false }] : []),
   ];
 
   return (

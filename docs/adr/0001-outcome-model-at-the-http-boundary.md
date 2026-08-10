@@ -68,7 +68,15 @@ FE cần đủ dữ liệu để hành động, không phải GET thêm lần n�
 | Use case | Domain error (returned) | Outcome code | Payload | FR |
 | --- | --- | --- | --- | --- |
 | `identity/login` | `InvalidCredentialsError` | `rejected_invalid_credentials` | — | FR-AUTH-01 |
-| `identity/refresh-token` | `InvalidCredentialsError` | `rejected_invalid_refresh_token` | — | FR-AUTH-02 |
+| `identity/login` | `AccountLockedError` | `rejected_account_locked` (chỉ khi mật khẩu ĐÚNG — trạng thái khoá không dò được) | — | FR-AUTH-04 |
+| `identity/refresh-token` | `InvalidCredentialsError` | `rejected_invalid_refresh_token` (gộp cả account bị khoá — kênh refresh không giải thích lý do) | — | FR-AUTH-02 |
+| `identity/create-user` | `UsernameAlreadyExistsError` | `rejected_username_taken` | `username` (bản lowercase) | FR-AUTH-04 |
+| `identity/deactivate-user` | `UserNotFoundError` \| `UserAlreadyInactiveError` \| `CannotDeactivateSelfError` | `rejected_user_not_found` \| `rejected_user_already_inactive` \| `rejected_cannot_deactivate_self` | — | FR-AUTH-04 |
+| `identity/reactivate-user` | `UserNotFoundError` \| `UserAlreadyActiveError` | `rejected_user_not_found` \| `rejected_user_already_active` | — | FR-AUTH-04 |
+| `identity/reset-password` | `UserNotFoundError` | `rejected_user_not_found` | — | FR-AUTH-04 |
+
+Quyền quản lý user chặn ở guard (`user:manage`, owner-only, fail-closed) → 403 **envelope**
+`GENERIC.FORBIDDEN`, không phải outcome — guard chặn TRƯỚC khi use case chạy (§2).
 
 ### catalog
 
@@ -148,7 +156,11 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | Outcome code | apps/fe — state được thiết kế | i18n key |
 | --- | --- | --- |
 | `rejected_invalid_credentials` | giữ form login, message dưới field password | `auth:errors.invalidCredentials` |
+| `rejected_account_locked` | giữ form login, message riêng "đã bị khoá — hỏi chủ tiệm" | `auth:errors.accountLocked` |
 | `rejected_invalid_refresh_token` | không hiển thị: mutator xoá session → điều hướng `/sign-in` | — |
+| `rejected_username_taken` | giữ dialog tạo user, field error trên `username` | `users:validation.usernameTaken` |
+| `rejected_user_already_inactive` / `_already_active` | toast "trạng thái đã đổi trên thiết bị khác" + refetch list | `users:actions.staleState` |
+| `rejected_user_not_found` / `rejected_cannot_deactivate_self` | toast chung + refetch (UI không mời hai case này: hàng của mình không có nút khoá) | `users:actions.staleState` |
 | `rejected_dress_code_taken` | giữ dialog, field error trên `code`, kèm `dressCode` | `dresses:form.errors.codeTaken` |
 | `rejected_dress_not_found` (catalog) | đóng dialog + toast "váy không còn", invalidate list | `dresses:errors.notFound` |
 | `rejected_dress_already_retired` | toast + invalidate detail (state đã đúng, chỉ lệch cache) | `dresses:detail.retire.alreadyRetired` |

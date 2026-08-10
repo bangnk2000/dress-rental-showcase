@@ -26,7 +26,7 @@ test('happy path: create dress → rent today → pickup → return → settled 
 }) => {
   await test.step('sign in', async () => {
     await page.goto('/');
-    await page.getByLabel('Email').fill('owner@example.com');
+    await page.getByLabel('Tên đăng nhập').fill('owner');
     await page.getByLabel('Mật khẩu').fill('changeme');
     await page.getByRole('button', { name: 'Đăng nhập' }).click();
     await expect(page.getByRole('heading', { name: 'Hôm nay' })).toBeVisible();

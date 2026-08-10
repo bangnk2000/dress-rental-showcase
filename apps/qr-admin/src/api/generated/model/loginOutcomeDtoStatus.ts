@@ -10,4 +10,5 @@ export type LoginOutcomeDtoStatus = typeof LoginOutcomeDtoStatus[keyof typeof Lo
 
 export const LoginOutcomeDtoStatus = {
   rejected_invalid_credentials: 'rejected_invalid_credentials',
+  rejected_account_locked: 'rejected_account_locked',
 } as const;

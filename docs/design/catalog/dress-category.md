@@ -5,10 +5,10 @@
 | | |
 | --- | --- |
 | Bounded context | `catalog` (Supporting) |
-| Status | **draft** — chờ chủ tiệm trả lời §6 |
+| Status | **approved 2026-08-10** — chủ tiệm đồng ý toàn bộ gợi ý §6 |
 | AC source | Đề bài chủ tiệm 2026-08-10: *"thêm danh mục cho váy, mỗi váy thuộc một danh mục hoặc không (MVP)"*. FR đề xuất: **FR-CAT-07** |
-| Rules approved by | *(trống — draft)* |
-| Contract approved by | *(trống — draft)* |
+| Rules approved by | Chủ tiệm — 2026-08-10 ("tôi đồng ý", chốt theo gợi ý agent ở §6) |
+| Contract approved by | Chủ tiệm (đại diện cả hai phía, cùng repo cùng commit) — 2026-08-10 |
 
 > Vì sao là design-tier: catalog mọc **aggregate root thứ hai** (`CategoryEntity`) và quan hệ
 > FK đầu tiên giữa hai aggregate cùng context — xoá danh mục đang có váy là câu hỏi vòng đời
@@ -119,12 +119,12 @@ Responsive: chips wrap; cột danh mục ẩn ở màn hẹp nhất, filter vẫ
 | AC4 | filter ?categoryId= trả đúng tập con, phân trang giữ nguyên | e2e |
 | — | form váy: Select gán/bỏ; list: filter qua URL | vitest (FE) |
 
-## 6. Open questions — blocker cho chủ tiệm
+## 6. Decisions (chủ tiệm chốt 2026-08-10 — "tôi đồng ý", toàn bộ theo gợi ý agent)
 
-| # | Question | Owner | Gợi ý của agent |
-| --- | --- | --- | --- |
-| 1 | AI được tạo/sửa/xoá danh mục — chỉ owner hay mọi staff? (Gán váy vào danh mục thì mọi staff, theo quyền sửa váy hiện có.) | chủ tiệm | mọi staff: danh mục là công cụ dọn dẹp hằng ngày như chính việc sửa váy; owner-only tạo nút thắt "chờ chủ về đặt tên" — nếu owner muốn kiểm soát thì chỉ giữ XOÁ là owner-only |
-| 2 | CSV import có thêm cột `category` không, và tên chưa tồn tại thì **tự tạo** danh mục hay báo lỗi dòng đó? | chủ tiệm | có cột, tự tạo theo tên (import là đường nhập liệu một lần — bắt tạo tay trước 10 danh mục rồi mới import là ma sát vô ích); tên chuẩn hoá trim + case-insensitive như R1 |
+| # | Question | Quyết định |
+| --- | --- | --- |
+| 1 | Ai quản lý danh mục | **Mọi staff tạo/sửa tên; XOÁ là owner-only** (`category:delete`) — công cụ dọn dẹp hằng ngày không chờ chủ, nhưng xoá là hành động phá |
+| 2 | CSV import | **Có cột `category`, tự tạo theo tên** — chuẩn hoá trim + case-insensitive như R1 |
 
 Quyết định phái sinh (agent chốt, bác được):
 
@@ -138,7 +138,7 @@ Quyết định phái sinh (agent chốt, bác được):
 
 | Severity | Finding | Evidence | Suggested fix |
 | --- | --- | --- | --- |
-| blocker | Q1 (quyền quản lý danh mục) — quyết định policy phải có trước khi đăng ký `category:*` (fail-closed registry buộc khai đúng ngay) | §6.Q1 | chủ tiệm quyết |
+| ~~blocker~~ **đã giải quyết** | Q1 chốt: `category:create/update` mọi staff, `category:delete` owner-only | §6.Q1 | đăng ký đúng như vậy trong catalog.policies.ts |
 | major | 3 outcome mới phải vào ADR 0001 §3 trước khi code | §2 outcome | thêm bảng catalog cùng PR |
 | major | `rejected_category_not_found` (422, gán) vs 404 envelope (GET id) — hai kênh cho "không tồn tại" đúng ADR nhưng dễ code nhầm | §2 flow | ghi chú trong controller khi implement |
 | minor | `dressCount` trên GET /categories là aggregate query — giữ một query GROUP BY, không N+1 | §4 | viết projection có spec |

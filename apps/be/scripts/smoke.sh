@@ -5,7 +5,7 @@ set -euo pipefail
 BASE=${BASE:-http://localhost:3000/api/v1}
 
 TOKEN=$(curl -sf -X POST "$BASE/auth/login" -H 'Content-Type: application/json' \
-  -d '{"email":"owner@example.com","password":"changeme"}' \
+  -d '{"username":"owner","password":"changeme"}' \
   | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).accessToken))")
 echo "login: OK (token issued)"
 

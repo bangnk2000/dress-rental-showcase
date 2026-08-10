@@ -77,6 +77,13 @@ export const router = createBrowserRouter([
               return { Component: withBoundary(NewRentalRoute) };
             },
           },
+          {
+            path: 'users',
+            lazy: async () => {
+              const { UsersRoute } = await import('@/features/users');
+              return { Component: withBoundary(UsersRoute) };
+            },
+          },
         ],
       },
       { path: '*', Component: NotFoundRoute },

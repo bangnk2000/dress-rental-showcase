@@ -37,7 +37,7 @@
             }
           },
           "422": {
-            "description": "Business rejection: rejected_invalid_credentials. NOT 401 — 401 means only that a guard rejected an access token (ADR 0001)",
+            "description": "Business rejection: rejected_invalid_credentials | rejected_account_locked. NOT 401 — 401 means only that a guard rejected an access token (ADR 0001)",
             "content": {
               "application/json": {
                 "schema": {
@@ -47,7 +47,7 @@
             }
           }
         },
-        "summary": "Staff login with email + password",
+        "summary": "Staff login with username + password",
         "tags": [
           "identity"
         ]
@@ -117,6 +117,296 @@
           }
         ],
         "summary": "Current authenticated staff profile",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "post": {
+        "operationId": "CreateUserHttpController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_username_taken (carries the normalized username)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateUserOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a staff account (owner only; role is always staff)",
+        "tags": [
+          "identity"
+        ]
+      },
+      "get": {
+        "operationId": "ListUsersHttpController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all staff accounts (owner only; unpaginated by design, <10 rows)",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/deactivate": {
+      "post": {
+        "operationId": "DeactivateUserHttpController_deactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_user_not_found | rejected_user_already_inactive | rejected_cannot_deactivate_self",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeactivateUserOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lock a staff account (owner only; lock, never delete)",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/reactivate": {
+      "post": {
+        "operationId": "ReactivateUserHttpController_reactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_user_not_found | rejected_user_already_active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactivateUserOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unlock a staff account (owner only)",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/reset-password": {
+      "post": {
+        "operationId": "ResetPasswordHttpController_resetPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_user_not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPasswordOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set a new password for a staff account (owner only; works on locked accounts too)",
         "tags": [
           "identity"
         ]
@@ -1175,10 +1465,11 @@
       "LoginRequestDto": {
         "type": "object",
         "properties": {
-          "email": {
+          "username": {
             "type": "string",
-            "format": "email",
-            "example": "owner@example.com"
+            "minLength": 1,
+            "example": "owner",
+            "description": "Login username (case-insensitive)"
           },
           "password": {
             "type": "string",
@@ -1187,7 +1478,7 @@
           }
         },
         "required": [
-          "email",
+          "username",
           "password"
         ]
       },
@@ -1269,10 +1560,11 @@
         "type": "object",
         "properties": {
           "status": {
-            "type": "string",
             "enum": [
-              "rejected_invalid_credentials"
-            ]
+              "rejected_invalid_credentials",
+              "rejected_account_locked"
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -1312,9 +1604,9 @@
             "type": "string",
             "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
           },
-          "email": {
+          "username": {
             "type": "string",
-            "example": "owner@example.com"
+            "example": "owner"
           },
           "name": {
             "type": "string",
@@ -1331,9 +1623,183 @@
         },
         "required": [
           "id",
-          "email",
+          "username",
           "name",
           "role"
+        ]
+      },
+      "CreateUserRequestDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{2,29}$",
+            "example": "lan",
+            "description": "3-30 chars: lowercase letters, digits, dot, underscore, dash (case-insensitive)"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Chị Lan",
+            "description": "Display name shown in audit trails"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "matkhau-cua-lan"
+          }
+        },
+        "required": [
+          "username",
+          "name",
+          "password"
+        ]
+      },
+      "IdResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "CreateUserOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_username_taken"
+            ]
+          },
+          "username": {
+            "type": "string",
+            "example": "lan",
+            "description": "The normalized (lowercased) username that is already taken"
+          }
+        },
+        "required": [
+          "status",
+          "username"
+        ]
+      },
+      "DeactivateUserOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_user_not_found",
+              "rejected_user_already_inactive",
+              "rejected_cannot_deactivate_self"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ReactivateUserOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_user_not_found",
+              "rejected_user_already_active"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ResetPasswordRequestDto": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "example": "mat-khau-moi"
+          }
+        },
+        "required": [
+          "newPassword"
+        ]
+      },
+      "ResetPasswordOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_user_not_found"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "username": {
+            "type": "string",
+            "example": "lan"
+          },
+          "name": {
+            "type": "string",
+            "example": "Chị Lan"
+          },
+          "role": {
+            "enum": [
+              "owner",
+              "staff"
+            ],
+            "type": "string",
+            "example": "staff"
+          },
+          "active": {
+            "type": "boolean",
+            "example": true,
+            "description": "false = locked (cannot log in or refresh)"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-08-10T03:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "name",
+          "role",
+          "active",
+          "createdAt"
+        ]
+      },
+      "UserListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDto"
+            }
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "CreateDressRequestDto": {
@@ -1392,18 +1858,6 @@
           "name",
           "rentalPrice",
           "depositAmount"
-        ]
-      },
-      "IdResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
-          }
-        },
-        "required": [
-          "id"
         ]
       },
       "CreateDressOutcomeDto": {

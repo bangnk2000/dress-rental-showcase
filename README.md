@@ -55,8 +55,8 @@ Các lệnh dưới đây chạy từ thư mục gốc của repository.
    pnpm --filter be seed
    ```
 
-   Lệnh seed dùng `SEED_OWNER_EMAIL` và `SEED_OWNER_PASSWORD` trong `.env`; mặc
-   định email là `owner@example.com`. Lệnh này an toàn khi chạy lại, nhưng không
+   Lệnh seed dùng `SEED_OWNER_USERNAME` và `SEED_OWNER_PASSWORD` trong `.env`;
+   mặc định username là `owner`. Lệnh này an toàn khi chạy lại, nhưng không
    đổi mật khẩu của owner đã tồn tại.
 
 4. Mở ba terminal riêng và chạy:
@@ -88,7 +88,7 @@ không cần đặt `VITE_API_BASE_URL` khi chạy theo các lệnh trên.
 
 QR Admin cần backend, database và tài khoản có vai trò `owner` đang hoạt động.
 Sau khi thực hiện phần khởi động ở trên, mở `http://localhost:5174` và đăng nhập
-bằng `SEED_OWNER_EMAIL` / `SEED_OWNER_PASSWORD`. Tại đây owner có thể:
+bằng `SEED_OWNER_USERNAME` / `SEED_OWNER_PASSWORD`. Tại đây owner có thể:
 
 - tạo QR cho một URL tuyệt đối `http://` hoặc `https://`;
 - xem lịch sử QR mới nhất trước;

@@ -5,10 +5,10 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) |
-| Status | **draft** — chờ chủ tiệm trả lời §6 |
+| Status | **approved 2026-08-10** — chủ tiệm đồng ý toàn bộ gợi ý §6 |
 | AC source | Đề bài chủ tiệm 2026-08-10: *"chưa giao váy thì không được nhận về & tất toán; tạo đơn ngày nhận là ngày hiện tại thì trạng thái tự động chuyển sang đã giao"*. FR đề xuất: **FR-RENT-10** (kèm siết FR-RENT-05) |
-| Rules approved by | *(trống — draft)* |
-| Contract approved by | *(trống — draft)* |
+| Rules approved by | Chủ tiệm — 2026-08-10 ("tôi đồng ý", chốt theo gợi ý agent ở §6) |
+| Contract approved by | Chủ tiệm (đại diện cả hai phía, cùng repo cùng commit) — 2026-08-10 |
 
 > Vì sao là design-tier: **đảo một quyết định as-built** — `markReturned` hiện cho phép
 > `booked → returned` có chủ ý ("staff quên bấm giao thì vẫn trả được", FR-RENT-05); spec này rút
@@ -72,11 +72,12 @@ Concurrency: không có race mới — auto-pickup quyết định TRONG create 
 | `status` code | Meaning | HTTP | Extra payload |
 | --- | --- | --- | --- |
 | `rejected_return_not_allowed` | Trạng thái hiện tại không cho nhận về — **nay gồm cả `booked`** | 422 | `currentStatus` (đã có) |
+| `rejected_cancel_not_allowed` | như hiện tại — nhưng đơn `out` **sổ trống** nay được huỷ (§6.Q2) | 422 | `currentStatus` (đã có) |
+| `rejected_cancel_has_payments` | **mới** — huỷ đơn `out` đã có dòng tiền: buộc đi đường return | 422 | — |
 
-Không thêm code mới: "chưa giao" và "đã đóng" là hai câu chuyện với STAFF nhưng là một luật với
-máy — "state machine từ chối return từ trạng thái này" — và `currentStatus` đã chở đủ thông tin
-để FE hiện đúng message từng trường hợp (ADR 0001 §3 không phải thêm dòng). *Quyết định phái
-sinh #1, bác được.*
+Return không thêm code mới: "chưa giao" và "đã đóng" là hai câu chuyện với STAFF nhưng là một
+luật với máy — "state machine từ chối return từ trạng thái này" — và `currentStatus` đã chở đủ
+thông tin để FE hiện đúng message từng trường hợp (ADR 0001 §3 chỉ thêm dòng cho cancel).
 
 ## 3. UI state matrix
 
@@ -113,13 +114,13 @@ Không cần endpoint/field mới: `status` + `period` đã có trên mọi read
 rồi lần lượt pickup/return; Playwright bấm nút pickup trên đơn tạo hôm nay. Cả hai kịch bản đổi
 theo Q1/R2 — phải sửa CÙNG commit với BE.
 
-## 6. Open questions — blocker cho chủ tiệm
+## 6. Decisions (chủ tiệm chốt 2026-08-10 — "tôi đồng ý", toàn bộ theo gợi ý agent)
 
-| # | Question | Owner | Gợi ý của agent |
-| --- | --- | --- | --- |
-| 1 | Đơn tạo với ngày nhận trong **QUÁ KHỨ** (nhập bù đơn cũ) — cũng auto-`out`, hay giữ `booked`? | chủ tiệm | auto-`out` (start ≤ hôm nay): nhập bù nghĩa là váy ĐÃ giao rồi; giữ `booked` bắt staff bấm giao cho một việc đã xảy ra |
-| 2 | Đơn giao ngay bị **tạo nhầm** thì xử lý sao? Cancel hiện chỉ cho `booked` — đơn sinh ra đã `out` sẽ KHÔNG huỷ được, chỉ có đường return + tất toán 0đ. Có mở cancel cho đơn `out` chưa-có-dòng-tiền không? | chủ tiệm | mở cancel cho `out` **chỉ khi** đơn chưa có dòng tiền nào (sổ trống) — gõ nhầm là chuyện có thật ở quầy; đơn đã ghi tiền thì buộc đi đường return để sổ không mất vết |
-| 3 | Khách đặt trước nhưng KHÔNG BAO GIỜ đến lấy (đơn `booked` quá hạn) — tiệm muốn nút gì trên board? | chủ tiệm | `Huỷ đơn` ngay trên card (trước đây board cố ý không có cancel — quyết định đó đảo lại ở đây vì giờ card này không còn action nào khác) |
+| # | Question | Quyết định |
+| --- | --- | --- |
+| 1 | Đơn tạo với ngày nhận trong QUÁ KHỨ | **auto-`out`** (luật là start ≤ shopToday) — nhập bù nghĩa là váy ĐÃ giao |
+| 2 | Đơn giao ngay bị tạo nhầm | **Mở cancel cho `out` khi sổ tiền TRỐNG** — đơn đã ghi tiền thì buộc đi đường return; cancel cần pre-check sổ qua port đọc payments mới (cross-context, kiểu DressLookupPort) |
+| 3 | Đơn `booked` khách không bao giờ lấy | **Nút `Huỷ đơn` ngay trên card** due-back/overdue — đảo quyết định "board không có cancel" vì card này không còn action nào khác |
 
 Quyết định phái sinh (agent chốt, nêu rõ để bác được):
 
@@ -133,9 +134,9 @@ Quyết định phái sinh (agent chốt, nêu rõ để bác được):
 
 | Severity | Finding | Evidence | Suggested fix |
 | --- | --- | --- | --- |
-| blocker | Q1 (đơn quá khứ) chưa chốt — smoke.sh/nhập bù phụ thuộc trực tiếp | §6.Q1 | chủ tiệm quyết |
-| blocker | Q2 (thoát nhầm cho đơn giao ngay) chưa chốt — thiếu nó, một cú gõ nhầm thành đơn không huỷ được | §6.Q2 | chủ tiệm quyết; nếu chọn "mở cancel cho out sổ-trống" thì cancel cần thêm pre-check sổ tiền (đọc payments qua port mới — cross-context, nêu rõ khi implement) |
-| major | Board due-back/overdue với đơn `booked` mất action chính — cần Q3 để card không thành ngõ cụt | §3 matrix | chủ tiệm quyết Q3 |
+| ~~blocker~~ **đã giải quyết** | Q1 chốt: start ≤ shopToday → auto-`out`; smoke.sh fixtures đổi theo | §6.Q1 | sửa smoke cùng commit |
+| ~~blocker~~ **đã giải quyết** | Q2 chốt: cancel mở cho `out` sổ-trống — cancel thêm pre-check sổ tiền qua `PaymentLedgerPort` mới (đọc bảng payments, kiểu DressLookupPort; deviation #4 mở rộng) | §6.Q2 | outcome mới `rejected_cancel_has_payments` khi sổ có dòng |
+| ~~major~~ **đã giải quyết** | Q3 chốt: card due-back/overdue của đơn `booked` có nút Huỷ | §6.Q3 | implement theo matrix §3 |
 | major | Happy path e2e + smoke.sh đổi kịch bản — phải sửa cùng commit, không phải hậu kỳ | §5 cảnh báo | ghi vào evidence khi implement |
 | minor | `markReturned` bỏ nhánh booked → message vi/en cho `currentStatus='booked'` phải thêm key mới | §3 | thêm key `rentals:return.notPickedUp` |
 | minor | Không có thay đổi contract shape nào (không field/endpoint mới) — chỉ semantics của status sau create | §2 | ghi chú trong `@ApiOperation` của create |

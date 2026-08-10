@@ -14,10 +14,11 @@ export class StaffUserMapper implements Mapper<StaffUserEntity, StaffUserModel, 
       createdAt: toDate(record.created_at),
       updatedAt: toDate(record.updated_at),
       props: {
-        email: record.email,
+        username: record.username,
         name: record.name,
         role: record.role,
         passwordHash: record.password_hash,
+        active: record.active,
       },
     });
   }
@@ -26,10 +27,11 @@ export class StaffUserMapper implements Mapper<StaffUserEntity, StaffUserModel, 
     const props = entity.getProps();
     return {
       id: props.id,
-      email: props.email,
+      username: props.username,
       name: props.name,
       role: props.role,
       password_hash: props.passwordHash,
+      active: props.active,
       created_at: props.createdAt,
       updated_at: props.updatedAt,
     };
@@ -40,7 +42,7 @@ export class StaffUserMapper implements Mapper<StaffUserEntity, StaffUserModel, 
     // passwordHash is never exposed.
     return Object.assign(new MeResponseDto(), {
       id: props.id,
-      email: props.email,
+      username: props.username,
       name: props.name,
       role: props.role,
     });

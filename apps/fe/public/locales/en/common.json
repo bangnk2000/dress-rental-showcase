@@ -5,7 +5,8 @@
   "nav": {
     "today": "Today",
     "dresses": "Dresses",
-    "rentals": "Rentals"
+    "rentals": "Rentals",
+    "users": "Staff"
   },
   "actions": {
     "save": "Save",

@@ -34,11 +34,11 @@ export class E2eDb {
     return inserted.id;
   }
 
-  async seedStaff(email: string, role: 'owner' | 'staff', passwordHash: string): Promise<void> {
+  async seedStaff(username: string, role: 'owner' | 'staff', passwordHash: string): Promise<void> {
     await this.query(
-      `INSERT INTO staff_users (id, email, name, role, password_hash)
+      `INSERT INTO staff_users (id, username, name, role, password_hash)
        VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
-      [email, `Nhân sự ${role}`, role, passwordHash],
+      [username, `Nhân sự ${role}`, role, passwordHash],
     );
   }
 

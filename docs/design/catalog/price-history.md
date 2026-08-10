@@ -5,10 +5,10 @@
 | | |
 | --- | --- |
 | Bounded context | `catalog` (Supporting) |
-| Status | **draft** — chờ chủ tiệm trả lời §6 |
+| Status | **approved 2026-08-10** — chủ tiệm đồng ý toàn bộ gợi ý §6 |
 | AC source | Đề bài chủ tiệm 2026-08-10: *"thêm version thay đổi của giá thuê và tiền cọc"*. FR đề xuất: **FR-CAT-06** |
-| Rules approved by | *(trống — draft)* |
-| Contract approved by | *(trống — draft)* |
+| Rules approved by | Chủ tiệm — 2026-08-10 ("tôi đồng ý", chốt theo gợi ý agent ở §6) |
+| Contract approved by | Chủ tiệm (đại diện cả hai phía, cùng repo cùng commit) — 2026-08-10 |
 
 > Vì sao là design-tier: catalog mọc **bảng append-only đầu tiên** (`dress_price_history`) và một
 > invariant xuyên bảng mới — "đổi giá mà không có dòng sử là trạng thái không tồn tại" — enforce
@@ -108,12 +108,12 @@ nhóm như mọi nơi. Responsive: bảng cuộn ngang trong container riêng tr
 | — | create qua CSV import cũng sinh v1 (import dispatch CreateDressCommand — miễn phí) | application unit |
 | — | section FE: 1 dòng vs nhiều dòng vs error | vitest (FE) |
 
-## 6. Open questions — blocker cho chủ tiệm
+## 6. Decisions (chủ tiệm chốt 2026-08-10 — "tôi đồng ý", toàn bộ theo gợi ý agent)
 
-| # | Question | Owner | Gợi ý của agent |
-| --- | --- | --- | --- |
-| 1 | AI xem được lịch sử giá — mọi staff hay chỉ owner? | chủ tiệm | mọi staff: giá thuê + cọc vốn public trong tiệm, sử của nó không nhạy cảm hơn chính nó; owner-only sẽ kéo theo response shaping vai như giá nhập, đắt hơn hẳn |
-| 2 | Có cần ghi kèm **lý do đổi giá** (note) không? | chủ tiệm | không (MVP) — thêm ô note bắt buộc là thêm ma sát cho một việc lành tính; cần vết "ai, khi nào, bao nhiêu" là đủ trả lời tranh cãi |
+| # | Question | Quyết định |
+| --- | --- | --- |
+| 1 | Ai xem lịch sử giá | **Mọi staff** — sử không nhạy cảm hơn chính giá; không shaping vai |
+| 2 | Lý do đổi giá | **Không** (MVP) — "ai, khi nào, bao nhiêu" là đủ |
 
 Quyết định phái sinh (agent chốt, bác được):
 
@@ -127,7 +127,7 @@ Quyết định phái sinh (agent chốt, bác được):
 
 | Severity | Finding | Evidence | Suggested fix |
 | --- | --- | --- | --- |
-| blocker | Q1 (ai xem) đổi hẳn hình dạng implement (shaping vai hay không) | §6.Q1 | chủ tiệm quyết trước khi code |
+| ~~blocker~~ **đã giải quyết** | Q1 chốt: mọi staff xem — không shaping vai | §6.Q1 | read thường, không đọc role |
 | major | R1 không có lưới DB — chỉ transaction kỷ luật; nếu mai này có đường ghi giá thứ hai (script?) nó sẽ lách sổ | §2 R1 | ghi rõ trong catalog-aggregate.md: MỌI đường đổi giá phải qua UpdateDress service; import CSV không update giá (chỉ create) — giữ đúng như vậy |
 | major | `changedBy.name` join sang identity — cross-context read mới (deviation #4 mở rộng thêm một adapter) | §4 | StaffLookupPort + adapter đọc bảng staff_users, cùng trick DressLookupPort; ghi vào design doc |
 | minor | Thứ tự dòng cùng-giây: ORDER BY changed_at, id (tie-break id) — bài học payments | §2 concurrency | ghi thẳng vào query |

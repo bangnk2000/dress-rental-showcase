@@ -20,19 +20,27 @@ Bốn bounded context: `identity` (đăng nhập/quyền), `catalog` (danh mục
 | Vai trò | Quyền |
 | --- | --- |
 | `staff` | Toàn bộ nghiệp vụ hằng ngày: danh mục, tạo/lấy/trả/hủy đơn, xem tiền |
-| `owner` | Như staff + các hành động rủi ro cao: **retire váy** (owner-only) |
+| `owner` | Như staff + các hành động rủi ro cao: **retire váy**, **miễn giảm phí trễ**, **quản lý tài khoản** (owner-only) |
 
 AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/authz`.
 
 ## 3. Yêu cầu chức năng (FR)
 
 ### identity
-- **FR-AUTH-01** Đăng nhập email/password → access + refresh token (2 secret riêng).
+- **FR-AUTH-01** Đăng nhập **username**/password → access + refresh token (2 secret riêng).
+  (Đổi từ email 2026-08-10 — [manage-users](./design/identity/manage-users.md) §6.Q1: staff
+  không có email công việc, một cột định danh là một sự thật.)
 - **FR-AUTH-02** Refresh token. Sai mật khẩu / refresh token không hợp lệ là **outcome nghiệp vụ**
   (`rejected_invalid_credentials` / `rejected_invalid_refresh_token`, 422 — [ADR
   0001](./adr/0001-outcome-model-at-the-http-boundary.md)), FE không retry. **401 chỉ còn một
-  nghĩa**: guard chặn vì thiếu/hết hạn access token → refresh-and-retry một lần.
+  nghĩa**: guard chặn vì thiếu/hết hạn access token → refresh-and-retry một lần. Refresh của
+  account bị khoá chết như token hỏng — lý do là việc của login.
 - **FR-AUTH-03** Xem hồ sơ đang đăng nhập (`GET /auth/me`).
+- **FR-AUTH-04** Owner quản lý tài khoản: tạo staff (username duy nhất case-insensitive,
+  password ≥ 8), **khoá/mở** (không xoá — FK lịch sử trỏ tới user vĩnh viễn), đặt lại mật khẩu
+  tại quầy. Đăng nhập đúng mật khẩu vào account khoá → `rejected_account_locked` (nêu rõ);
+  sai mật khẩu luôn là `rejected_invalid_credentials` (không dò được trạng thái khoá).
+  Owner không tự khoá được chính mình. Access token đang sống chạy hết TTL (trade-off nêu rõ).
 
 ### catalog
 - **FR-CAT-01** Váy có: mã **duy nhất**, giá thuê, tiền cọc chuẩn, link ảnh (`photo_urls`),
@@ -112,6 +120,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR | Feature (`feature_list.json`) | Design doc | Trạng thái |
 | --- | --- | --- | --- |
 | FR-AUTH-01..03 | `infra/be-bootstrap` (identity ship cùng bootstrap) | [identity-aggregate.md](./design/identity-aggregate.md) | pass |
+| FR-AUTH-04, FR-AUTH-01 (đổi định danh) | `identity/manage-users` | [identity/manage-users.md](./design/identity/manage-users.md) (spec `as-built`), [identity-aggregate.md](./design/identity-aggregate.md) | pass |
 | FR-CAT-01, 02, 04 | `catalog/list-dresses` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-CAT-01, 03 | `catalog/manage-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-RENT-01, 02 | `rentals/create-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
