@@ -145,5 +145,20 @@
       "ownerOnly": "Only the owner can delete categories.",
       "generic": "Something went wrong, please retry."
     }
+  },
+  "priceHistory": {
+    "title": "Price history",
+    "loading": "Loading price history…",
+    "error": "Could not load the price history.",
+    "retry": "Retry",
+    "unchanged": "Unchanged since {{date}}.",
+    "current": "(current)",
+    "systemChange": "—",
+    "columns": {
+      "date": "Date",
+      "rentalPrice": "Rental price",
+      "deposit": "Deposit",
+      "changedBy": "Changed by"
+    }
   }
 }

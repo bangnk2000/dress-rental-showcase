@@ -24,6 +24,8 @@ import { ListCategoriesHttpController } from './queries/list-categories/list-cat
 import { ListCategoriesQueryHandler } from './queries/list-categories/list-categories.query-handler';
 import { ListDressesHttpController } from './queries/list-dresses/list-dresses.http.controller';
 import { ListDressesQueryHandler } from './queries/list-dresses/list-dresses.query-handler';
+import { ListPriceHistoryHttpController } from './queries/list-price-history/list-price-history.http.controller';
+import { ListPriceHistoryQueryHandler } from './queries/list-price-history/list-price-history.query-handler';
 import './catalog.policies';
 
 @Module({
@@ -38,6 +40,7 @@ import './catalog.policies';
     RenameCategoryHttpController,
     DeleteCategoryHttpController,
     ListCategoriesHttpController,
+    ListPriceHistoryHttpController,
   ],
   providers: [
     DressMapper,
@@ -51,6 +54,7 @@ import './catalog.policies';
     ListDressesQueryHandler,
     GetDressQueryHandler,
     ListCategoriesQueryHandler,
+    ListPriceHistoryQueryHandler,
     { provide: DRESS_REPOSITORY, useClass: DressRepository },
     { provide: CATEGORY_REPOSITORY, useClass: CategoryRepository },
   ],

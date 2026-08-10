@@ -56,6 +56,8 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
 
     const now = new Date();
     const props = dress.getProps();
+    const priceBefore = props.rentalPrice.amount;
+    const depositBefore = props.depositAmount.amount;
 
     if (command.code !== undefined) {
       const nextCode = DressCode.create(command.code);
@@ -91,8 +93,17 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
       now,
     );
 
+    // FR-CAT-06 R1: one history row per ACTUAL change — re-sending the same numbers writes none.
+    const after = dress.getProps();
+    const pricesChanged =
+      after.rentalPrice.amount !== priceBefore || after.depositAmount.amount !== depositBefore;
+
     try {
-      await this.dressRepo.save(dress);
+      if (pricesChanged) {
+        await this.dressRepo.saveWithPriceHistory(dress, command.actorId);
+      } else {
+        await this.dressRepo.save(dress);
+      }
     } catch (error) {
       if (error instanceof DressCodeConflictError) {
         // A concurrent write took the new code after the pre-check above — same rule, same

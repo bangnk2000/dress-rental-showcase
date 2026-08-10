@@ -17,6 +17,8 @@ export class UpdateDressCommand extends Command {
   readonly purchasePrice?: number | null;
   /** From the verified JWT — the purchase-price field rule compares against it (FR-CAT-05). */
   readonly actorRole: 'owner' | 'staff';
+  /** Who did it, for the price-history row when the prices change (FR-CAT-06). */
+  readonly actorId: string | null;
 
   constructor(props: CommandProps<UpdateDressCommand>) {
     super(props);
@@ -31,5 +33,6 @@ export class UpdateDressCommand extends Command {
     this.categoryId = props.categoryId;
     this.purchasePrice = props.purchasePrice;
     this.actorRole = props.actorRole;
+    this.actorId = props.actorId;
   }
 }

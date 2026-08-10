@@ -73,7 +73,8 @@ export class CreateDressService implements ICommandHandler<CreateDressCommand, C
     );
 
     try {
-      await this.dressRepo.insert(dress);
+      // v1 of the price log rides in the SAME transaction (FR-CAT-06 R1/R4).
+      await this.dressRepo.insertWithHistory(dress, command.actorId);
     } catch (error) {
       if (error instanceof DressCodeConflictError) {
         // A concurrent request took the code after the pre-check above. Same business rule, so it

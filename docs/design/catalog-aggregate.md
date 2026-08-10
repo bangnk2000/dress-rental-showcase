@@ -1,6 +1,6 @@
 # catalog — Tactical Design
 
-> Status: **as-built 2026-08-10** (FR-CAT-07 danh mục váy + FR-CAT-05 giá nhập — field-level authorization ĐẦU TIÊN của repo) · SRS: FR-CAT-01..05, 07 · Context Supporting
+> Status: **as-built 2026-08-10** (FR-CAT-05 giá nhập + FR-CAT-06 sổ giá + FR-CAT-07 danh mục) · SRS: FR-CAT-01..07 · Context Supporting
 
 ## Vai trò & ranh giới
 
@@ -37,6 +37,7 @@ lịch sử đơn cũ giữ nguyên.
 | Không xoá danh mục còn váy | pre-check `countDresses` | FK `dresses.category_id ... ON DELETE RESTRICT` | outcome `rejected_category_in_use` (422) + `dressCount`; DELETE thẳng bị FK chặn | `test:e2e`: API + raw DELETE |
 | Váy chỉ trỏ danh mục tồn tại | pre-check `findOneById` khi gán | FK | outcome `rejected_category_not_found` (422) | `test:e2e` |
 | Giá nhập là field của OWNER (FR-CAT-05) | create/update service so `actorRole` khi request CÓ MẶT field (kể cả null); read shaping: key chỉ tồn tại trên wire cho owner (staff = OMIT, không phải null) | `CHECK (purchase_price >= 0)` | 403 outcome `{ status: 'forbidden', reason: 'purchase_price_owner_only' }` — từ chối NÊU TÊN, không lặng lẽ bỏ field | `test:e2e` → `purchase-price.e2e-spec.ts`: staff write 403 + DB không đổi, so KEY hai token, CHECK chặn raw SQL |
+| Đổi giá thuê/cọc mà không có dòng sử là trạng thái không tồn tại (FR-CAT-06) | service so trước/sau → `insertWithHistory` / `saveWithPriceHistory` (cùng transaction, không trigger); sổ append-only, không API sửa/xoá | `dress_price_history` FK + CHECK ≥ 0 | — (ghi sử không thể bị từ chối riêng) | `test:e2e` → `price-history.e2e-spec.ts`: v1 lúc tạo, +1/lần đổi thật, no-op khi gửi lại, atomicity khi write bị từ chối |
 | Giá thuê / cọc ≥ 0 | `Money` VO | `CHECK (rental_price >= 0)`, `CHECK (deposit_amount >= 0)` | 400 envelope | unit VO (có) |
 | Status hợp lệ | Entity | `CHECK (status IN ('active','retired'))` | outcome `rejected_dress_already_retired` (422) khi retire lại; `CHECK` là lưới cuối | unit entity (có) + e2e UPDATE rác bị chặn |
 

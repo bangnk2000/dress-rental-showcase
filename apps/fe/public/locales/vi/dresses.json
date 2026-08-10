@@ -145,5 +145,20 @@
       "ownerOnly": "Chỉ chủ tiệm được xoá danh mục.",
       "generic": "Có lỗi xảy ra, vui lòng thử lại."
     }
+  },
+  "priceHistory": {
+    "title": "Lịch sử giá",
+    "loading": "Đang tải lịch sử giá…",
+    "error": "Không tải được lịch sử giá.",
+    "retry": "Thử lại",
+    "unchanged": "Giá giữ nguyên từ {{date}}.",
+    "current": "(hiện hành)",
+    "systemChange": "—",
+    "columns": {
+      "date": "Ngày",
+      "rentalPrice": "Giá thuê",
+      "deposit": "Cọc chuẩn",
+      "changedBy": "Người đổi"
+    }
   }
 }

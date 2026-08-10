@@ -87,6 +87,8 @@ async function main(): Promise<void> {
           purchasePrice: row.purchasePrice,
           // The seed import is run BY the owner (README step 3) — FR-CAT-05's field rule holds.
           actorRole: 'owner',
+          // No staff id outside HTTP: the v1 history row reads as "the import" (changed_by NULL).
+          actorId: null,
         }),
       );
       if (result.isOk()) {

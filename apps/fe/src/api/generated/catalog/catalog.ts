@@ -38,6 +38,7 @@ import type {
   DressResponseDto,
   IdResponse,
   ListDressesHttpControllerListParams,
+  PriceHistoryListResponseDto,
   PurchasePriceForbiddenOutcomeDto,
   RenameCategoryOutcomeDto,
   RetireDressOutcomeDto,
@@ -891,3 +892,150 @@ export const useDeleteCategoryHttpControllerRemove = <TError = ApiErrorResponseD
       > => {
       return useMutation(getDeleteCategoryHttpControllerRemoveMutationOptions(options), queryClient);
     }
+    /**
+ * @summary Price + deposit version log of a dress, newest first (auth-only read — the prices are shop-public, so is their history; FR-CAT-06 §6.Q1). Unknown dress = empty list.
+ */
+export const listPriceHistoryHttpControllerList = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<PriceHistoryListResponseDto>(
+      {url: `/api/v1/dresses/${id}/price-history`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListPriceHistoryHttpControllerListQueryKey = (id: string,) => {
+    return [
+    `/api/v1/dresses/${id}/price-history`
+    ] as const;
+    }
+
+
+export const getListPriceHistoryHttpControllerListQueryOptions = <TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPriceHistoryHttpControllerListQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>> = ({ signal }) => listPriceHistoryHttpControllerList(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPriceHistoryHttpControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>>
+export type ListPriceHistoryHttpControllerListQueryError = unknown
+
+
+export function useListPriceHistoryHttpControllerList<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPriceHistoryHttpControllerList<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPriceHistoryHttpControllerList<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Price + deposit version log of a dress, newest first (auth-only read — the prices are shop-public, so is their history; FR-CAT-06 §6.Q1). Unknown dress = empty list.
+ */
+
+export function useListPriceHistoryHttpControllerList<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPriceHistoryHttpControllerListQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getListPriceHistoryHttpControllerListSuspenseQueryOptions = <TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPriceHistoryHttpControllerListQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>> = ({ signal }) => listPriceHistoryHttpControllerList(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseSuspenseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPriceHistoryHttpControllerListSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>>
+export type ListPriceHistoryHttpControllerListSuspenseQueryError = unknown
+
+
+export function useListPriceHistoryHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options: { query:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPriceHistoryHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPriceHistoryHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Price + deposit version log of a dress, newest first (auth-only read — the prices are shop-public, so is their history; FR-CAT-06 §6.Q1). Unknown dress = empty list.
+ */
+
+export function useListPriceHistoryHttpControllerListSuspense<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPriceHistoryHttpControllerListSuspenseQueryOptions(id,options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as  UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+

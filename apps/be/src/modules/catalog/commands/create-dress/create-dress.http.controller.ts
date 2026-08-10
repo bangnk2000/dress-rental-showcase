@@ -63,6 +63,7 @@ export class CreateDressHttpController {
         categoryId: body.categoryId ?? null,
         purchasePrice: body.purchasePrice ?? null,
         actorRole: subject.role,
+        actorId: subject.staffId,
       }),
     );
 

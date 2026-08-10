@@ -13,6 +13,7 @@ import {
   resetCatalog,
   seedCategories,
   seedDresses,
+  seedPriceHistory,
 } from '@/test/msw/handlers/catalog';
 import { testTokenPair } from '@/test/msw/handlers/identity';
 import { makeBookedRange, resetRentals, seedBookedRanges } from '@/test/msw/handlers/rentals';
@@ -444,4 +445,51 @@ test('FR-CAT-05: STAFF gets no field and their full-form edit carries NO purchas
   await screen.findByText('Đã cập nhật váy');
   // Key-level: presence (even null) would be the refused act on the server.
   expect('purchasePrice' in (getLastUpdateDressBody() ?? {})).toBe(false);
+});
+
+test('FR-CAT-06: the detail page lists the price history newest-first with the changer named', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  seedPriceHistory([
+    {
+      rentalPrice: 1_200_000,
+      depositAmount: 2_000_000,
+      changedAt: '2026-08-10T03:00:00.000Z',
+      changedBy: { id: 'u1', name: 'Chị Lan' },
+    },
+    {
+      rentalPrice: 1_000_000,
+      depositAmount: 2_000_000,
+      changedAt: '2026-08-01T03:00:00.000Z',
+      changedBy: null, // the backfill row
+    },
+  ]);
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  expect(await screen.findByRole('heading', { name: 'Lịch sử giá' })).toBeInTheDocument();
+  expect(screen.getByText('Chị Lan')).toBeInTheDocument();
+  expect(screen.getByText('(hiện hành)')).toBeInTheDocument();
+  expect(screen.getByText('1.200.000 ₫')).toBeInTheDocument();
+
+  const table = screen.getByText('Người đổi').closest('table')!;
+  const rows = within(table).getAllByRole('row');
+  expect(rows).toHaveLength(3); // header + 2 entries, newest first
+  expect(rows[1]).toHaveTextContent('1.200.000');
+});
+
+test('FR-CAT-06: a dress whose price never changed gets one sentence, not a table', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  seedPriceHistory([
+    {
+      rentalPrice: 500_000,
+      depositAmount: 1_000_000,
+      changedAt: '2026-08-01T03:00:00.000Z',
+      changedBy: null,
+    },
+  ]);
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  expect(await screen.findByText(/Giá giữ nguyên từ/)).toBeInTheDocument();
+  expect(screen.queryByText('Người đổi')).not.toBeInTheDocument();
 });

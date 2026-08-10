@@ -11,6 +11,7 @@ import type {
   DressListResponseDto,
   DressResponseDto,
   IdResponse,
+  PriceHistoryEntryDto,
   UpdateDressRequestDto,
 } from '@/api/generated/model';
 import { DressResponseDtoStatus } from '@/api/generated/model';
@@ -47,6 +48,7 @@ export function seedDresses(seed: DressResponseDto[]): void {
 export function resetCatalog(): void {
   dresses = [];
   categories = [];
+  priceHistory = [];
   nextId = 1;
 }
 
@@ -66,6 +68,13 @@ export function getLastCreatedCategory(): string | null {
 let lastUpdateDressBody: UpdateDressRequestDto | null = null;
 export function getLastUpdateDressBody(): UpdateDressRequestDto | null {
   return lastUpdateDressBody;
+}
+
+let priceHistory: PriceHistoryEntryDto[] = [];
+
+/** Newest-first entries served by GET /dresses/:id/price-history (one shared log per test). */
+export function seedPriceHistory(seed: PriceHistoryEntryDto[]): void {
+  priceHistory = [...seed];
 }
 
 export const catalogHandlers: HttpHandler[] = [
@@ -182,6 +191,11 @@ export const catalogHandlers: HttpHandler[] = [
     const response: IdResponse = { id: dress.id };
     return HttpResponse.json(response, { status: 201 });
   }),
+
+  // GET /api/v1/dresses/:id/price-history — the append-only version log (FR-CAT-06).
+  http.get('/api/v1/dresses/:id/price-history', () =>
+    HttpResponse.json({ data: priceHistory }),
+  ),
 
   // GET /api/v1/categories — the tiny cached list dress rows join names from.
   http.get('/api/v1/categories', () => HttpResponse.json({ data: categories })),

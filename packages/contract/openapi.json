@@ -931,6 +931,42 @@
         ]
       }
     },
+    "/api/v1/dresses/{id}/price-history": {
+      "get": {
+        "operationId": "ListPriceHistoryHttpController_list",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceHistoryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Price + deposit version log of a dress, newest first (auth-only read — the prices are shop-public, so is their history; FR-CAT-06 §6.Q1). Unknown dress = empty list.",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/v1/rentals": {
       "post": {
         "operationId": "CreateRentalHttpController_create",
@@ -2457,6 +2493,72 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CategoryDto"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PriceHistoryChangedByDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "name": {
+            "type": "string",
+            "example": "Chị Lan",
+            "description": "Display name of the staff who changed it"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "PriceHistoryEntryDto": {
+        "type": "object",
+        "properties": {
+          "rentalPrice": {
+            "type": "number",
+            "example": 1500000
+          },
+          "depositAmount": {
+            "type": "number",
+            "example": 3000000
+          },
+          "changedAt": {
+            "type": "string",
+            "example": "2026-08-10T03:00:00.000Z"
+          },
+          "changedBy": {
+            "nullable": true,
+            "description": "null = the row predates the log (backfill) or came from the seed import",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PriceHistoryChangedByDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "rentalPrice",
+          "depositAmount",
+          "changedAt",
+          "changedBy"
+        ]
+      },
+      "PriceHistoryListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "Newest first; ≥1 row per dress",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceHistoryEntryDto"
             }
           }
         },

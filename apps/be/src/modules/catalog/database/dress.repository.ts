@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { DatabasePool, sql } from 'slonik';
+import { DatabasePool, DatabaseTransactionConnection, sql } from 'slonik';
 import { SqlRepositoryBase } from '../../../libs/db/sql-repository.base';
 import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { ConflictException } from '../../../libs/exceptions';
@@ -36,6 +36,40 @@ export class DressRepository
    */
   async insert(entity: DressEntity): Promise<void> {
     await this.translateCodeConflict(() => super.insert(entity));
+  }
+
+  /**
+   * Dress write + ONE price-history row, atomically (FR-CAT-06 R1): the log line commits with
+   * the price it records, or neither does. insertRow/upsertRow are the same primitives the
+   * plain insert/save use.
+   */
+  async insertWithHistory(entity: DressEntity, changedById: string | null): Promise<void> {
+    await this.translateCodeConflict(() =>
+      this.writeInTransaction(entity, async (conn, record) => {
+        await this.insertRow(conn, record);
+        await this.insertHistoryRow(conn, record, changedById);
+      }),
+    );
+  }
+
+  async saveWithPriceHistory(entity: DressEntity, changedById: string | null): Promise<void> {
+    await this.translateCodeConflict(() =>
+      this.writeInTransaction(entity, async (conn, record) => {
+        await this.upsertRow(conn, record);
+        await this.insertHistoryRow(conn, record, changedById);
+      }),
+    );
+  }
+
+  private async insertHistoryRow(
+    conn: DatabaseTransactionConnection,
+    record: DressModel,
+    changedById: string | null,
+  ): Promise<void> {
+    await conn.query(sql.unsafe`
+      INSERT INTO dress_price_history (dress_id, rental_price, deposit_amount, changed_by)
+      VALUES (${record.id}, ${record.rental_price}, ${record.deposit_amount}, ${changedById})
+    `);
   }
 
   async save(entity: DressEntity): Promise<void> {

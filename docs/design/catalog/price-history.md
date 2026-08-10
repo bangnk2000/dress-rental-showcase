@@ -137,3 +137,26 @@ Mục 1 (naming), 3 (outcome coverage), 8 (idempotency): không có finding.
 
 > A responsible human confirms this risk list before FE/BE implementation starts. Blockers
 > must be resolved and re-checked; the agent does not approve.
+
+## 7. Re-sync as-built (2026-08-10)
+
+Implement khớp spec, một lệch có lý do:
+
+1. **Tên người đổi = LEFT JOIN `staff_users` ngay trong query handler**, không dựng
+   StaffLookupPort như contract-check gợi ý — read-side JOIN không import code identity nào
+   (depcruise sạch), và một port+adapter cho đúng một JOIN là nghi lễ. Ghi thành coupling
+   schema-level họ deviation #4 trong comment của handler.
+2. **R1 sống ở `DressRepository`**: `insertWithHistory` / `saveWithPriceHistory` chạy dòng sử
+   trong CÙNG transaction với dòng váy (tái dùng insertRow/upsertRow); SERVICE là người quyết
+   có đổi giá hay không (nó cầm giá trị cũ). e2e chứng minh atomicity bằng một PATCH đổi giá
+   kèm đổi mã sang mã đã có — write bị từ chối thì sổ không có dòng nào.
+
+| Spec | Code |
+| --- | --- |
+| Migration + R4 backfill | `1755300000000_dress_price_history.js` — bảng append-only, index (dress_id, changed_at), backfill v1/váy với changed_by NULL |
+| R1/R5 | `create-dress.service` luôn `insertWithHistory`; `update-dress.service` so (rentalPrice, depositAmount) trước/sau → `saveWithPriceHistory` hoặc `save` thường; giá nhập KHÔNG vào sổ |
+| R2 | không tồn tại route sửa/xoá — e2e gọi PATCH/DELETE nhận 404 |
+| R3 (ai, khi nào) | `changed_by` từ `@CurrentSubject().staffId` (command `actorId`); importer CSV ghi NULL |
+| Read + §4 | `GET /dresses/:id/price-history` newest-first, tie-break id (bài học payments); staff đọc được (§6.Q1) |
+| UI §3 | `price-history-section.tsx` — query riêng không-suspense: lỗi hiện inline + Thử lại, KHÔNG kéo sập trang chi tiết; 1 dòng = câu "giữ nguyên từ...", nhiều dòng = bảng có nhãn (hiện hành) |
+| Traceability §5 | be 148 unit (+2) · 76 e2e (+4 `price-history.e2e-spec.ts`, có proof atomicity) · fe 96 vitest (+2) |

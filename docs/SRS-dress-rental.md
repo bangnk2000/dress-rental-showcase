@@ -57,6 +57,12 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   hai câu khác nhau). Không tham gia bất kỳ tính toán nào. CSV import (owner chạy) có cột
   `purchase_price`. Quyết định + lý do:
   [design/catalog/purchase-price.md](./design/catalog/purchase-price.md) §6.
+- **FR-CAT-06** Lịch sử giá thuê + cọc chuẩn: bảng **append-only** `dress_price_history` — mỗi
+  thay đổi THẬT của (giá thuê, cọc) sinh đúng một dòng (giá trị MỚI + ai + khi nào), ghi CÙNG
+  transaction với dòng váy; gửi lại y hệt không sinh dòng. Mọi váy có ≥1 dòng (v1 lúc tạo;
+  backfill khi migrate, người đổi NULL). Không có API sửa/xoá sổ. Mọi staff xem được. Đơn thuê
+  KHÔNG bị ảnh hưởng — `rental_items.price` và cọc thực thu đã snapshot. Quyết định + lý do:
+  [design/catalog/price-history.md](./design/catalog/price-history.md) §6.
 - **FR-CAT-07** Danh mục váy: mỗi váy thuộc **0..1 danh mục** (null = chưa phân loại, hợp lệ
   vĩnh viễn). Tên duy nhất không phân biệt hoa thường. Staff tạo/sửa tên; **xoá là owner-only**
   và chỉ xoá được danh mục TRỐNG (`rejected_category_in_use` + dressCount, FK RESTRICT làm lưới).
@@ -142,6 +148,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-CAT-01, 02, 04 | `catalog/list-dresses` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-CAT-01, 03 | `catalog/manage-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-CAT-05 | `catalog/purchase-price` | [catalog/purchase-price.md](./design/catalog/purchase-price.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
+| FR-CAT-06 | `catalog/price-history` | [catalog/price-history.md](./design/catalog/price-history.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-CAT-07 | `catalog/dress-category` | [catalog/dress-category.md](./design/catalog/dress-category.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-RENT-01, 02 | `rentals/create-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-RENT-03 | `rentals/availability-check` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |

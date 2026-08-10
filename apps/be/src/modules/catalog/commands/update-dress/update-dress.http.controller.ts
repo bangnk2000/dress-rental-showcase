@@ -66,6 +66,7 @@ export class UpdateDressHttpController {
         categoryId: body.categoryId,
         purchasePrice: body.purchasePrice,
         actorRole: subject.role,
+        actorId: subject.staffId,
       }),
     );
 

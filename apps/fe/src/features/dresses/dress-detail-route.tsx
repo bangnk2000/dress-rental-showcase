@@ -20,6 +20,7 @@ import { formatVnd } from '@/lib/format';
 
 import { AvailabilityChecker } from './components/availability-checker';
 import { BookingCalendar } from './components/booking-calendar';
+import { PriceHistorySection } from './components/price-history-section';
 import { DressFormDialog } from './components/dress-form-dialog';
 import { DressStatusBadge } from './components/dress-status-badge';
 
@@ -152,6 +153,7 @@ function DressDetail({ dressId }: { dressId: string }) {
           <h2 className="text-base font-semibold">{t('detail.checker.title')}</h2>
           <AvailabilityChecker dressId={dressId} />
         </section>
+        <PriceHistorySection dressId={dressId} />
       </div>
       {/* Retiring is one-way in the MVP — no endpoint reactivates a dress — so the confirmation
           says which dress and stays in Vietnamese, unlike the browser's own prompt. */}

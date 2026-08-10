@@ -27,6 +27,8 @@ function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepository
     save: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(null),
     findOneByCode: jest.fn().mockResolvedValue(null),
+    insertWithHistory: jest.fn().mockResolvedValue(undefined),
+    saveWithPriceHistory: jest.fn().mockResolvedValue(undefined),
     nextId: jest.fn().mockReturnValue('00000000-0000-4000-8000-000000000001'),
     ...overrides,
   };
@@ -42,7 +44,7 @@ const baseCommand = new CreateDressCommand({
   photoUrls: [],
   categoryId: null,
   purchasePrice: null,
-  actorRole: 'staff',
+  actorRole: 'staff', actorId: null,
 });
 
 describe('CreateDressService', () => {
@@ -54,8 +56,8 @@ describe('CreateDressService', () => {
 
     expect(result.isOk()).toBe(true);
     expect(result.unwrap()).toBe('00000000-0000-4000-8000-000000000001');
-    expect(repo.insert).toHaveBeenCalledTimes(1);
-    const inserted = (repo.insert as jest.Mock).mock.calls[0][0] as DressEntity;
+    expect(repo.insertWithHistory).toHaveBeenCalledTimes(1);
+    const inserted = (repo.insertWithHistory as jest.Mock).mock.calls[0][0] as DressEntity;
     expect(inserted.getProps().code.unpack()).toBe('VD-012'); // uppercased by the VO
     expect(inserted.getProps().status).toBe('active');
     expect(inserted.domainEvents).toHaveLength(1); // DressCreatedDomainEvent queued
@@ -65,7 +67,7 @@ describe('CreateDressService', () => {
     // The pre-check saw a free code; a concurrent create took it first and the constraint refused
     // this insert. Staff must get the field error either way — not a generic conflict.
     const repo = makeRepo({
-      insert: jest.fn().mockRejectedValue(new DressCodeConflictError()),
+      insertWithHistory: jest.fn().mockRejectedValue(new DressCodeConflictError()),
     });
 
     const result = await new CreateDressService(repo, makeCategoryRepo()).execute(baseCommand);
@@ -99,7 +101,7 @@ describe('CreateDressService', () => {
 
     expect(result.isErr()).toBe(true);
     expect(result.unwrapErr()).toBeInstanceOf(DressCodeAlreadyExistsError);
-    expect(repo.insert).not.toHaveBeenCalled();
+    expect(repo.insertWithHistory).not.toHaveBeenCalled();
   });
 });
 
@@ -117,13 +119,13 @@ describe('FR-CAT-05 purchase price at create', () => {
         photoUrls: [],
         categoryId: null,
         purchasePrice: 5_000_000,
-        actorRole: 'staff',
+        actorRole: 'staff', actorId: null,
       }),
     );
 
     expect(result.isErr()).toBe(true);
     expect(result.unwrapErr()).toBeInstanceOf(PurchasePriceOwnerOnlyError);
-    expect(repo.insert).not.toHaveBeenCalled();
+    expect(repo.insertWithHistory).not.toHaveBeenCalled();
   });
 
   it('the OWNER creates with a purchase price stored as Money', async () => {
@@ -139,12 +141,12 @@ describe('FR-CAT-05 purchase price at create', () => {
         photoUrls: [],
         categoryId: null,
         purchasePrice: 5_000_000,
-        actorRole: 'owner',
+        actorRole: 'owner', actorId: null,
       }),
     );
 
     expect(result.isOk()).toBe(true);
-    const inserted = (repo.insert as jest.Mock).mock.calls[0][0] as DressEntity;
+    const inserted = (repo.insertWithHistory as jest.Mock).mock.calls[0][0] as DressEntity;
     expect(inserted.getProps().purchasePrice?.amount).toBe(5_000_000);
   });
 });
