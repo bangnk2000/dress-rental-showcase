@@ -8,10 +8,12 @@ import { mapApiError } from '@/api/errors';
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
+  useCancelRentalHttpControllerCancel,
   useGetTodayBoardHttpControllerGetSuspense,
   usePickupRentalHttpControllerPickup,
 } from '@/api/generated/rentals/rentals';
 import type { TodayBoardRentalDto } from '@/api/generated/model';
+import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +36,7 @@ export function TodayRoute() {
   const queryClient = useQueryClient();
   const [date, setDate] = useState(() => localDateIso());
   const [returnTarget, setReturnTarget] = useState<TodayBoardRentalDto | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<TodayBoardRentalDto | null>(null);
   // A new date suspends the board query. Inside a transition React keeps the current board on
   // screen (dimmed) instead of dropping the whole route to the spinner — this screen is opened
   // dozens of times a day and blanking it for every date step read as a reload.
@@ -89,17 +92,66 @@ export function TodayRoute() {
     },
   });
 
-  const returnAction = (rental: TodayBoardRentalDto) => (
-    <Button
-      variant="outline"
-      className={TOUCH_ACTION}
-      // Repeated verbatim down the list, so the accessible name carries the customer.
-      aria-label={t('actions.returnFor', { customer: rental.customerName })}
-      onClick={() => setReturnTarget(rental)}
-    >
-      {t('actions.return')}
-    </Button>
-  );
+  // The board is the natural place to close a no-show: the card lost its return action
+  // (FR-RENT-10) and cancelling is what the shop actually does with a booking nobody collected.
+  const cancelRental = useCancelRentalHttpControllerCancel({
+    mutation: {
+      onSuccess: async () => {
+        await refreshBoardAndList();
+        toast.success(t('cancel.success'));
+      },
+      onError: async (error) => {
+        const mapped = mapApiError(error);
+        if (mapped.kind === 'outcome') {
+          toast.error(
+            mapped.status === 'rejected_cancel_has_payments'
+              ? t('cancel.hasPayments')
+              : t('cancel.notAllowed'),
+          );
+          await refreshBoardAndList();
+          return;
+        }
+        toast.error(t('actionError'));
+      },
+    },
+  });
+
+  /**
+   * FR-RENT-10: only an OUT rental can come back. A booked rental on due-back/overdue means the
+   * customer never collected — its actions are hand the dresses over late, or close the no-show.
+   */
+  const returnAction = (rental: TodayBoardRentalDto) =>
+    rental.status === 'out' ? (
+      <Button
+        variant="outline"
+        className={TOUCH_ACTION}
+        // Repeated verbatim down the list, so the accessible name carries the customer.
+        aria-label={t('actions.returnFor', { customer: rental.customerName })}
+        onClick={() => setReturnTarget(rental)}
+      >
+        {t('actions.return')}
+      </Button>
+    ) : (
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">{t('notPickedUp')}</span>
+        <Button
+          className={TOUCH_ACTION}
+          disabled={pickupRental.isPending}
+          aria-label={t('actions.pickupFor', { customer: rental.customerName })}
+          onClick={() => pickupRental.mutate({ id: rental.rentalId })}
+        >
+          {t('actions.pickup')}
+        </Button>
+        <Button
+          variant="outline"
+          className={TOUCH_ACTION}
+          aria-label={t('actions.cancelFor', { customer: rental.customerName })}
+          onClick={() => setCancelTarget(rental)}
+        >
+          {t('actions.cancel')}
+        </Button>
+      </div>
+    );
 
   return (
     <>
@@ -186,6 +238,24 @@ export function TodayRoute() {
         />
       </div>
       <ReturnRentalDialog rental={returnTarget} onClose={() => setReturnTarget(null)} />
+      <ConfirmDialog
+        open={cancelTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setCancelTarget(null);
+        }}
+        title={t('cancel.title')}
+        description={
+          cancelTarget
+            ? t('cancel.confirmFor', { customer: cancelTarget.customerName })
+            : undefined
+        }
+        confirmLabel={t('cancel.confirmAction')}
+        destructive
+        onConfirm={() => {
+          if (cancelTarget) cancelRental.mutate({ id: cancelTarget.rentalId });
+          setCancelTarget(null);
+        }}
+      />
     </>
   );
 }

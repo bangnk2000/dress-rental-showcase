@@ -68,9 +68,27 @@ FE cần đủ dữ liệu để hành động, không phải GET thêm lần n�
 | Use case | Domain error (returned) | Outcome code | Payload | FR |
 | --- | --- | --- | --- | --- |
 | `identity/login` | `InvalidCredentialsError` | `rejected_invalid_credentials` | — | FR-AUTH-01 |
-| `identity/refresh-token` | `InvalidCredentialsError` | `rejected_invalid_refresh_token` | — | FR-AUTH-02 |
+| `identity/login` | `AccountLockedError` | `rejected_account_locked` (chỉ khi mật khẩu ĐÚNG — trạng thái khoá không dò được) | — | FR-AUTH-04 |
+| `identity/refresh-token` | `InvalidCredentialsError` | `rejected_invalid_refresh_token` (gộp cả account bị khoá — kênh refresh không giải thích lý do) | — | FR-AUTH-02 |
+| `identity/create-user` | `UsernameAlreadyExistsError` | `rejected_username_taken` | `username` (bản lowercase) | FR-AUTH-04 |
+| `identity/deactivate-user` | `UserNotFoundError` \| `UserAlreadyInactiveError` \| `CannotDeactivateSelfError` | `rejected_user_not_found` \| `rejected_user_already_inactive` \| `rejected_cannot_deactivate_self` | — | FR-AUTH-04 |
+| `identity/reactivate-user` | `UserNotFoundError` \| `UserAlreadyActiveError` | `rejected_user_not_found` \| `rejected_user_already_active` | — | FR-AUTH-04 |
+| `identity/reset-password` | `UserNotFoundError` | `rejected_user_not_found` | — | FR-AUTH-04 |
+
+Quyền quản lý user chặn ở guard (`user:manage`, owner-only, fail-closed) → 403 **envelope**
+`GENERIC.FORBIDDEN`, không phải outcome — guard chặn TRƯỚC khi use case chạy (§2).
 
 ### catalog
+
+| Use case | Domain error (returned) | Outcome code | Payload | FR |
+| --- | --- | --- | --- | --- |
+| `catalog/create-category` | `CategoryNameTakenError` | `rejected_category_name_taken` | `name` (đã trim) | FR-CAT-07 |
+| `catalog/rename-category` | `CategoryNotFoundError` \| `CategoryNameTakenError` | `rejected_category_not_found` \| `rejected_category_name_taken` | `name?` | FR-CAT-07 |
+| `catalog/delete-category` | `CategoryNotFoundError` \| `CategoryInUseError` | `rejected_category_not_found` \| `rejected_category_in_use` | `dressCount?` | FR-CAT-07 |
+| `catalog/create-dress`, `catalog/update-dress` | `CategoryNotFoundError` (gán danh mục đã bị xoá) | `rejected_category_not_found` | — | FR-CAT-07 |
+| `catalog/create-dress`, `catalog/update-dress` | `PurchasePriceOwnerOnlyError` | `forbidden` (**403**) + `reason: 'purchase_price_owner_only'` — request của staff MANG field giá nhập | — | FR-CAT-05 |
+
+(bảng dress có sẵn ở dưới)
 
 | Use case | Domain error (returned) | Outcome code | Payload | FR |
 | --- | --- | --- | --- | --- |
@@ -79,6 +97,8 @@ FE cần đủ dữ liệu để hành động, không phải GET thêm lần n�
 | `catalog/update-dress` | `DressCodeAlreadyExistsError` | `rejected_dress_code_taken` | `dressCode` | FR-CAT-01, 03 |
 | `catalog/retire-dress` | `DressNotFoundError` | `rejected_dress_not_found` | — | FR-CAT-03 |
 | `catalog/retire-dress` | `DressAlreadyRetiredError` | `rejected_dress_already_retired` | — | FR-CAT-03 |
+| `catalog/duplicate-dress` | `DressNotFoundError` | `rejected_dress_not_found` | — | FR-CAT-08 |
+| `catalog/duplicate-dress` | `DressCodeAlreadyExistsError` (thua race đánh số `_n` 3 lần liên tiếp — service đã tự đếm lại) | `rejected_dress_code_taken` | `dressCode` | FR-CAT-08 |
 
 ### rentals
 
@@ -90,12 +110,13 @@ FE cần đủ dữ liệu để hành động, không phải GET thêm lần n�
 | `rentals/pickup-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-04 |
 | `rentals/pickup-rental` | `RentalPickupNotAllowedError` | `rejected_pickup_not_allowed` | `currentStatus` | FR-RENT-04, BR-3 |
 | `rentals/return-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-05 |
-| `rentals/return-rental` | `RentalReturnNotAllowedError` | `rejected_return_not_allowed` | `currentStatus` | FR-RENT-05, BR-3 |
+| `rentals/return-rental` | `RentalReturnNotAllowedError` | `rejected_return_not_allowed` (từ FR-RENT-10 gồm cả `booked` — chưa giao thì chưa nhận về) | `currentStatus` | FR-RENT-05, FR-RENT-10, BR-3 |
 | `rentals/return-rental` | `LateFeeWaiverNotAllowedError` | `forbidden` (**403**) + `reason: 'late_fee_waiver_requires_owner'` | `suggestedLateFee`, `submittedLateFee` | FR-RENT-09 |
 | `rentals/return-rental` | `LateFeeWaiverNoteRequiredError` | `rejected_waiver_note_required` | `suggestedLateFee`, `submittedLateFee` | FR-RENT-09 |
 | `rentals/return-rental` | `ReturnDepositBasisChangedError` | `rejected_deposit_basis_changed` | `collectedDeposit` | FR-PAY-02 |
 | `rentals/cancel-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-06 |
-| `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` | `currentStatus` | FR-RENT-06, BR-3 |
+| `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` (từ FR-RENT-10 chỉ còn `returned`/`cancelled` — đơn `out` sổ trống được huỷ) | `currentStatus` | FR-RENT-06, FR-RENT-10, BR-3 |
+| `rentals/cancel-rental` | `RentalCancelHasPaymentsError` | `rejected_cancel_has_payments` — sổ có tiền thì lối ra duy nhất là return | — | FR-RENT-10 |
 
 ### payments
 
@@ -148,19 +169,30 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | Outcome code | apps/fe — state được thiết kế | i18n key |
 | --- | --- | --- |
 | `rejected_invalid_credentials` | giữ form login, message dưới field password | `auth:errors.invalidCredentials` |
+| `rejected_account_locked` | giữ form login, message riêng "đã bị khoá — hỏi chủ tiệm" | `auth:errors.accountLocked` |
 | `rejected_invalid_refresh_token` | không hiển thị: mutator xoá session → điều hướng `/sign-in` | — |
+| `rejected_username_taken` | giữ dialog tạo user, field error trên `username` | `users:validation.usernameTaken` |
+| `rejected_user_already_inactive` / `_already_active` | toast "trạng thái đã đổi trên thiết bị khác" + refetch list | `users:actions.staleState` |
+| `rejected_user_not_found` / `rejected_cannot_deactivate_self` | toast chung + refetch (UI không mời hai case này: hàng của mình không có nút khoá) | `users:actions.staleState` |
 | `rejected_dress_code_taken` | giữ dialog, field error trên `code`, kèm `dressCode` | `dresses:form.errors.codeTaken` |
+| `rejected_category_name_taken` | giữ form quản lý danh mục, message inline kèm `name` | `dresses:categories.errors.nameTaken` |
+| `rejected_category_in_use` | toast nêu `dressCount` + refetch | `dresses:categories.errors.inUse` |
+| `rejected_category_not_found` (gán vào váy) | toast + refetch danh sách danh mục (ai đó vừa xoá) | `dresses:categories.errors.generic` |
+| `forbidden` (`purchase_price_owner_only`) | phòng hờ — UI không render field cho staff; toast chung nếu vẫn tới | `dresses:form.error` |
 | `rejected_dress_not_found` (catalog) | đóng dialog + toast "váy không còn", invalidate list | `dresses:errors.notFound` |
 | `rejected_dress_already_retired` | toast + invalidate detail (state đã đúng, chỉ lệch cache) | `dresses:detail.retire.alreadyRetired` |
+| `rejected_dress_code_taken` (duplicate) | giữ dialog nhân bản, toast nêu `dressCode` "vừa bị thiết bị khác dùng — bấm lại" (server đã tự thử 3 lần) | `dresses:duplicate.codeTaken` |
+| `rejected_dress_not_found` (duplicate) | đóng dialog + toast "váy không còn", invalidate list | `dresses:errors.notFound` |
 | `rejected_dress_not_found` (rentals) | giữ form, message form-level liệt kê `dressIds` | `rentals:form.errors.dressNotFound` |
 | `rejected_dress_retired` | giữ form, message form-level + gợi ý bỏ váy đó | `rentals:form.errors.dressRetired` |
 | `rejected_dress_unavailable` | giữ form, message form-level "trùng lịch (gồm đệm giặt)" | `rentals:form.errors.dressUnavailable` |
 | `rejected_rental_not_found` | toast + invalidate board/list (đơn đã bị người khác xử lý) | `rentals:errors.rentalNotFound` / `today:errors.rentalNotFound` |
 | `rejected_pickup_not_allowed` | toast nêu `currentStatus` + invalidate board | `today:errors.pickupNotAllowed` |
-| `rejected_return_not_allowed` | đóng dialog, toast nêu `currentStatus` + invalidate | `today:errors.returnNotAllowed` |
+| `rejected_return_not_allowed` | đóng dialog, toast nêu `currentStatus` + invalidate; `currentStatus='booked'` có câu RIÊNG chỉ việc ("giao trước khi nhận về") | `today:errors.returnNotAllowed` / `today:errors.returnNotPickedUp` |
 | `forbidden` (`late_fee_waiver_requires_owner`) | GIỮ dialog, field error dưới phí trễ; số đề xuất vẫn hiển thị ở banner phía trên (message form là i18n key, không nội suy tham số) | `today:errors.lateFeeWaiverForbidden` |
 | `rejected_waiver_note_required` | GIỮ dialog, focus field Ghi chú + message bắt buộc lý do | `today:errors.waiverNoteRequired` |
-| `rejected_cancel_not_allowed` | toast nêu `currentStatus` + invalidate list | `rentals:cancel.notAllowed` |
+| `rejected_cancel_not_allowed` | toast nêu `currentStatus` + invalidate list/board | `rentals:cancel.notAllowed` / `today:cancel.notAllowed` |
+| `rejected_cancel_has_payments` | toast "sổ đã có tiền — đi đường return" + invalidate | `rentals:cancel.hasPayments` / `today:cancel.hasPayments` |
 | `rejected_deposit_already_recorded` / `rejected_rental_fee_already_recorded` | GIỮ dialog, field error trên ô tương ứng + invalidate sổ của đơn (danh sách phía trên hiện ngay dòng đã có) | `rentals:collect.errors.alreadyRecorded` |
 | `rejected_nothing_to_record` | message trên ô Tiền cọc; thực tế nút đã disabled khi cả hai ô trống | `rentals:collect.errors.nothingToRecord` |
 | `rejected_rental_closed` | đóng dialog, toast nêu `currentStatus` + invalidate list | `rentals:collect.rentalClosed` |

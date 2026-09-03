@@ -29,8 +29,8 @@ export const dressFormSchema = z.object({
     .string()
     .trim()
     .min(1, 'form.errors.codeRequired')
-    // Mirrors the CreateDressRequestDto @pattern for shop codes.
-    .regex(/^[A-Za-z0-9][A-Za-z0-9-]{1,19}$/, 'form.errors.codeInvalid'),
+    // Mirrors the CreateDressRequestDto @pattern for shop codes (underscore = duplicate suffix).
+    .regex(/^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$/, 'form.errors.codeInvalid'),
   name: z
     .string()
     .trim()
@@ -47,7 +47,24 @@ export const dressFormSchema = z.object({
       (value) => parsePhotoUrls(value).every((line) => PHOTO_URL_LINE.test(line)),
       'form.errors.photoUrlInvalid',
     ),
+  /** Category id, or the NONE sentinel — Radix Select items cannot carry an empty value. */
+  categoryId: z.string(),
+  /** Owner-only (FR-CAT-05); '' = no value. The dialog only SENDS it for the owner. */
+  purchasePrice: z.string().trim().regex(/^[0-9]*$/, 'form.errors.amountInvalid'),
 });
+
+export const CATEGORY_NONE = 'none';
+
+/**
+ * The five sizes the shop stocks — the form offers these as buttons (FR-CAT-08). Stored as the
+ * label itself; the API keeps `sizeLabel` free text, so older rows (CSV import) may hold others.
+ */
+export const SIZE_OPTIONS: readonly string[] = ['XS', 'S', 'M', 'L', 'XL'];
+
+/** The code a duplicate is numbered from (mirrors DressCode.baseOf on the API). */
+export function duplicateBaseOf(code: string): string {
+  return code.replace(/_[0-9]+$/, '');
+}
 
 export type DressFormValues = z.infer<typeof dressFormSchema>;
 
@@ -59,4 +76,6 @@ export const dressFormDefaults: DressFormValues = {
   depositAmount: '',
   notes: '',
   photoUrls: '',
+  categoryId: CATEGORY_NONE,
+  purchasePrice: '',
 };

@@ -28,10 +28,21 @@
     "pickup": "Handed out",
     "pickupFor": "Handed out to {{customer}}",
     "return": "Take back & settle",
-    "returnFor": "Take back & settle for {{customer}}"
+    "returnFor": "Take back & settle for {{customer}}",
+    "cancel": "Cancel rental",
+    "cancelFor": "Cancel the rental of {{customer}}"
   },
+  "notPickedUp": "Customer never collected",
   "pickupSuccess": "Hand-out recorded.",
   "actionError": "Something went wrong, please retry.",
+  "cancel": {
+    "title": "Cancel this rental?",
+    "confirmFor": "Cancel the rental of {{customer}}? The dresses free up immediately and this cannot be undone.",
+    "confirmAction": "Cancel rental",
+    "success": "Rental cancelled.",
+    "notAllowed": "Could not cancel — the rental just changed state. The board has been refreshed.",
+    "hasPayments": "Money is already recorded on this rental — take back & settle instead."
+  },
   "returnDialog": {
     "title": "Settle rental",
     "description": "Record the return of {{customer}}'s rental and settle the deposit and fees.",
@@ -66,6 +77,7 @@
   "errors": {
     "pickupNotAllowed": "Cannot hand out: the rental is \"{{status}}\".",
     "returnNotAllowed": "Cannot take back: the rental is \"{{status}}\".",
+    "returnNotPickedUp": "The dresses were never handed out — tap \"Handed out\" before taking back.",
     "rentalNotFound": "This rental no longer exists. The board has been refreshed.",
     "lateFeeWaiverForbidden": "Only the shop owner may charge less than the suggested late fee.",
     "waiverNoteRequired": "Reducing the late fee requires a reason."

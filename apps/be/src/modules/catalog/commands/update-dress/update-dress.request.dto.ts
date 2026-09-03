@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Matches,
   Min,
@@ -19,7 +20,7 @@ export class UpdateDressRequestDto {
   @ApiPropertyOptional({ example: 'VD-012', description: 'New unique shop code' })
   @IsOptional()
   @IsString()
-  @Matches(/^[A-Za-z0-9][A-Za-z0-9-]{1,19}$/)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$/)
   readonly code?: string;
 
   @ApiPropertyOptional({ example: 'Váy cưới đuôi cá ren trắng' })
@@ -63,4 +64,24 @@ export class UpdateDressRequestDto {
   @Matches(/^https?:\/\/\S+$/, { each: true })
   @Length(1, 2000, { each: true })
   readonly photoUrls?: string[];
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: String,
+    description: 'Category id; omit = keep, explicit null = clear the assignment',
+  })
+  @IsOptional() // skips null too: null IS the valid "clear it" value
+  @IsUUID()
+  readonly categoryId?: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: Number,
+    description:
+      'What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omit = keep, null = clear; a staff request carrying this field is refused with the named 403 outcome.',
+  })
+  @IsOptional() // skips null too: null = "clear it"
+  @IsInt()
+  @Min(0)
+  readonly purchasePrice?: number | null;
 }

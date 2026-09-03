@@ -36,6 +36,7 @@ function makeRow(overrides: Partial<RentalListRow>): RentalListRow {
     status: 'booked',
     period: '[2026-08-01,2026-08-04)',
     notes: null,
+    discount_amount: 0,
     created_at: '2026-07-30T09:00:00.000Z',
     ...overrides,
   };
@@ -44,7 +45,7 @@ function makeRow(overrides: Partial<RentalListRow>): RentalListRow {
 test('joins items + dress snapshots per rental, dresses sorted by code', () => {
   const items = toRentalListItemDtos(
     [
-      makeRow({}),
+      makeRow({ discount_amount: 200_000 }),
       makeRow({ id: RENTAL_2, customer_name: 'Trần Văn B', status: 'returned' }),
     ],
     [
@@ -62,8 +63,10 @@ test('joins items + dress snapshots per rental, dresses sorted by code', () => {
     customerName: 'Nguyễn Thị Hoa',
     startDate: '2026-08-01',
     endDate: '2026-08-03', // half-open [..,08-04) → inclusive last day
+    discountAmount: 200_000, // FR-RENT-11: the list carries it so the money screen can subtract it
     createdAt: '2026-07-30T09:00:00.000Z',
   });
+  expect(items[1]!.discountAmount).toBe(0);
   expect(items[0]!.dresses.map((dress) => dress.code)).toEqual(['VD-001', 'VD-002']);
   // The agreed price rides from the ITEM row, so VD-001 shows 1.400.000 here and 1.500.000 in
   // the other rental — the same dress, two agreements.

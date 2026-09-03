@@ -19,7 +19,7 @@ export class MeQueryHandler implements IQueryHandler<MeQuery, MeResponseDto> {
     if (!row) throw new NotFoundException('Staff account not found');
     return Object.assign(new MeResponseDto(), {
       id: row.id,
-      email: row.email,
+      username: row.username,
       name: row.name,
       role: row.role,
     });

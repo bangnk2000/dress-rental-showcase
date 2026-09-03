@@ -149,6 +149,7 @@ export function makeRentalListItem(
     startDate: '2099-08-01',
     endDate: '2099-08-03',
     notes: null,
+    discountAmount: 0,
     createdAt: '2099-07-30T09:00:00.000Z',
     dresses: [
       {

@@ -12,6 +12,8 @@ export class CreateRentalCommand extends Command {
   readonly startDate: string;
   readonly endDate: string;
   readonly notes: string | null;
+  /** VND taken off the rental fee (FR-RENT-11); 0 = none. */
+  readonly discountAmount: number;
   readonly items: readonly CreateRentalItemInput[];
 
   constructor(props: CommandProps<CreateRentalCommand>) {
@@ -21,6 +23,7 @@ export class CreateRentalCommand extends Command {
     this.startDate = props.startDate;
     this.endDate = props.endDate;
     this.notes = props.notes;
+    this.discountAmount = props.discountAmount;
     this.items = props.items;
   }
 }

@@ -25,9 +25,11 @@ export class RefreshTokenService
     const staffId = await this.tokenService.verifyRefreshToken(command.refreshToken);
     if (!staffId) return Err(new InvalidCredentialsError());
 
-    // The account must still exist (and keeps its CURRENT role) at refresh time.
+    // The account must still exist AND still be active (and keeps its CURRENT role) at refresh
+    // time. A locked account's refresh fails generically — on this channel a dead token is a
+    // dead token; the WHY is login's job (identity/manage-users spec §2).
     const staff = await this.staffRepo.findOneById(staffId);
-    if (!staff) return Err(new InvalidCredentialsError());
+    if (!staff || !staff.active) return Err(new InvalidCredentialsError());
 
     return Ok(await this.tokenService.issuePair(staff.id, staff.role));
   }

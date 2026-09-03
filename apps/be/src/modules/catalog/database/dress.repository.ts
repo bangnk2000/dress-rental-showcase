@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { DatabasePool, sql } from 'slonik';
+import { DatabasePool, DatabaseTransactionConnection, sql } from 'slonik';
+import { z } from 'zod';
 import { SqlRepositoryBase } from '../../../libs/db/sql-repository.base';
 import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { ConflictException } from '../../../libs/exceptions';
@@ -10,6 +11,8 @@ import { DressCodeConflictError } from '../application/ports/dress-code-conflict
 import { DressRepositoryPort } from '../application/ports/dress.repository.port';
 import { DressMapper } from './dress.mapper';
 import { DressModel, dressSchema } from './dress.persistence.model';
+
+const codeRowSchema = z.object({ code: z.string() });
 
 @Injectable()
 export class DressRepository
@@ -38,6 +41,40 @@ export class DressRepository
     await this.translateCodeConflict(() => super.insert(entity));
   }
 
+  /**
+   * Dress write + ONE price-history row, atomically (FR-CAT-06 R1): the log line commits with
+   * the price it records, or neither does. insertRow/upsertRow are the same primitives the
+   * plain insert/save use.
+   */
+  async insertWithHistory(entity: DressEntity, changedById: string | null): Promise<void> {
+    await this.translateCodeConflict(() =>
+      this.writeInTransaction(entity, async (conn, record) => {
+        await this.insertRow(conn, record);
+        await this.insertHistoryRow(conn, record, changedById);
+      }),
+    );
+  }
+
+  async saveWithPriceHistory(entity: DressEntity, changedById: string | null): Promise<void> {
+    await this.translateCodeConflict(() =>
+      this.writeInTransaction(entity, async (conn, record) => {
+        await this.upsertRow(conn, record);
+        await this.insertHistoryRow(conn, record, changedById);
+      }),
+    );
+  }
+
+  private async insertHistoryRow(
+    conn: DatabaseTransactionConnection,
+    record: DressModel,
+    changedById: string | null,
+  ): Promise<void> {
+    await conn.query(sql.unsafe`
+      INSERT INTO dress_price_history (dress_id, rental_price, deposit_amount, changed_by)
+      VALUES (${record.id}, ${record.rental_price}, ${record.deposit_amount}, ${changedById})
+    `);
+  }
+
   async save(entity: DressEntity): Promise<void> {
     await this.translateCodeConflict(() => super.save(entity));
   }
@@ -51,6 +88,14 @@ export class DressRepository
       }
       throw error;
     }
+  }
+
+  async findCodesStartingWith(prefix: string): Promise<string[]> {
+    // starts_with() compares characters, so the duplicate separator `_` is not a LIKE wildcard.
+    const rows = await this.pool.any(
+      sql.type(codeRowSchema)`SELECT code FROM dresses WHERE starts_with(code, ${prefix})`,
+    );
+    return rows.map((row) => row.code);
   }
 
   async findOneByCode(code: string): Promise<DressEntity | null> {

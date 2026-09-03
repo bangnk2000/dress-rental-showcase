@@ -25,12 +25,22 @@ import type {
 
 import type {
   ApiErrorResponseDto,
+  CategoryListResponseDto,
+  CreateCategoryOutcomeDto,
+  CreateCategoryRequestDto,
   CreateDressOutcomeDto,
   CreateDressRequestDto,
+  DeleteCategoryOutcomeDto,
   DressListResponseDto,
   DressResponseDto,
+  DuplicateDressOutcomeDto,
+  DuplicateDressRequestDto,
+  DuplicateDressResponseDto,
   IdResponse,
   ListDressesHttpControllerListParams,
+  PriceHistoryListResponseDto,
+  PurchasePriceForbiddenOutcomeDto,
+  RenameCategoryOutcomeDto,
   RetireDressOutcomeDto,
   UpdateDressOutcomeDto,
   UpdateDressRequestDto
@@ -78,7 +88,7 @@ export const createDressHttpControllerCreate = (
 
 
 
-export const getCreateDressHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto | CreateDressOutcomeDto,
+export const getCreateDressHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | CreateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDressHttpControllerCreate>>, TError,{data: CreateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createDressHttpControllerCreate>>, TError,{data: CreateDressRequestDto}, TContext> => {
 
@@ -107,12 +117,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateDressHttpControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof createDressHttpControllerCreate>>>
     export type CreateDressHttpControllerCreateMutationBody = CreateDressRequestDto
-    export type CreateDressHttpControllerCreateMutationError = ApiErrorResponseDto | CreateDressOutcomeDto
+    export type CreateDressHttpControllerCreateMutationError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | CreateDressOutcomeDto
 
     /**
  * @summary Add a dress to the catalog
  */
-export const useCreateDressHttpControllerCreate = <TError = ApiErrorResponseDto | CreateDressOutcomeDto,
+export const useCreateDressHttpControllerCreate = <TError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | CreateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDressHttpControllerCreate>>, TError,{data: CreateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createDressHttpControllerCreate>>,
@@ -236,7 +246,7 @@ export const updateDressHttpControllerUpdate = (
 
 
 
-export const getUpdateDressHttpControllerUpdateMutationOptions = <TError = ApiErrorResponseDto | UpdateDressOutcomeDto,
+export const getUpdateDressHttpControllerUpdateMutationOptions = <TError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | UpdateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext> => {
 
@@ -265,12 +275,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateDressHttpControllerUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>>
     export type UpdateDressHttpControllerUpdateMutationBody = UpdateDressRequestDto
-    export type UpdateDressHttpControllerUpdateMutationError = ApiErrorResponseDto | UpdateDressOutcomeDto
+    export type UpdateDressHttpControllerUpdateMutationError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | UpdateDressOutcomeDto
 
     /**
  * @summary Update a dress (partial; omitted fields are kept)
  */
-export const useUpdateDressHttpControllerUpdate = <TError = ApiErrorResponseDto | UpdateDressOutcomeDto,
+export const useUpdateDressHttpControllerUpdate = <TError = ApiErrorResponseDto | PurchasePriceForbiddenOutcomeDto | UpdateDressOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>, TError,{id: string;data: UpdateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateDressHttpControllerUpdate>>,
@@ -434,3 +444,443 @@ export const useRetireDressHttpControllerRetire = <TError = ApiErrorResponseDto 
       > => {
       return useMutation(getRetireDressHttpControllerRetireMutationOptions(options), queryClient);
     }
+    /**
+ * @summary Duplicate a dress under the next free <code>_<n> (n from 1), optionally in another size
+ */
+export const duplicateDressHttpControllerDuplicate = (
+    id: string,
+    duplicateDressRequestDto: DuplicateDressRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<DuplicateDressResponseDto>(
+      {url: `/api/v1/dresses/${id}/duplicate`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: duplicateDressRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getDuplicateDressHttpControllerDuplicateMutationOptions = <TError = ApiErrorResponseDto | DuplicateDressOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>, TError,{id: string;data: DuplicateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>, TError,{id: string;data: DuplicateDressRequestDto}, TContext> => {
+
+const mutationKey = ['duplicateDressHttpControllerDuplicate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>, {id: string;data: DuplicateDressRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  duplicateDressHttpControllerDuplicate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DuplicateDressHttpControllerDuplicateMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>>
+    export type DuplicateDressHttpControllerDuplicateMutationBody = DuplicateDressRequestDto
+    export type DuplicateDressHttpControllerDuplicateMutationError = ApiErrorResponseDto | DuplicateDressOutcomeDto
+
+    /**
+ * @summary Duplicate a dress under the next free <code>_<n> (n from 1), optionally in another size
+ */
+export const useDuplicateDressHttpControllerDuplicate = <TError = ApiErrorResponseDto | DuplicateDressOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>, TError,{id: string;data: DuplicateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>,
+        TError,
+        {id: string;data: DuplicateDressRequestDto},
+        TContext
+      > => {
+      return useMutation(getDuplicateDressHttpControllerDuplicateMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Create a dress category (any staff)
+ */
+export const createCategoryHttpControllerCreate = (
+    createCategoryRequestDto: CreateCategoryRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/categories`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createCategoryRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateCategoryHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto | CreateCategoryOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCategoryHttpControllerCreate>>, TError,{data: CreateCategoryRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCategoryHttpControllerCreate>>, TError,{data: CreateCategoryRequestDto}, TContext> => {
+
+const mutationKey = ['createCategoryHttpControllerCreate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCategoryHttpControllerCreate>>, {data: CreateCategoryRequestDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCategoryHttpControllerCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCategoryHttpControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof createCategoryHttpControllerCreate>>>
+    export type CreateCategoryHttpControllerCreateMutationBody = CreateCategoryRequestDto
+    export type CreateCategoryHttpControllerCreateMutationError = ApiErrorResponseDto | CreateCategoryOutcomeDto
+
+    /**
+ * @summary Create a dress category (any staff)
+ */
+export const useCreateCategoryHttpControllerCreate = <TError = ApiErrorResponseDto | CreateCategoryOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCategoryHttpControllerCreate>>, TError,{data: CreateCategoryRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createCategoryHttpControllerCreate>>,
+        TError,
+        {data: CreateCategoryRequestDto},
+        TContext
+      > => {
+      return useMutation(getCreateCategoryHttpControllerCreateMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary List categories with their dress counts (auth-only read; unpaginated by design)
+ */
+export const listCategoriesHttpControllerList = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<CategoryListResponseDto>(
+      {url: `/api/v1/categories`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListCategoriesHttpControllerListQueryKey = () => {
+    return [
+    `/api/v1/categories`
+    ] as const;
+    }
+
+
+export const getListCategoriesHttpControllerListQueryOptions = <TData = Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCategoriesHttpControllerListQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCategoriesHttpControllerList>>> = ({ signal }) => listCategoriesHttpControllerList(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListCategoriesHttpControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof listCategoriesHttpControllerList>>>
+export type ListCategoriesHttpControllerListQueryError = unknown
+
+
+export function useListCategoriesHttpControllerList<TData = Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCategoriesHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listCategoriesHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCategoriesHttpControllerList<TData = Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listCategoriesHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listCategoriesHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListCategoriesHttpControllerList<TData = Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List categories with their dress counts (auth-only read; unpaginated by design)
+ */
+
+export function useListCategoriesHttpControllerList<TData = Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listCategoriesHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListCategoriesHttpControllerListQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Rename a category (any staff); dresses keep their assignment
+ */
+export const renameCategoryHttpControllerRename = (
+    id: string,
+    createCategoryRequestDto: CreateCategoryRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/categories/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: createCategoryRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getRenameCategoryHttpControllerRenameMutationOptions = <TError = ApiErrorResponseDto | RenameCategoryOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCategoryHttpControllerRename>>, TError,{id: string;data: CreateCategoryRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameCategoryHttpControllerRename>>, TError,{id: string;data: CreateCategoryRequestDto}, TContext> => {
+
+const mutationKey = ['renameCategoryHttpControllerRename'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameCategoryHttpControllerRename>>, {id: string;data: CreateCategoryRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  renameCategoryHttpControllerRename(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameCategoryHttpControllerRenameMutationResult = NonNullable<Awaited<ReturnType<typeof renameCategoryHttpControllerRename>>>
+    export type RenameCategoryHttpControllerRenameMutationBody = CreateCategoryRequestDto
+    export type RenameCategoryHttpControllerRenameMutationError = ApiErrorResponseDto | RenameCategoryOutcomeDto
+
+    /**
+ * @summary Rename a category (any staff); dresses keep their assignment
+ */
+export const useRenameCategoryHttpControllerRename = <TError = ApiErrorResponseDto | RenameCategoryOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameCategoryHttpControllerRename>>, TError,{id: string;data: CreateCategoryRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof renameCategoryHttpControllerRename>>,
+        TError,
+        {id: string;data: CreateCategoryRequestDto},
+        TContext
+      > => {
+      return useMutation(getRenameCategoryHttpControllerRenameMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Delete an EMPTY category (owner only); one still holding dresses is refused
+ */
+export const deleteCategoryHttpControllerRemove = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/categories/${id}`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeleteCategoryHttpControllerRemoveMutationOptions = <TError = ApiErrorResponseDto | DeleteCategoryOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCategoryHttpControllerRemove>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCategoryHttpControllerRemove>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteCategoryHttpControllerRemove'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCategoryHttpControllerRemove>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCategoryHttpControllerRemove(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCategoryHttpControllerRemoveMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCategoryHttpControllerRemove>>>
+
+    export type DeleteCategoryHttpControllerRemoveMutationError = ApiErrorResponseDto | DeleteCategoryOutcomeDto
+
+    /**
+ * @summary Delete an EMPTY category (owner only); one still holding dresses is refused
+ */
+export const useDeleteCategoryHttpControllerRemove = <TError = ApiErrorResponseDto | DeleteCategoryOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCategoryHttpControllerRemove>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCategoryHttpControllerRemove>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteCategoryHttpControllerRemoveMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Price + deposit version log of a dress, newest first (auth-only read — the prices are shop-public, so is their history; FR-CAT-06 §6.Q1). Unknown dress = empty list.
+ */
+export const listPriceHistoryHttpControllerList = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<PriceHistoryListResponseDto>(
+      {url: `/api/v1/dresses/${id}/price-history`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListPriceHistoryHttpControllerListQueryKey = (id: string,) => {
+    return [
+    `/api/v1/dresses/${id}/price-history`
+    ] as const;
+    }
+
+
+export const getListPriceHistoryHttpControllerListQueryOptions = <TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPriceHistoryHttpControllerListQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>> = ({ signal }) => listPriceHistoryHttpControllerList(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListPriceHistoryHttpControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>>
+export type ListPriceHistoryHttpControllerListQueryError = unknown
+
+
+export function useListPriceHistoryHttpControllerList<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPriceHistoryHttpControllerList<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPriceHistoryHttpControllerList<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Price + deposit version log of a dress, newest first (auth-only read — the prices are shop-public, so is their history; FR-CAT-06 §6.Q1). Unknown dress = empty list.
+ */
+
+export function useListPriceHistoryHttpControllerList<TData = Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPriceHistoryHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPriceHistoryHttpControllerListQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+

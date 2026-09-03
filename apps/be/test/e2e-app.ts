@@ -5,7 +5,7 @@ import { hashSync } from 'bcryptjs';
 import { E2eDb } from './e2e-db';
 import { e2eDatabaseUrl } from './e2e-database-url';
 
-export const OWNER_EMAIL = 'owner.e2e@tiemvay.vn';
+export const OWNER_USERNAME = 'owner-e2e';
 export const OWNER_PASSWORD = 'e2e-owner-password';
 
 export interface ApiResponse {
@@ -13,7 +13,7 @@ export interface ApiResponse {
   body: unknown;
 }
 
-export const STAFF_EMAIL = 'staff.e2e@tiemvay.vn';
+export const STAFF_USERNAME = 'staff-e2e';
 export const STAFF_PASSWORD = 'e2e-staff-password';
 
 export interface E2eContext {
@@ -113,13 +113,15 @@ export async function startE2eApp(): Promise<E2eContext> {
   const ownerHash = hashSync(OWNER_PASSWORD, 10);
   const staffHash = hashSync(STAFF_PASSWORD, 10);
 
-  async function signIn(email: string, password: string): Promise<string> {
+  async function signIn(username: string, password: string): Promise<string> {
     const login = await request('/api/v1/auth/login', {
       method: 'POST',
-      body: { email, password },
+      body: { username, password },
     });
     if (login.status !== 200) {
-      throw new Error(`e2e login failed for ${email}: ${login.status} ${JSON.stringify(login.body)}`);
+      throw new Error(
+        `e2e login failed for ${username}: ${login.status} ${JSON.stringify(login.body)}`,
+      );
     }
     return (login.body as { accessToken: string }).accessToken;
   }
@@ -132,10 +134,10 @@ export async function startE2eApp(): Promise<E2eContext> {
     request,
     reset: async () => {
       await db.truncate();
-      await db.seedStaff(OWNER_EMAIL, 'owner', ownerHash);
-      await db.seedStaff(STAFF_EMAIL, 'staff', staffHash);
-      context.token = await signIn(OWNER_EMAIL, OWNER_PASSWORD);
-      context.staffToken = await signIn(STAFF_EMAIL, STAFF_PASSWORD);
+      await db.seedStaff(OWNER_USERNAME, 'owner', ownerHash);
+      await db.seedStaff(STAFF_USERNAME, 'staff', staffHash);
+      context.token = await signIn(OWNER_USERNAME, OWNER_PASSWORD);
+      context.staffToken = await signIn(STAFF_USERNAME, STAFF_PASSWORD);
     },
     close: async () => {
       await db.close();

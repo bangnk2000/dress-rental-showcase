@@ -1,9 +1,25 @@
 import { CreateDressCommand } from './create-dress.command';
 import { CreateDressService } from './create-dress.service';
-import { DressCodeAlreadyExistsError } from '../../domain/dress.errors';
+import {
+  DressCodeAlreadyExistsError,
+  PurchasePriceOwnerOnlyError,
+} from '../../domain/dress.errors';
 import { DressEntity } from '../../domain/dress.entity';
 import { DressCodeConflictError } from '../../application/ports/dress-code-conflict.error';
+import { CategoryRepositoryPort } from '../../application/ports/category.repository.port';
 import { DressRepositoryPort } from '../../application/ports/dress.repository.port';
+
+function makeCategoryRepo(): CategoryRepositoryPort {
+  return {
+    insert: jest.fn().mockResolvedValue(undefined),
+    save: jest.fn().mockResolvedValue(undefined),
+    findOneById: jest.fn().mockResolvedValue({} as never), // category exists unless overridden
+    findOneByName: jest.fn().mockResolvedValue(null),
+    countDresses: jest.fn().mockResolvedValue(0),
+    deleteById: jest.fn().mockResolvedValue(undefined),
+    nextId: jest.fn().mockReturnValue('00000000-0000-4000-8000-0000000000c1'),
+  };
+}
 
 function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepositoryPort {
   return {
@@ -11,6 +27,9 @@ function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepository
     save: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(null),
     findOneByCode: jest.fn().mockResolvedValue(null),
+    findCodesStartingWith: jest.fn().mockResolvedValue([]),
+    insertWithHistory: jest.fn().mockResolvedValue(undefined),
+    saveWithPriceHistory: jest.fn().mockResolvedValue(undefined),
     nextId: jest.fn().mockReturnValue('00000000-0000-4000-8000-000000000001'),
     ...overrides,
   };
@@ -24,19 +43,22 @@ const baseCommand = new CreateDressCommand({
   depositAmount: 3_000_000,
   notes: null,
   photoUrls: [],
+  categoryId: null,
+  purchasePrice: null,
+  actorRole: 'staff', actorId: null,
 });
 
 describe('CreateDressService', () => {
   it('creates a dress, normalizes the code, and returns its id', async () => {
     const repo = makeRepo();
-    const service = new CreateDressService(repo);
+    const service = new CreateDressService(repo, makeCategoryRepo());
 
     const result = await service.execute(baseCommand);
 
     expect(result.isOk()).toBe(true);
     expect(result.unwrap()).toBe('00000000-0000-4000-8000-000000000001');
-    expect(repo.insert).toHaveBeenCalledTimes(1);
-    const inserted = (repo.insert as jest.Mock).mock.calls[0][0] as DressEntity;
+    expect(repo.insertWithHistory).toHaveBeenCalledTimes(1);
+    const inserted = (repo.insertWithHistory as jest.Mock).mock.calls[0][0] as DressEntity;
     expect(inserted.getProps().code.unpack()).toBe('VD-012'); // uppercased by the VO
     expect(inserted.getProps().status).toBe('active');
     expect(inserted.domainEvents).toHaveLength(1); // DressCreatedDomainEvent queued
@@ -46,15 +68,15 @@ describe('CreateDressService', () => {
     // The pre-check saw a free code; a concurrent create took it first and the constraint refused
     // this insert. Staff must get the field error either way — not a generic conflict.
     const repo = makeRepo({
-      insert: jest.fn().mockRejectedValue(new DressCodeConflictError()),
+      insertWithHistory: jest.fn().mockRejectedValue(new DressCodeConflictError()),
     });
 
-    const result = await new CreateDressService(repo).execute(baseCommand);
+    const result = await new CreateDressService(repo, makeCategoryRepo()).execute(baseCommand);
 
     expect(result.isErr()).toBe(true);
     const error = result.unwrapErr();
     expect(error).toBeInstanceOf(DressCodeAlreadyExistsError);
-    expect(error.dressCode).toBe('VD-012');
+    expect((error as DressCodeAlreadyExistsError).dressCode).toBe('VD-012');
   });
 
   it('returns Err(DressCodeAlreadyExistsError) when the code is taken', async () => {
@@ -67,17 +89,65 @@ describe('CreateDressService', () => {
         depositAmount: (await import('../../../../libs/ddd/money.value-object')).Money.create(1),
         notes: null,
         photoUrls: [],
+        categoryId: null,
+        purchasePrice: null,
       },
       '00000000-0000-4000-8000-000000000002',
       new Date('2026-01-01'),
     );
     const repo = makeRepo({ findOneByCode: jest.fn().mockResolvedValue(existing) });
-    const service = new CreateDressService(repo);
+    const service = new CreateDressService(repo, makeCategoryRepo());
 
     const result = await service.execute(baseCommand);
 
     expect(result.isErr()).toBe(true);
     expect(result.unwrapErr()).toBeInstanceOf(DressCodeAlreadyExistsError);
-    expect(repo.insert).not.toHaveBeenCalled();
+    expect(repo.insertWithHistory).not.toHaveBeenCalled();
+  });
+});
+
+describe('FR-CAT-05 purchase price at create', () => {
+  it('a STAFF create carrying a purchase price is refused before anything is written', async () => {
+    const repo = makeRepo();
+    const result = await new CreateDressService(repo, makeCategoryRepo()).execute(
+      new CreateDressCommand({
+        code: 'vd-015',
+        name: 'Váy có giá nhập',
+        sizeLabel: null,
+        rentalPrice: 1_000_000,
+        depositAmount: 2_000_000,
+        notes: null,
+        photoUrls: [],
+        categoryId: null,
+        purchasePrice: 5_000_000,
+        actorRole: 'staff', actorId: null,
+      }),
+    );
+
+    expect(result.isErr()).toBe(true);
+    expect(result.unwrapErr()).toBeInstanceOf(PurchasePriceOwnerOnlyError);
+    expect(repo.insertWithHistory).not.toHaveBeenCalled();
+  });
+
+  it('the OWNER creates with a purchase price stored as Money', async () => {
+    const repo = makeRepo();
+    const result = await new CreateDressService(repo, makeCategoryRepo()).execute(
+      new CreateDressCommand({
+        code: 'vd-016',
+        name: 'Váy của chủ',
+        sizeLabel: null,
+        rentalPrice: 1_000_000,
+        depositAmount: 2_000_000,
+        notes: null,
+        photoUrls: [],
+        categoryId: null,
+        purchasePrice: 5_000_000,
+        actorRole: 'owner', actorId: null,
+      }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    const inserted = (repo.insertWithHistory as jest.Mock).mock.calls[0][0] as DressEntity;
+    expect(inserted.getProps().purchasePrice?.amount).toBe(5_000_000);
   });
 });

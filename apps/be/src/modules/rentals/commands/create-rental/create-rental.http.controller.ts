@@ -40,7 +40,11 @@ export class CreateRentalHttpController {
     description:
       'Business rejection: rejected_dress_not_found | rejected_dress_retired | rejected_dress_unavailable (overlap incl. cleaning buffer, pre-check AND race)',
   })
-  @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Invalid request body' })
+  @ApiResponse({
+    status: 400,
+    type: ApiErrorResponseDto,
+    description: 'Invalid request body (incl. a discount above the sum of the item prices)',
+  })
   async create(@Body() body: CreateRentalRequestDto): Promise<IdResponse> {
     const result: CreateRentalResult = await this.commandBus.execute(
       new CreateRentalCommand({
@@ -49,6 +53,7 @@ export class CreateRentalHttpController {
         startDate: body.startDate,
         endDate: body.endDate,
         notes: body.notes ?? null,
+        discountAmount: body.discountAmount ?? 0,
         items: body.items.map((item) => ({
           dressId: item.dressId,
           price: item.price ?? null,

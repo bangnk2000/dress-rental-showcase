@@ -9,6 +9,7 @@ import {
   getGetDressHttpControllerGetQueryKey,
   getListDressesHttpControllerListQueryKey,
   useGetDressHttpControllerGetSuspense,
+  useListCategoriesHttpControllerListSuspense,
   useRetireDressHttpControllerRetire,
 } from '@/api/generated/catalog/catalog';
 import { useListBookedRangesHttpControllerListSuspense } from '@/api/generated/rentals/rentals';
@@ -19,7 +20,9 @@ import { formatVnd } from '@/lib/format';
 
 import { AvailabilityChecker } from './components/availability-checker';
 import { BookingCalendar } from './components/booking-calendar';
+import { PriceHistorySection } from './components/price-history-section';
 import { DressFormDialog } from './components/dress-form-dialog';
+import { DuplicateDressDialog } from './components/duplicate-dress-dialog';
 import { DressStatusBadge } from './components/dress-status-badge';
 
 export function DressDetailRoute() {
@@ -33,6 +36,7 @@ function DressDetail({ dressId }: { dressId: string }) {
   const { data: dress } = useGetDressHttpControllerGetSuspense(dressId);
   const { data: ranges } = useListBookedRangesHttpControllerListSuspense(dressId);
   const [editOpen, setEditOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [retireOpen, setRetireOpen] = useState(false);
 
   async function refreshDressQueries(): Promise<void> {
@@ -67,10 +71,28 @@ function DressDetail({ dressId }: { dressId: string }) {
     },
   });
 
+  const { data: categoryList } = useListCategoriesHttpControllerListSuspense();
+  const categoryName = dress.categoryId
+    ? (categoryList.data.find((category) => category.id === dress.categoryId)?.name ?? '—')
+    : t('detail.info.categoryNone');
+
   const info = [
     { label: t('detail.info.size'), value: dress.sizeLabel ?? '—' },
+    { label: t('detail.info.category'), value: categoryName },
     { label: t('detail.info.rentalPrice'), value: formatVnd(dress.rentalPrice) },
     { label: t('detail.info.deposit'), value: formatVnd(dress.depositAmount) },
+    // The SERVER decides visibility (FR-CAT-05): staff responses carry no key at all.
+    ...(dress.purchasePrice !== undefined
+      ? [
+          {
+            label: t('detail.info.purchasePrice'),
+            value:
+              dress.purchasePrice === null
+                ? t('detail.info.purchasePriceNone')
+                : formatVnd(dress.purchasePrice),
+          },
+        ]
+      : []),
     { label: t('detail.info.notes'), value: dress.notes ?? '—' },
   ];
 
@@ -83,6 +105,10 @@ function DressDetail({ dressId }: { dressId: string }) {
             <DressStatusBadge status={dress.status} />
             <Button variant="outline" onClick={() => setEditOpen(true)}>
               {t('detail.actions.edit')}
+            </Button>
+            {/* FR-CAT-08: the same model in another size gets its own row, numbered by the server. */}
+            <Button variant="outline" onClick={() => setDuplicateOpen(true)}>
+              {t('detail.actions.duplicate')}
             </Button>
             {dress.status === 'active' ? (
               <Button
@@ -133,6 +159,7 @@ function DressDetail({ dressId }: { dressId: string }) {
           <h2 className="text-base font-semibold">{t('detail.checker.title')}</h2>
           <AvailabilityChecker dressId={dressId} />
         </section>
+        <PriceHistorySection dressId={dressId} />
       </div>
       {/* Retiring is one-way in the MVP — no endpoint reactivates a dress — so the confirmation
           says which dress and stays in Vietnamese, unlike the browser's own prompt. */}
@@ -149,6 +176,7 @@ function DressDetail({ dressId }: { dressId: string }) {
         }}
       />
       <DressFormDialog open={editOpen} onOpenChange={setEditOpen} dress={dress} />
+      <DuplicateDressDialog open={duplicateOpen} onOpenChange={setDuplicateOpen} dress={dress} />
     </>
   );
 }

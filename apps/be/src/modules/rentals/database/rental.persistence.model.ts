@@ -7,6 +7,7 @@ export const rentalRowSchema = z.object({
   period: z.string(), // daterange literal, e.g. [2026-08-01,2026-08-04)
   status: z.enum(['booked', 'out', 'returned', 'cancelled']),
   notes: z.string().nullable(),
+  discount_amount: z.number().int(),
   created_at: z.union([z.number(), z.string(), z.date()]),
   updated_at: z.union([z.number(), z.string(), z.date()]),
 });

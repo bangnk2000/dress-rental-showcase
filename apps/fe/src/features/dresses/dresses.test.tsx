@@ -4,8 +4,19 @@ import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
 import { beforeEach, expect, test } from 'vitest';
 
+import { clearTokens, setTokens } from '@/api/mutator/auth-tokens';
 import { Toaster } from '@/components/ui/sonner';
-import { makeDress, resetCatalog, seedDresses } from '@/test/msw/handlers/catalog';
+import {
+  getLastCreatedCategory,
+  getLastDuplicate,
+  getLastUpdateDressBody,
+  makeDress,
+  resetCatalog,
+  seedCategories,
+  seedDresses,
+  seedPriceHistory,
+} from '@/test/msw/handlers/catalog';
+import { testTokenPair } from '@/test/msw/handlers/identity';
 import { makeBookedRange, resetRentals, seedBookedRanges } from '@/test/msw/handlers/rentals';
 import { renderWithProviders } from '@/test/render';
 
@@ -38,6 +49,7 @@ function renderList(route = '/dresses') {
 beforeEach(() => {
   resetCatalog();
   resetRentals();
+  clearTokens(); // owner-only tests opt back in with setTokens
 });
 
 function renderDetail(route: string) {
@@ -341,4 +353,235 @@ test('retiring a dress (confirmed) flips the badge and removes the retire button
     expect(screen.queryByRole('button', { name: 'Ngừng khai thác' })).not.toBeInTheDocument(),
   );
   expect(screen.getByText('Ngừng khai thác')).toBeInTheDocument(); // the status badge
+});
+
+test('FR-CAT-07: rows show their category name and the manager lists counts', async () => {
+  seedCategories([
+    { id: 'cat-1', name: 'Dạ hội', dressCount: 1 },
+    { id: 'cat-2', name: 'Cưới', dressCount: 0 },
+  ]);
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001', categoryId: 'cat-1' }),
+    makeDress({ id: 'd2', code: 'DR-002' }),
+  ]);
+  renderList();
+
+  const rows = await screen.findAllByRole('row');
+  expect(rows[1]).toHaveTextContent('Dạ hội');
+  // The manager section carries both labels with their dress counts.
+  expect(screen.getByRole('heading', { name: 'Danh mục váy' })).toBeInTheDocument();
+  expect(screen.getByText('(1 váy)')).toBeInTheDocument();
+  expect(screen.getByText('(0 váy)')).toBeInTheDocument();
+});
+
+test('FR-CAT-07: the category filter lives in the URL and narrows the list', async () => {
+  seedCategories([{ id: 'cat-1', name: 'Dạ hội', dressCount: 1 }]);
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001', categoryId: 'cat-1' }),
+    makeDress({ id: 'd2', code: 'DR-002' }),
+  ]);
+  renderList('/dresses?categoryId=cat-1');
+
+  expect(await screen.findByText('DR-001')).toBeInTheDocument();
+  expect(screen.queryByText('DR-002')).not.toBeInTheDocument();
+});
+
+test('FR-CAT-07: creating a category posts the trimmed name; a duplicate lands as an inline error', async () => {
+  seedCategories([{ id: 'cat-1', name: 'Dạ hội', dressCount: 0 }]);
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  const user = userEvent.setup();
+  renderList();
+
+  const input = await screen.findByLabelText('Tên danh mục mới');
+  await user.type(input, '  Cưới  ');
+  await user.click(screen.getByRole('button', { name: 'Thêm danh mục' }));
+  await waitFor(() => expect(getLastCreatedCategory()).toBe('Cưới'));
+
+  await user.type(screen.getByLabelText('Tên danh mục mới'), 'dạ hội');
+  await user.click(screen.getByRole('button', { name: 'Thêm danh mục' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Danh mục "dạ hội" đã tồn tại');
+});
+
+test('FR-CAT-05: the OWNER sees the purchase-price field, sends it, and the detail shows it', async () => {
+  setTokens(testTokenPair); // the me handler answers owner for an authorized request
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', purchasePrice: 8_000_000 })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  // The server sent the key → the detail line renders for the owner.
+  expect(screen.getByText('Giá nhập')).toBeInTheDocument();
+  expect(screen.getByText('8.000.000 ₫')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Sửa' }));
+  const priceInput = await screen.findByLabelText('Giá nhập (VND) — chỉ chủ tiệm thấy');
+  expect(priceInput).toHaveValue('8000000'); // prefilled
+  await user.clear(priceInput);
+  await user.type(priceInput, '9000000');
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  await screen.findByText('Đã cập nhật váy');
+  expect(getLastUpdateDressBody()?.purchasePrice).toBe(9_000_000);
+});
+
+test('FR-CAT-05: STAFF gets no field and their full-form edit carries NO purchasePrice key', async () => {
+  // No token → the me query stays unresolved → the dialog treats the user as staff, and the
+  // seeded dress (like a real staff response) carries no purchasePrice key.
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  expect(screen.queryByText('Giá nhập')).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Sửa' }));
+  await screen.findByLabelText('Mã váy');
+  expect(screen.queryByLabelText('Giá nhập (VND) — chỉ chủ tiệm thấy')).not.toBeInTheDocument();
+
+  const nameInput = screen.getByLabelText('Tên váy');
+  await user.clear(nameInput);
+  await user.type(nameInput, 'Đầm staff sửa');
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  await screen.findByText('Đã cập nhật váy');
+  // Key-level: presence (even null) would be the refused act on the server.
+  expect('purchasePrice' in (getLastUpdateDressBody() ?? {})).toBe(false);
+});
+
+test('FR-CAT-06: the detail page lists the price history newest-first with the changer named', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  seedPriceHistory([
+    {
+      rentalPrice: 1_200_000,
+      depositAmount: 2_000_000,
+      changedAt: '2026-08-10T03:00:00.000Z',
+      changedBy: { id: 'u1', name: 'Chị Lan' },
+    },
+    {
+      rentalPrice: 1_000_000,
+      depositAmount: 2_000_000,
+      changedAt: '2026-08-01T03:00:00.000Z',
+      changedBy: null, // the backfill row
+    },
+  ]);
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  expect(await screen.findByRole('heading', { name: 'Lịch sử giá' })).toBeInTheDocument();
+  expect(screen.getByText('Chị Lan')).toBeInTheDocument();
+  expect(screen.getByText('(hiện hành)')).toBeInTheDocument();
+  expect(screen.getByText('1.200.000 ₫')).toBeInTheDocument();
+
+  const table = screen.getByText('Người đổi').closest('table')!;
+  const rows = within(table).getAllByRole('row');
+  expect(rows).toHaveLength(3); // header + 2 entries, newest first
+  expect(rows[1]).toHaveTextContent('1.200.000');
+});
+
+test('FR-CAT-06: a dress whose price never changed gets one sentence, not a table', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  seedPriceHistory([
+    {
+      rentalPrice: 500_000,
+      depositAmount: 1_000_000,
+      changedAt: '2026-08-01T03:00:00.000Z',
+      changedBy: null,
+    },
+  ]);
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  expect(await screen.findByText(/Giá giữ nguyên từ/)).toBeInTheDocument();
+  expect(screen.queryByText('Người đổi')).not.toBeInTheDocument();
+});
+
+test('FR-CAT-08: the size is picked with buttons — a tap selects, another tap switches — and is sent', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+  const user = userEvent.setup();
+  renderList();
+  await screen.findByText('DR-001');
+
+  await user.click(screen.getByRole('button', { name: 'Thêm váy' }));
+  const sizes = await screen.findByRole('group', { name: 'Kích cỡ' });
+  expect(within(sizes).getAllByRole('button').map((button) => button.textContent)).toEqual([
+    'XS',
+    'S',
+    'M',
+    'L',
+    'XL',
+  ]);
+  // The free-text size field is gone.
+  expect(screen.queryByRole('textbox', { name: 'Kích cỡ' })).not.toBeInTheDocument();
+
+  await user.click(within(sizes).getByRole('button', { name: 'M' }));
+  expect(within(sizes).getByRole('button', { name: 'M' })).toHaveAttribute('aria-pressed', 'true');
+  await user.click(within(sizes).getByRole('button', { name: 'L' }));
+  expect(within(sizes).getByRole('button', { name: 'M' })).toHaveAttribute('aria-pressed', 'false');
+  expect(within(sizes).getByRole('button', { name: 'L' })).toHaveAttribute('aria-pressed', 'true');
+
+  await user.type(screen.getByLabelText('Mã váy'), 'DR-100');
+  await user.type(screen.getByLabelText('Tên váy'), 'Đầm cưới mới');
+  await user.type(screen.getByLabelText('Giá thuê (VND)'), '500000');
+  await user.type(screen.getByLabelText('Tiền cọc (VND)'), '1000000');
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  await screen.findByText('Đã thêm váy vào danh mục');
+  const row = (await screen.findByText('DR-100')).closest('tr')!;
+  expect(within(row).getByText('L')).toBeInTheDocument();
+});
+
+test('FR-CAT-08: a size outside the five options stays selected on edit instead of being dropped', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', sizeLabel: '38' })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  await user.click(screen.getByRole('button', { name: 'Sửa' }));
+  const sizes = await screen.findByRole('group', { name: 'Kích cỡ' });
+  expect(within(sizes).getByRole('button', { name: '38' })).toHaveAttribute('aria-pressed', 'true');
+  expect(within(sizes).getAllByRole('button')).toHaveLength(6);
+
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  await screen.findByText('Đã cập nhật váy');
+  expect(getLastUpdateDressBody()?.sizeLabel).toBe('38');
+});
+
+test('FR-CAT-08: duplicating from the detail page asks only for the size, then lands on the copy', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', sizeLabel: 'M' })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await screen.findByText('DR-001 — Đầm đỏ');
+
+  await user.click(screen.getByRole('button', { name: 'Nhân bản' }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByText('Nhân bản DR-001')).toBeInTheDocument();
+  // The code is the server's business; the dialog only says how it will look.
+  expect(within(dialog).getByText(/DR-001_1, DR-001_2/)).toBeInTheDocument();
+  // The source's size is pre-selected; staff switches to L.
+  expect(within(dialog).getByRole('button', { name: 'M' })).toHaveAttribute('aria-pressed', 'true');
+  await user.click(within(dialog).getByRole('button', { name: 'L' }));
+  await user.click(within(dialog).getByRole('button', { name: 'Nhân bản' }));
+
+  expect(await screen.findByText('Đã nhân bản thành DR-001_1')).toBeInTheDocument();
+  expect(getLastDuplicate()).toEqual({ dressId: 'd1', body: { sizeLabel: 'L' } });
+  // Navigated to the copy's own page, which shows the chosen size.
+  expect(await screen.findByText('DR-001_1 — Đầm đỏ')).toBeInTheDocument();
+  expect(screen.getByText('L')).toBeInTheDocument();
+});
+
+test('FR-CAT-08: every catalog row offers Nhân bản, naming its code, and the dialog works from the list', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', sizeLabel: 'S' })]);
+  const user = userEvent.setup();
+  renderList();
+  await screen.findByText('DR-001');
+
+  await user.click(screen.getByRole('button', { name: 'Nhân bản DR-001' }));
+  const dialog = await screen.findByRole('dialog');
+  expect(within(dialog).getByText('Nhân bản DR-001')).toBeInTheDocument();
+  expect(within(dialog).getByRole('button', { name: 'S' })).toHaveAttribute('aria-pressed', 'true');
+  await user.click(within(dialog).getByRole('button', { name: 'Nhân bản' }));
+
+  expect(await screen.findByText('Đã nhân bản thành DR-001_1')).toBeInTheDocument();
+  expect(getLastDuplicate()).toEqual({ dressId: 'd1', body: { sizeLabel: 'S' } });
 });

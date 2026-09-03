@@ -1,5 +1,112 @@
 # Session Handoff
 
+## 2026-09-03 (28) — three owner asks shipped: rental discount, duplicate-dress `_n`, size buttons
+
+- Done: on `feat/spec-drafts-batch-3` (where the last session left HEAD), two `pass` entries,
+  committed at session end and merged to master by PR (the owner asked after the manual test):
+  1. `rentals/rental-discount` (FR-RENT-11): `rentals.discount_amount` (migration
+     1755400000000, DEFAULT 0, CHECK ≥ 0), `RentalProps.discount: Money`, the aggregate refuses
+     > Σ item prices (400), `CreateRentalRequestDto.discountAmount?`,
+     `RentalListItemDto.discountAmount`. FE: discount field on the new-rental form (grouped
+     read-back; subtotal / discount / payable in the picker; above-subtotal refused client-side),
+     collect form suggests Σ agreed − discount and says so in its hint.
+  2. `catalog/duplicate-dress` (FR-CAT-08): `POST /dresses/:id/duplicate` → `<base>_<n>` from 1 (owner corrected 0 → 1 during manual test),
+     max + 1, copy-of-copy numbers from the ORIGINAL, race = UNIQUE + recount ×3, the copy gets
+     its own price-history v1. Codes now allow `_`. FE: `Nhân bản` on the detail page AND on every catalog row → size
+     dialog → lands on the copy. Size everywhere = `SizeOptionGroup` buttons XS/S/M/L/XL (a legacy
+     value shows as a sixth pressed button); the API keeps `sizeLabel` free text.
+- Numbers: be 168 unit (+20) · 86 e2e (+10, two new suites) on real Postgres · fe 103 vitest (+7)
+  · qr-admin tsc green · both builds green · lint green · fe arch (d) + `contract:check` were red only
+  while the regenerated client sat uncommitted — green once committed together with the BE, as done.
+- Watch out: commit BE + `packages/contract` + BOTH generated clients + FE together (the contract
+  never alone). The new migration was applied to `dress_rental_test` by the e2e global-setup AND
+  to the dev DB (`pnpm --filter be migrate`) this session.
+- Watch out: smoke.sh has no discount/duplicate steps (deliberate — e2e is the gate); the
+  Playwright happy path never typed a size, so it is unaffected.
+- Watch out: any trailing `_<digits>` on a code is read as a copy number (`VD_012` = copy #12 of
+  `VD`) — accepted because no code carried `_` before this feature; do not "fix" it without an FR.
+- Watch out (tooling): the Bash tool collapses `\` in perl one-liners — two `\d` silently became
+  `d` and a test still passed by accident (the first copy carried the same number either way). Fixed with `[0-9]`;
+  write regexes through the Write tool or use character classes when a shell is in the way.
+- Next: backlog unchanged (rental `notes` displayed nowhere, no rental detail route,
+  `payments/correct-movement` awaiting the owner, release lane r2).
+
+## 2026-08-10..11 (27) — the whole batch shipped: five features, five commits, all gates green
+
+- Done: the owner answered "tôi đồng ý" to every §6 recommendation, all five specs flipped to
+  `approved`, and the batch was implemented in the recommended order on
+  `feat/spec-drafts-batch-3` — one commit per feature, each with spec §7 re-synced as-built,
+  ADR 0001 §3/§4 + SRS + aggregate docs updated, and BE unit + real-Postgres e2e + FE vitest run
+  before committing. Ledger is 25/25 `pass`.
+  1. `identity/manage-users` (`4acfee7`, **breaking /auth/login**): username replaces email
+     (seed owner = `owner`/`SEED_OWNER_USERNAME`), accounts lock/unlock (never delete),
+     owner-set reset-password, one `user:manage` permission. Everything that signs in changed in
+     the same commit: seed, smoke.sh, Playwright, e2e harness, MSW, CI env, both login forms.
+  2. `rentals/pickup-before-return` (`0f5f88c`, FR-RENT-10): return only from `out`; a rental
+     whose start ≤ shopToday is BORN `out` (both events, one transaction); cancel opens to
+     `out` but EVERY cancel passes an empty-ledger guard under the rental row lock
+     (`saveCancelled`, take-turns with record-collection) → `rejected_cancel_has_payments`.
+     smoke.sh was REWRITTEN to relative dates (anchor D0=today+3 — the fixed 2026-08 fixtures
+     had rotted, and pre-ADR-0001 409 expects became 422s); the Playwright happy path now books
+     TOMORROW and steps the board +1 day, the only flow that still browser-proves the pickup tap.
+  3. `catalog/dress-category` (`5fcbb5f`, FR-CAT-07): second aggregate root, UNIQUE lower(name)
+     under race + raw SQL, FK RESTRICT delete with `rejected_category_in_use` + dressCount,
+     ?categoryId= filter, CSV auto-create; staff manage, owner deletes.
+  4. `catalog/purchase-price` (`8b23f57`, FR-CAT-05): the repo's FIRST field-level authorization
+     — staff requests CARRYING the field get a named 403; responses omit the KEY for staff
+     (queries carry `readerRole`). Depcruise caught the real lesson: `CurrentSubject` must come
+     from `libs/authz`, not identity/guards.
+  5. `catalog/price-history` (`2345531`, FR-CAT-06): append-only log written in the SAME
+     transaction via `insertWithHistory`/`saveWithPriceHistory`; v1 at create + migration
+     backfill; atomicity e2e-proven (a refused write leaves no orphan row); changer name via a
+     read-side LEFT JOIN (documented deviation from the drafted port — one JOIN ≠ a port).
+- Final numbers: be **148 unit** · **76 e2e** on real Postgres (9 suites) · fe **96 vitest** ·
+  qr-admin 17 · contract:check + fe/be arch + lint + both builds green ·
+  `pnpm --filter fe e2e` **1 passed (18.9s)** against the real stack. Four new migrations
+  (username/active, categories, purchase_price, price_history) applied on both dev and test DBs.
+- Watch out: the branch now carries the five spec drafts AND the five implementations — merge it
+  as ONE PR (or fast-forward), remembering lesson (25): delete the head branch after merge.
+- Watch out: smoke.sh is now date-relative and outcome-correct, but it is still a MANUAL runtime
+  proof (not in CI/init.sh) — run it against a fresh compose DB when touching rentals flows.
+- Watch out: the LATE_FEE_PER_DRESS_PER_DAY=200000 fix in the local `.env` is machine-local;
+  a fresh clone copies `.env.example`, which was always correct.
+- Next: unchanged backlog — rental `notes` displayed nowhere, no rental detail route,
+  `payments/correct-movement` awaiting the owner's ruling; plus release lane r2 (r1 predates
+  SIX shipped features now).
+
+## 2026-08-10 (26) — five feature specs drafted from the owner's next batch (no product code)
+
+- Done: the owner's five asks became five design-tier spec DRAFTS through the
+  `init-feature-spec` lane, each with its contract check run on the draft shape and the business
+  rules held as §6 blocker questions — the lane forbids inventing them. Tracked as five `todo`
+  entries in `feature_list.json` (design gate holds them there until approval):
+  1. [rentals/pickup-before-return](docs/design/rentals/pickup-before-return.md) — return only
+     from `out`; a rental created for today is born delivered. REVERSES the as-built
+     booked→returned branch; smoke.sh + Playwright happy path pivot with it, same commit.
+  2. [catalog/purchase-price](docs/design/catalog/purchase-price.md) — owner-only field, the
+     repo's FIRST field-level authorization (403 outcome on staff write, key OMITTED on staff
+     read). Meaningless until manage-users ships — noted as ordering, not dependency.
+  3. [catalog/price-history](docs/design/catalog/price-history.md) — append-only
+     `dress_price_history`, same-transaction rows, backfill v1 per existing dress.
+  4. [catalog/dress-category](docs/design/catalog/dress-category.md) — second aggregate root in
+     catalog, UNIQUE lower(name), FK RESTRICT delete with `rejected_category_in_use`.
+  5. [identity/manage-users](docs/design/identity/manage-users.md) — owner creates/locks/resets
+     staff accounts, login moves to username/password (FIRST breaking change on /auth/login);
+     the feature that makes every owner-only rule real.
+- Blockers the owner must answer (full tables in each spec §6): backdated creates auto-out?;
+  escape hatch for a mis-created born-out rental; board action on a booked-but-due-back card;
+  CSV path for 200 purchase prices; purchase price on the list screen?; who reads price
+  history; who manages categories; CSV category column with auto-create?; username replaces
+  email outright?; display name; second owner; locked-login message; staff self-password.
+- Watch out: implementation order suggestion — manage-users EARLY (it gives owner-only meaning
+  and every later audit trail a real person), pickup-before-return next (daily-operation rule),
+  then category/purchase-price/price-history in any order; category is the smallest.
+- Watch out: new outcome codes across specs 1/2/4/5 must land in ADR 0001 §3 in the same PR as
+  their implementation; SRS gets FR-RENT-10/FR-CAT-05..07/FR-AUTH-04 only at approval, per the
+  settle-late-fee precedent.
+- Next: owner answers §6 → flip the chosen spec to `approved` → implement one feature per
+  branch/PR with the stacked-merge lesson from (25) in mind.
+
 ## 2026-08-10 (25) — master restored: the stacked work actually lands (repair session)
 
 - Done: the five stacked PRs had NOT landed on master. Merging #1 first without deleting its head

@@ -1,10 +1,15 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * The whole staff day in one pass: sign in → add a dress → book it for today
- * → morning board: hand out, take back with a settled deposit → the list
- * shows the returned rental and its payments. One test on purpose — each
- * step depends on the state the previous one created.
+ * The whole staff day in one pass: sign in → add a dress → book it for TOMORROW → step the board
+ * one day forward: hand out, take back with a settled deposit → the list shows the returned
+ * rental and its payments. One test on purpose — each step depends on the state the previous one
+ * created.
+ *
+ * The booking is for TOMORROW since FR-RENT-10: a same-day rental is born `out`, so the pickup
+ * button would never exist for it. Booking ahead and stepping the board (+1) is the only flow
+ * where the browser can prove the hand-out tap. Born-out itself is proven by unit, test:e2e and
+ * smoke.sh.
  */
 
 const RUN = Date.now().toString(36);
@@ -12,21 +17,23 @@ const DRESS_CODE = `E2E-${RUN}`;
 const CUSTOMER = `Khách E2E ${RUN}`;
 
 /**
- * The shop's calendar day — the SAME day the browser sees (playwright.config pins its timezone)
- * and the same day the API prices a late fee with (FR-RENT-09 `shopToday()`). Computing it from the
- * test process clock instead would book "today" in UTC: on a UTC-evening run the rental lands on
- * yesterday, shows up as overdue, and is born one day late.
+ * The shop's calendar day (+offset) — the SAME day the browser sees (playwright.config pins its
+ * timezone) and the same day the API compares a rental's start against (FR-RENT-10 `shopToday()`).
+ * Computing it from the test process clock instead would book in UTC: on a UTC-evening run the
+ * rental lands on yesterday and is born delivered.
  */
-function todayIso(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+function shopDayIso(offsetDays = 0): string {
+  const now = new Date();
+  now.setDate(now.getDate() + offsetDays);
+  return now.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
-test('happy path: create dress → rent today → pickup → return → settled list', async ({
+test('happy path: create dress → book tomorrow → pickup → return → settled list', async ({
   page,
 }) => {
   await test.step('sign in', async () => {
     await page.goto('/');
-    await page.getByLabel('Email').fill('owner@example.com');
+    await page.getByLabel('Tên đăng nhập').fill('owner');
     await page.getByLabel('Mật khẩu').fill('changeme');
     await page.getByRole('button', { name: 'Đăng nhập' }).click();
     await expect(page.getByRole('heading', { name: 'Hôm nay' })).toBeVisible();
@@ -44,7 +51,7 @@ test('happy path: create dress → rent today → pickup → return → settled 
     await expect(page.getByText('Đã thêm váy vào danh mục')).toBeVisible();
   });
 
-  await test.step('book it for today (single-day rental)', async () => {
+  await test.step('book it for tomorrow (single-day rental)', async () => {
     await page.getByRole('link', { name: 'Thuê', exact: true }).click();
     // empty list: the header AND the empty state both offer "Tạo lượt thuê"
     await page.getByRole('link', { name: 'Tạo lượt thuê' }).first().click();
@@ -57,12 +64,12 @@ test('happy path: create dress → rent today → pickup → return → settled 
       await expect(nameField).toHaveValue(CUSTOMER);
     }).toPass();
     await page.getByLabel('Số điện thoại').fill('0901234567');
-    await page.getByLabel('Ngày nhận').fill(todayIso());
-    await page.getByLabel('Ngày trả').fill(todayIso());
+    await page.getByLabel('Ngày nhận').fill(shopDayIso(1));
+    await page.getByLabel('Ngày trả').fill(shopDayIso(1));
     await page.getByPlaceholder('Tìm theo mã hoặc tên váy…').fill(DRESS_CODE);
     await page.getByRole('button', { name: 'Thêm', exact: true }).click();
     await page.getByRole('button', { name: 'Tạo lượt thuê' }).click();
-    await expect(page.getByText('Đã tạo lượt thuê')).toBeVisible();
+    await expect(page.getByText('Đã tạo lượt thuê', { exact: true })).toBeVisible();
     // post-create landing: the rentals list shows the booked rental
     await expect(page.getByRole('row', { name: new RegExp(CUSTOMER) })).toContainText(
       'Đã đặt',
@@ -93,11 +100,23 @@ test('happy path: create dress → rent today → pickup → return → settled 
   // (leftover or overdue rentals), so page-wide button lookups would be ambiguous.
   const ownRows = page.getByRole('listitem').filter({ hasText: CUSTOMER });
 
-  await test.step('morning board: hand out', async () => {
+  await test.step('board stepped to tomorrow: hand out', async () => {
     await page.getByRole('link', { name: 'Hôm nay' }).click();
-    // a single-day rental sits on BOTH lists (hand out and take back)
+    await expect(page.getByRole('heading', { name: 'Hôm nay' })).toBeVisible();
+    // The rental is TOMORROW's work — step the board one day forward (FR-RENT-10 moved the
+    // same-day flow out of the pickup path, so the +1 button earns its keep here).
+    await page.getByRole('button', { name: 'Ngày sau' }).click();
+    // a single-day rental sits on BOTH lists (hand out and take back) — and since FR-RENT-10 a
+    // BOOKED card on the take-back list offers a pickup too, so scope the click to due-out.
     await expect(page.getByText(CUSTOMER)).toHaveCount(2);
-    await ownRows.getByRole('button', { name: 'Đã giao váy' }).click();
+    const dueOut = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { name: /Giao váy cho khách/ }) });
+    await dueOut
+      .getByRole('listitem')
+      .filter({ hasText: CUSTOMER })
+      .getByRole('button', { name: 'Đã giao váy' })
+      .click();
     await expect(page.getByText('Đã ghi nhận giao váy cho khách.')).toBeVisible();
     // out of the hand-out list, still on take-back, now marked out
     await expect(page.getByText(CUSTOMER)).toHaveCount(1);

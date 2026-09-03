@@ -31,6 +31,9 @@ export class GetDressQueryHandler
       status: row.status,
       notes: row.notes,
       photoUrls: [...row.photo_urls],
+      categoryId: row.category_id,
+      // FR-CAT-05 R2: OMITTED for staff (absence = not your field), null = owner not entered.
+      ...(query.readerRole === 'owner' ? { purchasePrice: row.purchase_price } : {}),
       createdAt: toDate(row.created_at).toISOString(),
     });
   }

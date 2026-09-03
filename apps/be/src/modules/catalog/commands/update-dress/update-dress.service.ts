@@ -5,16 +5,28 @@ import { AggregateID } from '../../../../libs/ddd/entity.base';
 import { Money } from '../../../../libs/ddd/money.value-object';
 import { DressCodeConflictError } from '../../application/ports/dress-code-conflict.error';
 import {
+  CATEGORY_REPOSITORY,
+  CategoryRepositoryPort,
+} from '../../application/ports/category.repository.port';
+import {
   DRESS_REPOSITORY,
   DressRepositoryPort,
 } from '../../application/ports/dress.repository.port';
 import { DressCode } from '../../domain/dress-code.value-object';
-import { DressCodeAlreadyExistsError, DressNotFoundError } from '../../domain/dress.errors';
+import { CategoryNotFoundError } from '../../domain/category.errors';
+import {
+  DressCodeAlreadyExistsError,
+  DressNotFoundError,
+  PurchasePriceOwnerOnlyError,
+} from '../../domain/dress.errors';
 import { UpdateDressCommand } from './update-dress.command';
 
 export type UpdateDressResult = Result<
   AggregateID,
-  DressNotFoundError | DressCodeAlreadyExistsError
+  | DressNotFoundError
+  | DressCodeAlreadyExistsError
+  | CategoryNotFoundError
+  | PurchasePriceOwnerOnlyError
 >;
 
 @CommandHandler(UpdateDressCommand)
@@ -22,14 +34,30 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
   constructor(
     @Inject(DRESS_REPOSITORY)
     private readonly dressRepo: DressRepositoryPort,
+    @Inject(CATEGORY_REPOSITORY)
+    private readonly categoryRepo: CategoryRepositoryPort,
   ) {}
 
   async execute(command: UpdateDressCommand): Promise<UpdateDressResult> {
+    // FR-CAT-05 R1: presence of the field is what matters — a staff request CARRYING it (even
+    // null) is refused by name; a staff request WITHOUT it keeps the old behaviour untouched.
+    if (command.purchasePrice !== undefined && command.actorRole !== 'owner') {
+      return Err(new PurchasePriceOwnerOnlyError());
+    }
+
     const dress = await this.dressRepo.findOneById(command.dressId);
     if (!dress) return Err(new DressNotFoundError());
 
+    // A NEW assignment must point at a category that still exists (null clears, no check).
+    if (command.categoryId !== undefined && command.categoryId !== null) {
+      const category = await this.categoryRepo.findOneById(command.categoryId);
+      if (!category) return Err(new CategoryNotFoundError());
+    }
+
     const now = new Date();
     const props = dress.getProps();
+    const priceBefore = props.rentalPrice.amount;
+    const depositBefore = props.depositAmount.amount;
 
     if (command.code !== undefined) {
       const nextCode = DressCode.create(command.code);
@@ -54,12 +82,28 @@ export class UpdateDressService implements ICommandHandler<UpdateDressCommand, U
             : Money.create(command.depositAmount),
         notes: command.notes === undefined ? props.notes : command.notes,
         photoUrls: command.photoUrls === undefined ? props.photoUrls : command.photoUrls,
+        categoryId: command.categoryId === undefined ? props.categoryId : command.categoryId,
+        purchasePrice:
+          command.purchasePrice === undefined
+            ? props.purchasePrice
+            : command.purchasePrice === null
+              ? null
+              : Money.create(command.purchasePrice),
       },
       now,
     );
 
+    // FR-CAT-06 R1: one history row per ACTUAL change — re-sending the same numbers writes none.
+    const after = dress.getProps();
+    const pricesChanged =
+      after.rentalPrice.amount !== priceBefore || after.depositAmount.amount !== depositBefore;
+
     try {
-      await this.dressRepo.save(dress);
+      if (pricesChanged) {
+        await this.dressRepo.saveWithPriceHistory(dress, command.actorId);
+      } else {
+        await this.dressRepo.save(dress);
+      }
     } catch (error) {
       if (error instanceof DressCodeConflictError) {
         // A concurrent write took the new code after the pre-check above — same rule, same

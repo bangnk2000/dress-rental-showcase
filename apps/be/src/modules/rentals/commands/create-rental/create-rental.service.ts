@@ -4,6 +4,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateID } from '../../../../libs/ddd/entity.base';
 import { Money } from '../../../../libs/ddd/money.value-object';
+import { shopToday } from '../../../../libs/utils/date';
 import {
   DRESS_LOOKUP,
   DressLookupPort,
@@ -68,6 +69,8 @@ export class CreateRentalService
         customerPhone: command.customerPhone,
         period,
         notes: command.notes,
+        // FR-RENT-11: rental-level; the aggregate refuses more than the items add up to.
+        discount: Money.create(command.discountAmount),
         items: command.items.map((item) => ({
           id: this.rentalRepo.nextId(),
           dressId: item.dressId,
@@ -79,6 +82,14 @@ export class CreateRentalService
       new Date(),
       bufferDays,
     );
+
+    // FR-RENT-10 R2/§6.Q1: a rental whose start is today OR in the past (a backdated entry) is
+    // born delivered — the customer is at the counter, or the handover already happened. The
+    // reference day is the SHOP's calendar day (Asia/Ho_Chi_Minh), never the device or VPS
+    // clock: rental status is business at the counter, same family as the late-fee rule.
+    if (period.start <= shopToday()) {
+      rental.markPickedUp(new Date()).unwrap(); // booked → out never fails on a fresh aggregate
+    }
 
     try {
       await this.rentalRepo.insert(rental);

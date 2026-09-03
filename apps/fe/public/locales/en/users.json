@@ -1,0 +1,61 @@
+{
+  "title": "Staff accounts",
+  "columns": {
+    "username": "Username",
+    "name": "Display name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "roles": {
+    "owner": "Owner",
+    "staff": "Staff"
+  },
+  "status": {
+    "active": "Active",
+    "locked": "Locked"
+  },
+  "fields": {
+    "username": "Username",
+    "name": "Display name",
+    "password": "Password",
+    "newPassword": "New password"
+  },
+  "create": {
+    "open": "Add staff",
+    "title": "Add staff",
+    "description": "New accounts are always staff. Tell them the password at the counter.",
+    "submit": "Create account",
+    "submitting": "Creating...",
+    "success": "Account created.",
+    "error": "Could not create the account. Please try again."
+  },
+  "resetPassword": {
+    "title": "Reset password for {{username}}",
+    "description": "The old password stops working the moment you save.",
+    "submit": "Set password",
+    "submitting": "Saving...",
+    "success": "Password reset for {{username}}.",
+    "error": "Could not set the password. Please try again."
+  },
+  "lockConfirm": {
+    "title": "Lock account {{username}}?",
+    "description": "They cannot sign in until unlocked. Their history stays intact."
+  },
+  "actions": {
+    "lock": "Lock",
+    "unlock": "Unlock",
+    "resetPassword": "Reset password",
+    "working": "Working...",
+    "locked": "Account locked.",
+    "unlocked": "Account unlocked.",
+    "staleState": "The state changed on another device — the list was just refreshed.",
+    "error": "The action failed. Please try again."
+  },
+  "validation": {
+    "usernameShape": "3-30 chars: lowercase letters, digits, dot, underscore or dash",
+    "usernameTaken": "This username is already taken",
+    "nameRequired": "Please enter a display name",
+    "passwordMin": "Password must be at least 8 characters"
+  }
+}

@@ -13,7 +13,13 @@
       "size": "Kích cỡ",
       "rentalPrice": "Giá thuê",
       "deposit": "Tiền cọc",
-      "status": "Trạng thái"
+      "status": "Trạng thái",
+      "category": "Danh mục",
+      "actions": "Thao tác"
+    },
+    "actions": {
+      "duplicate": "Nhân bản",
+      "duplicateFor": "Nhân bản {{code}}"
     },
     "empty": {
       "noDresses": "Chưa có váy nào",
@@ -25,7 +31,9 @@
       "label": "Trang {{page}} / {{totalPages}}",
       "previous": "Trang trước",
       "next": "Trang sau"
-    }
+    },
+    "categoryFilterLabel": "Danh mục",
+    "categoryAll": "Tất cả danh mục"
   },
   "status": {
     "active": "Đang cho thuê",
@@ -44,11 +52,13 @@
       "depositAmount": "Tiền cọc (VND)",
       "notes": "Ghi chú",
       "photoUrls": "Ảnh (mỗi dòng một liên kết)",
-      "photoUrlsPlaceholder": "https://..."
+      "photoUrlsPlaceholder": "https://...",
+      "category": "Danh mục",
+      "purchasePrice": "Giá nhập (VND) — chỉ chủ tiệm thấy"
     },
     "errors": {
       "codeRequired": "Vui lòng nhập mã váy",
-      "codeInvalid": "Mã váy gồm 2-20 ký tự chữ, số hoặc gạch nối, bắt đầu bằng chữ hoặc số",
+      "codeInvalid": "Mã váy gồm 2-20 ký tự chữ, số, gạch nối hoặc gạch dưới, bắt đầu bằng chữ hoặc số",
       "nameRequired": "Vui lòng nhập tên váy",
       "nameTooLong": "Tên váy tối đa 200 ký tự",
       "sizeTooLong": "Kích cỡ tối đa 20 ký tự",
@@ -63,12 +73,15 @@
     "success": "Đã thêm váy vào danh mục",
     "error": "Không thể thêm váy. Vui lòng thử lại.",
     "updateSuccess": "Đã cập nhật váy",
-    "updateError": "Không thể cập nhật váy. Vui lòng thử lại."
+    "updateError": "Không thể cập nhật váy. Vui lòng thử lại.",
+    "categoryNone": "Không phân loại",
+    "sizeHint": "Chạm để chọn kích cỡ, chạm lại để bỏ chọn."
   },
   "detail": {
     "title": "Chi tiết váy",
     "actions": {
       "edit": "Sửa",
+      "duplicate": "Nhân bản",
       "retire": "Ngừng khai thác"
     },
     "retire": {
@@ -85,7 +98,11 @@
       "size": "Kích cỡ",
       "rentalPrice": "Giá thuê",
       "deposit": "Tiền cọc",
-      "notes": "Ghi chú"
+      "notes": "Ghi chú",
+      "category": "Danh mục",
+      "categoryNone": "Chưa phân loại",
+      "purchasePrice": "Giá nhập",
+      "purchasePriceNone": "Chưa nhập"
     },
     "calendar": {
       "title": "Lịch đặt",
@@ -110,7 +127,54 @@
       "error": "Không kiểm tra được. Vui lòng thử lại."
     }
   },
+  "duplicate": {
+    "title": "Nhân bản {{code}}",
+    "description": "Tạo một váy mới giống hệt váy này để ghi thêm một kích cỡ khác. Mã sẽ tự đặt là {{base}}_1, {{base}}_2, … theo thứ tự.",
+    "size": "Kích cỡ của váy mới",
+    "submit": "Nhân bản",
+    "success": "Đã nhân bản thành {{code}}",
+    "error": "Không nhân bản được. Vui lòng thử lại.",
+    "codeTaken": "Mã {{code}} vừa bị thiết bị khác dùng — bấm Nhân bản lần nữa."
+  },
   "errors": {
     "notFound": "Váy này không còn trong danh mục. Danh sách đã được làm mới."
+  },
+  "categories": {
+    "title": "Danh mục váy",
+    "empty": "Chưa có danh mục nào.",
+    "dressCount": "({{count}} váy)",
+    "create": "Thêm danh mục",
+    "createPlaceholder": "Tên danh mục mới",
+    "rename": "Sửa tên",
+    "renameLabel": "Tên mới cho {{name}}",
+    "renameSave": "Lưu",
+    "renameCancel": "Thôi",
+    "delete": "Xoá",
+    "deleted": "Đã xoá danh mục.",
+    "deleteConfirm": {
+      "title": "Xoá danh mục {{name}}?",
+      "description": "Chỉ xoá được danh mục không còn váy nào. Váy không bị ảnh hưởng."
+    },
+    "errors": {
+      "nameTaken": "Danh mục \"{{name}}\" đã tồn tại",
+      "inUse": "Còn {{count}} váy trong danh mục này — chuyển chúng sang danh mục khác trước.",
+      "ownerOnly": "Chỉ chủ tiệm được xoá danh mục.",
+      "generic": "Có lỗi xảy ra, vui lòng thử lại."
+    }
+  },
+  "priceHistory": {
+    "title": "Lịch sử giá",
+    "loading": "Đang tải lịch sử giá…",
+    "error": "Không tải được lịch sử giá.",
+    "retry": "Thử lại",
+    "unchanged": "Giá giữ nguyên từ {{date}}.",
+    "current": "(hiện hành)",
+    "systemChange": "—",
+    "columns": {
+      "date": "Ngày",
+      "rentalPrice": "Giá thuê",
+      "deposit": "Cọc chuẩn",
+      "changedBy": "Người đổi"
+    }
   }
 }

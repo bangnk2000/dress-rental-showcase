@@ -54,6 +54,16 @@ export class CreateRentalRequestDto {
   @Length(1, 2000)
   readonly notes?: string;
 
+  @ApiPropertyOptional({
+    example: 100000,
+    description:
+      'Discount on the rental fee in VND (integer, FR-RENT-11); omit or 0 = none. Must not exceed the sum of the item prices (400 otherwise).',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  readonly discountAmount?: number;
+
   @ApiProperty({ type: [CreateRentalItemRequestDto], description: 'Dresses to book (1..n)' })
   @IsArray()
   @ArrayMinSize(1)

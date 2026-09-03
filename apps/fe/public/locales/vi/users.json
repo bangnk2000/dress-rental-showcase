@@ -1,0 +1,61 @@
+{
+  "title": "Nhân viên",
+  "columns": {
+    "username": "Tên đăng nhập",
+    "name": "Tên hiển thị",
+    "role": "Vai trò",
+    "status": "Trạng thái",
+    "actions": "Thao tác"
+  },
+  "roles": {
+    "owner": "Chủ tiệm",
+    "staff": "Nhân viên"
+  },
+  "status": {
+    "active": "Đang hoạt động",
+    "locked": "Đã khoá"
+  },
+  "fields": {
+    "username": "Tên đăng nhập",
+    "name": "Tên hiển thị",
+    "password": "Mật khẩu",
+    "newPassword": "Mật khẩu mới"
+  },
+  "create": {
+    "open": "Thêm nhân viên",
+    "title": "Thêm nhân viên",
+    "description": "Tài khoản mới luôn là nhân viên. Đọc mật khẩu cho người đó tại quầy.",
+    "submit": "Tạo tài khoản",
+    "submitting": "Đang tạo...",
+    "success": "Đã tạo tài khoản.",
+    "error": "Không tạo được tài khoản. Vui lòng thử lại."
+  },
+  "resetPassword": {
+    "title": "Đặt lại mật khẩu cho {{username}}",
+    "description": "Mật khẩu cũ hết hiệu lực ngay khi lưu.",
+    "submit": "Đặt mật khẩu",
+    "submitting": "Đang lưu...",
+    "success": "Đã đặt lại mật khẩu cho {{username}}.",
+    "error": "Không đặt được mật khẩu. Vui lòng thử lại."
+  },
+  "lockConfirm": {
+    "title": "Khoá tài khoản {{username}}?",
+    "description": "Người này sẽ không đăng nhập được cho tới khi được mở lại. Lịch sử thao tác giữ nguyên."
+  },
+  "actions": {
+    "lock": "Khoá",
+    "unlock": "Mở khoá",
+    "resetPassword": "Đặt lại mật khẩu",
+    "working": "Đang xử lý...",
+    "locked": "Đã khoá tài khoản.",
+    "unlocked": "Đã mở khoá tài khoản.",
+    "staleState": "Trạng thái đã thay đổi trên thiết bị khác — danh sách vừa được tải lại.",
+    "error": "Không thực hiện được. Vui lòng thử lại."
+  },
+  "validation": {
+    "usernameShape": "3-30 ký tự: chữ thường, số, dấu chấm, gạch dưới hoặc gạch ngang",
+    "usernameTaken": "Tên đăng nhập này đã có người dùng",
+    "nameRequired": "Vui lòng nhập tên hiển thị",
+    "passwordMin": "Mật khẩu tối thiểu 8 ký tự"
+  }
+}

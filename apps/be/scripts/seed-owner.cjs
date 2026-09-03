@@ -26,7 +26,7 @@ function loadEnvFile() {
 
 async function main() {
   loadEnvFile();
-  const email = (process.env.SEED_OWNER_EMAIL ?? 'owner@example.com').toLowerCase();
+  const username = (process.env.SEED_OWNER_USERNAME ?? 'owner').toLowerCase();
   const password = process.env.SEED_OWNER_PASSWORD;
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
   if (!password) throw new Error('SEED_OWNER_PASSWORD is required');
@@ -34,17 +34,20 @@ async function main() {
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
   try {
-    const existing = await client.query('SELECT id FROM staff_users WHERE email = $1', [email]);
+    const existing = await client.query(
+      'SELECT id FROM staff_users WHERE lower(username) = $1',
+      [username],
+    );
     if (existing.rowCount > 0) {
-      console.log(`Owner already exists: ${email}`);
+      console.log(`Owner already exists: ${username}`);
       return;
     }
     await client.query(
-      `INSERT INTO staff_users (id, email, name, role, password_hash)
+      `INSERT INTO staff_users (id, username, name, role, password_hash)
        VALUES ($1, $2, $3, 'owner', $4)`,
-      [randomUUID(), email, 'Owner', hashSync(password, 10)],
+      [randomUUID(), username, 'Owner', hashSync(password, 10)],
     );
-    console.log(`Owner created: ${email}`);
+    console.log(`Owner created: ${username}`);
   } finally {
     await client.end();
   }

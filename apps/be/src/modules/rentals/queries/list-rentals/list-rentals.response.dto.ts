@@ -24,6 +24,13 @@ export class RentalListItemDto {
   @ApiProperty({ example: 'Khách quen', nullable: true, type: String })
   readonly notes!: string | null;
 
+  @ApiProperty({
+    example: 100000,
+    description:
+      'Discount on the rental fee in VND (FR-RENT-11); 0 = none. Expected rental fee = Σ dresses.agreedPrice − discountAmount.',
+  })
+  readonly discountAmount!: number;
+
   @ApiProperty({ example: '2026-07-30T09:00:00.000Z' })
   readonly createdAt!: string;
 

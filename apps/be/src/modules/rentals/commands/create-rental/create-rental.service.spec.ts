@@ -19,6 +19,7 @@ function makeRentalRepo(overrides: Partial<RentalRepositoryPort> = {}): RentalRe
     insert: jest.fn().mockResolvedValue(undefined),
     save: jest.fn().mockResolvedValue(undefined),
     saveReturned: jest.fn().mockResolvedValue(undefined),
+    saveCancelled: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(null),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
     nextId: jest.fn(() => `00000000-0000-4000-8000-00000000010${seq++}`),
@@ -39,6 +40,7 @@ const baseCommand = new CreateRentalCommand({
   startDate: '2026-08-01',
   endDate: '2026-08-03',
   notes: null,
+  discountAmount: 0,
   items: [
     { dressId: DRESS_A, price: null },
     { dressId: DRESS_B, price: 900_000 },
@@ -64,6 +66,16 @@ const snapshotB: DressSnapshot = {
 const bothDresses: DressSnapshot[] = [snapshotA, snapshotB];
 
 describe('CreateRentalService', () => {
+  // FR-RENT-10 compares period.start against the SHOP's today, so every test pins the clock.
+  // 2026-07-15 makes the base command's 2026-08-01 a FUTURE booking (born booked).
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-15T05:00:00+07:00'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('creates a booked rental; items block period + cleaning buffer and default the price', async () => {
     const repo = makeRentalRepo();
     const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
@@ -85,6 +97,46 @@ describe('CreateRentalService', () => {
     expect(first?.price.amount).toBe(1_500_000);
     expect(second?.price.amount).toBe(900_000);
     expect(rental.domainEvents).toHaveLength(1); // RentalCreatedDomainEvent queued
+  });
+
+  it('FR-RENT-10 R2: a rental starting TODAY (shop day) is born delivered — status out, both events', async () => {
+    jest.setSystemTime(new Date('2026-08-01T05:00:00+07:00')); // shopToday = period.start
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    const result = await service.execute(baseCommand);
+
+    expect(result.isOk()).toBe(true);
+    const rental = (repo.insert as jest.Mock).mock.calls[0][0] as RentalEntity;
+    expect(rental.getProps().status).toBe('out');
+    // Created + PickedUp queued together: no consumer ever sees an out rental without its event.
+    expect(rental.domainEvents).toHaveLength(2);
+    // Auto-pickup changes STATUS only — the calendar block is untouched.
+    expect(rental.getProps().items[0]?.blockedPeriod.end).toBe('2026-08-05');
+  });
+
+  it('FR-RENT-10 §6.Q1: a BACKDATED create is born delivered too — the handover already happened', async () => {
+    jest.setSystemTime(new Date('2026-08-09T05:00:00+07:00')); // period is fully in the past
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    const result = await service.execute(baseCommand);
+
+    expect(result.isOk()).toBe(true);
+    const rental = (repo.insert as jest.Mock).mock.calls[0][0] as RentalEntity;
+    expect(rental.getProps().status).toBe('out');
+  });
+
+  it('the shop timezone decides, not UTC: late evening in Hanoi is already the next day', async () => {
+    // 2026-07-31T18:00Z = 2026-08-01 01:00 Asia/Ho_Chi_Minh → start IS today at the shop.
+    jest.setSystemTime(new Date('2026-07-31T18:00:00Z'));
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    await service.execute(baseCommand);
+
+    const rental = (repo.insert as jest.Mock).mock.calls[0][0] as RentalEntity;
+    expect(rental.getProps().status).toBe('out');
   });
 
   it('checks availability for the buffered period, not just the rental days', async () => {
@@ -133,5 +185,64 @@ describe('CreateRentalService', () => {
     expect(result.isErr()).toBe(true);
     expect(result.unwrapErr()).toBeInstanceOf(DressUnavailableError);
     expect(repo.insert).not.toHaveBeenCalled();
+  });
+});
+
+describe('FR-RENT-11 discount at create', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-15T05:00:00+07:00'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('stores the discount on the rental, leaving the item prices untouched', async () => {
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    const result = await service.execute(
+      new CreateRentalCommand({ ...baseCommand, discountAmount: 300_000 }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    const rental = (repo.insert as jest.Mock).mock.calls[0][0] as RentalEntity;
+    expect(rental.discount.amount).toBe(300_000);
+    // Σ 1.500.000 (standard) + 900.000 (agreed) — the discount is rental-level, not spread.
+    expect(rental.itemsTotal.amount).toBe(2_400_000);
+    expect(rental.getProps().items.map((item) => item.price.amount)).toEqual([
+      1_500_000, 900_000,
+    ]);
+  });
+
+  it('omitted = zero: the default rental has no discount', async () => {
+    const repo = makeRentalRepo();
+    await new CreateRentalService(repo, makeDressLookup(bothDresses), config).execute(
+      baseCommand,
+    );
+
+    const rental = (repo.insert as jest.Mock).mock.calls[0][0] as RentalEntity;
+    expect(rental.discount.amount).toBe(0);
+  });
+
+  it('a discount above the sum of the item prices is an argument error, nothing is written', async () => {
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    await expect(
+      service.execute(new CreateRentalCommand({ ...baseCommand, discountAmount: 2_400_001 })),
+    ).rejects.toThrow(/Discount must not exceed/);
+    expect(repo.insert).not.toHaveBeenCalled();
+  });
+
+  it('a discount EQUAL to the fee is allowed (a free rental is a business case)', async () => {
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    const result = await service.execute(
+      new CreateRentalCommand({ ...baseCommand, discountAmount: 2_400_000 }),
+    );
+
+    expect(result.isOk()).toBe(true);
   });
 });

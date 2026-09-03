@@ -82,7 +82,9 @@ export function RecordCollectionForm({
   const depositRecorded = summary.deposit > 0;
   const rentalFeeRecorded = summary.rentalFee > 0;
   const standardDeposit = rental.dresses.reduce((sum, dress) => sum + dress.depositAmount, 0);
-  const agreedTotal = rental.dresses.reduce((sum, dress) => sum + dress.agreedPrice, 0);
+  const agreedBeforeDiscount = rental.dresses.reduce((sum, dress) => sum + dress.agreedPrice, 0);
+  // FR-RENT-11: the fee the shop expects is the agreement MINUS the discount given at booking.
+  const agreedTotal = Math.max(0, agreedBeforeDiscount - rental.discountAmount);
 
   const form = useForm<CollectionFormValues>({
     resolver: zodResolver(collectionFormSchema),
@@ -164,7 +166,13 @@ export function RecordCollectionForm({
       label: t('collect.fields.rentalFee'),
       recorded: rentalFeeRecorded,
       recordedAmount: summary.rentalFee,
-      hint: t('collect.hints.agreedTotal', { amount: formatVnd(agreedTotal) }),
+      hint:
+        rental.discountAmount > 0
+          ? t('collect.hints.agreedTotalDiscounted', {
+              amount: formatVnd(agreedTotal),
+              discount: formatVnd(rental.discountAmount),
+            })
+          : t('collect.hints.agreedTotal', { amount: formatVnd(agreedTotal) }),
     },
   ] as const;
 

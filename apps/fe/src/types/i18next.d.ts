@@ -8,6 +8,7 @@ import type common from '../../public/locales/vi/common.json';
 import type dresses from '../../public/locales/vi/dresses.json';
 import type rentals from '../../public/locales/vi/rentals.json';
 import type today from '../../public/locales/vi/today.json';
+import type users from '../../public/locales/vi/users.json';
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -18,6 +19,7 @@ declare module 'i18next' {
       dresses: typeof dresses;
       rentals: typeof rentals;
       today: typeof today;
+      users: typeof users;
     };
   }
 }

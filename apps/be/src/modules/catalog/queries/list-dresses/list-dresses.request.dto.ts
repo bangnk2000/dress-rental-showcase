@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from 'class-validator';
 
 export class ListDressesRequestDto {
   @ApiPropertyOptional({ description: 'Search in code and name', example: 'VD-01' })
@@ -13,6 +13,11 @@ export class ListDressesRequestDto {
   @IsOptional()
   @IsIn(['active', 'retired'])
   readonly status?: 'active' | 'retired';
+
+  @ApiPropertyOptional({ description: 'Only dresses in this category (FR-CAT-07)' })
+  @IsOptional()
+  @IsUUID()
+  readonly categoryId?: string;
 
   @ApiPropertyOptional({ default: 1, minimum: 1 })
   @IsOptional()

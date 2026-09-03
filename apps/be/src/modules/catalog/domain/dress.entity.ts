@@ -28,6 +28,8 @@ export class DressEntity extends AggregateRoot<DressProps> {
       depositAmount: Money;
       notes: string | null;
       photoUrls: string[];
+      categoryId: string | null;
+      purchasePrice: Money | null;
     },
     now: Date,
   ): void {
@@ -37,6 +39,8 @@ export class DressEntity extends AggregateRoot<DressProps> {
     this.props.depositAmount = update.depositAmount;
     this.props.notes = update.notes;
     this.props.photoUrls = [...update.photoUrls];
+    this.props.categoryId = update.categoryId;
+    this.props.purchasePrice = update.purchasePrice;
     this.setUpdatedAt(now);
     this.validate();
   }

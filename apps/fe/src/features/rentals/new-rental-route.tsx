@@ -15,8 +15,16 @@ import {
 import type { CreateRentalRequestDto } from '@/api/generated/model';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { formatVnd } from '@/lib/format';
 
 import {
   DressPicker,
@@ -48,17 +56,31 @@ function bookingKey(startDate: string, endDate: string, dressIds: string[]): str
   return [startDate, endDate, [...dressIds].sort().join(',')].join('|');
 }
 
-/** Form values + picked dresses → request body; blank notes are omitted. */
+/** The SHOP's calendar day — the same rule the API applies to decide born-delivered. */
+function shopTodayIso(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+}
+
+/** The typed discount as VND (FR-RENT-11); blank or not-yet-digits = none. */
+function parseDiscount(raw: string): number {
+  const trimmed = raw.trim();
+  const value = Number(trimmed);
+  return trimmed !== '' && Number.isInteger(value) && value > 0 ? value : 0;
+}
+
+/** Form values + picked dresses → request body; blank notes and a zero discount are omitted. */
 function toCreateRentalRequest(
   values: RentalFormValues,
   selected: SelectedDress[],
 ): CreateRentalRequestDto {
+  const discountAmount = parseDiscount(values.discountAmount);
   return {
     customerName: values.customerName,
     customerPhone: values.customerPhone,
     startDate: values.startDate,
     endDate: values.endDate,
     ...(values.notes ? { notes: values.notes } : {}),
+    ...(discountAmount > 0 ? { discountAmount } : {}),
     // Price omitted on purpose: the BE defaults to each dress's standard price.
     items: selected.map((dress) => ({ dressId: dress.id })),
   };
@@ -85,6 +107,10 @@ export function NewRentalRoute() {
   const endDate = form.watch('endDate');
   const period: PickerPeriod | null =
     startDate && endDate && startDate <= endDate ? { startDate, endDate } : null;
+  // FR-RENT-11: the discount is bounded by the subtotal of the CURRENT selection, which lives
+  // outside the schema — so the bound is checked here, at submit, and shown live by the picker.
+  const discount = parseDiscount(form.watch('discountAmount'));
+  const subtotal = selected.reduce((sum, dress) => sum + dress.rentalPrice, 0);
 
   /**
    * The current selection, readable from the mutation callbacks — which capture the `selected` of
@@ -118,7 +144,11 @@ export function NewRentalRoute() {
             queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
           }),
         ]);
-        toast.success(t('form.success'));
+        toast.success(
+          form.getValues('startDate') <= shopTodayIso()
+            ? t('form.successDelivered')
+            : t('form.success'),
+        );
         void navigate('/rentals');
       },
       onError: (error, variables) => {
@@ -166,6 +196,10 @@ export function NewRentalRoute() {
   const onSubmit = form.handleSubmit((values) => {
     if (selected.length === 0) {
       setFormError('form.errors.noDresses');
+      return;
+    }
+    if (parseDiscount(values.discountAmount) > subtotal) {
+      form.setError('discountAmount', { message: 'form.errors.discountTooLarge' });
       return;
     }
     setFormError(null);
@@ -221,6 +255,11 @@ export function NewRentalRoute() {
                   <FormControl>
                     <Input type="date" autoComplete="off" {...field} />
                   </FormControl>
+                  {/* FR-RENT-10: same-day (or backdated) rentals are born DELIVERED — say so
+                      before submit, so the status on the list is no surprise. */}
+                  {field.value && field.value <= shopTodayIso() ? (
+                    <p className="text-sm text-muted-foreground">{t('form.startsToday')}</p>
+                  ) : null}
                   <RentalFormMessage />
                 </FormItem>
               )}
@@ -257,6 +296,28 @@ export function NewRentalRoute() {
             error={formError === 'form.errors.noDresses' ? formError : null}
             period={period}
             blocked={blocked}
+            discount={discount}
+          />
+          <FormField
+            control={form.control}
+            name="discountAmount"
+            render={({ field }) => {
+              const amount = parseDiscount(field.value);
+              return (
+                <FormItem>
+                  <FormLabel>{t('form.fields.discountAmount')}</FormLabel>
+                  <FormControl>
+                    <Input inputMode="numeric" autoComplete="off" {...field} />
+                  </FormControl>
+                  {/* Money the user typed is read back grouped (screen rules); otherwise the
+                      field says what it is for. */}
+                  <FormDescription className="tabular-nums">
+                    {amount > 0 ? formatVnd(amount) : t('form.discountHint')}
+                  </FormDescription>
+                  <RentalFormMessage />
+                </FormItem>
+              );
+            }}
           />
           <FormField
             control={form.control}

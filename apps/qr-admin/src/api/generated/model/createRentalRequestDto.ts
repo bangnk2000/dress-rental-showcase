@@ -30,6 +30,11 @@ export interface CreateRentalRequestDto {
      */
   notes?: string;
   /**
+     * Discount on the rental fee in VND (integer, FR-RENT-11); omit or 0 = none. Must not exceed the sum of the item prices (400 otherwise).
+     * @minimum 0
+     */
+  discountAmount?: number;
+  /**
      * Dresses to book (1..n)
      * @minItems 1
      */

@@ -7,7 +7,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { SubjectAttributes } from '../../../../libs/authz/authz.types';
 import { NotFoundException } from '../../../../libs/exceptions';
+import { CurrentSubject } from '../../../../libs/authz/current-subject.decorator';
 import { DressResponseDto } from '../../dtos/dress.response.dto';
 import { GetDressQuery } from './get-dress.query';
 
@@ -21,9 +23,12 @@ export class GetDressHttpController {
   @ApiOperation({ summary: 'Get one dress by id' })
   @ApiOkResponse({ type: DressResponseDto })
   @ApiResponse({ status: 404, description: 'Dress not found' })
-  async get(@Param('id', ParseUUIDPipe) id: string): Promise<DressResponseDto> {
+  async get(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentSubject() subject: SubjectAttributes,
+  ): Promise<DressResponseDto> {
     const dress: DressResponseDto | null = await this.queryBus.execute(
-      new GetDressQuery({ dressId: id }),
+      new GetDressQuery({ dressId: id, readerRole: subject.role }),
     );
     if (!dress) {
       throw new NotFoundException('Dress not found');

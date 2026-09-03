@@ -14,6 +14,7 @@ export const rentalListRowSchema = z.object({
   status: z.enum(['booked', 'out', 'returned', 'cancelled']),
   period: z.string(),
   notes: z.string().nullable(),
+  discount_amount: z.number().int(),
   created_at: z.union([z.number(), z.string(), z.date()]),
 });
 
@@ -71,6 +72,7 @@ export function toRentalListItemDtos(
       startDate: period.start,
       endDate: period.endInclusive,
       notes: rental.notes,
+      discountAmount: rental.discount_amount,
       createdAt: toDate(rental.created_at).toISOString(),
       dresses: rentalDresses,
     });

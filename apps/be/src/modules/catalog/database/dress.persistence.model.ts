@@ -10,6 +10,8 @@ export const dressSchema = z.object({
   status: z.enum(['active', 'retired']),
   notes: z.string().nullable(),
   photo_urls: z.array(z.string()),
+  category_id: z.string().nullable(),
+  purchase_price: z.number().int().nullable(),
   created_at: z.union([z.number(), z.string(), z.date()]),
   updated_at: z.union([z.number(), z.string(), z.date()]),
 });

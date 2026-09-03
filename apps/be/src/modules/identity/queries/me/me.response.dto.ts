@@ -4,8 +4,8 @@ export class MeResponseDto {
   @ApiProperty({ example: '6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a' })
   readonly id!: string;
 
-  @ApiProperty({ example: 'owner@example.com' })
-  readonly email!: string;
+  @ApiProperty({ example: 'owner' })
+  readonly username!: string;
 
   @ApiProperty({ example: 'Chị Hoa' })
   readonly name!: string;

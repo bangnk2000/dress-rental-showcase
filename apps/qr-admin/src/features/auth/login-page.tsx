@@ -9,7 +9,7 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onSignedIn }: LoginPageProps) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -19,7 +19,7 @@ export function LoginPage({ onSignedIn }: LoginPageProps) {
     setError(null);
     setSubmitting(true);
     try {
-      const tokens = await loginHttpControllerLogin({ email, password });
+      const tokens = await loginHttpControllerLogin({ username, password });
       setTokens(tokens);
       const me = await meHttpControllerMe();
       onSignedIn(me.role);
@@ -38,8 +38,8 @@ export function LoginPage({ onSignedIn }: LoginPageProps) {
         <p className="text-sm font-medium text-sky-700">Dress rental</p>
         <h1 className="mt-2 text-3xl font-bold">QR URL Admin</h1>
         <p className="mt-2 text-sm text-slate-600">Đăng nhập bằng tài khoản owner để tạo mã QR.</p>
-        <label className="mt-6 block text-sm font-medium" htmlFor="email">Email</label>
-        <input className="mt-1 w-full rounded border p-2" id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+        <label className="mt-6 block text-sm font-medium" htmlFor="username">Tên đăng nhập</label>
+        <input className="mt-1 w-full rounded border p-2" id="username" type="text" autoCapitalize="none" value={username} onChange={(event) => setUsername(event.target.value)} required />
         <label className="mt-4 block text-sm font-medium" htmlFor="password">Mật khẩu</label>
         <input className="mt-1 w-full rounded border p-2" id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         {error && <p className="mt-3 text-sm text-red-700" role="alert">{error}</p>}

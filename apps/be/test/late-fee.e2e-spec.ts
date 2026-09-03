@@ -38,11 +38,12 @@ describe('late fee at return (real Postgres)', () => {
     expect(created.status).toBe(201);
     const rentalId = (created.body as { id: string }).id;
 
-    const pickup = await context.request(`/api/v1/rentals/${rentalId}/pickup`, {
-      method: 'POST',
-      token: context.token,
-    });
-    expect(pickup.status).toBe(200);
+    // FR-RENT-10: a backdated create is BORN delivered — no pickup call exists to make.
+    const status = await context.db.query<{ status: string }>(
+      'SELECT status FROM rentals WHERE id = $1',
+      [rentalId],
+    );
+    expect(status.rows[0]!.status).toBe('out');
     return { rentalId, dressIds };
   }
 

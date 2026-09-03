@@ -247,14 +247,18 @@ export function ReturnRentalDialog({ rental, onClose }: ReturnRentalDialogProps)
             toast.error(t('returnDialog.deposit.changed', { amount: formatVnd(collected) }));
             return;
           }
-          // Anything else means the rental moved on — nothing left to settle here.
+          // Anything else means the rental moved on — nothing left to settle here. A BOOKED
+          // rental gets its own sentence (FR-RENT-10): "not delivered yet" is an instruction,
+          // not a generic state complaint.
           toast.error(
             mapped.status === 'rejected_return_not_allowed'
-              ? t('errors.returnNotAllowed', {
-                  status: t(`status.${String(mapped.currentStatus)}`, {
-                    defaultValue: String(mapped.currentStatus ?? ''),
-                  }),
-                })
+              ? mapped.currentStatus === 'booked'
+                ? t('errors.returnNotPickedUp')
+                : t('errors.returnNotAllowed', {
+                    status: t(`status.${String(mapped.currentStatus)}`, {
+                      defaultValue: String(mapped.currentStatus ?? ''),
+                    }),
+                  })
               : t('errors.rentalNotFound'),
           );
           await refreshBoardAndList();

@@ -5,7 +5,8 @@
   "nav": {
     "today": "Hôm nay",
     "dresses": "Váy",
-    "rentals": "Thuê"
+    "rentals": "Thuê",
+    "users": "Nhân viên"
   },
   "actions": {
     "save": "Lưu",

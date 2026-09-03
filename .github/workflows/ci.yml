@@ -130,7 +130,7 @@ jobs:
       JWT_REFRESH_SECRET: ci-jwt-refresh-secret-0123456789
       CLEANING_BUFFER_DAYS: '2'
       LATE_FEE_PER_DRESS_PER_DAY: '200000'
-      SEED_OWNER_EMAIL: owner@example.com
+      SEED_OWNER_USERNAME: owner
       # The happy path signs in with this exact pair (apps/fe/e2e/happy-path.spec.ts).
       SEED_OWNER_PASSWORD: changeme
       LOG_LEVEL: fatal

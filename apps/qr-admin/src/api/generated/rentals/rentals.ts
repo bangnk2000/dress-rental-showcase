@@ -222,7 +222,7 @@ export function useListRentalsHttpControllerList<TData = Awaited<ReturnType<type
 
 
 /**
- * @summary Cancel a booked rental — frees the calendar, keeps history
+ * @summary Cancel a booked or out rental with an EMPTY ledger — frees the calendar, keeps history
  */
 export const cancelRentalHttpControllerCancel = (
     id: string,
@@ -271,7 +271,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CancelRentalHttpControllerCancelMutationError = CancelRentalOutcomeDto
 
     /**
- * @summary Cancel a booked rental — frees the calendar, keeps history
+ * @summary Cancel a booked or out rental with an EMPTY ledger — frees the calendar, keeps history
  */
 export const useCancelRentalHttpControllerCancel = <TError = CancelRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}

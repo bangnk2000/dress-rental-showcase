@@ -13,7 +13,13 @@
       "size": "Size",
       "rentalPrice": "Rental price",
       "deposit": "Deposit",
-      "status": "Status"
+      "status": "Status",
+      "category": "Category",
+      "actions": "Actions"
+    },
+    "actions": {
+      "duplicate": "Duplicate",
+      "duplicateFor": "Duplicate {{code}}"
     },
     "empty": {
       "noDresses": "No dresses yet",
@@ -25,7 +31,9 @@
       "label": "Page {{page}} / {{totalPages}}",
       "previous": "Previous page",
       "next": "Next page"
-    }
+    },
+    "categoryFilterLabel": "Category",
+    "categoryAll": "All categories"
   },
   "status": {
     "active": "Available",
@@ -44,11 +52,13 @@
       "depositAmount": "Deposit (VND)",
       "notes": "Notes",
       "photoUrls": "Photos (one link per line)",
-      "photoUrlsPlaceholder": "https://..."
+      "photoUrlsPlaceholder": "https://...",
+      "category": "Category",
+      "purchasePrice": "Purchase price (VND) — owner only"
     },
     "errors": {
       "codeRequired": "Please enter a dress code",
-      "codeInvalid": "The code is 2-20 letters, digits or hyphens, starting with a letter or digit",
+      "codeInvalid": "The code is 2-20 letters, digits, hyphens or underscores, starting with a letter or digit",
       "nameRequired": "Please enter a dress name",
       "nameTooLong": "The name is at most 200 characters",
       "sizeTooLong": "The size is at most 20 characters",
@@ -63,12 +73,15 @@
     "success": "Dress added to the catalog",
     "error": "Could not add the dress. Please try again.",
     "updateSuccess": "Dress updated",
-    "updateError": "Could not update the dress. Please try again."
+    "updateError": "Could not update the dress. Please try again.",
+    "categoryNone": "Unclassified",
+    "sizeHint": "Tap to pick a size, tap again to clear."
   },
   "detail": {
     "title": "Dress detail",
     "actions": {
       "edit": "Edit",
+      "duplicate": "Duplicate",
       "retire": "Retire"
     },
     "retire": {
@@ -85,7 +98,11 @@
       "size": "Size",
       "rentalPrice": "Rental price",
       "deposit": "Deposit",
-      "notes": "Notes"
+      "notes": "Notes",
+      "category": "Category",
+      "categoryNone": "Unclassified",
+      "purchasePrice": "Purchase price",
+      "purchasePriceNone": "Not entered"
     },
     "calendar": {
       "title": "Booking calendar",
@@ -110,7 +127,54 @@
       "error": "Could not check availability. Please try again."
     }
   },
+  "duplicate": {
+    "title": "Duplicate {{code}}",
+    "description": "Creates a new dress identical to this one, to record another size. The code is assigned automatically: {{base}}_1, {{base}}_2, … in order.",
+    "size": "Size of the new dress",
+    "submit": "Duplicate",
+    "success": "Duplicated as {{code}}",
+    "error": "Could not duplicate. Please try again.",
+    "codeTaken": "Code {{code}} was just taken on another device — tap Duplicate again."
+  },
   "errors": {
     "notFound": "This dress is no longer in the catalog. The list has been refreshed."
+  },
+  "categories": {
+    "title": "Dress categories",
+    "empty": "No categories yet.",
+    "dressCount": "({{count}} dresses)",
+    "create": "Add category",
+    "createPlaceholder": "New category name",
+    "rename": "Rename",
+    "renameLabel": "New name for {{name}}",
+    "renameSave": "Save",
+    "renameCancel": "Cancel",
+    "delete": "Delete",
+    "deleted": "Category deleted.",
+    "deleteConfirm": {
+      "title": "Delete category {{name}}?",
+      "description": "Only an empty category can be deleted. Dresses are not affected."
+    },
+    "errors": {
+      "nameTaken": "Category \"{{name}}\" already exists",
+      "inUse": "{{count}} dresses still hold this category — reassign them first.",
+      "ownerOnly": "Only the owner can delete categories.",
+      "generic": "Something went wrong, please retry."
+    }
+  },
+  "priceHistory": {
+    "title": "Price history",
+    "loading": "Loading price history…",
+    "error": "Could not load the price history.",
+    "retry": "Retry",
+    "unchanged": "Unchanged since {{date}}.",
+    "current": "(current)",
+    "systemChange": "—",
+    "columns": {
+      "date": "Date",
+      "rentalPrice": "Rental price",
+      "deposit": "Deposit",
+      "changedBy": "Changed by"
+    }
   }
 }

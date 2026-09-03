@@ -6,7 +6,11 @@
  */
 
 export interface LoginRequestDto {
-  email: string;
+  /**
+     * Login username (case-insensitive)
+     * @minLength 1
+     */
+  username: string;
   /** @minLength 1 */
   password: string;
 }

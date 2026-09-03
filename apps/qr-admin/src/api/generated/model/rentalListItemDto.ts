@@ -18,6 +18,8 @@ export interface RentalListItemDto {
   endDate: string;
   /** @nullable */
   notes: string | null;
+  /** Discount on the rental fee in VND (FR-RENT-11); 0 = none. Expected rental fee = Σ dresses.agreedPrice − discountAmount. */
+  discountAmount: number;
   createdAt: string;
   dresses: RentalDressDto[];
 }

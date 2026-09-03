@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ListDressesHttpControllerListStatus } from '@/api/generated/model';
+import type { CategoryDto } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,15 +15,27 @@ import {
 
 /** Radix Select items cannot carry an empty value — sentinel for "all". */
 const ALL_STATUSES = 'all';
+const ALL_CATEGORIES = 'all';
 
 interface DressFiltersBarProps {
   q: string | undefined;
   status: ListDressesHttpControllerListStatus | undefined;
+  categoryId: string | undefined;
+  categories: CategoryDto[];
   onSearch: (q: string) => void;
   onStatusChange: (status: ListDressesHttpControllerListStatus | undefined) => void;
+  onCategoryChange: (categoryId: string | undefined) => void;
 }
 
-export function DressFiltersBar({ q, status, onSearch, onStatusChange }: DressFiltersBarProps) {
+export function DressFiltersBar({
+  q,
+  status,
+  categoryId,
+  categories,
+  onSearch,
+  onStatusChange,
+  onCategoryChange,
+}: DressFiltersBarProps) {
   const { t } = useTranslation('dresses');
 
   // Local draft so typing does not refetch; the URL updates on submit
@@ -72,6 +85,24 @@ export function DressFiltersBar({ q, status, onSearch, onStatusChange }: DressFi
           {Object.values(ListDressesHttpControllerListStatus).map((value) => (
             <SelectItem key={value} value={value}>
               {t(`status.${value}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={categoryId ?? ALL_CATEGORIES}
+        onValueChange={(value) =>
+          onCategoryChange(value === ALL_CATEGORIES ? undefined : value)
+        }
+      >
+        <SelectTrigger aria-label={t('list.categoryFilterLabel')} className="w-44">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL_CATEGORIES}>{t('list.categoryAll')}</SelectItem>
+          {categories.map((category) => (
+            <SelectItem key={category.id} value={category.id}>
+              {category.name}
             </SelectItem>
           ))}
         </SelectContent>

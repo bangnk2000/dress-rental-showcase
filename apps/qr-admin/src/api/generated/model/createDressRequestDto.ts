@@ -8,7 +8,7 @@
 export interface CreateDressRequestDto {
   /**
      * Unique shop code
-     * @pattern ^[A-Za-z0-9][A-Za-z0-9-]{1,19}$
+     * @pattern ^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$
      */
   code: string;
   /**
@@ -44,4 +44,15 @@ export interface CreateDressRequestDto {
      * @items.pattern ^https?:\/\/\S+$
      */
   photoUrls?: string[];
+  /**
+     * Category id (FR-CAT-07); omit or null = unclassified
+     * @nullable
+     */
+  categoryId?: string | null;
+  /**
+     * What the shop paid (VND, FR-CAT-05). OWNER-ONLY: a staff request carrying this field is refused with the named 403 outcome.
+     * @minimum 0
+     * @nullable
+     */
+  purchasePrice?: number | null;
 }

@@ -19,4 +19,11 @@ export interface RentalRepositoryPort extends RepositoryPort<RentalEntity> {
    * throws `DepositBasisChangedError` and writes nothing.
    */
   saveReturned(entity: RentalEntity, expectedDepositCollected: number | null): Promise<void>;
+
+  /**
+   * `save`, plus a check that the rental's ledger is EMPTY — both under the rental's row lock,
+   * so record-collection (which locks the same row) and this cancel take turns. Any money row
+   * throws `LedgerNotEmptyError` and writes nothing.
+   */
+  saveCancelled(entity: RentalEntity): Promise<void>;
 }

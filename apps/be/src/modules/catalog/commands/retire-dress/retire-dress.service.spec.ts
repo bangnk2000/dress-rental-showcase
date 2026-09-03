@@ -18,6 +18,8 @@ function makeDress(): DressEntity {
       depositAmount: Money.create(3_000_000),
       notes: null,
       photoUrls: [],
+      categoryId: null,
+      purchasePrice: null,
     },
     DRESS_ID,
     new Date('2026-01-01'),
@@ -30,6 +32,9 @@ function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepository
     save: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(makeDress()),
     findOneByCode: jest.fn().mockResolvedValue(null),
+    findCodesStartingWith: jest.fn().mockResolvedValue([]),
+    insertWithHistory: jest.fn().mockResolvedValue(undefined),
+    saveWithPriceHistory: jest.fn().mockResolvedValue(undefined),
     nextId: jest.fn().mockReturnValue(DRESS_ID),
     ...overrides,
   };

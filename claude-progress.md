@@ -3,6 +3,16 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-03 (28) — three owner asks, two features, ledger 32/32 `pass` (committed and merged to master by PR at
+  the owner's request): `rentals/rental-discount` (FR-RENT-11 — a rental-level
+  discount column with the ≤ Σ rule held by the aggregate and the ≥ 0 rule by a CHECK; the new-rental
+  form reads the digits back grouped and shows subtotal / discount / payable; the collect form
+  suggests the discounted fee) and `catalog/duplicate-dress` (FR-CAT-08 — `POST /dresses/:id/duplicate`
+  numbers copies `<code>_1`, `_2`, … from the ORIGINAL even when copying a copy, survives the
+  concurrent race through UNIQUE + recount, and the FE asks only for the size; sizes everywhere are
+  now XS/S/M/L/XL buttons with a legacy value kept as a sixth). be 168 unit + 86 e2e on real
+  Postgres, fe 103 vitest, both builds green; fe arch (d) and `contract:check` red only until the
+  regenerated client is committed.
 - 2026-08-10 (24) — the repo's whole unpushed history (18 commits) went out as **five stacked PRs**
   (#1 QR phase → #2 outcome model + invariant proof → #3 e2e CI + release record → #4 UI review
   batch → #5 FR-PAY-02), each reviewed by the codex CLI in WSL and fixed until the review returned

@@ -105,7 +105,7 @@ export class LateFeeWaiverNoteRequiredError extends ExceptionBase {
 }
 
 export class RentalCancelNotAllowedError extends ExceptionBase {
-  static readonly message = 'Only a booked rental can be cancelled';
+  static readonly message = 'A returned or cancelled rental cannot be cancelled';
   public readonly code = 'RENTALS.CANCEL_NOT_ALLOWED';
 
   constructor(
@@ -113,6 +113,19 @@ export class RentalCancelNotAllowedError extends ExceptionBase {
     cause?: Error,
   ) {
     super(RentalCancelNotAllowedError.message, cause, { currentStatus });
+  }
+}
+
+/**
+ * FR-RENT-10 §6.Q2: cancelling is for rentals whose ledger is EMPTY — recorded money must leave
+ * through the return flow, where the refund is written down, never be orphaned by a cancel.
+ */
+export class RentalCancelHasPaymentsError extends ExceptionBase {
+  static readonly message = 'The rental has recorded money — settle it through the return flow';
+  public readonly code = 'RENTALS.CANCEL_HAS_PAYMENTS';
+
+  constructor(cause?: Error, metadata?: unknown) {
+    super(RentalCancelHasPaymentsError.message, cause, metadata);
   }
 }
 

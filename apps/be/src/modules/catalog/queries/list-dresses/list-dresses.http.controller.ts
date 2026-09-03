@@ -1,6 +1,8 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { SubjectAttributes } from '../../../../libs/authz/authz.types';
+import { CurrentSubject } from '../../../../libs/authz/current-subject.decorator';
 import { ListDressesQuery } from './list-dresses.query';
 import { ListDressesRequestDto } from './list-dresses.request.dto';
 import { DressListResponseDto } from './list-dresses.response.dto';
@@ -14,9 +16,19 @@ export class ListDressesHttpController {
   @Get()
   @ApiOperation({ summary: 'List dresses (paginated, filter by code/name/status)' })
   @ApiOkResponse({ type: DressListResponseDto })
-  async list(@Query() dto: ListDressesRequestDto): Promise<DressListResponseDto> {
+  async list(
+    @Query() dto: ListDressesRequestDto,
+    @CurrentSubject() subject: SubjectAttributes,
+  ): Promise<DressListResponseDto> {
     return this.queryBus.execute(
-      new ListDressesQuery({ q: dto.q, status: dto.status, page: dto.page, limit: dto.limit }),
+      new ListDressesQuery({
+        q: dto.q,
+        status: dto.status,
+        categoryId: dto.categoryId,
+        readerRole: subject.role,
+        page: dto.page,
+        limit: dto.limit,
+      }),
     );
   }
 }

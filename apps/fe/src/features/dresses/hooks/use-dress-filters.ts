@@ -25,15 +25,17 @@ export function useDressFilters() {
 
   const q = searchParams.get('q')?.trim() || undefined;
   const status = parseStatus(searchParams.get('status'));
+  const categoryId = searchParams.get('categoryId') || undefined;
   const page = parsePage(searchParams.get('page'));
 
   const listParams = useMemo<ListDressesHttpControllerListParams>(
     () => ({
       ...(q !== undefined ? { q } : {}),
       ...(status !== undefined ? { status } : {}),
+      ...(categoryId !== undefined ? { categoryId } : {}),
       ...(page > 1 ? { page } : {}),
     }),
-    [q, status, page],
+    [q, status, categoryId, page],
   );
 
   /** Changing the search resets pagination. */
@@ -77,7 +79,32 @@ export function useDressFilters() {
     [setSearchParams],
   );
 
-  const hasActiveFilters = q !== undefined || status !== undefined;
+  /** Changing the category filter resets pagination (FR-CAT-07). */
+  const setCategoryId = useCallback(
+    (next: string | undefined) => {
+      setSearchParams((prev) => {
+        const params = new URLSearchParams(prev);
+        if (next) params.set('categoryId', next);
+        else params.delete('categoryId');
+        params.delete('page');
+        return params;
+      });
+    },
+    [setSearchParams],
+  );
 
-  return { q, status, page, listParams, hasActiveFilters, setSearch, setStatus, setPage };
+  const hasActiveFilters = q !== undefined || status !== undefined || categoryId !== undefined;
+
+  return {
+    q,
+    status,
+    categoryId,
+    page,
+    listParams,
+    hasActiveFilters,
+    setSearch,
+    setStatus,
+    setCategoryId,
+    setPage,
+  };
 }

@@ -1,6 +1,7 @@
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateRoot } from '../../../libs/ddd/aggregate-root.base';
 import { ArgumentInvalidException } from '../../../libs/exceptions';
+import { Money } from '../../../libs/ddd/money.value-object';
 import { LateFeeQuote } from './late-fee.value-object';
 import { RentalItemEntity } from './rental-item.entity';
 import { RentalPeriod } from './rental-period.value-object';
@@ -37,6 +38,7 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
       period: create.period,
       status: 'booked',
       notes: create.notes,
+      discount: create.discount,
       items,
     };
     const rental = new RentalEntity({ id, props, createdAt: now, updatedAt: now });
@@ -59,6 +61,15 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
 
   get items(): readonly RentalItemEntity[] {
     return this.props.items;
+  }
+
+  get discount(): Money {
+    return this.props.discount;
+  }
+
+  /** Σ item prices — the rental fee BEFORE the discount. */
+  get itemsTotal(): Money {
+    return Money.create(this.props.items.reduce((sum, item) => sum + item.price.amount, 0));
   }
 
   /**
@@ -87,12 +98,13 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
   }
 
   /**
-   * Customer brings the dresses back: out → returned. A booked rental may be
-   * returned directly (staff skipped the pickup tap); the items keep blocking
-   * through the cleaning buffer, which IS the derived "cleaning" state.
+   * Customer brings the dresses back: out → returned, ONLY. A rental that was never handed
+   * over has nothing to take back — settling it would record money for a handover that never
+   * happened (FR-RENT-10 R1; the old booked→returned shortcut is deliberately gone). The items
+   * keep blocking through the cleaning buffer, which IS the derived "cleaning" state.
    */
   markReturned(now: Date): Result<void, RentalReturnNotAllowedError> {
-    if (this.props.status !== 'booked' && this.props.status !== 'out') {
+    if (this.props.status !== 'out') {
       return Err(new RentalReturnNotAllowedError(this.props.status));
     }
     this.props.status = 'returned';
@@ -102,12 +114,13 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
   }
 
   /**
-   * Cancel a booking that never went out: booked → cancelled, and every item
-   * stops blocking — the calendar frees for re-booking while the rows stay
-   * as history. An 'out' rental must be RETURNED, not cancelled.
+   * Cancel: booked|out → cancelled, and every item stops blocking — the calendar frees for
+   * re-booking while the rows stay as history. An OUT rental may cancel only while its ledger
+   * is EMPTY (a mis-created born-out rental, FR-RENT-10 §6.Q2) — that money rule lives in the
+   * application/repository layer, since the aggregate cannot see the payments table.
    */
   cancel(now: Date): Result<void, RentalCancelNotAllowedError> {
-    if (this.props.status !== 'booked') {
+    if (this.props.status !== 'booked' && this.props.status !== 'out') {
       return Err(new RentalCancelNotAllowedError(this.props.status));
     }
     this.props.status = 'cancelled';
@@ -128,6 +141,13 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
     if (new Set(dressIds).size !== dressIds.length) {
       // Backs the DTO-level ArrayUnique and the DB UNIQUE (rental_id, dress_id).
       throw new ArgumentInvalidException('A rental must not list the same dress twice');
+    }
+    this.guardAgainstEmpty(this.props.discount, 'discount');
+    if (this.props.discount.amount > this.itemsTotal.amount) {
+      // FR-RENT-11 R2: a discount larger than the fee is a typo, not a business case. The rule
+      // spans two tables, so the aggregate is the only place that can hold it (the DB CHECK only
+      // refuses a negative amount).
+      throw new ArgumentInvalidException('Discount must not exceed the sum of the item prices');
     }
   }
 }

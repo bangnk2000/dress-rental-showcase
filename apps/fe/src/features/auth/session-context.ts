@@ -7,7 +7,7 @@ export type SessionStatus = 'loading' | 'authenticated' | 'anonymous';
 export interface SessionValue {
   status: SessionStatus;
   user: MeResponseDto | null;
-  signIn: (input: { email: string; password: string }) => Promise<void>;
+  signIn: (input: { username: string; password: string }) => Promise<void>;
   signOut: () => Promise<void>;
 }
 

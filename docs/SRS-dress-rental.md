@@ -20,19 +20,27 @@ Bốn bounded context: `identity` (đăng nhập/quyền), `catalog` (danh mục
 | Vai trò | Quyền |
 | --- | --- |
 | `staff` | Toàn bộ nghiệp vụ hằng ngày: danh mục, tạo/lấy/trả/hủy đơn, xem tiền |
-| `owner` | Như staff + các hành động rủi ro cao: **retire váy** (owner-only) |
+| `owner` | Như staff + các hành động rủi ro cao: **retire váy**, **miễn giảm phí trễ**, **quản lý tài khoản** (owner-only) |
 
 AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/authz`.
 
 ## 3. Yêu cầu chức năng (FR)
 
 ### identity
-- **FR-AUTH-01** Đăng nhập email/password → access + refresh token (2 secret riêng).
+- **FR-AUTH-01** Đăng nhập **username**/password → access + refresh token (2 secret riêng).
+  (Đổi từ email 2026-08-10 — [manage-users](./design/identity/manage-users.md) §6.Q1: staff
+  không có email công việc, một cột định danh là một sự thật.)
 - **FR-AUTH-02** Refresh token. Sai mật khẩu / refresh token không hợp lệ là **outcome nghiệp vụ**
   (`rejected_invalid_credentials` / `rejected_invalid_refresh_token`, 422 — [ADR
   0001](./adr/0001-outcome-model-at-the-http-boundary.md)), FE không retry. **401 chỉ còn một
-  nghĩa**: guard chặn vì thiếu/hết hạn access token → refresh-and-retry một lần.
+  nghĩa**: guard chặn vì thiếu/hết hạn access token → refresh-and-retry một lần. Refresh của
+  account bị khoá chết như token hỏng — lý do là việc của login.
 - **FR-AUTH-03** Xem hồ sơ đang đăng nhập (`GET /auth/me`).
+- **FR-AUTH-04** Owner quản lý tài khoản: tạo staff (username duy nhất case-insensitive,
+  password ≥ 8), **khoá/mở** (không xoá — FK lịch sử trỏ tới user vĩnh viễn), đặt lại mật khẩu
+  tại quầy. Đăng nhập đúng mật khẩu vào account khoá → `rejected_account_locked` (nêu rõ);
+  sai mật khẩu luôn là `rejected_invalid_credentials` (không dò được trạng thái khoá).
+  Owner không tự khoá được chính mình. Access token đang sống chạy hết TTL (trade-off nêu rõ).
 
 ### catalog
 - **FR-CAT-01** Váy có: mã **duy nhất**, giá thuê, tiền cọc chuẩn, link ảnh (`photo_urls`),
@@ -42,6 +50,32 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 - **FR-CAT-03** Tạo / cập nhật váy; **retire** (owner-only) — váy retired không tạo đơn mới,
   lịch sử giữ nguyên.
 - **FR-CAT-04** Seed một lần từ CSV xuất Google Sheets (~200 váy) — `pnpm --filter be import:dresses`.
+- **FR-CAT-05** Giá nhập của váy — **chỉ chủ tiệm nhập và nhìn thấy**. Ghi: request của staff
+  MANG field này (kể cả null) bị từ chối nêu tên (403 `forbidden` +
+  `purchase_price_owner_only`); staff không gửi field thì mọi thứ như cũ. Đọc: key
+  `purchasePrice` chỉ tồn tại trên wire cho owner (staff = vắng mặt; null = owner chưa nhập —
+  hai câu khác nhau). Không tham gia bất kỳ tính toán nào. CSV import (owner chạy) có cột
+  `purchase_price`. Quyết định + lý do:
+  [design/catalog/purchase-price.md](./design/catalog/purchase-price.md) §6.
+- **FR-CAT-06** Lịch sử giá thuê + cọc chuẩn: bảng **append-only** `dress_price_history` — mỗi
+  thay đổi THẬT của (giá thuê, cọc) sinh đúng một dòng (giá trị MỚI + ai + khi nào), ghi CÙNG
+  transaction với dòng váy; gửi lại y hệt không sinh dòng. Mọi váy có ≥1 dòng (v1 lúc tạo;
+  backfill khi migrate, người đổi NULL). Không có API sửa/xoá sổ. Mọi staff xem được. Đơn thuê
+  KHÔNG bị ảnh hưởng — `rental_items.price` và cọc thực thu đã snapshot. Quyết định + lý do:
+  [design/catalog/price-history.md](./design/catalog/price-history.md) §6.
+- **FR-CAT-07** Danh mục váy: mỗi váy thuộc **0..1 danh mục** (null = chưa phân loại, hợp lệ
+  vĩnh viễn). Tên duy nhất không phân biệt hoa thường. Staff tạo/sửa tên; **xoá là owner-only**
+  và chỉ xoá được danh mục TRỐNG (`rejected_category_in_use` + dressCount, FK RESTRICT làm lưới).
+  List váy filter theo danh mục; CSV import có cột `category` tự tạo theo tên. Quyết định + lý
+  do: [design/catalog/dress-category.md](./design/catalog/dress-category.md) §6.
+- **FR-CAT-08** Nhân bản váy + kích cỡ chuẩn. (a) `POST /dresses/:id/duplicate` tạo váy mới giống
+  hệt váy nguồn (tên, giá, cọc, ghi chú, ảnh, danh mục, giá nhập) với mã **tự đặt** `<mã gốc>_<n>`,
+  n bắt đầu từ **1** và luôn = số lớn nhất hiện có + 1 (nút Nhân bản có ở trang chi tiết VÀ từng dòng danh mục); nhân bản một bản sao vẫn đánh số theo mã
+  GỐC (`VD-012_1` → `VD-012_<n>`). Size của bản sao gửi kèm request (mặc định = size nguồn). Hai
+  thiết bị cùng nhân bản: UNIQUE(code) từ chối bên thua, service đếm lại tối đa 3 lần rồi mới trả
+  `rejected_dress_code_taken`. Mã váy từ đây cho phép `_`. (b) Kích cỡ trên form **chọn bằng nút**
+  XS / S / M / L / XL (chạm lại để bỏ); API vẫn giữ `sizeLabel` text tự do ≤ 20 ký tự — giá trị cũ
+  (CSV) ngoài 5 cỡ hiện thành nút thứ sáu đang chọn khi sửa, không bị xoá ngầm.
 
 ### rentals
 - **FR-RENT-01** Tạo đơn thuê: khách (tên/điện thoại) + NHIỀU váy + khoảng ngày **inclusive**
@@ -54,11 +88,12 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 - **FR-RENT-03** Availability: trả lời "váy X có trống từ A đến B không"; chi tiết váy hiển thị
   các khoảng đã đặt trên lịch.
 - **FR-RENT-04** Pickup: đơn `booked` → `out` khi khách lấy váy.
-- **FR-RENT-05** Return + settle: đơn `booked|out` → `returned`; ghi các dòng tiền
-  `deposit_refund` / `late_fee` / `damage_fee` (+ ghi chú) vào `payments`. Váy tiếp tục bị
-  block hết buffer (= "đang vệ sinh"), sau đó tự do.
-- **FR-RENT-06** Cancel: đơn `booked` → `cancelled`; items chuyển `blocking=false` — **giải
-  phóng lịch, giữ lịch sử**.
+- **FR-RENT-05** Return + settle: đơn `out` → `returned` (**CHỈ từ `out`** — FR-RENT-10 bỏ
+  lối tắt booked→returned); ghi các dòng tiền `deposit_refund` / `late_fee` / `damage_fee`
+  (+ ghi chú) vào `payments`. Váy tiếp tục bị block hết buffer (= "đang vệ sinh"), sau đó tự do.
+- **FR-RENT-06** Cancel: đơn `booked` — hoặc `out` với **sổ tiền TRỐNG** (FR-RENT-10 §6.Q2) —
+  → `cancelled`; items chuyển `blocking=false` — **giải phóng lịch, giữ lịch sử**. Sổ có tiền
+  → `rejected_cancel_has_payments`: lối ra duy nhất là return.
 - **FR-RENT-07** Bảng "Hôm nay": váy phải giao hôm nay (due out), phải nhận về hôm nay
   (due back), và **OVERDUE** — màn hình nhân viên mở mỗi sáng, có nút thao tác trực tiếp.
 - **FR-RENT-08** Danh sách đơn: search tên/điện thoại khách, filter status, phân trang;
@@ -68,6 +103,16 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   `GET /rentals/:id/late-fee` và pre-fill để nhân viên nói với khách trước khi xác nhận. Thu **ít
   hơn** số đề xuất chỉ chủ tiệm được làm và **phải ghi lý do**; thu nhiều hơn thì tự do. Quyết định
   + lý do: [design/rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) §6.
+- **FR-RENT-10** Trạng thái đơn phản ánh váy đang ở đâu: (a) **chưa giao thì chưa nhận về** —
+  return chỉ hợp lệ từ `out`; (b) đơn tạo với ngày nhận là **hôm nay hoặc đã qua** (giờ tiệm,
+  `Asia/Ho_Chi_Minh`) sinh ra ở trạng thái `out` — khách đang ở quầy hoặc là nhập bù; (c) đơn
+  `booked` trên due-back/overdue là khách chưa lấy — board mời giao trễ hoặc huỷ. Quyết định +
+  lý do: [design/rentals/pickup-before-return.md](./design/rentals/pickup-before-return.md) §6.
+- **FR-RENT-11** Giảm giá khi tạo đơn: `discountAmount` (VND integer ≥ 0, mặc định 0) ở mức ĐƠN —
+  KHÔNG đổi `rental_items.price` (giá thoả thuận từng váy) và KHÔNG phải dòng tiền trong `payments`
+  (sổ vẫn ghi số thực thu). Không được vượt Σ giá item (aggregate từ chối → 400
+  `GENERIC.ARGUMENT_INVALID`); âm bị DTO và `CHECK (discount_amount >= 0)` chặn. Danh sách đơn trả
+  `discountAmount`; tiền thuê GỢI Ý khi ghi nhận thu = Σ giá thoả thuận − giảm giá.
 
 ### payments
 - **FR-PAY-01** Xem các dòng tiền của một đơn (`GET /rentals/:id/payments`), kèm `summary` cộng
@@ -112,8 +157,12 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR | Feature (`feature_list.json`) | Design doc | Trạng thái |
 | --- | --- | --- | --- |
 | FR-AUTH-01..03 | `infra/be-bootstrap` (identity ship cùng bootstrap) | [identity-aggregate.md](./design/identity-aggregate.md) | pass |
+| FR-AUTH-04, FR-AUTH-01 (đổi định danh) | `identity/manage-users` | [identity/manage-users.md](./design/identity/manage-users.md) (spec `as-built`), [identity-aggregate.md](./design/identity-aggregate.md) | pass |
 | FR-CAT-01, 02, 04 | `catalog/list-dresses` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-CAT-01, 03 | `catalog/manage-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
+| FR-CAT-05 | `catalog/purchase-price` | [catalog/purchase-price.md](./design/catalog/purchase-price.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
+| FR-CAT-06 | `catalog/price-history` | [catalog/price-history.md](./design/catalog/price-history.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
+| FR-CAT-07 | `catalog/dress-category` | [catalog/dress-category.md](./design/catalog/dress-category.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-RENT-01, 02 | `rentals/create-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-RENT-03 | `rentals/availability-check` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-RENT-04, 07 | `rentals/today-board` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
@@ -123,6 +172,9 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-PAY-01 | `payments/list-payments` | [payments-aggregate.md](./design/payments-aggregate.md) | pass |
 | FR-PAY-02 | `payments/record-collection` | [payments/record-collection.md](./design/payments/record-collection.md) (spec `as-built`), [payments-aggregate.md](./design/payments-aggregate.md) | pass |
 | FR-RENT-09 | `rentals/settle-late-fee` | [rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Phí trễ hạn | pass |
+| FR-RENT-10 (siết FR-RENT-05, nới FR-RENT-06) | `rentals/pickup-before-return` | [rentals/pickup-before-return.md](./design/rentals/pickup-before-return.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
+| FR-CAT-08 | `catalog/duplicate-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) §Nhân bản | pass |
+| FR-RENT-11 | `rentals/rental-discount` | [rentals-aggregate.md](./design/rentals-aggregate.md) §Giảm giá | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

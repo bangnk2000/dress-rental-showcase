@@ -25,12 +25,20 @@ import type {
 
 import type {
   ApiErrorResponseDto,
+  CreateUserOutcomeDto,
+  CreateUserRequestDto,
+  DeactivateUserOutcomeDto,
+  IdResponse,
   LoginOutcomeDto,
   LoginRequestDto,
   MeResponseDto,
+  ReactivateUserOutcomeDto,
   RefreshTokenOutcomeDto,
   RefreshTokenRequestDto,
-  TokenPairResponseDto
+  ResetPasswordOutcomeDto,
+  ResetPasswordRequestDto,
+  TokenPairResponseDto,
+  UserListResponseDto
 } from '../model';
 
 import { customInstance } from '../../mutator/custom-instance';
@@ -56,7 +64,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
 };
 
 /**
- * @summary Staff login with email + password
+ * @summary Staff login with username + password
  */
 export const loginHttpControllerLogin = (
     loginRequestDto: LoginRequestDto,
@@ -107,7 +115,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type LoginHttpControllerLoginMutationError = ApiErrorResponseDto | LoginOutcomeDto
 
     /**
- * @summary Staff login with email + password
+ * @summary Staff login with username + password
  */
 export const useLoginHttpControllerLogin = <TError = ApiErrorResponseDto | LoginOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginHttpControllerLogin>>, TError,{data: LoginRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
@@ -275,3 +283,348 @@ export function useMeHttpControllerMe<TData = Awaited<ReturnType<typeof meHttpCo
 
 
 
+/**
+ * @summary Create a staff account (owner only; role is always staff)
+ */
+export const createUserHttpControllerCreate = (
+    createUserRequestDto: CreateUserRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/users`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createUserRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreateUserHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto | CreateUserOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUserHttpControllerCreate>>, TError,{data: CreateUserRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createUserHttpControllerCreate>>, TError,{data: CreateUserRequestDto}, TContext> => {
+
+const mutationKey = ['createUserHttpControllerCreate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createUserHttpControllerCreate>>, {data: CreateUserRequestDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createUserHttpControllerCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateUserHttpControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof createUserHttpControllerCreate>>>
+    export type CreateUserHttpControllerCreateMutationBody = CreateUserRequestDto
+    export type CreateUserHttpControllerCreateMutationError = ApiErrorResponseDto | CreateUserOutcomeDto
+
+    /**
+ * @summary Create a staff account (owner only; role is always staff)
+ */
+export const useCreateUserHttpControllerCreate = <TError = ApiErrorResponseDto | CreateUserOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createUserHttpControllerCreate>>, TError,{data: CreateUserRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createUserHttpControllerCreate>>,
+        TError,
+        {data: CreateUserRequestDto},
+        TContext
+      > => {
+      return useMutation(getCreateUserHttpControllerCreateMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary List all staff accounts (owner only; unpaginated by design, <10 rows)
+ */
+export const listUsersHttpControllerList = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<UserListResponseDto>(
+      {url: `/api/v1/users`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getListUsersHttpControllerListQueryKey = () => {
+    return [
+    `/api/v1/users`
+    ] as const;
+    }
+
+
+export const getListUsersHttpControllerListQueryOptions = <TData = Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError = ApiErrorResponseDto>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListUsersHttpControllerListQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsersHttpControllerList>>> = ({ signal }) => listUsersHttpControllerList(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListUsersHttpControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof listUsersHttpControllerList>>>
+export type ListUsersHttpControllerListQueryError = ApiErrorResponseDto
+
+
+export function useListUsersHttpControllerList<TData = Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError = ApiErrorResponseDto>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUsersHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listUsersHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsersHttpControllerList<TData = Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError = ApiErrorResponseDto>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listUsersHttpControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof listUsersHttpControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListUsersHttpControllerList<TData = Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError = ApiErrorResponseDto>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List all staff accounts (owner only; unpaginated by design, <10 rows)
+ */
+
+export function useListUsersHttpControllerList<TData = Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError = ApiErrorResponseDto>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listUsersHttpControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListUsersHttpControllerListQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
+ * @summary Lock a staff account (owner only; lock, never delete)
+ */
+export const deactivateUserHttpControllerDeactivate = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/users/${id}/deactivate`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getDeactivateUserHttpControllerDeactivateMutationOptions = <TError = ApiErrorResponseDto | DeactivateUserOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deactivateUserHttpControllerDeactivate>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof deactivateUserHttpControllerDeactivate>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deactivateUserHttpControllerDeactivate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deactivateUserHttpControllerDeactivate>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deactivateUserHttpControllerDeactivate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeactivateUserHttpControllerDeactivateMutationResult = NonNullable<Awaited<ReturnType<typeof deactivateUserHttpControllerDeactivate>>>
+
+    export type DeactivateUserHttpControllerDeactivateMutationError = ApiErrorResponseDto | DeactivateUserOutcomeDto
+
+    /**
+ * @summary Lock a staff account (owner only; lock, never delete)
+ */
+export const useDeactivateUserHttpControllerDeactivate = <TError = ApiErrorResponseDto | DeactivateUserOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deactivateUserHttpControllerDeactivate>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deactivateUserHttpControllerDeactivate>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeactivateUserHttpControllerDeactivateMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Unlock a staff account (owner only)
+ */
+export const reactivateUserHttpControllerReactivate = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/users/${id}/reactivate`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+
+export const getReactivateUserHttpControllerReactivateMutationOptions = <TError = ApiErrorResponseDto | ReactivateUserOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactivateUserHttpControllerReactivate>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof reactivateUserHttpControllerReactivate>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['reactivateUserHttpControllerReactivate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reactivateUserHttpControllerReactivate>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reactivateUserHttpControllerReactivate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReactivateUserHttpControllerReactivateMutationResult = NonNullable<Awaited<ReturnType<typeof reactivateUserHttpControllerReactivate>>>
+
+    export type ReactivateUserHttpControllerReactivateMutationError = ApiErrorResponseDto | ReactivateUserOutcomeDto
+
+    /**
+ * @summary Unlock a staff account (owner only)
+ */
+export const useReactivateUserHttpControllerReactivate = <TError = ApiErrorResponseDto | ReactivateUserOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactivateUserHttpControllerReactivate>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reactivateUserHttpControllerReactivate>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getReactivateUserHttpControllerReactivateMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Set a new password for a staff account (owner only; works on locked accounts too)
+ */
+export const resetPasswordHttpControllerResetPassword = (
+    id: string,
+    resetPasswordRequestDto: ResetPasswordRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/users/${id}/reset-password`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: resetPasswordRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getResetPasswordHttpControllerResetPasswordMutationOptions = <TError = ApiErrorResponseDto | ResetPasswordOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetPasswordHttpControllerResetPassword>>, TError,{id: string;data: ResetPasswordRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof resetPasswordHttpControllerResetPassword>>, TError,{id: string;data: ResetPasswordRequestDto}, TContext> => {
+
+const mutationKey = ['resetPasswordHttpControllerResetPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resetPasswordHttpControllerResetPassword>>, {id: string;data: ResetPasswordRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  resetPasswordHttpControllerResetPassword(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResetPasswordHttpControllerResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof resetPasswordHttpControllerResetPassword>>>
+    export type ResetPasswordHttpControllerResetPasswordMutationBody = ResetPasswordRequestDto
+    export type ResetPasswordHttpControllerResetPasswordMutationError = ApiErrorResponseDto | ResetPasswordOutcomeDto
+
+    /**
+ * @summary Set a new password for a staff account (owner only; works on locked accounts too)
+ */
+export const useResetPasswordHttpControllerResetPassword = <TError = ApiErrorResponseDto | ResetPasswordOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resetPasswordHttpControllerResetPassword>>, TError,{id: string;data: ResetPasswordRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resetPasswordHttpControllerResetPassword>>,
+        TError,
+        {id: string;data: ResetPasswordRequestDto},
+        TContext
+      > => {
+      return useMutation(getResetPasswordHttpControllerResetPasswordMutationOptions(options), queryClient);
+    }

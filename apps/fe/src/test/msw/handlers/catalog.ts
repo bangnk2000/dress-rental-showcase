@@ -5,10 +5,15 @@
 import { http, HttpResponse, type HttpHandler } from 'msw';
 
 import type {
+  CategoryDto,
+  CreateCategoryRequestDto,
   CreateDressRequestDto,
   DressListResponseDto,
   DressResponseDto,
+  DuplicateDressRequestDto,
+  DuplicateDressResponseDto,
   IdResponse,
+  PriceHistoryEntryDto,
   UpdateDressRequestDto,
 } from '@/api/generated/model';
 import { DressResponseDtoStatus } from '@/api/generated/model';
@@ -30,6 +35,7 @@ export function makeDress(overrides: Partial<DressResponseDto> = {}): DressRespo
     status: DressResponseDtoStatus.active,
     notes: null,
     photoUrls: [],
+    categoryId: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };
@@ -43,7 +49,41 @@ export function seedDresses(seed: DressResponseDto[]): void {
 /** Empty the in-memory catalog — call from beforeEach. */
 export function resetCatalog(): void {
   dresses = [];
+  categories = [];
+  priceHistory = [];
+  lastDuplicate = null;
   nextId = 1;
+}
+
+let categories: CategoryDto[] = [];
+
+export function seedCategories(seed: CategoryDto[]): void {
+  categories = [...seed];
+}
+
+/** The most recent POST /categories body, for assertions. */
+let lastCreatedCategory: string | null = null;
+export function getLastCreatedCategory(): string | null {
+  return lastCreatedCategory;
+}
+
+/** The most recent PATCH /dresses/:id body, for key-level assertions (FR-CAT-05). */
+let lastUpdateDressBody: UpdateDressRequestDto | null = null;
+export function getLastUpdateDressBody(): UpdateDressRequestDto | null {
+  return lastUpdateDressBody;
+}
+
+/** The most recent POST /dresses/:id/duplicate, for assertions (FR-CAT-08). */
+let lastDuplicate: { dressId: string; body: DuplicateDressRequestDto } | null = null;
+export function getLastDuplicate(): { dressId: string; body: DuplicateDressRequestDto } | null {
+  return lastDuplicate;
+}
+
+let priceHistory: PriceHistoryEntryDto[] = [];
+
+/** Newest-first entries served by GET /dresses/:id/price-history (one shared log per test). */
+export function seedPriceHistory(seed: PriceHistoryEntryDto[]): void {
+  priceHistory = [...seed];
 }
 
 export const catalogHandlers: HttpHandler[] = [
@@ -54,6 +94,7 @@ export const catalogHandlers: HttpHandler[] = [
       return HttpResponse.json({ status: 'rejected_dress_not_found' }, { status: 422 });
     }
     const body = (await request.json()) as UpdateDressRequestDto;
+    lastUpdateDressBody = body;
     if (
       body.code !== undefined &&
       dresses.some(
@@ -76,6 +117,35 @@ export const catalogHandlers: HttpHandler[] = [
     if (body.photoUrls !== undefined) dress.photoUrls = [...body.photoUrls];
     const response: IdResponse = { id: dress.id };
     return HttpResponse.json(response);
+  }),
+
+  // POST /api/v1/dresses/:id/duplicate — a copy under the next free <base>_<n>, n from 1 (FR-CAT-08),
+  // numbered the way the real service does it: the highest existing copy + 1.
+  http.post('/api/v1/dresses/:id/duplicate', async ({ params, request }) => {
+    const source = dresses.find((candidate) => candidate.id === params.id);
+    if (!source) {
+      return HttpResponse.json({ status: 'rejected_dress_not_found' }, { status: 422 });
+    }
+    const body = (await request.json()) as DuplicateDressRequestDto;
+    lastDuplicate = { dressId: source.id, body };
+    const base = source.code.replace(/_[0-9]+$/, '');
+    const numbers = dresses
+      .map((dress) => dress.code)
+      .filter((code) => code.startsWith(`${base}_`) && /^[0-9]+$/.test(code.slice(base.length + 1)))
+      .map((code) => Number(code.slice(base.length + 1)));
+    const copy = makeDress({
+      code: `${base}_${numbers.length > 0 ? Math.max(...numbers) + 1 : 1}`,
+      name: source.name,
+      sizeLabel: body.sizeLabel === undefined ? source.sizeLabel : body.sizeLabel,
+      rentalPrice: source.rentalPrice,
+      depositAmount: source.depositAmount,
+      notes: source.notes,
+      photoUrls: [...source.photoUrls],
+      categoryId: source.categoryId,
+    });
+    dresses.push(copy);
+    const response: DuplicateDressResponseDto = { id: copy.id, code: copy.code };
+    return HttpResponse.json(response, { status: 201 });
   }),
 
   // POST /api/v1/dresses/:id/retire — both rejections are outcome bodies.
@@ -123,6 +193,10 @@ export const catalogHandlers: HttpHandler[] = [
     if (status) {
       filtered = filtered.filter((dress) => dress.status === status);
     }
+    const categoryId = url.searchParams.get('categoryId');
+    if (categoryId) {
+      filtered = filtered.filter((dress) => dress.categoryId === categoryId);
+    }
 
     const start = (page - 1) * limit;
     const body: DressListResponseDto = {
@@ -154,5 +228,56 @@ export const catalogHandlers: HttpHandler[] = [
     dresses.push(dress);
     const response: IdResponse = { id: dress.id };
     return HttpResponse.json(response, { status: 201 });
+  }),
+
+  // GET /api/v1/dresses/:id/price-history — the append-only version log (FR-CAT-06).
+  http.get('/api/v1/dresses/:id/price-history', () =>
+    HttpResponse.json({ data: priceHistory }),
+  ),
+
+  // GET /api/v1/categories — the tiny cached list dress rows join names from.
+  http.get('/api/v1/categories', () => HttpResponse.json({ data: categories })),
+
+  // POST /api/v1/categories — 201, or the rejected_category_name_taken outcome.
+  http.post('/api/v1/categories', async ({ request }) => {
+    const body = (await request.json()) as CreateCategoryRequestDto;
+    const name = body.name.trim();
+    if (categories.some((category) => category.name.toLowerCase() === name.toLowerCase())) {
+      return HttpResponse.json(
+        { status: 'rejected_category_name_taken', name },
+        { status: 422 },
+      );
+    }
+    lastCreatedCategory = name;
+    const created: CategoryDto = { id: `category-${categories.length + 1}`, name, dressCount: 0 };
+    categories.push(created);
+    return HttpResponse.json({ id: created.id }, { status: 201 });
+  }),
+
+  // PATCH /api/v1/categories/:id — rename.
+  http.patch('/api/v1/categories/:id', async ({ params, request }) => {
+    const category = categories.find((candidate) => candidate.id === params.id);
+    if (!category) {
+      return HttpResponse.json({ status: 'rejected_category_not_found' }, { status: 422 });
+    }
+    const body = (await request.json()) as CreateCategoryRequestDto;
+    category.name = body.name.trim();
+    return HttpResponse.json({ id: category.id });
+  }),
+
+  // DELETE /api/v1/categories/:id — refused with the count while dresses hold it.
+  http.delete('/api/v1/categories/:id', ({ params }) => {
+    const category = categories.find((candidate) => candidate.id === params.id);
+    if (!category) {
+      return HttpResponse.json({ status: 'rejected_category_not_found' }, { status: 422 });
+    }
+    if (category.dressCount > 0) {
+      return HttpResponse.json(
+        { status: 'rejected_category_in_use', dressCount: category.dressCount },
+        { status: 422 },
+      );
+    }
+    categories = categories.filter((candidate) => candidate.id !== params.id);
+    return HttpResponse.json({ id: params.id });
   }),
 ];

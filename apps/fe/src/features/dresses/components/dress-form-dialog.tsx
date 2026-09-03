@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -10,8 +10,10 @@ import {
   getGetDressHttpControllerGetQueryKey,
   getListDressesHttpControllerListQueryKey,
   useCreateDressHttpControllerCreate,
+  useListCategoriesHttpControllerList,
   useUpdateDressHttpControllerUpdate,
 } from '@/api/generated/catalog/catalog';
+import { useMeHttpControllerMe } from '@/api/generated/identity/identity';
 import type {
   CreateDressRequestDto,
   DressResponseDto,
@@ -27,17 +29,33 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 import {
+  CATEGORY_NONE,
   dressFormDefaults,
   dressFormSchema,
   parsePhotoUrls,
   type DressFormValues,
 } from '../schemas/dress-form.schema';
 import { DressFormMessage } from './dress-form-message';
+import { SizeOptionGroup } from './size-option-group';
 
 interface DressFormDialogProps {
   open: boolean;
@@ -55,11 +73,17 @@ function toFormValues(dress: DressResponseDto): DressFormValues {
     depositAmount: String(dress.depositAmount),
     notes: dress.notes ?? '',
     photoUrls: dress.photoUrls.join('\n'),
+    categoryId: dress.categoryId ?? CATEGORY_NONE,
+    // Staff responses have no key at all — the form value stays '' and is never sent back.
+    purchasePrice: dress.purchasePrice != null ? String(dress.purchasePrice) : '',
   };
 }
 
-/** Form values (strings) → create body; blank optional fields are omitted. */
-function toCreateDressRequest(values: DressFormValues): CreateDressRequestDto {
+/**
+ * Form values (strings) → create body; blank optional fields are omitted. purchasePrice rides
+ * along ONLY for the owner (FR-CAT-05) — a staff request carrying it would be a named 403.
+ */
+function toCreateDressRequest(values: DressFormValues, isOwner: boolean): CreateDressRequestDto {
   const photoUrls = parsePhotoUrls(values.photoUrls);
   return {
     code: values.code,
@@ -69,11 +93,17 @@ function toCreateDressRequest(values: DressFormValues): CreateDressRequestDto {
     ...(values.sizeLabel ? { sizeLabel: values.sizeLabel } : {}),
     ...(values.notes ? { notes: values.notes } : {}),
     ...(photoUrls.length > 0 ? { photoUrls } : {}),
+    ...(values.categoryId !== CATEGORY_NONE ? { categoryId: values.categoryId } : {}),
+    ...(isOwner && values.purchasePrice ? { purchasePrice: Number(values.purchasePrice) } : {}),
   };
 }
 
-/** Edit sends the full form: blank nullable fields become explicit nulls (PATCH clears them). */
-function toUpdateDressRequest(values: DressFormValues): UpdateDressRequestDto {
+/**
+ * Edit sends the full form: blank nullable fields become explicit nulls (PATCH clears them).
+ * EXCEPT purchasePrice for staff: the field must be ABSENT from their request (presence — even
+ * null — is the refused act, FR-CAT-05).
+ */
+function toUpdateDressRequest(values: DressFormValues, isOwner: boolean): UpdateDressRequestDto {
   return {
     code: values.code,
     name: values.name,
@@ -82,6 +112,10 @@ function toUpdateDressRequest(values: DressFormValues): UpdateDressRequestDto {
     depositAmount: Number(values.depositAmount),
     notes: values.notes ? values.notes : null,
     photoUrls: parsePhotoUrls(values.photoUrls),
+    categoryId: values.categoryId === CATEGORY_NONE ? null : values.categoryId,
+    ...(isOwner
+      ? { purchasePrice: values.purchasePrice ? Number(values.purchasePrice) : null }
+      : {}),
   };
 }
 
@@ -89,11 +123,21 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
   const { t } = useTranslation('dresses');
   const { t: tCommon } = useTranslation('common'); // shared verbs only
   const queryClient = useQueryClient();
+  const sizeLabelId = useId();
 
   const form = useForm<DressFormValues>({
     resolver: zodResolver(dressFormSchema),
     defaultValues: dress ? toFormValues(dress) : dressFormDefaults,
   });
+
+  // The category options load only while the dialog is open; the list is tiny and cached.
+  const categoriesQuery = useListCategoriesHttpControllerList({ query: { enabled: open } });
+  const categories = categoriesQuery.data?.data ?? [];
+
+  // Display gate only — the BE refuses a staff request carrying the field either way. The me
+  // query is already in the cache (the session provider hydrated it).
+  const { data: me } = useMeHttpControllerMe();
+  const isOwner = me?.role === 'owner';
 
   // Re-prime on every open: the SAME dialog instance serves create and edit,
   // and the dress in the cache may have changed since the last open.
@@ -165,9 +209,9 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
 
   const onSubmit = form.handleSubmit((values) => {
     if (dress) {
-      updateDress.mutate({ id: dress.id, data: toUpdateDressRequest(values) });
+      updateDress.mutate({ id: dress.id, data: toUpdateDressRequest(values, isOwner) });
     } else {
-      createDress.mutate({ data: toCreateDressRequest(values) });
+      createDress.mutate({ data: toCreateDressRequest(values, isOwner) });
     }
   });
 
@@ -213,10 +257,41 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
               name="sizeLabel"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('form.fields.sizeLabel')}</FormLabel>
+                  <FormLabel id={sizeLabelId}>{t('form.fields.sizeLabel')}</FormLabel>
                   <FormControl>
-                    <Input autoComplete="off" {...field} />
+                    {/* Buttons, not a text field (FR-CAT-08): the shop stocks five sizes. */}
+                    <SizeOptionGroup
+                      value={field.value}
+                      onChange={field.onChange}
+                      aria-labelledby={sizeLabelId}
+                    />
                   </FormControl>
+                  <FormDescription>{t('form.sizeHint')}</FormDescription>
+                  <DressFormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="categoryId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('form.fields.category')}</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={CATEGORY_NONE}>{t('form.categoryNone')}</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <DressFormMessage />
                 </FormItem>
               )}
@@ -249,6 +324,23 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
                 )}
               />
             </div>
+            {/* NOT rendered for staff (not disabled — disabled invites "why is it grey?"):
+                the field simply is not theirs (FR-CAT-05). */}
+            {isOwner ? (
+              <FormField
+                control={form.control}
+                name="purchasePrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('form.fields.purchasePrice')}</FormLabel>
+                    <FormControl>
+                      <Input inputMode="numeric" autoComplete="off" {...field} />
+                    </FormControl>
+                    <DressFormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
             <FormField
               control={form.control}
               name="photoUrls"

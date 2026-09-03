@@ -97,11 +97,16 @@ test('searching adds a dress, and creating toasts then navigates to /rentals', a
   renderNewRental();
 
   await fillCustomerAndDates(user);
+  // The fixture dates (2026-08-01..) are in the PAST → FR-RENT-10 announces the rental will be
+  // born delivered, both under the date field and in the success toast.
+  expect(
+    screen.getByText('Ngày nhận là hôm nay hoặc đã qua — đơn sẽ ghi là ĐÃ GIAO ngay khi tạo.'),
+  ).toBeInTheDocument();
   await pickDress(user, 'DR-001');
   expect(screen.getByText('Tạm tính tiền thuê')).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
 
-  expect(await screen.findByText('Đã tạo lượt thuê')).toBeInTheDocument();
+  expect(await screen.findByText('Đã tạo lượt thuê và ghi nhận giao váy.')).toBeInTheDocument();
   expect(await screen.findByText('rentals-list-stub')).toBeInTheDocument();
   // the request carried the form exactly: dates inclusive, no price override
   expect(getLastCreateRentalBody()).toEqual({
@@ -321,4 +326,40 @@ test('a fault envelope falls back to the generic toast, not an outcome message',
   expect(
     await screen.findByText('Không tạo được lượt thuê. Vui lòng thử lại.'),
   ).toBeInTheDocument();
+});
+
+test('FR-RENT-11: a discount is read back grouped, shown against the subtotal, and sent with the booking', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', rentalPrice: 500_000 })]);
+  const user = userEvent.setup();
+  renderNewRental();
+
+  await fillCustomerAndDates(user);
+  await pickDress(user, 'DR-001');
+  await user.type(screen.getByLabelText('Giảm giá (VND)'), '100000');
+
+  expect(screen.getByText('100.000 ₫')).toBeInTheDocument(); // the digits, read back grouped
+  expect(screen.getByText('Tiền thuê sau giảm')).toBeInTheDocument();
+  expect(screen.getByText('400.000 ₫')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+
+  await screen.findByText('rentals-list-stub');
+  expect(getLastCreateRentalBody()).toMatchObject({ discountAmount: 100_000 });
+});
+
+test('FR-RENT-11: a discount above the subtotal is refused before any request goes out', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', rentalPrice: 500_000 })]);
+  const user = userEvent.setup();
+  renderNewRental();
+
+  await fillCustomerAndDates(user);
+  await pickDress(user, 'DR-001');
+  await user.type(screen.getByLabelText('Giảm giá (VND)'), '600000');
+  await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+
+  expect(
+    await screen.findByText('Giảm giá không được vượt quá tạm tính tiền thuê'),
+  ).toBeInTheDocument();
+  expect(getLastCreateRentalBody()).toBeNull();
+  expect(screen.queryByText('rentals-list-stub')).not.toBeInTheDocument();
 });

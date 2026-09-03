@@ -37,7 +37,7 @@
             }
           },
           "422": {
-            "description": "Business rejection: rejected_invalid_credentials. NOT 401 — 401 means only that a guard rejected an access token (ADR 0001)",
+            "description": "Business rejection: rejected_invalid_credentials | rejected_account_locked. NOT 401 — 401 means only that a guard rejected an access token (ADR 0001)",
             "content": {
               "application/json": {
                 "schema": {
@@ -47,7 +47,7 @@
             }
           }
         },
-        "summary": "Staff login with email + password",
+        "summary": "Staff login with username + password",
         "tags": [
           "identity"
         ]
@@ -122,6 +122,296 @@
         ]
       }
     },
+    "/api/v1/users": {
+      "post": {
+        "operationId": "CreateUserHttpController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_username_taken (carries the normalized username)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateUserOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a staff account (owner only; role is always staff)",
+        "tags": [
+          "identity"
+        ]
+      },
+      "get": {
+        "operationId": "ListUsersHttpController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all staff accounts (owner only; unpaginated by design, <10 rows)",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/deactivate": {
+      "post": {
+        "operationId": "DeactivateUserHttpController_deactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_user_not_found | rejected_user_already_inactive | rejected_cannot_deactivate_self",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeactivateUserOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lock a staff account (owner only; lock, never delete)",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/reactivate": {
+      "post": {
+        "operationId": "ReactivateUserHttpController_reactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_user_not_found | rejected_user_already_active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactivateUserOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unlock a staff account (owner only)",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/reset-password": {
+      "post": {
+        "operationId": "ResetPasswordHttpController_resetPassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner manages accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_user_not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPasswordOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set a new password for a staff account (owner only; works on locked accounts too)",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
     "/api/v1/dresses": {
       "post": {
         "operationId": "CreateDressHttpController_create",
@@ -157,8 +447,18 @@
               }
             }
           },
+          "403": {
+            "description": "Named denial: forbidden + reason purchase_price_owner_only — staff may not set the purchase price (FR-CAT-05)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePriceForbiddenOutcomeDto"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "Business rejection: rejected_dress_code_taken (carries dressCode)",
+            "description": "Business rejection: rejected_dress_code_taken (carries dressCode) | rejected_category_not_found",
             "content": {
               "application/json": {
                 "schema": {
@@ -203,6 +503,16 @@
                 "active",
                 "retired"
               ]
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Only dresses in this category (FR-CAT-07)",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
             }
           },
           {
@@ -294,8 +604,18 @@
               }
             }
           },
+          "403": {
+            "description": "Named denial: forbidden + reason purchase_price_owner_only — staff may not set the purchase price (FR-CAT-05)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchasePriceForbiddenOutcomeDto"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "Business rejection: rejected_dress_not_found | rejected_dress_code_taken (carries dressCode)",
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_code_taken (carries dressCode) | rejected_category_not_found",
             "content": {
               "application/json": {
                 "schema": {
@@ -409,6 +729,310 @@
         ]
       }
     },
+    "/api/v1/dresses/{id}/duplicate": {
+      "post": {
+        "operationId": "DuplicateDressHttpController_duplicate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateDressRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateDressResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_code_taken (numbering race lost repeatedly; carries dressCode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateDressOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Duplicate a dress under the next free <code>_<n> (n from 1), optionally in another size",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/categories": {
+      "post": {
+        "operationId": "CreateCategoryHttpController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_category_name_taken (carries the trimmed name)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCategoryOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a dress category (any staff)",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "get": {
+        "operationId": "ListCategoriesHttpController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List categories with their dress counts (auth-only read; unpaginated by design)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/categories/{id}": {
+      "patch": {
+        "operationId": "RenameCategoryHttpController_rename",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_category_not_found | rejected_category_name_taken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RenameCategoryOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename a category (any staff); dresses keep their assignment",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "delete": {
+        "operationId": "DeleteCategoryHttpController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Guard denial (GENERIC.FORBIDDEN): only the owner deletes categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_category_not_found | rejected_category_in_use (carries dressCount)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteCategoryOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an EMPTY category (owner only); one still holding dresses is refused",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/dresses/{id}/price-history": {
+      "get": {
+        "operationId": "ListPriceHistoryHttpController_list",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceHistoryListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Price + deposit version log of a dress, newest first (auth-only read — the prices are shop-public, so is their history; FR-CAT-06 §6.Q1). Unknown dress = empty list.",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/v1/rentals": {
       "post": {
         "operationId": "CreateRentalHttpController_create",
@@ -435,7 +1059,7 @@
             }
           },
           "400": {
-            "description": "Invalid request body",
+            "description": "Invalid request body (incl. a discount above the sum of the item prices)",
             "content": {
               "application/json": {
                 "schema": {
@@ -564,7 +1188,7 @@
             }
           },
           "422": {
-            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus)",
+            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus) | rejected_cancel_has_payments",
             "content": {
               "application/json": {
                 "schema": {
@@ -579,7 +1203,7 @@
             "bearer": []
           }
         ],
-        "summary": "Cancel a booked rental — frees the calendar, keeps history",
+        "summary": "Cancel a booked or out rental with an EMPTY ledger — frees the calendar, keeps history",
         "tags": [
           "rentals"
         ]
@@ -1175,10 +1799,11 @@
       "LoginRequestDto": {
         "type": "object",
         "properties": {
-          "email": {
+          "username": {
             "type": "string",
-            "format": "email",
-            "example": "owner@example.com"
+            "minLength": 1,
+            "example": "owner",
+            "description": "Login username (case-insensitive)"
           },
           "password": {
             "type": "string",
@@ -1187,7 +1812,7 @@
           }
         },
         "required": [
-          "email",
+          "username",
           "password"
         ]
       },
@@ -1269,10 +1894,11 @@
         "type": "object",
         "properties": {
           "status": {
-            "type": "string",
             "enum": [
-              "rejected_invalid_credentials"
-            ]
+              "rejected_invalid_credentials",
+              "rejected_account_locked"
+            ],
+            "type": "string"
           }
         },
         "required": [
@@ -1312,9 +1938,9 @@
             "type": "string",
             "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
           },
-          "email": {
+          "username": {
             "type": "string",
-            "example": "owner@example.com"
+            "example": "owner"
           },
           "name": {
             "type": "string",
@@ -1331,9 +1957,183 @@
         },
         "required": [
           "id",
-          "email",
+          "username",
           "name",
           "role"
+        ]
+      },
+      "CreateUserRequestDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{2,29}$",
+            "example": "lan",
+            "description": "3-30 chars: lowercase letters, digits, dot, underscore, dash (case-insensitive)"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Chị Lan",
+            "description": "Display name shown in audit trails"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "matkhau-cua-lan"
+          }
+        },
+        "required": [
+          "username",
+          "name",
+          "password"
+        ]
+      },
+      "IdResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "CreateUserOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_username_taken"
+            ]
+          },
+          "username": {
+            "type": "string",
+            "example": "lan",
+            "description": "The normalized (lowercased) username that is already taken"
+          }
+        },
+        "required": [
+          "status",
+          "username"
+        ]
+      },
+      "DeactivateUserOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_user_not_found",
+              "rejected_user_already_inactive",
+              "rejected_cannot_deactivate_self"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ReactivateUserOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_user_not_found",
+              "rejected_user_already_active"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ResetPasswordRequestDto": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "minLength": 8,
+            "example": "mat-khau-moi"
+          }
+        },
+        "required": [
+          "newPassword"
+        ]
+      },
+      "ResetPasswordOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_user_not_found"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "username": {
+            "type": "string",
+            "example": "lan"
+          },
+          "name": {
+            "type": "string",
+            "example": "Chị Lan"
+          },
+          "role": {
+            "enum": [
+              "owner",
+              "staff"
+            ],
+            "type": "string",
+            "example": "staff"
+          },
+          "active": {
+            "type": "boolean",
+            "example": true,
+            "description": "false = locked (cannot log in or refresh)"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-08-10T03:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "name",
+          "role",
+          "active",
+          "createdAt"
+        ]
+      },
+      "UserListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDto"
+            }
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "CreateDressRequestDto": {
@@ -1341,7 +2141,7 @@
         "properties": {
           "code": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{1,19}$",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$",
             "example": "VD-012",
             "description": "Unique shop code"
           },
@@ -1385,6 +2185,18 @@
               "minLength": 1,
               "pattern": "^https?:\\/\\/\\S+$"
             }
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Category id (FR-CAT-07); omit or null = unclassified"
+          },
+          "purchasePrice": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "description": "What the shop paid (VND, FR-CAT-05). OWNER-ONLY: a staff request carrying this field is refused with the named 403 outcome."
           }
         },
         "required": [
@@ -1394,26 +2206,36 @@
           "depositAmount"
         ]
       },
-      "IdResponse": {
+      "PurchasePriceForbiddenOutcomeDto": {
         "type": "object",
         "properties": {
-          "id": {
+          "status": {
             "type": "string",
-            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+            "enum": [
+              "forbidden"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "purchase_price_owner_only"
+            ]
           }
         },
         "required": [
-          "id"
+          "status",
+          "reason"
         ]
       },
       "CreateDressOutcomeDto": {
         "type": "object",
         "properties": {
           "status": {
-            "type": "string",
             "enum": [
-              "rejected_dress_code_taken"
-            ]
+              "rejected_dress_code_taken",
+              "rejected_category_not_found"
+            ],
+            "type": "string"
           },
           "dressCode": {
             "type": "string",
@@ -1421,8 +2243,7 @@
           }
         },
         "required": [
-          "status",
-          "dressCode"
+          "status"
         ]
       },
       "UpdateDressRequestDto": {
@@ -1430,7 +2251,7 @@
         "properties": {
           "code": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{1,19}$",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$",
             "example": "VD-012",
             "description": "New unique shop code"
           },
@@ -1477,6 +2298,18 @@
               "minLength": 1,
               "pattern": "^https?:\\/\\/\\S+$"
             }
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid",
+            "description": "Category id; omit = keep, explicit null = clear the assignment"
+          },
+          "purchasePrice": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "description": "What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omit = keep, null = clear; a staff request carrying this field is refused with the named 403 outcome."
           }
         }
       },
@@ -1486,7 +2319,8 @@
           "status": {
             "enum": [
               "rejected_dress_not_found",
-              "rejected_dress_code_taken"
+              "rejected_dress_code_taken",
+              "rejected_category_not_found"
             ],
             "type": "string"
           },
@@ -1508,6 +2342,56 @@
               "rejected_dress_already_retired"
             ],
             "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "DuplicateDressRequestDto": {
+        "type": "object",
+        "properties": {
+          "sizeLabel": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 20,
+            "example": "L",
+            "description": "Size of the copy (FR-CAT-08). Omit = same size as the source; null = the copy has no size."
+          }
+        }
+      },
+      "DuplicateDressResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "code": {
+            "type": "string",
+            "example": "VD-012_1",
+            "description": "Assigned code: <base>_<n>, n from 1"
+          }
+        },
+        "required": [
+          "id",
+          "code"
+        ]
+      },
+      "DuplicateDressOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_dress_not_found",
+              "rejected_dress_code_taken"
+            ],
+            "type": "string"
+          },
+          "dressCode": {
+            "type": "string",
+            "description": "The dress code that is already in use"
           }
         },
         "required": [
@@ -1563,6 +2447,16 @@
               "type": "string"
             }
           },
+          "categoryId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Category id (0..1 per dress; null = unclassified). Names come from GET /categories — a tiny cached list, so the FE joins client-side instead of every dress row carrying the name."
+          },
+          "purchasePrice": {
+            "type": "number",
+            "nullable": true,
+            "description": "What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omitted entirely for staff (absence = not your field; null = the owner has not entered it). Feeds no computation."
+          },
           "createdAt": {
             "type": "string",
             "example": "2026-07-30T10:00:00.000Z"
@@ -1578,6 +2472,7 @@
           "status",
           "notes",
           "photoUrls",
+          "categoryId",
           "createdAt"
         ]
       },
@@ -1608,6 +2503,183 @@
           "count",
           "limit",
           "page"
+        ]
+      },
+      "CreateCategoryRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "Dạ hội",
+            "description": "1-50 chars; unique case-insensitively"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateCategoryOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_category_name_taken"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Dạ hội",
+            "description": "The trimmed name that collided"
+          }
+        },
+        "required": [
+          "status",
+          "name"
+        ]
+      },
+      "RenameCategoryOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_category_not_found",
+              "rejected_category_name_taken"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dạ hội"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "DeleteCategoryOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_category_not_found",
+              "rejected_category_in_use"
+            ],
+            "type": "string"
+          },
+          "dressCount": {
+            "type": "number",
+            "example": 12,
+            "description": "How many dresses still hold the category (rejected_category_in_use)"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "CategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dạ hội"
+          },
+          "dressCount": {
+            "type": "number",
+            "example": 12,
+            "description": "How many dresses hold this category"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "dressCount"
+        ]
+      },
+      "CategoryListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryDto"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PriceHistoryChangedByDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "name": {
+            "type": "string",
+            "example": "Chị Lan",
+            "description": "Display name of the staff who changed it"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "PriceHistoryEntryDto": {
+        "type": "object",
+        "properties": {
+          "rentalPrice": {
+            "type": "number",
+            "example": 1500000
+          },
+          "depositAmount": {
+            "type": "number",
+            "example": 3000000
+          },
+          "changedAt": {
+            "type": "string",
+            "example": "2026-08-10T03:00:00.000Z"
+          },
+          "changedBy": {
+            "nullable": true,
+            "description": "null = the row predates the log (backfill) or came from the seed import",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PriceHistoryChangedByDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "rentalPrice",
+          "depositAmount",
+          "changedAt",
+          "changedBy"
+        ]
+      },
+      "PriceHistoryListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "Newest first; ≥1 row per dress",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceHistoryEntryDto"
+            }
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "CreateRentalItemRequestDto": {
@@ -1661,6 +2733,12 @@
             "maxLength": 2000,
             "example": "Khách quen, hẹn lấy 9h sáng"
           },
+          "discountAmount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 100000,
+            "description": "Discount on the rental fee in VND (integer, FR-RENT-11); omit or 0 = none. Must not exceed the sum of the item prices (400 otherwise)."
+          },
           "items": {
             "uniqueItems": true,
             "minItems": 1,
@@ -1709,7 +2787,8 @@
           "status": {
             "enum": [
               "rejected_rental_not_found",
-              "rejected_cancel_not_allowed"
+              "rejected_cancel_not_allowed",
+              "rejected_cancel_has_payments"
             ],
             "type": "string"
           },
@@ -2088,6 +3167,11 @@
             "nullable": true,
             "example": "Khách quen"
           },
+          "discountAmount": {
+            "type": "number",
+            "example": 100000,
+            "description": "Discount on the rental fee in VND (FR-RENT-11); 0 = none. Expected rental fee = Σ dresses.agreedPrice − discountAmount."
+          },
           "createdAt": {
             "type": "string",
             "example": "2026-07-30T09:00:00.000Z"
@@ -2107,6 +3191,7 @@
           "startDate",
           "endDate",
           "notes",
+          "discountAmount",
           "createdAt",
           "dresses"
         ]

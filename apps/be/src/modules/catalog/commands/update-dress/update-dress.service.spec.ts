@@ -1,8 +1,13 @@
 import { Money } from '../../../../libs/ddd/money.value-object';
+import { CategoryRepositoryPort } from '../../application/ports/category.repository.port';
 import { DressRepositoryPort } from '../../application/ports/dress.repository.port';
 import { DressCode } from '../../domain/dress-code.value-object';
 import { DressEntity } from '../../domain/dress.entity';
-import { DressCodeAlreadyExistsError, DressNotFoundError } from '../../domain/dress.errors';
+import {
+  DressCodeAlreadyExistsError,
+  DressNotFoundError,
+  PurchasePriceOwnerOnlyError,
+} from '../../domain/dress.errors';
 import { UpdateDressCommand } from './update-dress.command';
 import { UpdateDressService } from './update-dress.service';
 
@@ -18,10 +23,24 @@ function makeDress(): DressEntity {
       depositAmount: Money.create(3_000_000),
       notes: 'ghi chú cũ',
       photoUrls: ['https://example.com/a.jpg'],
+      categoryId: null,
+      purchasePrice: null,
     },
     DRESS_ID,
     new Date('2026-01-01'),
   );
+}
+
+function makeCategoryRepo(): CategoryRepositoryPort {
+  return {
+    insert: jest.fn().mockResolvedValue(undefined),
+    save: jest.fn().mockResolvedValue(undefined),
+    findOneById: jest.fn().mockResolvedValue({} as never), // category exists unless overridden
+    findOneByName: jest.fn().mockResolvedValue(null),
+    countDresses: jest.fn().mockResolvedValue(0),
+    deleteById: jest.fn().mockResolvedValue(undefined),
+    nextId: jest.fn().mockReturnValue('00000000-0000-4000-8000-0000000000c1'),
+  };
 }
 
 function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepositoryPort {
@@ -30,6 +49,9 @@ function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepository
     save: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(makeDress()),
     findOneByCode: jest.fn().mockResolvedValue(null),
+    findCodesStartingWith: jest.fn().mockResolvedValue([]),
+    insertWithHistory: jest.fn().mockResolvedValue(undefined),
+    saveWithPriceHistory: jest.fn().mockResolvedValue(undefined),
     nextId: jest.fn().mockReturnValue(DRESS_ID),
     ...overrides,
   };
@@ -37,10 +59,10 @@ function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepository
 
 it('returns Err(DressNotFoundError) for an unknown dress', async () => {
   const repo = makeRepo({ findOneById: jest.fn().mockResolvedValue(null) });
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
-    new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới' }),
+    new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới', actorRole: 'staff', actorId: null }),
   );
 
   expect(result.isErr()).toBe(true);
@@ -50,14 +72,23 @@ it('returns Err(DressNotFoundError) for an unknown dress', async () => {
 
 it('merges: sent fields change, omitted fields are kept', async () => {
   const repo = makeRepo();
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
-    new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới', rentalPrice: 2_000_000 }),
+    new UpdateDressCommand({
+      dressId: DRESS_ID,
+      name: 'Tên mới',
+      rentalPrice: 2_000_000,
+      actorRole: 'staff',
+      actorId: 'staff-1',
+    }),
   );
 
   expect(result.isOk()).toBe(true);
-  const saved = (repo.save as jest.Mock).mock.calls[0][0] as DressEntity;
+  // The rental price CHANGED → the write goes through the history-writing path (FR-CAT-06).
+  const saved = (repo.saveWithPriceHistory as jest.Mock).mock.calls[0][0] as DressEntity;
+  expect((repo.saveWithPriceHistory as jest.Mock).mock.calls[0][1]).toBe('staff-1');
+  expect(repo.save).not.toHaveBeenCalled();
   const props = saved.getProps();
   expect(props.name).toBe('Tên mới');
   expect(props.rentalPrice.amount).toBe(2_000_000);
@@ -69,7 +100,7 @@ it('merges: sent fields change, omitted fields are kept', async () => {
 
 it('explicit null clears the nullable fields; photoUrls replaces the list', async () => {
   const repo = makeRepo();
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   await service.execute(
     new UpdateDressCommand({
@@ -77,6 +108,7 @@ it('explicit null clears the nullable fields; photoUrls replaces the list', asyn
       sizeLabel: null,
       notes: null,
       photoUrls: ['https://example.com/b.jpg', 'https://example.com/c.jpg'],
+      actorRole: 'staff', actorId: null,
     }),
   );
 
@@ -89,10 +121,10 @@ it('explicit null clears the nullable fields; photoUrls replaces the list', asyn
 
 it('changing to a taken code returns Err(DressCodeAlreadyExistsError)', async () => {
   const repo = makeRepo({ findOneByCode: jest.fn().mockResolvedValue(makeDress()) });
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
-    new UpdateDressCommand({ dressId: DRESS_ID, code: 'VD-099' }),
+    new UpdateDressCommand({ dressId: DRESS_ID, code: 'VD-099', actorRole: 'staff', actorId: null }),
   );
 
   expect(result.isErr()).toBe(true);
@@ -102,12 +134,102 @@ it('changing to a taken code returns Err(DressCodeAlreadyExistsError)', async ()
 
 it('re-sending the same code (any case) skips the uniqueness check', async () => {
   const repo = makeRepo();
-  const service = new UpdateDressService(repo);
+  const service = new UpdateDressService(repo, makeCategoryRepo());
 
   const result = await service.execute(
-    new UpdateDressCommand({ dressId: DRESS_ID, code: 'vd-012', name: 'Tên mới' }),
+    new UpdateDressCommand({ dressId: DRESS_ID, code: 'vd-012', name: 'Tên mới', actorRole: 'staff', actorId: null }),
   );
 
   expect(result.isOk()).toBe(true);
   expect(repo.findOneByCode).not.toHaveBeenCalled();
+});
+
+it('FR-CAT-05: a STAFF request carrying purchasePrice (even null) is refused by name', async () => {
+  const repo = makeRepo();
+  const service = new UpdateDressService(repo, makeCategoryRepo());
+
+  const result = await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, purchasePrice: 5_000_000, actorRole: 'staff', actorId: null }),
+  );
+
+  expect(result.isErr()).toBe(true);
+  expect(result.unwrapErr()).toBeInstanceOf(PurchasePriceOwnerOnlyError);
+  expect(repo.findOneById).not.toHaveBeenCalled(); // refused before the row is even loaded
+  expect(repo.save).not.toHaveBeenCalled();
+
+  const clearAttempt = await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, purchasePrice: null, actorRole: 'staff', actorId: null }),
+  );
+  expect(clearAttempt.unwrapErr()).toBeInstanceOf(PurchasePriceOwnerOnlyError);
+});
+
+it('FR-CAT-05: the OWNER sets, keeps (omit) and clears (null) the purchase price', async () => {
+  const repo = makeRepo();
+  const service = new UpdateDressService(repo, makeCategoryRepo());
+
+  await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, purchasePrice: 5_000_000, actorRole: 'owner', actorId: null }),
+  );
+  let saved = (repo.save as jest.Mock).mock.calls[0][0] as DressEntity;
+  expect(saved.getProps().purchasePrice?.amount).toBe(5_000_000);
+
+  await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, purchasePrice: null, actorRole: 'owner', actorId: null }),
+  );
+  saved = (repo.save as jest.Mock).mock.calls[1][0] as DressEntity;
+  expect(saved.getProps().purchasePrice).toBeNull();
+});
+
+it('FR-CAT-05: a staff edit WITHOUT the field keeps the stored value untouched', async () => {
+  const withPrice = makeDress();
+  withPrice.updateDetails(
+    { ...withPrice.getProps(), purchasePrice: Money.create(4_000_000) },
+    new Date('2026-01-02'),
+  );
+  const repo = makeRepo({ findOneById: jest.fn().mockResolvedValue(withPrice) });
+  const service = new UpdateDressService(repo, makeCategoryRepo());
+
+  const result = await service.execute(
+    new UpdateDressCommand({ dressId: DRESS_ID, name: 'Tên mới', actorRole: 'staff', actorId: null }),
+  );
+
+  expect(result.isOk()).toBe(true);
+  const saved = (repo.save as jest.Mock).mock.calls[0][0] as DressEntity;
+  expect(saved.getProps().purchasePrice?.amount).toBe(4_000_000);
+});
+
+it('FR-CAT-06: re-sending the SAME prices writes no history row', async () => {
+  const repo = makeRepo();
+  const service = new UpdateDressService(repo, makeCategoryRepo());
+
+  const result = await service.execute(
+    new UpdateDressCommand({
+      dressId: DRESS_ID,
+      rentalPrice: 1_500_000, // identical to the stored values
+      depositAmount: 3_000_000,
+      actorRole: 'staff',
+      actorId: 'staff-1',
+    }),
+  );
+
+  expect(result.isOk()).toBe(true);
+  expect(repo.saveWithPriceHistory).not.toHaveBeenCalled();
+  expect(repo.save).toHaveBeenCalledTimes(1);
+});
+
+it('FR-CAT-06: a deposit-only change also writes the history row', async () => {
+  const repo = makeRepo();
+  const service = new UpdateDressService(repo, makeCategoryRepo());
+
+  await service.execute(
+    new UpdateDressCommand({
+      dressId: DRESS_ID,
+      depositAmount: 3_500_000,
+      actorRole: 'owner',
+      actorId: 'owner-1',
+    }),
+  );
+
+  expect(repo.saveWithPriceHistory).toHaveBeenCalledTimes(1);
+  expect((repo.saveWithPriceHistory as jest.Mock).mock.calls[0][1]).toBe('owner-1');
 });
