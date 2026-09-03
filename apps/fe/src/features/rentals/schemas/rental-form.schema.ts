@@ -23,6 +23,12 @@ export const rentalFormSchema = z
     startDate: z.string().min(1, 'form.errors.startDateRequired'),
     endDate: z.string().min(1, 'form.errors.endDateRequired'),
     notes: z.string().trim().max(2000, 'form.errors.notesTooLong'),
+    /**
+     * FR-RENT-11: VND taken off the rental fee; '' = none. The upper bound (≤ the subtotal of the
+     * picked dresses) lives outside the schema because the selection does — NewRentalRoute checks
+     * it at submit.
+     */
+    discountAmount: z.string().trim().regex(/^[0-9]*$/, 'form.errors.discountInvalid'),
   })
   .refine(
     (values) =>
@@ -38,4 +44,5 @@ export const rentalFormDefaults: RentalFormValues = {
   startDate: '',
   endDate: '',
   notes: '',
+  discountAmount: '',
 };

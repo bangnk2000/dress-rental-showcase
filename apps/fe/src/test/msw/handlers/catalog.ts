@@ -10,6 +10,8 @@ import type {
   CreateDressRequestDto,
   DressListResponseDto,
   DressResponseDto,
+  DuplicateDressRequestDto,
+  DuplicateDressResponseDto,
   IdResponse,
   PriceHistoryEntryDto,
   UpdateDressRequestDto,
@@ -49,6 +51,7 @@ export function resetCatalog(): void {
   dresses = [];
   categories = [];
   priceHistory = [];
+  lastDuplicate = null;
   nextId = 1;
 }
 
@@ -68,6 +71,12 @@ export function getLastCreatedCategory(): string | null {
 let lastUpdateDressBody: UpdateDressRequestDto | null = null;
 export function getLastUpdateDressBody(): UpdateDressRequestDto | null {
   return lastUpdateDressBody;
+}
+
+/** The most recent POST /dresses/:id/duplicate, for assertions (FR-CAT-08). */
+let lastDuplicate: { dressId: string; body: DuplicateDressRequestDto } | null = null;
+export function getLastDuplicate(): { dressId: string; body: DuplicateDressRequestDto } | null {
+  return lastDuplicate;
 }
 
 let priceHistory: PriceHistoryEntryDto[] = [];
@@ -108,6 +117,35 @@ export const catalogHandlers: HttpHandler[] = [
     if (body.photoUrls !== undefined) dress.photoUrls = [...body.photoUrls];
     const response: IdResponse = { id: dress.id };
     return HttpResponse.json(response);
+  }),
+
+  // POST /api/v1/dresses/:id/duplicate — a copy under the next free <base>_<n>, n from 1 (FR-CAT-08),
+  // numbered the way the real service does it: the highest existing copy + 1.
+  http.post('/api/v1/dresses/:id/duplicate', async ({ params, request }) => {
+    const source = dresses.find((candidate) => candidate.id === params.id);
+    if (!source) {
+      return HttpResponse.json({ status: 'rejected_dress_not_found' }, { status: 422 });
+    }
+    const body = (await request.json()) as DuplicateDressRequestDto;
+    lastDuplicate = { dressId: source.id, body };
+    const base = source.code.replace(/_[0-9]+$/, '');
+    const numbers = dresses
+      .map((dress) => dress.code)
+      .filter((code) => code.startsWith(`${base}_`) && /^[0-9]+$/.test(code.slice(base.length + 1)))
+      .map((code) => Number(code.slice(base.length + 1)));
+    const copy = makeDress({
+      code: `${base}_${numbers.length > 0 ? Math.max(...numbers) + 1 : 1}`,
+      name: source.name,
+      sizeLabel: body.sizeLabel === undefined ? source.sizeLabel : body.sizeLabel,
+      rentalPrice: source.rentalPrice,
+      depositAmount: source.depositAmount,
+      notes: source.notes,
+      photoUrls: [...source.photoUrls],
+      categoryId: source.categoryId,
+    });
+    dresses.push(copy);
+    const response: DuplicateDressResponseDto = { id: copy.id, code: copy.code };
+    return HttpResponse.json(response, { status: 201 });
   }),
 
   // POST /api/v1/dresses/:id/retire — both rejections are outcome bodies.

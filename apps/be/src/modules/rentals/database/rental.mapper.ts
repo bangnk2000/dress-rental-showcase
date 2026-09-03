@@ -18,6 +18,7 @@ export interface RentalSnapshot {
   endDate: string;
   status: RentalStatus;
   notes: string | null;
+  discountAmount: number;
   items: { dressId: string; price: number }[];
   createdAt: string;
 }
@@ -37,6 +38,7 @@ export class RentalMapper implements Mapper<RentalEntity, RentalModel, RentalSna
         period: RentalPeriod.create(period.start, period.endInclusive),
         status: record.rental.status,
         notes: record.rental.notes,
+        discount: Money.create(record.rental.discount_amount),
         items: record.items.map((item) => {
           const blocked = fromDateRangeLiteral(item.blocked_period);
           return new RentalItemEntity({
@@ -65,6 +67,7 @@ export class RentalMapper implements Mapper<RentalEntity, RentalModel, RentalSna
         period: toDateRangeLiteral(props.period.start, props.period.end),
         status: props.status,
         notes: props.notes,
+        discount_amount: props.discount.amount,
         created_at: props.createdAt.toISOString(),
         updated_at: props.updatedAt.toISOString(),
       },
@@ -89,6 +92,7 @@ export class RentalMapper implements Mapper<RentalEntity, RentalModel, RentalSna
       endDate: props.period.end,
       status: props.status,
       notes: props.notes,
+      discountAmount: props.discount.amount,
       items: props.items.map((item) => ({ dressId: item.dressId, price: item.price.amount })),
       createdAt: props.createdAt.toISOString(),
     };

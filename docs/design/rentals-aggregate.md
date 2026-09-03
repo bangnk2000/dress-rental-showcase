@@ -1,6 +1,6 @@
 # rentals — Tactical Design
 
-> Status: **as-built 2026-08-10** (ADR 0001 + BR-1/2/3 proof tests trên Postgres thật + FR-RENT-09 phí trễ hạn + FR-RENT-10 pickup gate) · SRS: FR-RENT-01..10, BR-1..3, BR-5..6 · Context **Core**
+> Status: **as-built 2026-09-03** (FR-RENT-11 giảm giá; 2026-08-10: ADR 0001 + BR-1/2/3 proof tests trên Postgres thật + FR-RENT-09 phí trễ hạn + FR-RENT-10 pickup gate) · SRS: FR-RENT-01..11, BR-1..3, BR-5..6 · Context **Core**
 
 ## Vai trò & ranh giới
 
@@ -39,6 +39,7 @@ Mọi transition khác → `Err(...NotAllowedError)` → controller render outco
 | BR-2: một váy không xuất hiện 2 lần trong 1 đơn | DTO `@ArrayUnique` + `validate()` của entity | `UNIQUE (rental_id, dress_id)` | 400 envelope `GENERIC.VALIDATION` (DTO) / `GENERIC.ARGUMENT_INVALID` (entity) | e2e: 400 qua API + INSERT trùng bị `UNIQUE` chặn |
 | BR-3: status hợp lệ | State machine trong entity | `CHECK (status IN (...))` | outcome `rejected_*_not_allowed` (422) qua state machine; `CHECK` chỉ là lưới cuối | unit test entity (có) + e2e: UPDATE status rác bị `CHECK` chặn |
 | Giá item ≥ 0 | `Money` VO | `CHECK (price >= 0)` | 400 envelope | unit VO (có) |
+| FR-RENT-11: giảm giá ≥ 0 và ≤ Σ giá item | `Money` VO (≥ 0) + `RentalEntity.validate()` (≤ Σ — rule trải 2 bảng nên chỉ aggregate giữ được) | `CHECK (discount_amount >= 0)` (migration 1755400000000) | 400 envelope: `GENERIC.VALIDATION` (âm, DTO) / `GENERIC.ARGUMENT_INVALID` (vượt Σ) | unit `create-rental.service.spec.ts` (4 ca) + `test:e2e` → `rental-discount.e2e-spec.ts`: lưu + list đọc lại, vượt Σ → 400 không ghi gì, UPDATE âm bị CHECK chặn |
 
 ## Phí trễ hạn (FR-RENT-09)
 
@@ -58,9 +59,18 @@ Concurrency: KHÔNG cần version column — invariant race-sensitive duy nhất
 EXCLUDE đóng; hai staff cùng thao tác một đơn là kịch bản chấp nhận last-write cho MVP
 (quyết định falsifiable — xét lại nếu tiệm thêm thiết bị).
 
+## Giảm giá (FR-RENT-11)
+
+| Mục | Chốt |
+| --- | --- |
+| Mức | ĐƠN (`rentals.discount_amount`, `RentalProps.discount: Money`), không per item — `rental_items.price` vẫn là giá thoả thuận từng váy, không bị chia hay trừ |
+| Không phải dòng tiền | `payments` ghi số THỰC THU; giảm giá chỉ đổi số GỢI Ý tiền thuê khi ghi nhận thu (`Σ agreedPrice − discountAmount`, FE `record-collection-form`) |
+| Read | `RentalListItemDto.discountAmount` (list); today-board không mang (không có màn hình tiền ở đó) |
+| FE | form tạo đơn: ô "Giảm giá (VND)" đọc lại số đã gộp nhóm; picker hiện Tạm tính / Giảm / Tiền thuê sau giảm; vượt tạm tính bị chặn ngay ở form (`form.errors.discountTooLarge`) trước khi gọi API |
+
 ## Persistence sketch
 
-`rentals` (id, customer_name, customer_phone, status, deposit, note, timestamps) ·
+`rentals` (id, customer_name, customer_phone, period **daterange**, status, notes, discount_amount, timestamps) ·
 `rental_items` (id, rental_id FK, dress_id FK, price, blocked_period **daterange**, blocking).
 Quy ước daterange: domain dùng inclusive `[start,end]`; Postgres normalize half-open
 `[start,end+1)` — convert DUY NHẤT tại `database/daterange.ts`, mọi SELECT lấy `period::text`.

@@ -36,6 +36,9 @@ import type {
   DeleteCategoryOutcomeDto,
   DressListResponseDto,
   DressResponseDto,
+  DuplicateDressOutcomeDto,
+  DuplicateDressRequestDto,
+  DuplicateDressResponseDto,
   IdResponse,
   ListDressesHttpControllerListParams,
   PriceHistoryListResponseDto,
@@ -553,6 +556,71 @@ export const useRetireDressHttpControllerRetire = <TError = ApiErrorResponseDto 
         TContext
       > => {
       return useMutation(getRetireDressHttpControllerRetireMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Duplicate a dress under the next free <code>_<n> (n from 1), optionally in another size
+ */
+export const duplicateDressHttpControllerDuplicate = (
+    id: string,
+    duplicateDressRequestDto: DuplicateDressRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<DuplicateDressResponseDto>(
+      {url: `/api/v1/dresses/${id}/duplicate`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: duplicateDressRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getDuplicateDressHttpControllerDuplicateMutationOptions = <TError = ApiErrorResponseDto | DuplicateDressOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>, TError,{id: string;data: DuplicateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>, TError,{id: string;data: DuplicateDressRequestDto}, TContext> => {
+
+const mutationKey = ['duplicateDressHttpControllerDuplicate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>, {id: string;data: DuplicateDressRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  duplicateDressHttpControllerDuplicate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DuplicateDressHttpControllerDuplicateMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>>
+    export type DuplicateDressHttpControllerDuplicateMutationBody = DuplicateDressRequestDto
+    export type DuplicateDressHttpControllerDuplicateMutationError = ApiErrorResponseDto | DuplicateDressOutcomeDto
+
+    /**
+ * @summary Duplicate a dress under the next free <code>_<n> (n from 1), optionally in another size
+ */
+export const useDuplicateDressHttpControllerDuplicate = <TError = ApiErrorResponseDto | DuplicateDressOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>, TError,{id: string;data: DuplicateDressRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof duplicateDressHttpControllerDuplicate>>,
+        TError,
+        {id: string;data: DuplicateDressRequestDto},
+        TContext
+      > => {
+      return useMutation(getDuplicateDressHttpControllerDuplicateMutationOptions(options), queryClient);
     }
     /**
  * @summary Create a dress category (any staff)

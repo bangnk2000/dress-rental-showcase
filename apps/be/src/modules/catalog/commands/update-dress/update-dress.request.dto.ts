@@ -20,7 +20,7 @@ export class UpdateDressRequestDto {
   @ApiPropertyOptional({ example: 'VD-012', description: 'New unique shop code' })
   @IsOptional()
   @IsString()
-  @Matches(/^[A-Za-z0-9][A-Za-z0-9-]{1,19}$/)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$/)
   readonly code?: string;
 
   @ApiPropertyOptional({ example: 'Váy cưới đuôi cá ren trắng' })

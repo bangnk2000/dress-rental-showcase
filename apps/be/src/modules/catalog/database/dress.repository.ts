@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DatabasePool, DatabaseTransactionConnection, sql } from 'slonik';
+import { z } from 'zod';
 import { SqlRepositoryBase } from '../../../libs/db/sql-repository.base';
 import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { ConflictException } from '../../../libs/exceptions';
@@ -10,6 +11,8 @@ import { DressCodeConflictError } from '../application/ports/dress-code-conflict
 import { DressRepositoryPort } from '../application/ports/dress.repository.port';
 import { DressMapper } from './dress.mapper';
 import { DressModel, dressSchema } from './dress.persistence.model';
+
+const codeRowSchema = z.object({ code: z.string() });
 
 @Injectable()
 export class DressRepository
@@ -85,6 +88,14 @@ export class DressRepository
       }
       throw error;
     }
+  }
+
+  async findCodesStartingWith(prefix: string): Promise<string[]> {
+    // starts_with() compares characters, so the duplicate separator `_` is not a LIKE wildcard.
+    const rows = await this.pool.any(
+      sql.type(codeRowSchema)`SELECT code FROM dresses WHERE starts_with(code, ${prefix})`,
+    );
+    return rows.map((row) => row.code);
   }
 
   async findOneByCode(code: string): Promise<DressEntity | null> {

@@ -8,6 +8,8 @@ import { CreateDressHttpController } from './commands/create-dress/create-dress.
 import { CreateDressService } from './commands/create-dress/create-dress.service';
 import { DeleteCategoryHttpController } from './commands/delete-category/delete-category.http.controller';
 import { DeleteCategoryService } from './commands/delete-category/delete-category.service';
+import { DuplicateDressHttpController } from './commands/duplicate-dress/duplicate-dress.http.controller';
+import { DuplicateDressService } from './commands/duplicate-dress/duplicate-dress.service';
 import { RenameCategoryHttpController } from './commands/rename-category/rename-category.http.controller';
 import { RenameCategoryService } from './commands/rename-category/rename-category.service';
 import { RetireDressHttpController } from './commands/retire-dress/retire-dress.http.controller';
@@ -34,6 +36,7 @@ import './catalog.policies';
     CreateDressHttpController,
     UpdateDressHttpController,
     RetireDressHttpController,
+    DuplicateDressHttpController,
     ListDressesHttpController,
     GetDressHttpController,
     CreateCategoryHttpController,
@@ -48,6 +51,7 @@ import './catalog.policies';
     CreateDressService,
     UpdateDressService,
     RetireDressService,
+    DuplicateDressService,
     CreateCategoryService,
     RenameCategoryService,
     DeleteCategoryService,

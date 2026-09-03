@@ -1,6 +1,6 @@
 # catalog — Tactical Design
 
-> Status: **as-built 2026-08-10** (FR-CAT-05 giá nhập + FR-CAT-06 sổ giá + FR-CAT-07 danh mục) · SRS: FR-CAT-01..07 · Context Supporting
+> Status: **as-built 2026-09-03** (FR-CAT-08 nhân bản + size chọn nút; 2026-08-10: FR-CAT-05 giá nhập + FR-CAT-06 sổ giá + FR-CAT-07 danh mục) · SRS: FR-CAT-01..08 · Context Supporting
 
 ## Vai trò & ranh giới
 
@@ -13,11 +13,12 @@ cột nào cho việc đó.
 
 | Aggregate root | Entity nội bộ | Value objects | Enum/types |
 | --- | --- | --- | --- |
-| `DressEntity` | — | `DressCode` (mã duy nhất, chuẩn hóa), `Money` (giá thuê, cọc chuẩn) | `DressStatus: active \| retired` · `photo_urls: text[]` · `category_id uuid NULL` |
+| `DressEntity` | — | `DressCode` (mã duy nhất, chuẩn hóa; `baseOf`/`nextDuplicateOf` đánh số bản sao `_n`), `Money` (giá thuê, cọc chuẩn) | `DressStatus: active \| retired` · `photo_urls: text[]` · `category_id uuid NULL` |
 | `CategoryEntity` | — | `CategoryName` (trim, 1-50, giữ nguyên hoa thường để hiển thị) | quan hệ nằm ở phía DRESS (FK nullable); category không biết váy nào thuộc nó |
 
 Hành vi: `create()` (factory), `updateDetails()`, `changeCode()`, `retire()` — retire là
-one-way (không có un-retire; cần thì là FR mới).
+one-way (không có un-retire; cần thì là FR mới). Nhân bản (FR-CAT-08) không phải method của entity:
+là một `create()` thứ hai từ props của váy nguồn, mã do service đánh số — xem §Nhân bản.
 
 ## State machine
 
@@ -40,6 +41,20 @@ lịch sử đơn cũ giữ nguyên.
 | Đổi giá thuê/cọc mà không có dòng sử là trạng thái không tồn tại (FR-CAT-06) | service so trước/sau → `insertWithHistory` / `saveWithPriceHistory` (cùng transaction, không trigger); sổ append-only, không API sửa/xoá | `dress_price_history` FK + CHECK ≥ 0 | — (ghi sử không thể bị từ chối riêng) | `test:e2e` → `price-history.e2e-spec.ts`: v1 lúc tạo, +1/lần đổi thật, no-op khi gửi lại, atomicity khi write bị từ chối |
 | Giá thuê / cọc ≥ 0 | `Money` VO | `CHECK (rental_price >= 0)`, `CHECK (deposit_amount >= 0)` | 400 envelope | unit VO (có) |
 | Status hợp lệ | Entity | `CHECK (status IN ('active','retired'))` | outcome `rejected_dress_already_retired` (422) khi retire lại; `CHECK` là lưới cuối | unit entity (có) + e2e UPDATE rác bị chặn |
+
+## Nhân bản (FR-CAT-08)
+
+| Mục | Chốt |
+| --- | --- |
+| Endpoint | `POST /dresses/:id/duplicate` body `{ sizeLabel?: string hoặc null }` → 201 `{ id, code }`; permission `dress:create` (nhân bản LÀ tạo — staff được phép) |
+| Mã bản sao | `DressCode.baseOf(mã nguồn)` bỏ hậu tố `_<digits>`, rồi `nextDuplicateOf(base, mã bắt đầu bằng base_)` = max + 1, chưa có thì `_1` (đánh số từ 1 — quyết định chủ tiệm 2026-09-03). Repo đọc bằng `starts_with()` — KHÔNG dùng LIKE vì `_` là wildcard |
+| Race | hai thiết bị cùng đếm ra một `_n` → UNIQUE(code) từ chối bên thua → service đếm lại, tối đa 3 lần, rồi mới trả `rejected_dress_code_taken` (cùng outcome với create-dress, ADR 0001 §2) |
+| Sao chép | tên, size (ghi đè được qua body), giá thuê, cọc, ghi chú, ảnh, danh mục, **giá nhập** (cùng model cùng giá vốn; không phải "staff SET field" — FR-CAT-05 nói về request MANG field, và read vẫn ẩn với staff); sổ giá v1 của bản sao ghi cùng transaction (`insertWithHistory`) |
+| Proof | unit `duplicate-dress.service.spec.ts` (7 ca) + `dress-code.value-object.spec.ts`; `test:e2e` → `catalog-duplicate.e2e-spec.ts`: _1/_2/_3 kể cả sao-của-sao, race song song → hai mã KHÁC nhau, sổ giá v1, staff 201, mã có `_` nhập tay |
+
+Quy ước mã theo đó thành `[A-Z0-9][A-Z0-9_-]{1,19}` (thêm `_`). MỌI hậu tố `_<digits>` được đọc là số
+bản sao — `VD_012` nhập tay là bản sao #12 của `VD`; chấp nhận vì trước FR-CAT-08 mã chưa từng có `_`.
+Size (FR-CAT-08b) là quyết định FE thuần: nút XS/S/M/L/XL, API giữ text tự do ≤ 20.
 
 ## Persistence sketch
 
@@ -64,4 +79,6 @@ Catalog không đọc context nào. Bị rentals đọc bảng `dresses` qua `dr
 
 ## Open questions
 
-- Kích thước/size hiện là text tự do — nếu cần filter chuẩn hóa → FR mới (standard-tier).
+- ~~Kích thước/size hiện là text tự do~~ — **2026-09-03 (FR-CAT-08b)**: form chọn bằng nút
+  XS/S/M/L/XL; API vẫn text ≤ 20 (dữ liệu CSV cũ giữ nguyên, hiện thành nút thứ sáu khi sửa).
+  Filter theo size vẫn chưa có — FR mới nếu cần.

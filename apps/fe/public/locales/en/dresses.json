@@ -14,7 +14,12 @@
       "rentalPrice": "Rental price",
       "deposit": "Deposit",
       "status": "Status",
-      "category": "Category"
+      "category": "Category",
+      "actions": "Actions"
+    },
+    "actions": {
+      "duplicate": "Duplicate",
+      "duplicateFor": "Duplicate {{code}}"
     },
     "empty": {
       "noDresses": "No dresses yet",
@@ -53,7 +58,7 @@
     },
     "errors": {
       "codeRequired": "Please enter a dress code",
-      "codeInvalid": "The code is 2-20 letters, digits or hyphens, starting with a letter or digit",
+      "codeInvalid": "The code is 2-20 letters, digits, hyphens or underscores, starting with a letter or digit",
       "nameRequired": "Please enter a dress name",
       "nameTooLong": "The name is at most 200 characters",
       "sizeTooLong": "The size is at most 20 characters",
@@ -69,12 +74,14 @@
     "error": "Could not add the dress. Please try again.",
     "updateSuccess": "Dress updated",
     "updateError": "Could not update the dress. Please try again.",
-    "categoryNone": "Unclassified"
+    "categoryNone": "Unclassified",
+    "sizeHint": "Tap to pick a size, tap again to clear."
   },
   "detail": {
     "title": "Dress detail",
     "actions": {
       "edit": "Edit",
+      "duplicate": "Duplicate",
       "retire": "Retire"
     },
     "retire": {
@@ -119,6 +126,15 @@
       "conflict": "Busy from {{start}} to {{end}} (held until the end of {{blockedUntil}})",
       "error": "Could not check availability. Please try again."
     }
+  },
+  "duplicate": {
+    "title": "Duplicate {{code}}",
+    "description": "Creates a new dress identical to this one, to record another size. The code is assigned automatically: {{base}}_1, {{base}}_2, … in order.",
+    "size": "Size of the new dress",
+    "submit": "Duplicate",
+    "success": "Duplicated as {{code}}",
+    "error": "Could not duplicate. Please try again.",
+    "codeTaken": "Code {{code}} was just taken on another device — tap Duplicate again."
   },
   "errors": {
     "notFound": "This dress is no longer in the catalog. The list has been refreshed."

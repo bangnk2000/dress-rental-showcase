@@ -28,6 +28,7 @@ function makeRental(dressCount = 1): RentalEntity {
       customerPhone: '0903123456',
       period: RentalPeriod.create('2026-08-01', '2026-08-03'),
       notes: null,
+      discount: Money.create(0),
       items: dressIds.map((dressId, index) => ({
         id: `00000000-0000-4000-8000-00000000010${index}`,
         dressId,

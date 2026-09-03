@@ -18,6 +18,7 @@ function makeRental(): RentalEntity {
       customerPhone: '0903123456',
       period: RentalPeriod.create('2026-08-01', '2026-08-03'),
       notes: null,
+      discount: Money.create(0),
       items: [
         {
           id: '00000000-0000-4000-8000-000000000101',

@@ -47,6 +47,8 @@ interface DressPickerProps {
   period: PickerPeriod | null;
   /** Set from the last rejection; cleared as soon as the selection or the dates change. */
   blocked: BlockedDresses | null;
+  /** VND taken off the subtotal (FR-RENT-11), already parsed by the form; 0 = none. */
+  discount: number;
 }
 
 /**
@@ -61,6 +63,7 @@ export function DressPicker({
   error,
   period,
   blocked,
+  discount,
 }: DressPickerProps) {
   const { t } = useTranslation('rentals');
   const [search, setSearch] = useState('');
@@ -135,9 +138,25 @@ export function DressPicker({
               onRemove={onRemove}
             />
           ))}
-          <li className="flex items-center justify-between gap-2 p-2 text-sm font-medium">
-            <span>{t('picker.total')}</span>
-            <span>{formatVnd(total)}</span>
+          <li className="space-y-1 p-2 text-sm">
+            <div className="flex items-center justify-between gap-2 font-medium">
+              <span>{t('picker.total')}</span>
+              <span className="tabular-nums">{formatVnd(total)}</span>
+            </div>
+            {/* The arithmetic behind the number staff will quote: subtotal, minus the discount,
+                equals what the customer pays for the rental (deposit is separate). */}
+            {discount > 0 ? (
+              <>
+                <div className="flex items-center justify-between gap-2 text-muted-foreground">
+                  <span>{t('picker.discount')}</span>
+                  <span className="tabular-nums">−{formatVnd(discount)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 font-medium">
+                  <span>{t('picker.payable')}</span>
+                  <span className="tabular-nums">{formatVnd(Math.max(0, total - discount))}</span>
+                </div>
+              </>
+            ) : null}
           </li>
         </ul>
       )}

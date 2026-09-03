@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -29,7 +29,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -48,6 +55,7 @@ import {
   type DressFormValues,
 } from '../schemas/dress-form.schema';
 import { DressFormMessage } from './dress-form-message';
+import { SizeOptionGroup } from './size-option-group';
 
 interface DressFormDialogProps {
   open: boolean;
@@ -115,6 +123,7 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
   const { t } = useTranslation('dresses');
   const { t: tCommon } = useTranslation('common'); // shared verbs only
   const queryClient = useQueryClient();
+  const sizeLabelId = useId();
 
   const form = useForm<DressFormValues>({
     resolver: zodResolver(dressFormSchema),
@@ -248,10 +257,16 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
               name="sizeLabel"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('form.fields.sizeLabel')}</FormLabel>
+                  <FormLabel id={sizeLabelId}>{t('form.fields.sizeLabel')}</FormLabel>
                   <FormControl>
-                    <Input autoComplete="off" {...field} />
+                    {/* Buttons, not a text field (FR-CAT-08): the shop stocks five sizes. */}
+                    <SizeOptionGroup
+                      value={field.value}
+                      onChange={field.onChange}
+                      aria-labelledby={sizeLabelId}
+                    />
                   </FormControl>
+                  <FormDescription>{t('form.sizeHint')}</FormDescription>
                   <DressFormMessage />
                 </FormItem>
               )}

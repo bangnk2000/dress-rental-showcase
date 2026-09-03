@@ -70,9 +70,11 @@
       "customerPhone": "Phone number",
       "startDate": "Pick-up date",
       "endDate": "Return date",
-      "notes": "Notes"
+      "notes": "Notes",
+      "discountAmount": "Discount (VND)"
     },
     "bufferHint": "After the return date the dress is held for cleaning before it can be rented again.",
+    "discountHint": "Leave blank for none. Taken off the rental fee, not the deposit.",
     "startsToday": "The pick-up date is today or already past — the rental is recorded as DELIVERED on creation.",
     "submit": "Create rental",
     "success": "Rental created",
@@ -90,7 +92,9 @@
       "noDresses": "Please select at least one dress",
       "dressUnavailable": "A dress is already rented in this date range (including cleaning time). Change the dates or pick another dress.",
       "dressRetired": "A dress is retired. Remove it from the rental.",
-      "dressNotFound": "A dress is no longer in the catalog. Please pick again."
+      "dressNotFound": "A dress is no longer in the catalog. Please pick again.",
+      "discountInvalid": "Digits only (VND)",
+      "discountTooLarge": "The discount cannot exceed the rental subtotal"
     }
   },
   "picker": {
@@ -101,6 +105,8 @@
     "remove": "Remove",
     "selectedEmpty": "No dresses selected yet",
     "total": "Rental subtotal",
+    "discount": "Discount",
+    "payable": "Rental fee after discount",
     "availability": {
       "free": "Available",
       "busy": "Booked",
@@ -130,7 +136,8 @@
     },
     "hints": {
       "standardDeposit": "Standard deposit for the dresses in this rental: {{amount}}",
-      "agreedTotal": "Agreed rental fee: {{amount}}"
+      "agreedTotal": "Agreed rental fee: {{amount}}",
+      "agreedTotalDiscounted": "Agreed rental fee: {{amount}} (discount of {{discount}} deducted)"
     },
     "errors": {
       "amountInvalid": "Digits only (VND)",

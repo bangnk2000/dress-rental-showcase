@@ -8,7 +8,7 @@
 export interface CreateDressRequestDto {
   /**
      * Unique shop code
-     * @pattern ^[A-Za-z0-9][A-Za-z0-9-]{1,19}$
+     * @pattern ^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$
      */
   code: string;
   /**

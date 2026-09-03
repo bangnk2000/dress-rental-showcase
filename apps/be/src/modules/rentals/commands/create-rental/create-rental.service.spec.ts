@@ -40,6 +40,7 @@ const baseCommand = new CreateRentalCommand({
   startDate: '2026-08-01',
   endDate: '2026-08-03',
   notes: null,
+  discountAmount: 0,
   items: [
     { dressId: DRESS_A, price: null },
     { dressId: DRESS_B, price: 900_000 },
@@ -184,5 +185,64 @@ describe('CreateRentalService', () => {
     expect(result.isErr()).toBe(true);
     expect(result.unwrapErr()).toBeInstanceOf(DressUnavailableError);
     expect(repo.insert).not.toHaveBeenCalled();
+  });
+});
+
+describe('FR-RENT-11 discount at create', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-15T05:00:00+07:00'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('stores the discount on the rental, leaving the item prices untouched', async () => {
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    const result = await service.execute(
+      new CreateRentalCommand({ ...baseCommand, discountAmount: 300_000 }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    const rental = (repo.insert as jest.Mock).mock.calls[0][0] as RentalEntity;
+    expect(rental.discount.amount).toBe(300_000);
+    // Σ 1.500.000 (standard) + 900.000 (agreed) — the discount is rental-level, not spread.
+    expect(rental.itemsTotal.amount).toBe(2_400_000);
+    expect(rental.getProps().items.map((item) => item.price.amount)).toEqual([
+      1_500_000, 900_000,
+    ]);
+  });
+
+  it('omitted = zero: the default rental has no discount', async () => {
+    const repo = makeRentalRepo();
+    await new CreateRentalService(repo, makeDressLookup(bothDresses), config).execute(
+      baseCommand,
+    );
+
+    const rental = (repo.insert as jest.Mock).mock.calls[0][0] as RentalEntity;
+    expect(rental.discount.amount).toBe(0);
+  });
+
+  it('a discount above the sum of the item prices is an argument error, nothing is written', async () => {
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    await expect(
+      service.execute(new CreateRentalCommand({ ...baseCommand, discountAmount: 2_400_001 })),
+    ).rejects.toThrow(/Discount must not exceed/);
+    expect(repo.insert).not.toHaveBeenCalled();
+  });
+
+  it('a discount EQUAL to the fee is allowed (a free rental is a business case)', async () => {
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    const result = await service.execute(
+      new CreateRentalCommand({ ...baseCommand, discountAmount: 2_400_000 }),
+    );
+
+    expect(result.isOk()).toBe(true);
   });
 });

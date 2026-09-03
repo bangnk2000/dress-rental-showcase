@@ -1,5 +1,36 @@
 # Session Handoff
 
+## 2026-09-03 (28) — three owner asks shipped: rental discount, duplicate-dress `_n`, size buttons
+
+- Done: on `feat/spec-drafts-batch-3` (where the last session left HEAD), two `pass` entries,
+  committed at session end and merged to master by PR (the owner asked after the manual test):
+  1. `rentals/rental-discount` (FR-RENT-11): `rentals.discount_amount` (migration
+     1755400000000, DEFAULT 0, CHECK ≥ 0), `RentalProps.discount: Money`, the aggregate refuses
+     > Σ item prices (400), `CreateRentalRequestDto.discountAmount?`,
+     `RentalListItemDto.discountAmount`. FE: discount field on the new-rental form (grouped
+     read-back; subtotal / discount / payable in the picker; above-subtotal refused client-side),
+     collect form suggests Σ agreed − discount and says so in its hint.
+  2. `catalog/duplicate-dress` (FR-CAT-08): `POST /dresses/:id/duplicate` → `<base>_<n>` from 1 (owner corrected 0 → 1 during manual test),
+     max + 1, copy-of-copy numbers from the ORIGINAL, race = UNIQUE + recount ×3, the copy gets
+     its own price-history v1. Codes now allow `_`. FE: `Nhân bản` on the detail page AND on every catalog row → size
+     dialog → lands on the copy. Size everywhere = `SizeOptionGroup` buttons XS/S/M/L/XL (a legacy
+     value shows as a sixth pressed button); the API keeps `sizeLabel` free text.
+- Numbers: be 168 unit (+20) · 86 e2e (+10, two new suites) on real Postgres · fe 103 vitest (+7)
+  · qr-admin tsc green · both builds green · lint green · fe arch (d) + `contract:check` were red only
+  while the regenerated client sat uncommitted — green once committed together with the BE, as done.
+- Watch out: commit BE + `packages/contract` + BOTH generated clients + FE together (the contract
+  never alone). The new migration was applied to `dress_rental_test` by the e2e global-setup AND
+  to the dev DB (`pnpm --filter be migrate`) this session.
+- Watch out: smoke.sh has no discount/duplicate steps (deliberate — e2e is the gate); the
+  Playwright happy path never typed a size, so it is unaffected.
+- Watch out: any trailing `_<digits>` on a code is read as a copy number (`VD_012` = copy #12 of
+  `VD`) — accepted because no code carried `_` before this feature; do not "fix" it without an FR.
+- Watch out (tooling): the Bash tool collapses `\` in perl one-liners — two `\d` silently became
+  `d` and a test still passed by accident (the first copy carried the same number either way). Fixed with `[0-9]`;
+  write regexes through the Write tool or use character classes when a shell is in the way.
+- Next: backlog unchanged (rental `notes` displayed nowhere, no rental detail route,
+  `payments/correct-movement` awaiting the owner, release lane r2).
+
 ## 2026-08-10..11 (27) — the whole batch shipped: five features, five commits, all gates green
 
 - Done: the owner answered "tôi đồng ý" to every §6 recommendation, all five specs flipped to

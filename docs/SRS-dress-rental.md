@@ -68,6 +68,14 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   và chỉ xoá được danh mục TRỐNG (`rejected_category_in_use` + dressCount, FK RESTRICT làm lưới).
   List váy filter theo danh mục; CSV import có cột `category` tự tạo theo tên. Quyết định + lý
   do: [design/catalog/dress-category.md](./design/catalog/dress-category.md) §6.
+- **FR-CAT-08** Nhân bản váy + kích cỡ chuẩn. (a) `POST /dresses/:id/duplicate` tạo váy mới giống
+  hệt váy nguồn (tên, giá, cọc, ghi chú, ảnh, danh mục, giá nhập) với mã **tự đặt** `<mã gốc>_<n>`,
+  n bắt đầu từ **1** và luôn = số lớn nhất hiện có + 1 (nút Nhân bản có ở trang chi tiết VÀ từng dòng danh mục); nhân bản một bản sao vẫn đánh số theo mã
+  GỐC (`VD-012_1` → `VD-012_<n>`). Size của bản sao gửi kèm request (mặc định = size nguồn). Hai
+  thiết bị cùng nhân bản: UNIQUE(code) từ chối bên thua, service đếm lại tối đa 3 lần rồi mới trả
+  `rejected_dress_code_taken`. Mã váy từ đây cho phép `_`. (b) Kích cỡ trên form **chọn bằng nút**
+  XS / S / M / L / XL (chạm lại để bỏ); API vẫn giữ `sizeLabel` text tự do ≤ 20 ký tự — giá trị cũ
+  (CSV) ngoài 5 cỡ hiện thành nút thứ sáu đang chọn khi sửa, không bị xoá ngầm.
 
 ### rentals
 - **FR-RENT-01** Tạo đơn thuê: khách (tên/điện thoại) + NHIỀU váy + khoảng ngày **inclusive**
@@ -100,6 +108,11 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   `Asia/Ho_Chi_Minh`) sinh ra ở trạng thái `out` — khách đang ở quầy hoặc là nhập bù; (c) đơn
   `booked` trên due-back/overdue là khách chưa lấy — board mời giao trễ hoặc huỷ. Quyết định +
   lý do: [design/rentals/pickup-before-return.md](./design/rentals/pickup-before-return.md) §6.
+- **FR-RENT-11** Giảm giá khi tạo đơn: `discountAmount` (VND integer ≥ 0, mặc định 0) ở mức ĐƠN —
+  KHÔNG đổi `rental_items.price` (giá thoả thuận từng váy) và KHÔNG phải dòng tiền trong `payments`
+  (sổ vẫn ghi số thực thu). Không được vượt Σ giá item (aggregate từ chối → 400
+  `GENERIC.ARGUMENT_INVALID`); âm bị DTO và `CHECK (discount_amount >= 0)` chặn. Danh sách đơn trả
+  `discountAmount`; tiền thuê GỢI Ý khi ghi nhận thu = Σ giá thoả thuận − giảm giá.
 
 ### payments
 - **FR-PAY-01** Xem các dòng tiền của một đơn (`GET /rentals/:id/payments`), kèm `summary` cộng
@@ -160,6 +173,8 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-PAY-02 | `payments/record-collection` | [payments/record-collection.md](./design/payments/record-collection.md) (spec `as-built`), [payments-aggregate.md](./design/payments-aggregate.md) | pass |
 | FR-RENT-09 | `rentals/settle-late-fee` | [rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Phí trễ hạn | pass |
 | FR-RENT-10 (siết FR-RENT-05, nới FR-RENT-06) | `rentals/pickup-before-return` | [rentals/pickup-before-return.md](./design/rentals/pickup-before-return.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
+| FR-CAT-08 | `catalog/duplicate-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) §Nhân bản | pass |
+| FR-RENT-11 | `rentals/rental-discount` | [rentals-aggregate.md](./design/rentals-aggregate.md) §Giảm giá | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

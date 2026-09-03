@@ -45,7 +45,7 @@ export class ListRentalsQueryHandler
     // parsed range objects that daterange.ts does not speak.
     const rentals = await this.pool.any(sql.type(rentalListRowSchema)`
       SELECT id, customer_name, customer_phone, status, period::text AS period,
-             notes, created_at
+             notes, discount_amount, created_at
       FROM rentals ${where}
       ORDER BY created_at DESC, id
       LIMIT ${query.limit} OFFSET ${query.offset}

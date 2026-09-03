@@ -22,6 +22,7 @@ import { AvailabilityChecker } from './components/availability-checker';
 import { BookingCalendar } from './components/booking-calendar';
 import { PriceHistorySection } from './components/price-history-section';
 import { DressFormDialog } from './components/dress-form-dialog';
+import { DuplicateDressDialog } from './components/duplicate-dress-dialog';
 import { DressStatusBadge } from './components/dress-status-badge';
 
 export function DressDetailRoute() {
@@ -35,6 +36,7 @@ function DressDetail({ dressId }: { dressId: string }) {
   const { data: dress } = useGetDressHttpControllerGetSuspense(dressId);
   const { data: ranges } = useListBookedRangesHttpControllerListSuspense(dressId);
   const [editOpen, setEditOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [retireOpen, setRetireOpen] = useState(false);
 
   async function refreshDressQueries(): Promise<void> {
@@ -104,6 +106,10 @@ function DressDetail({ dressId }: { dressId: string }) {
             <Button variant="outline" onClick={() => setEditOpen(true)}>
               {t('detail.actions.edit')}
             </Button>
+            {/* FR-CAT-08: the same model in another size gets its own row, numbered by the server. */}
+            <Button variant="outline" onClick={() => setDuplicateOpen(true)}>
+              {t('detail.actions.duplicate')}
+            </Button>
             {dress.status === 'active' ? (
               <Button
                 variant="destructive"
@@ -170,6 +176,7 @@ function DressDetail({ dressId }: { dressId: string }) {
         }}
       />
       <DressFormDialog open={editOpen} onOpenChange={setEditOpen} dress={dress} />
+      <DuplicateDressDialog open={duplicateOpen} onOpenChange={setDuplicateOpen} dress={dress} />
     </>
   );
 }

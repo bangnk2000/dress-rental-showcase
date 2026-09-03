@@ -70,9 +70,11 @@
       "customerPhone": "Số điện thoại",
       "startDate": "Ngày nhận",
       "endDate": "Ngày trả",
-      "notes": "Ghi chú"
+      "notes": "Ghi chú",
+      "discountAmount": "Giảm giá (VND)"
     },
     "bufferHint": "Sau ngày trả, váy được giữ thêm thời gian giặt ủi trước khi cho thuê tiếp.",
+    "discountHint": "Để trống nếu không giảm. Trừ vào tiền thuê, không trừ vào tiền cọc.",
     "startsToday": "Ngày nhận là hôm nay hoặc đã qua — đơn sẽ ghi là ĐÃ GIAO ngay khi tạo.",
     "submit": "Tạo lượt thuê",
     "success": "Đã tạo lượt thuê",
@@ -90,7 +92,9 @@
       "noDresses": "Vui lòng chọn ít nhất một váy",
       "dressUnavailable": "Có váy đã được thuê trong khoảng ngày này (tính cả thời gian giặt ủi). Vui lòng đổi ngày hoặc chọn váy khác.",
       "dressRetired": "Có váy đã ngừng khai thác. Vui lòng bỏ váy đó khỏi đơn.",
-      "dressNotFound": "Có váy không còn trong danh mục. Vui lòng chọn lại."
+      "dressNotFound": "Có váy không còn trong danh mục. Vui lòng chọn lại.",
+      "discountInvalid": "Chỉ nhập chữ số (VND)",
+      "discountTooLarge": "Giảm giá không được vượt quá tạm tính tiền thuê"
     }
   },
   "picker": {
@@ -101,6 +105,8 @@
     "remove": "Bỏ chọn",
     "selectedEmpty": "Chưa chọn váy nào",
     "total": "Tạm tính tiền thuê",
+    "discount": "Giảm giá",
+    "payable": "Tiền thuê sau giảm",
     "availability": {
       "free": "Còn trống",
       "busy": "Vướng lịch",
@@ -130,7 +136,8 @@
     },
     "hints": {
       "standardDeposit": "Cọc chuẩn của các váy trong đơn: {{amount}}",
-      "agreedTotal": "Tiền thuê đã thoả thuận: {{amount}}"
+      "agreedTotal": "Tiền thuê đã thoả thuận: {{amount}}",
+      "agreedTotalDiscounted": "Tiền thuê đã thoả thuận: {{amount}} (đã trừ giảm giá {{discount}})"
     },
     "errors": {
       "amountInvalid": "Chỉ nhập chữ số (VND)",

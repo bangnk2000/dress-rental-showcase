@@ -116,7 +116,7 @@ export class RentalRepository
     // hand back parsed range objects that daterange.ts does not speak.
     const rental = await this.pool.maybeOne(sql.type(rentalRowSchema)`
       SELECT id, customer_name, customer_phone, period::text AS period,
-             status, notes, created_at, updated_at
+             status, notes, discount_amount, created_at, updated_at
       FROM rentals WHERE id = ${id}
     `);
     if (!rental) return null;
@@ -173,16 +173,18 @@ export class RentalRepository
     upsert: boolean,
   ): Promise<void> {
     const insert = sql.fragment`
-      INSERT INTO rentals (id, customer_name, customer_phone, period, status, notes, created_at, updated_at)
+      INSERT INTO rentals (id, customer_name, customer_phone, period, status, notes, discount_amount,
+                           created_at, updated_at)
       VALUES (${row.id}, ${row.customer_name}, ${row.customer_phone}, ${row.period}::daterange,
-              ${row.status}, ${row.notes}, ${row.created_at as string}, ${row.updated_at as string})
+              ${row.status}, ${row.notes}, ${row.discount_amount},
+              ${row.created_at as string}, ${row.updated_at as string})
     `;
     await conn.query(
       upsert
         ? sql.unsafe`${insert} ON CONFLICT (id) DO UPDATE SET
             customer_name = EXCLUDED.customer_name, customer_phone = EXCLUDED.customer_phone,
             period = EXCLUDED.period, status = EXCLUDED.status, notes = EXCLUDED.notes,
-            updated_at = EXCLUDED.updated_at`
+            discount_amount = EXCLUDED.discount_amount, updated_at = EXCLUDED.updated_at`
         : sql.unsafe`${insert}`,
     );
   }

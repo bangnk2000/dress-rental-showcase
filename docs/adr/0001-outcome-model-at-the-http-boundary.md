@@ -97,6 +97,8 @@ Quyền quản lý user chặn ở guard (`user:manage`, owner-only, fail-closed
 | `catalog/update-dress` | `DressCodeAlreadyExistsError` | `rejected_dress_code_taken` | `dressCode` | FR-CAT-01, 03 |
 | `catalog/retire-dress` | `DressNotFoundError` | `rejected_dress_not_found` | — | FR-CAT-03 |
 | `catalog/retire-dress` | `DressAlreadyRetiredError` | `rejected_dress_already_retired` | — | FR-CAT-03 |
+| `catalog/duplicate-dress` | `DressNotFoundError` | `rejected_dress_not_found` | — | FR-CAT-08 |
+| `catalog/duplicate-dress` | `DressCodeAlreadyExistsError` (thua race đánh số `_n` 3 lần liên tiếp — service đã tự đếm lại) | `rejected_dress_code_taken` | `dressCode` | FR-CAT-08 |
 
 ### rentals
 
@@ -179,6 +181,8 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `forbidden` (`purchase_price_owner_only`) | phòng hờ — UI không render field cho staff; toast chung nếu vẫn tới | `dresses:form.error` |
 | `rejected_dress_not_found` (catalog) | đóng dialog + toast "váy không còn", invalidate list | `dresses:errors.notFound` |
 | `rejected_dress_already_retired` | toast + invalidate detail (state đã đúng, chỉ lệch cache) | `dresses:detail.retire.alreadyRetired` |
+| `rejected_dress_code_taken` (duplicate) | giữ dialog nhân bản, toast nêu `dressCode` "vừa bị thiết bị khác dùng — bấm lại" (server đã tự thử 3 lần) | `dresses:duplicate.codeTaken` |
+| `rejected_dress_not_found` (duplicate) | đóng dialog + toast "váy không còn", invalidate list | `dresses:errors.notFound` |
 | `rejected_dress_not_found` (rentals) | giữ form, message form-level liệt kê `dressIds` | `rentals:form.errors.dressNotFound` |
 | `rejected_dress_retired` | giữ form, message form-level + gợi ý bỏ váy đó | `rentals:form.errors.dressRetired` |
 | `rejected_dress_unavailable` | giữ form, message form-level "trùng lịch (gồm đệm giặt)" | `rentals:form.errors.dressUnavailable` |

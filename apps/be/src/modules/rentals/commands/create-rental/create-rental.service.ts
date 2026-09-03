@@ -69,6 +69,8 @@ export class CreateRentalService
         customerPhone: command.customerPhone,
         period,
         notes: command.notes,
+        // FR-RENT-11: rental-level; the aggregate refuses more than the items add up to.
+        discount: Money.create(command.discountAmount),
         items: command.items.map((item) => ({
           id: this.rentalRepo.nextId(),
           dressId: item.dressId,

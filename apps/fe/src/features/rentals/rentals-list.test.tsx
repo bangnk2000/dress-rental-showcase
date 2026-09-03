@@ -288,3 +288,19 @@ test('a status filter from the URL narrows the request', async () => {
   await screen.findByText('Nguyễn Thị Hoa');
   await waitFor(() => expect(getLastRentalListParams()).toEqual({ status: 'out' }));
 });
+
+test('FR-RENT-11: the rental fee offered for collection is the agreement MINUS the discount', async () => {
+  seedRentalList([makeRentalListItem({ discountAmount: 300_000 })]); // 1.500.000 agreed
+  const user = userEvent.setup();
+  renderList();
+
+  await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
+
+  const rentalFee = await screen.findByLabelText('Tiền thuê');
+  expect(rentalFee).toHaveValue('1200000');
+  // With the field blank the hint states the arithmetic the pre-fill came from.
+  await user.clear(rentalFee);
+  expect(
+    screen.getByText('Tiền thuê đã thoả thuận: 1.200.000 ₫ (đã trừ giảm giá 300.000 ₫)'),
+  ).toBeInTheDocument();
+});

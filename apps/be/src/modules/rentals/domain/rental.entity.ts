@@ -1,6 +1,7 @@
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateRoot } from '../../../libs/ddd/aggregate-root.base';
 import { ArgumentInvalidException } from '../../../libs/exceptions';
+import { Money } from '../../../libs/ddd/money.value-object';
 import { LateFeeQuote } from './late-fee.value-object';
 import { RentalItemEntity } from './rental-item.entity';
 import { RentalPeriod } from './rental-period.value-object';
@@ -37,6 +38,7 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
       period: create.period,
       status: 'booked',
       notes: create.notes,
+      discount: create.discount,
       items,
     };
     const rental = new RentalEntity({ id, props, createdAt: now, updatedAt: now });
@@ -59,6 +61,15 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
 
   get items(): readonly RentalItemEntity[] {
     return this.props.items;
+  }
+
+  get discount(): Money {
+    return this.props.discount;
+  }
+
+  /** Σ item prices — the rental fee BEFORE the discount. */
+  get itemsTotal(): Money {
+    return Money.create(this.props.items.reduce((sum, item) => sum + item.price.amount, 0));
   }
 
   /**
@@ -130,6 +141,13 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
     if (new Set(dressIds).size !== dressIds.length) {
       // Backs the DTO-level ArrayUnique and the DB UNIQUE (rental_id, dress_id).
       throw new ArgumentInvalidException('A rental must not list the same dress twice');
+    }
+    this.guardAgainstEmpty(this.props.discount, 'discount');
+    if (this.props.discount.amount > this.itemsTotal.amount) {
+      // FR-RENT-11 R2: a discount larger than the fee is a typo, not a business case. The rule
+      // spans two tables, so the aggregate is the only place that can hold it (the DB CHECK only
+      // refuses a negative amount).
+      throw new ArgumentInvalidException('Discount must not exceed the sum of the item prices');
     }
   }
 }

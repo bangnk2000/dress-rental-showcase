@@ -729,6 +729,72 @@
         ]
       }
     },
+    "/api/v1/dresses/{id}/duplicate": {
+      "post": {
+        "operationId": "DuplicateDressHttpController_duplicate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DuplicateDressRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateDressResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_dress_not_found | rejected_dress_code_taken (numbering race lost repeatedly; carries dressCode)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateDressOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Duplicate a dress under the next free <code>_<n> (n from 1), optionally in another size",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/v1/categories": {
       "post": {
         "operationId": "CreateCategoryHttpController_create",
@@ -993,7 +1059,7 @@
             }
           },
           "400": {
-            "description": "Invalid request body",
+            "description": "Invalid request body (incl. a discount above the sum of the item prices)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2075,7 +2141,7 @@
         "properties": {
           "code": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{1,19}$",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$",
             "example": "VD-012",
             "description": "Unique shop code"
           },
@@ -2185,7 +2251,7 @@
         "properties": {
           "code": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{1,19}$",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,19}$",
             "example": "VD-012",
             "description": "New unique shop code"
           },
@@ -2276,6 +2342,56 @@
               "rejected_dress_already_retired"
             ],
             "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "DuplicateDressRequestDto": {
+        "type": "object",
+        "properties": {
+          "sizeLabel": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 20,
+            "example": "L",
+            "description": "Size of the copy (FR-CAT-08). Omit = same size as the source; null = the copy has no size."
+          }
+        }
+      },
+      "DuplicateDressResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "code": {
+            "type": "string",
+            "example": "VD-012_1",
+            "description": "Assigned code: <base>_<n>, n from 1"
+          }
+        },
+        "required": [
+          "id",
+          "code"
+        ]
+      },
+      "DuplicateDressOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_dress_not_found",
+              "rejected_dress_code_taken"
+            ],
+            "type": "string"
+          },
+          "dressCode": {
+            "type": "string",
+            "description": "The dress code that is already in use"
           }
         },
         "required": [
@@ -2616,6 +2732,12 @@
             "minLength": 1,
             "maxLength": 2000,
             "example": "Khách quen, hẹn lấy 9h sáng"
+          },
+          "discountAmount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 100000,
+            "description": "Discount on the rental fee in VND (integer, FR-RENT-11); omit or 0 = none. Must not exceed the sum of the item prices (400 otherwise)."
           },
           "items": {
             "uniqueItems": true,
@@ -3045,6 +3167,11 @@
             "nullable": true,
             "example": "Khách quen"
           },
+          "discountAmount": {
+            "type": "number",
+            "example": 100000,
+            "description": "Discount on the rental fee in VND (FR-RENT-11); 0 = none. Expected rental fee = Σ dresses.agreedPrice − discountAmount."
+          },
           "createdAt": {
             "type": "string",
             "example": "2026-07-30T09:00:00.000Z"
@@ -3064,6 +3191,7 @@
           "startDate",
           "endDate",
           "notes",
+          "discountAmount",
           "createdAt",
           "dresses"
         ]

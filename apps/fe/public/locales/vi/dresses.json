@@ -14,7 +14,12 @@
       "rentalPrice": "Giá thuê",
       "deposit": "Tiền cọc",
       "status": "Trạng thái",
-      "category": "Danh mục"
+      "category": "Danh mục",
+      "actions": "Thao tác"
+    },
+    "actions": {
+      "duplicate": "Nhân bản",
+      "duplicateFor": "Nhân bản {{code}}"
     },
     "empty": {
       "noDresses": "Chưa có váy nào",
@@ -53,7 +58,7 @@
     },
     "errors": {
       "codeRequired": "Vui lòng nhập mã váy",
-      "codeInvalid": "Mã váy gồm 2-20 ký tự chữ, số hoặc gạch nối, bắt đầu bằng chữ hoặc số",
+      "codeInvalid": "Mã váy gồm 2-20 ký tự chữ, số, gạch nối hoặc gạch dưới, bắt đầu bằng chữ hoặc số",
       "nameRequired": "Vui lòng nhập tên váy",
       "nameTooLong": "Tên váy tối đa 200 ký tự",
       "sizeTooLong": "Kích cỡ tối đa 20 ký tự",
@@ -69,12 +74,14 @@
     "error": "Không thể thêm váy. Vui lòng thử lại.",
     "updateSuccess": "Đã cập nhật váy",
     "updateError": "Không thể cập nhật váy. Vui lòng thử lại.",
-    "categoryNone": "Không phân loại"
+    "categoryNone": "Không phân loại",
+    "sizeHint": "Chạm để chọn kích cỡ, chạm lại để bỏ chọn."
   },
   "detail": {
     "title": "Chi tiết váy",
     "actions": {
       "edit": "Sửa",
+      "duplicate": "Nhân bản",
       "retire": "Ngừng khai thác"
     },
     "retire": {
@@ -119,6 +126,15 @@
       "conflict": "Bận từ {{start}} đến {{end}} (giữ váy đến hết {{blockedUntil}})",
       "error": "Không kiểm tra được. Vui lòng thử lại."
     }
+  },
+  "duplicate": {
+    "title": "Nhân bản {{code}}",
+    "description": "Tạo một váy mới giống hệt váy này để ghi thêm một kích cỡ khác. Mã sẽ tự đặt là {{base}}_1, {{base}}_2, … theo thứ tự.",
+    "size": "Kích cỡ của váy mới",
+    "submit": "Nhân bản",
+    "success": "Đã nhân bản thành {{code}}",
+    "error": "Không nhân bản được. Vui lòng thử lại.",
+    "codeTaken": "Mã {{code}} vừa bị thiết bị khác dùng — bấm Nhân bản lần nữa."
   },
   "errors": {
     "notFound": "Váy này không còn trong danh mục. Danh sách đã được làm mới."

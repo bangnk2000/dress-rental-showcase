@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 
 import type { DressResponseDto } from '@/api/generated/model';
 import { PhotoThumbnail } from '@/components/media/photo-thumbnail';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -19,9 +20,11 @@ interface DressTableProps {
   dresses: DressResponseDto[];
   /** id → name, built from the (tiny, cached) GET /categories list — no name on each dress row. */
   categoryNameById: Map<string, string>;
+  /** When set, every row gets a duplicate action (FR-CAT-08) — the route owns the dialog. */
+  onDuplicate?: (dress: DressResponseDto) => void;
 }
 
-export function DressTable({ dresses, categoryNameById }: DressTableProps) {
+export function DressTable({ dresses, categoryNameById, onDuplicate }: DressTableProps) {
   const { t } = useTranslation('dresses');
 
   return (
@@ -39,6 +42,11 @@ export function DressTable({ dresses, categoryNameById }: DressTableProps) {
           <TableHead className="text-right">{t('list.columns.rentalPrice')}</TableHead>
           <TableHead className="text-right">{t('list.columns.deposit')}</TableHead>
           <TableHead>{t('list.columns.status')}</TableHead>
+          {onDuplicate ? (
+            <TableHead className="w-0">
+              <span className="sr-only">{t('list.columns.actions')}</span>
+            </TableHead>
+          ) : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -69,6 +77,19 @@ export function DressTable({ dresses, categoryNameById }: DressTableProps) {
             <TableCell>
               <DressStatusBadge status={dress.status} />
             </TableCell>
+            {onDuplicate ? (
+              <TableCell className="text-right">
+                {/* The visible label repeats down the list, so the code rides in the accessible name. */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDuplicate(dress)}
+                  aria-label={t('list.actions.duplicateFor', { code: dress.code })}
+                >
+                  {t('list.actions.duplicate')}
+                </Button>
+              </TableCell>
+            ) : null}
           </TableRow>
         ))}
       </TableBody>

@@ -27,6 +27,7 @@ function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepository
     save: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(null),
     findOneByCode: jest.fn().mockResolvedValue(null),
+    findCodesStartingWith: jest.fn().mockResolvedValue([]),
     insertWithHistory: jest.fn().mockResolvedValue(undefined),
     saveWithPriceHistory: jest.fn().mockResolvedValue(undefined),
     nextId: jest.fn().mockReturnValue('00000000-0000-4000-8000-000000000001'),
