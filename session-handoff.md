@@ -1,5 +1,46 @@
 # Session Handoff
 
+## 2026-09-18 (29) — today board keeps the day's hand-outs visible (owner ask)
+
+- Done: the owner asked (board screenshot) that a rental marked "Đã giao váy" stays on the day's
+  board instead of vanishing. `rentals/today-board` due-out is now every rental STARTING on the
+  date with status `booked` OR `out`; the projection lists the still-to-hand-out (`booked`) ones
+  first, then the handed-out ones. FE: an `out` card on the hand-out list shows a muted
+  "Đã giao cho khách" check instead of the pickup button (new `today:handedOut` key, vi/en); the
+  badge already read `Đang thuê`. Contract re-emitted (description-only change on
+  `TodayBoardResponseDto.dueOut`), BOTH generated clients touched. SRS FR-RENT-07 re-worded,
+  `rentals/today-board` evidence appended, smoke.sh "D0 after pickup" expects `1:out`, the
+  Playwright happy path asserts the card stays (customer count 2, done text, no button).
+- Numbers: be 169 unit (+1 projection spec) · 86 e2e on real Postgres · fe 104 vitest (+1) ·
+  check / lint / both builds green · Playwright `1 passed (23.6s)` on the real stack · arch and
+  `contract:check` red only on the freshness diff of the regenerated client while uncommitted.
+- Committed on master at the owner's request (two commits: the feature, then the owner's own
+  `.env.example` 2 → 1 edit) and deployed to the LAN instance with
+  `~/deploy-dress/localprod-deploy.sh`. That script used to HARD-CODE `CLEANING_BUFFER_DAYS=2` and
+  `LATE_FEE_PER_DRESS_PER_DAY=200000` into the instance's `.env` on every run — it would have
+  clobbered the 1 / 20000 the shop actually runs (set later by `set-buffer-local.sh` /
+  `set-latefee-local.sh`); it now keeps whatever the existing `.env` says and falls back to the
+  defaults only on a first install. NOT pushed to origin (the owner asked for the LAN, not GitHub).
+- The owner renamed the pickup button to "Giao váy" (`today:actions.pickup`, vi "Giao váy" / en
+  "Hand out"); `errors.returnNotPickedUp`, which quotes that button, was updated to match. The
+  accessible name (`actions.pickupFor`, "Đã giao váy cho …") is unchanged, so every locator still
+  resolves.
+- Watch out: `pnpm --filter be test:e2e` fails ONE test locally (`rentals-overlap` BR-1 cleaning
+  buffer: expects 422, gets 201) — pre-existing at HEAD `5a0ea7d`, NOT a code bug: the gitignored
+  `apps/be/.env` has `CLEANING_BUFFER_DAYS=1` while the test, `.env.example` and CI assume 2, and
+  `test/load-env.ts` feeds .env into the harness. `CLEANING_BUFFER_DAYS=2 pnpm --filter be
+  test:e2e` → 86/86. The owner's own pre-session edit of `apps/be/.env.example` (2 → 1, file
+  mtime 2026-09-17 17:43 UTC, masked by git's stat cache until the stash/pop of this session
+  surfaced it) is committed separately — 1 IS the shop's buffer (the LAN instance runs 1 and a
+  20.000 ₫ late fee). The BR-1 buffer test and the CI env (`CLEANING_BUFFER_DAYS: '2'`) still
+  assume 2; not touched here, the owner decides whether the test follows the shop.
+- Watch out: a single-day rental born `out` (start = shopToday) now sits on due-out (marked
+  done) AND due-back — expected, not a duplicate; the hand-out count in the heading is the
+  day's total, not the pending count.
+- Next: backlog unchanged (rental `notes` displayed nowhere, no rental detail route,
+  `payments/correct-movement` awaiting the owner, release lane r2). The LAN instance
+  (`/opt/dress-prod`, master@5a0ea7d) needs a redeploy once this is merged if the shop wants it.
+
 ## 2026-09-03 (28) — three owner asks shipped: rental discount, duplicate-dress `_n`, size buttons
 
 - Done: on `feat/spec-drafts-batch-3` (where the last session left HEAD), two `pass` entries,

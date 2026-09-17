@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -207,6 +207,16 @@ export function TodayRoute() {
           emptyText={t('dueOut.empty')}
           rentals={board.dueOut}
           renderActions={(rental) => {
+            // A rental handed out earlier in the day stays on this list so the day's hand-outs
+            // are visible in one place; nothing is left to do on it, so it reads as done.
+            if (rental.status === 'out') {
+              return (
+                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Check aria-hidden className="size-4" />
+                  {t('handedOut')}
+                </span>
+              );
+            }
             // One mutation object serves every row, so `isPending` alone greys out the whole
             // list with no clue which hand-out is in flight. The spinner marks the actual row.
             const inFlight =

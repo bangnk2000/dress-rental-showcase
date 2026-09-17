@@ -3,6 +3,14 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-18 (29) — owner ask on the today board: a rental marked "Đã giao váy" now STAYS on the
+  day's hand-out list (BE due-out = `booked` OR `out` starting that day, booked first; FE shows a
+  done marker instead of the button). Read-side only — no migration, contract description-only.
+  Gates green (be 169 unit / 86 e2e with `CLEANING_BUFFER_DAYS=2`, fe 104, Playwright 1 passed);
+  committed on master and deployed to the LAN instance at the owner's request (pickup button
+  renamed "Giao váy" by the owner in the same commit). Side findings: the shop's buffer is 1 day
+  (one pre-existing overlap e2e expectation and CI still assume 2), and `localprod-deploy.sh` no
+  longer clobbers the instance's buffer / late-fee settings on redeploy.
 - 2026-09-03 (28) — three owner asks, two features, ledger 32/32 `pass` (committed and merged to master by PR at
   the owner's request): `rentals/rental-discount` (FR-RENT-11 — a rental-level
   discount column with the ≤ Σ rule held by the aggregate and the ≥ 0 rule by a CHECK; the new-rental

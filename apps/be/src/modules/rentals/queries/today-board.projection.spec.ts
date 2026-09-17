@@ -126,3 +126,28 @@ test('a single-day rental appears on BOTH lists (hand out and take back)', () =>
   expect(board.dueOut[0]!.startDate).toBe('2026-08-01');
   expect(board.dueOut[0]!.endDate).toBe('2026-08-01');
 });
+
+test('a rental already handed out stays on due-out, after the ones still to hand out', () => {
+  const board = toTodayBoardDto(
+    '2026-08-01',
+    [
+      // handed out first thing in the morning — created earlier, so SQL order puts it first
+      makeRow({ rental_id: RENTAL_1, status: 'out', due_out: true }),
+      makeRow({
+        rental_id: RENTAL_2,
+        customer_name: 'Trần Văn B',
+        status: 'booked',
+        due_out: true,
+      }),
+    ],
+    dresses,
+  );
+
+  // pending hand-outs first: that is what the morning glance is for
+  expect(board.dueOut.map((rental) => [rental.rentalId, rental.status])).toEqual([
+    [RENTAL_2, 'booked'],
+    [RENTAL_1, 'out'],
+  ]);
+  expect(board.dueBack).toEqual([]);
+  expect(board.overdue).toEqual([]);
+});

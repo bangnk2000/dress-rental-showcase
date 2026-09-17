@@ -213,8 +213,8 @@ pickup2=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/rentals/$RID1/pi
 echo "POST pickup again -> $pickup2 (expect 422 — rejected_pickup_not_allowed)"
 
 board_after_pickup=$(curl -sf "$BASE/rentals/today-board?date=$D0" -H "Authorization: Bearer $TOKEN" \
-  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).dueOut.length))")
-echo "today-board D0 after pickup -> dueOut=$board_after_pickup (expect 0; an out rental is with the customer)"
+  | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.dueOut.length+':'+j.dueOut[0].status)})")
+echo "today-board D0 after pickup -> dueOut=$board_after_pickup (expect 1:out; a handed-out rental stays on the day's board)"
 
 board_back_status=$(curl -sf "$BASE/rentals/today-board?date=$D2" -H "Authorization: Bearer $TOKEN" \
   | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).dueBack[0].status))")

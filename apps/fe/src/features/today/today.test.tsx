@@ -124,7 +124,7 @@ test('board actions carry the customer in their accessible name', async () => {
   });
   renderToday();
 
-  // "Đã giao váy" repeats down the list; the accessible name has to say whose rental it is.
+  // "Giao váy" repeats down the list; the accessible name has to say whose rental it is.
   expect(
     await screen.findByRole('button', { name: 'Đã giao váy cho Nguyễn Thị Hoa' }),
   ).toBeInTheDocument();
@@ -711,4 +711,24 @@ test('cancelling a no-show goes through the app confirm dialog and hits the API'
   await user.click(within(dialog).getByRole('button', { name: 'Huỷ lượt thuê' }));
 
   await waitFor(() => expect(getLastCancelRentalId()).toBe('rental-ns'));
+});
+
+test('a rental already handed out stays on the hand-out list, marked done, without the button', async () => {
+  seedTodayBoard({
+    dueOut: [
+      makeTodayRental(),
+      makeTodayRental({ rentalId: 'rental-2', customerName: 'Trần Văn B', status: 'out' }),
+    ],
+  });
+  renderToday();
+
+  // The day's hand-outs stay visible in one place; the done card carries no action.
+  const doneCard = (await screen.findByText('Trần Văn B')).closest('li')!;
+  expect(within(doneCard).getByText('Đã giao cho khách')).toBeInTheDocument();
+  expect(within(doneCard).getByText('Đang thuê')).toBeInTheDocument();
+  expect(within(doneCard).queryByRole('button')).not.toBeInTheDocument();
+  // the one still to hand out keeps its button
+  expect(
+    screen.getByRole('button', { name: 'Đã giao váy cho Nguyễn Thị Hoa' }),
+  ).toBeInTheDocument();
 });

@@ -9,7 +9,7 @@ import type { TodayBoardRentalDto } from './todayBoardRentalDto';
 export interface TodayBoardResponseDto {
   /** The date the board was computed for */
   date: string;
-  /** Booked rentals starting on the date — dresses to hand out */
+  /** Rentals starting on the date: the booked ones still to hand out first, then the ones already handed out ('out') so the day's hand-outs stay visible */
   dueOut: TodayBoardRentalDto[];
   /** Not-yet-returned rentals ending on the date — dresses coming back */
   dueBack: TodayBoardRentalDto[];

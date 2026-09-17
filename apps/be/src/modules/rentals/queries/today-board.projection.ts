@@ -26,9 +26,12 @@ export const todayBoardRowSchema = z.object({
 export type TodayBoardRow = z.infer<typeof todayBoardRowSchema>;
 
 /**
- * Groups item rows into rental entries and splits them over the two lists.
+ * Groups item rows into rental entries and splits them over the lists.
  * A single-day rental legitimately appears on BOTH (hand out AND take back).
- * Row order (the SQL's ORDER BY) decides list order; dresses sort by code.
+ * Row order (the SQL's ORDER BY) decides list order — except that due-out puts
+ * the rentals still to hand out ('booked') before the ones already handed out
+ * ('out'), since pending work is what the morning glance is for; dresses sort
+ * by code.
  */
 export function toTodayBoardDto(
   date: string,
@@ -82,9 +85,13 @@ export function toTodayBoardDto(
   }
 
   const all = [...entries.values()];
+  const dueOut = all.filter((entry) => entry.dueOut);
   return Object.assign(new TodayBoardResponseDto(), {
     date,
-    dueOut: all.filter((entry) => entry.dueOut).map((entry) => entry.dto),
+    dueOut: [
+      ...dueOut.filter((entry) => entry.dto.status === 'booked'),
+      ...dueOut.filter((entry) => entry.dto.status !== 'booked'),
+    ].map((entry) => entry.dto),
     dueBack: all.filter((entry) => entry.dueBack).map((entry) => entry.dto),
     overdue: all.filter((entry) => entry.overdue).map((entry) => entry.dto),
   });

@@ -25,7 +25,7 @@
     "today": "Today"
   },
   "actions": {
-    "pickup": "Handed out",
+    "pickup": "Hand out",
     "pickupFor": "Handed out to {{customer}}",
     "return": "Take back & settle",
     "returnFor": "Take back & settle for {{customer}}",
@@ -33,6 +33,7 @@
     "cancelFor": "Cancel the rental of {{customer}}"
   },
   "notPickedUp": "Customer never collected",
+  "handedOut": "Handed out to the customer",
   "pickupSuccess": "Hand-out recorded.",
   "actionError": "Something went wrong, please retry.",
   "cancel": {
@@ -77,7 +78,7 @@
   "errors": {
     "pickupNotAllowed": "Cannot hand out: the rental is \"{{status}}\".",
     "returnNotAllowed": "Cannot take back: the rental is \"{{status}}\".",
-    "returnNotPickedUp": "The dresses were never handed out — tap \"Handed out\" before taking back.",
+    "returnNotPickedUp": "The dresses were never handed out — tap \"Hand out\" before taking back.",
     "rentalNotFound": "This rental no longer exists. The board has been refreshed.",
     "lateFeeWaiverForbidden": "Only the shop owner may charge less than the suggested late fee.",
     "waiverNoteRequired": "Reducing the late fee requires a reason."

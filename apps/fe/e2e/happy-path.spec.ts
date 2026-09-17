@@ -118,9 +118,13 @@ test('happy path: create dress → book tomorrow → pickup → return → settl
       .getByRole('button', { name: 'Đã giao váy' })
       .click();
     await expect(page.getByText('Đã ghi nhận giao váy cho khách.')).toBeVisible();
-    // out of the hand-out list, still on take-back, now marked out
-    await expect(page.getByText(CUSTOMER)).toHaveCount(1);
-    await expect(ownRows.getByText('Đang thuê')).toBeVisible();
+    // STILL on the hand-out list (the day's hand-outs stay visible, marked done and without the
+    // button), still on take-back, both now marked out
+    await expect(page.getByText(CUSTOMER)).toHaveCount(2);
+    await expect(ownRows.getByText('Đang thuê')).toHaveCount(2);
+    const handedOutCard = dueOut.getByRole('listitem').filter({ hasText: CUSTOMER });
+    await expect(handedOutCard).toContainText('Đã giao cho khách');
+    await expect(handedOutCard.getByRole('button')).toHaveCount(0);
   });
 
   await test.step('take back and settle the deposit', async () => {

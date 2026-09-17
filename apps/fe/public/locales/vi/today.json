@@ -25,7 +25,7 @@
     "today": "Hôm nay"
   },
   "actions": {
-    "pickup": "Đã giao váy",
+    "pickup": "Giao váy",
     "pickupFor": "Đã giao váy cho {{customer}}",
     "return": "Nhận về & tất toán",
     "returnFor": "Nhận về & tất toán cho {{customer}}",
@@ -33,6 +33,7 @@
     "cancelFor": "Huỷ lượt thuê của {{customer}}"
   },
   "notPickedUp": "Khách chưa lấy váy",
+  "handedOut": "Đã giao cho khách",
   "pickupSuccess": "Đã ghi nhận giao váy cho khách.",
   "actionError": "Có lỗi xảy ra, vui lòng thử lại.",
   "cancel": {
@@ -77,7 +78,7 @@
   "errors": {
     "pickupNotAllowed": "Không giao được: lượt thuê đang ở trạng thái \"{{status}}\".",
     "returnNotAllowed": "Không nhận về được: lượt thuê đang ở trạng thái \"{{status}}\".",
-    "returnNotPickedUp": "Đơn chưa giao váy — bấm \"Đã giao váy\" trước khi nhận về.",
+    "returnNotPickedUp": "Đơn chưa giao váy — bấm \"Giao váy\" trước khi nhận về.",
     "rentalNotFound": "Lượt thuê này không còn tồn tại. Bảng đã được làm mới.",
     "lateFeeWaiverForbidden": "Chỉ chủ tiệm được giảm phí trễ so với số đề xuất.",
     "waiverNoteRequired": "Giảm phí trễ thì phải ghi lý do."

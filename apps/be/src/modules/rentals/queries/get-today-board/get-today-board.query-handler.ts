@@ -28,11 +28,13 @@ export class GetTodayBoardQueryHandler
   ) {}
 
   /**
-   * The morning board: due OUT = booked rentals starting on the date (already
-   * 'out' means the customer has the dress); due BACK = not-yet-returned
-   * rentals whose inclusive last day is the date; OVERDUE = not-yet-returned
-   * rentals whose inclusive last day is already past. Periods are half-open
-   * [start, end+1), so the inclusive last day is upper - 1.
+   * The morning board: due OUT = rentals starting on the date that are still
+   * 'booked' (to hand out) OR already 'out' (handed out during the day — they
+   * stay on the board so the day's hand-outs are visible in one place);
+   * due BACK = not-yet-returned rentals whose inclusive last day is the date;
+   * OVERDUE = not-yet-returned rentals whose inclusive last day is already
+   * past. Periods are half-open [start, end+1), so the inclusive last day is
+   * upper - 1.
    */
   async execute(query: GetTodayBoardQuery): Promise<TodayBoardResponseDto> {
     const date = query.date ?? serverToday();
@@ -42,15 +44,13 @@ export class GetTodayBoardQueryHandler
     const rows = await this.pool.any(sql.type(todayBoardRowSchema)`
       SELECT r.id AS rental_id, r.customer_name, r.customer_phone, r.status,
              r.period::text AS period, ri.dress_id, ri.price,
-             (r.status = 'booked' AND lower(r.period) = ${date}::date) AS due_out,
-             (r.status IN ('booked', 'out')
-               AND upper(r.period) - 1 = ${date}::date) AS due_back,
-             (r.status IN ('booked', 'out')
-               AND upper(r.period) - 1 < ${date}::date) AS overdue
+             (lower(r.period) = ${date}::date) AS due_out,
+             (upper(r.period) - 1 = ${date}::date) AS due_back,
+             (upper(r.period) - 1 < ${date}::date) AS overdue
       FROM rentals r
       JOIN rental_items ri ON ri.rental_id = r.id
-      WHERE (r.status = 'booked' AND lower(r.period) = ${date}::date)
-         OR (r.status IN ('booked', 'out') AND upper(r.period) - 1 <= ${date}::date)
+      WHERE r.status IN ('booked', 'out')
+        AND (lower(r.period) = ${date}::date OR upper(r.period) - 1 <= ${date}::date)
       ORDER BY r.created_at, r.id
     `);
 

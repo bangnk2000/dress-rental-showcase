@@ -94,8 +94,9 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 - **FR-RENT-06** Cancel: đơn `booked` — hoặc `out` với **sổ tiền TRỐNG** (FR-RENT-10 §6.Q2) —
   → `cancelled`; items chuyển `blocking=false` — **giải phóng lịch, giữ lịch sử**. Sổ có tiền
   → `rejected_cancel_has_payments`: lối ra duy nhất là return.
-- **FR-RENT-07** Bảng "Hôm nay": váy phải giao hôm nay (due out), phải nhận về hôm nay
-  (due back), và **OVERDUE** — màn hình nhân viên mở mỗi sáng, có nút thao tác trực tiếp.
+- **FR-RENT-07** Bảng "Hôm nay": váy phải giao hôm nay (due out — gồm cả đơn **đã giao** trong
+  ngày, xếp sau đơn chưa giao, để nhân viên nhìn một chỗ thấy cả ngày đã giao gì), phải nhận về
+  hôm nay (due back), và **OVERDUE** — màn hình nhân viên mở mỗi sáng, có nút thao tác trực tiếp.
 - **FR-RENT-08** Danh sách đơn: search tên/điện thoại khách, filter status, phân trang;
   mang action cancel (hàng booked) và dialog payments (hàng returned).
 - **FR-RENT-09** Phí trễ hạn **tự tính**: `số ngày trễ × số váy × 200.000₫` (đơn giá cố định ở env

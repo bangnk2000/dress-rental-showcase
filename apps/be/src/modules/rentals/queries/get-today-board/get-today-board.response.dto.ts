@@ -32,7 +32,8 @@ export class TodayBoardResponseDto {
 
   @ApiProperty({
     type: [TodayBoardRentalDto],
-    description: 'Booked rentals starting on the date — dresses to hand out',
+    description:
+      "Rentals starting on the date: the booked ones still to hand out first, then the ones already handed out ('out') so the day's hand-outs stay visible",
   })
   readonly dueOut!: TodayBoardRentalDto[];
 
