@@ -57,7 +57,10 @@ files here.
    endpoints only, never fetch-list-and-find.
 4. **No shell routes remain.** `/rentals` is the real list (`rentals/list-rentals`,
    URL-owned q/status/page via `use-rental-filters`); `/rentals/new` navigates to it on
-   success. The today board at `/` is live and ACTIONABLE (`rentals/today-board` +
+   success. `/rentals/:id` is the rental detail (`rentals/update-rental`, FR-RENT-12: get-rental
+   + the shared money dialog) and `/rentals/:id/edit` the OWNER's edit form (FR-RENT-13) — both
+   `/rentals/new` and the edit render ONE `components/rental-form.tsx`; the route owns the
+   mutation, the form owns the dress rejections. The today board at `/` is live and ACTIONABLE (`rentals/today-board` +
    `rentals/return-rental`): three sections (due-out / due-back / overdue), pickup +
    return-and-settle mutations, and it ALWAYS sends the device-local date
    (`features/today/lib/local-date.ts`) — never rely on the server's "today". jsdom cannot

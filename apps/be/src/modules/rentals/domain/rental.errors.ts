@@ -104,6 +104,23 @@ export class LateFeeWaiverNoteRequiredError extends ExceptionBase {
   }
 }
 
+/**
+ * FR-RENT-13: only an OPEN rental (booked|out) can be edited — a returned or cancelled one is
+ * history. Raised by the entity's pre-check AND by the repository's re-read under the row lock,
+ * so a cancel that lands between load and save yields the same outcome.
+ */
+export class RentalUpdateNotAllowedError extends ExceptionBase {
+  static readonly message = 'Only a booked or out rental can be edited';
+  public readonly code = 'RENTALS.UPDATE_NOT_ALLOWED';
+
+  constructor(
+    readonly currentStatus: RentalStatus,
+    cause?: Error,
+  ) {
+    super(RentalUpdateNotAllowedError.message, cause, { currentStatus });
+  }
+}
+
 export class RentalCancelNotAllowedError extends ExceptionBase {
   static readonly message = 'A returned or cancelled rental cannot be cancelled';
   public readonly code = 'RENTALS.CANCEL_NOT_ALLOWED';

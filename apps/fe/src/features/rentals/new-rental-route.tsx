@@ -1,12 +1,8 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
-import { mapApiError } from '@/api/errors';
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
@@ -14,340 +10,66 @@ import {
 } from '@/api/generated/rentals/rentals';
 import type { CreateRentalRequestDto } from '@/api/generated/model';
 import { PageHeader } from '@/components/layout/page-header';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { formatVnd } from '@/lib/format';
 
-import {
-  DressPicker,
-  type BlockedDresses,
-  type PickerPeriod,
-  type SelectedDress,
-} from './components/dress-picker';
-import { RentalFormMessage } from './components/rental-form-message';
-import {
-  rentalFormDefaults,
-  rentalFormSchema,
-  type RentalFormValues,
-} from './schemas/rental-form.schema';
-
-/**
- * The `dressIds` an outcome payload carries (ADR 0001 §3). Typed as `unknown` at the seam, so the
- * form checks the shape rather than trusting it.
- */
-function readDressIds(raw: unknown): string[] {
-  return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : [];
-}
-
-/**
- * Identity of a booking ATTEMPT: the dates and the set of dresses, which is exactly what every
- * rejection outcome answers about. Two attempts with the same key deserve the same verdict; a
- * verdict for any other key belongs to a request the staff has already moved past.
- */
-function bookingKey(startDate: string, endDate: string, dressIds: string[]): string {
-  return [startDate, endDate, [...dressIds].sort().join(',')].join('|');
-}
+import { RentalForm, type RentalFormSubmission } from './components/rental-form';
 
 /** The SHOP's calendar day — the same rule the API applies to decide born-delivered. */
 function shopTodayIso(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
-/** The typed discount as VND (FR-RENT-11); blank or not-yet-digits = none. */
-function parseDiscount(raw: string): number {
-  const trimmed = raw.trim();
-  const value = Number(trimmed);
-  return trimmed !== '' && Number.isInteger(value) && value > 0 ? value : 0;
-}
-
-/** Form values + picked dresses → request body; blank notes and a zero discount are omitted. */
-function toCreateRentalRequest(
-  values: RentalFormValues,
-  selected: SelectedDress[],
-): CreateRentalRequestDto {
-  const discountAmount = parseDiscount(values.discountAmount);
+/** Form submission → request body; blank notes and a zero discount are omitted. */
+function toCreateRentalRequest(submission: RentalFormSubmission): CreateRentalRequestDto {
   return {
-    customerName: values.customerName,
-    customerPhone: values.customerPhone,
-    startDate: values.startDate,
-    endDate: values.endDate,
-    ...(values.notes ? { notes: values.notes } : {}),
-    ...(discountAmount > 0 ? { discountAmount } : {}),
+    customerName: submission.customerName,
+    customerPhone: submission.customerPhone,
+    startDate: submission.startDate,
+    endDate: submission.endDate,
+    ...(submission.notes ? { notes: submission.notes } : {}),
+    ...(submission.discountAmount > 0 ? { discountAmount: submission.discountAmount } : {}),
     // Price omitted on purpose: the BE defaults to each dress's standard price.
-    items: selected.map((dress) => ({ dressId: dress.id })),
+    items: submission.items.map((dress) => ({ dressId: dress.id })),
   };
 }
 
 export function NewRentalRoute() {
   const { t } = useTranslation('rentals');
-  const { t: tCommon } = useTranslation('common'); // shared verbs only
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const form = useForm<RentalFormValues>({
-    resolver: zodResolver(rentalFormSchema),
-    defaultValues: rentalFormDefaults,
-  });
-  const [selected, setSelected] = useState<SelectedDress[]>([]);
-  /** i18n key — set on empty selection at submit, or from a rejection outcome. */
-  const [formError, setFormError] = useState<string | null>(null);
-  /** Which dresses the last rejection named (ADR 0001 payload), so the picker can point at them. */
-  const [blocked, setBlocked] = useState<BlockedDresses | null>(null);
-
-  // The dates the picker checks against. Only a sensible range is worth asking the server about.
-  const startDate = form.watch('startDate');
-  const endDate = form.watch('endDate');
-  const period: PickerPeriod | null =
-    startDate && endDate && startDate <= endDate ? { startDate, endDate } : null;
-  // FR-RENT-11: the discount is bounded by the subtotal of the CURRENT selection, which lives
-  // outside the schema — so the bound is checked here, at submit, and shown live by the picker.
-  const discount = parseDiscount(form.watch('discountAmount'));
-  const subtotal = selected.reduce((sum, dress) => sum + dress.rentalPrice, 0);
-
-  /**
-   * The current selection, readable from the mutation callbacks — which capture the `selected` of
-   * the render that fired them, not the one on screen when the answer arrives.
-   */
-  const selectedRef = useRef<SelectedDress[]>([]);
-  useEffect(() => {
-    selectedRef.current = selected;
-  }, [selected]);
-
-  // A rejection belongs to the dates it was answered for. Changing them makes it stale — both the
-  // per-dress marking AND the message, or the form keeps telling staff that the booking they just
-  // corrected is invalid. The per-dress availability check below answers for the new range.
-  useEffect(() => {
-    setBlocked(null);
-    setFormError(null);
-  }, [startDate, endDate]);
-
-  // One designed state per outcome code (ADR 0001 §4): the form stays filled and says WHICH
-  // dresses are the problem. Defining onError here also overrides the global mutation toast.
+  // The form renders every rejection in place (ADR 0001 §4); an empty onError here overrides the
+  // global mutation toast so a dress rejection is not ALSO announced as a generic failure.
   const createRental = useCreateRentalHttpControllerCreate({
-    mutation: {
-      onSuccess: async () => {
-        // The cached list/board may still be FRESH (staleTime 60s) — without
-        // this, the post-create landing shows a list missing the new rental.
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: getListRentalsHttpControllerListQueryKey(),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
-          }),
-        ]);
-        toast.success(
-          form.getValues('startDate') <= shopTodayIso()
-            ? t('form.successDelivered')
-            : t('form.success'),
-        );
-        void navigate('/rentals');
-      },
-      onError: (error, variables) => {
-        // The answer must belong to the booking still on screen. Staff who edits the dates or the
-        // selection while the request is in flight would otherwise get rows marked unavailable for
-        // a range that was never submitted.
-        const answered = bookingKey(
-          variables.data.startDate,
-          variables.data.endDate,
-          variables.data.items.map((item) => item.dressId),
-        );
-        const onScreen = bookingKey(
-          form.getValues('startDate'),
-          form.getValues('endDate'),
-          selectedRef.current.map((dress) => dress.id),
-        );
-        if (answered !== onScreen) {
-          // Still say the booking did not go through: the rental was NOT created either way.
-          toast.error(t('form.error'));
-          return;
-        }
-
-        const mapped = mapApiError(error);
-        const dressIds = mapped.kind === 'outcome' ? readDressIds(mapped.dressIds) : [];
-        switch (mapped.kind === 'outcome' ? mapped.status : null) {
-          case 'rejected_dress_unavailable':
-            setFormError('form.errors.dressUnavailable');
-            setBlocked({ dressIds, reason: 'unavailable' });
-            return;
-          case 'rejected_dress_retired':
-            setFormError('form.errors.dressRetired');
-            setBlocked({ dressIds, reason: 'retired' });
-            return;
-          case 'rejected_dress_not_found':
-            setFormError('form.errors.dressNotFound');
-            setBlocked({ dressIds, reason: 'notFound' });
-            return;
-          default:
-            toast.error(t('form.error'));
-        }
-      },
-    },
+    mutation: { onError: () => undefined },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
-    if (selected.length === 0) {
-      setFormError('form.errors.noDresses');
-      return;
-    }
-    if (parseDiscount(values.discountAmount) > subtotal) {
-      form.setError('discountAmount', { message: 'form.errors.discountTooLarge' });
-      return;
-    }
-    setFormError(null);
-    createRental.mutate({ data: toCreateRentalRequest(values, selected) });
-  });
-
-  const translate = t as unknown as (key: string) => string;
+  async function onSubmit(submission: RentalFormSubmission): Promise<void> {
+    await createRental.mutateAsync({ data: toCreateRentalRequest(submission) });
+    // The cached list/board may still be FRESH (staleTime 60s) — without
+    // this, the post-create landing shows a list missing the new rental.
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: getListRentalsHttpControllerListQueryKey(),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
+      }),
+    ]);
+    toast.success(
+      submission.startDate <= shopTodayIso() ? t('form.successDelivered') : t('form.success'),
+    );
+    void navigate('/rentals');
+  }
 
   return (
     <>
       <PageHeader title={t('newTitle')} />
-      <Form {...form}>
-        <form
-          onSubmit={(event) => void onSubmit(event)}
-          className="grid max-w-2xl gap-4"
-          noValidate
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="customerName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('form.fields.customerName')}</FormLabel>
-                  <FormControl>
-                    <Input autoComplete="off" {...field} />
-                  </FormControl>
-                  <RentalFormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="customerPhone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('form.fields.customerPhone')}</FormLabel>
-                  <FormControl>
-                    <Input inputMode="tel" autoComplete="off" {...field} />
-                  </FormControl>
-                  <RentalFormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="startDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('form.fields.startDate')}</FormLabel>
-                  <FormControl>
-                    <Input type="date" autoComplete="off" {...field} />
-                  </FormControl>
-                  {/* FR-RENT-10: same-day (or backdated) rentals are born DELIVERED — say so
-                      before submit, so the status on the list is no surprise. */}
-                  {field.value && field.value <= shopTodayIso() ? (
-                    <p className="text-sm text-muted-foreground">{t('form.startsToday')}</p>
-                  ) : null}
-                  <RentalFormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="endDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('form.fields.endDate')}</FormLabel>
-                  <FormControl>
-                    <Input type="date" autoComplete="off" {...field} />
-                  </FormControl>
-                  <RentalFormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">{t('form.bufferHint')}</p>
-          <DressPicker
-            selected={selected}
-            onAdd={(dress) => {
-              setSelected((current) => [...current, dress]);
-              setFormError(null);
-              setBlocked(null);
-            }}
-            onRemove={(dressId) => {
-              setSelected((current) => current.filter((dress) => dress.id !== dressId));
-              // Dropping a dress can be exactly the fix the rejection asked for, so the message
-              // goes with the marking rather than outliving the problem it described.
-              setBlocked(null);
-              setFormError(null);
-            }}
-            error={formError === 'form.errors.noDresses' ? formError : null}
-            period={period}
-            blocked={blocked}
-            discount={discount}
-          />
-          <FormField
-            control={form.control}
-            name="discountAmount"
-            render={({ field }) => {
-              const amount = parseDiscount(field.value);
-              return (
-                <FormItem>
-                  <FormLabel>{t('form.fields.discountAmount')}</FormLabel>
-                  <FormControl>
-                    <Input inputMode="numeric" autoComplete="off" {...field} />
-                  </FormControl>
-                  {/* Money the user typed is read back grouped (screen rules); otherwise the
-                      field says what it is for. */}
-                  <FormDescription className="tabular-nums">
-                    {amount > 0 ? formatVnd(amount) : t('form.discountHint')}
-                  </FormDescription>
-                  <RentalFormMessage />
-                </FormItem>
-              );
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('form.fields.notes')}</FormLabel>
-                <FormControl>
-                  <Input autoComplete="off" {...field} />
-                </FormControl>
-                <RentalFormMessage />
-              </FormItem>
-            )}
-          />
-          {/* Every rejection outcome renders form-level here; the picker owns only noDresses. */}
-          {formError && formError !== 'form.errors.noDresses' ? (
-            <p role="alert" className="text-sm text-destructive">
-              {translate(formError)}
-            </p>
-          ) : null}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => void navigate('/rentals')}>
-              {tCommon('actions.cancel')}
-            </Button>
-            <Button type="submit" disabled={createRental.isPending}>
-              {t('form.submit')}
-            </Button>
-          </div>
-        </form>
-      </Form>
+      <RentalForm
+        mode="create"
+        submitLabel={t('form.submit')}
+        onSubmit={onSubmit}
+        onCancel={() => void navigate('/rentals')}
+      />
     </>
   );
 }

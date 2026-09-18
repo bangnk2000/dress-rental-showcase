@@ -1,5 +1,56 @@
 # Session Handoff
 
+## 2026-09-18 (30) — rental detail + owner-only edit (`rentals/update-rental` = pass, UNCOMMITTED)
+
+- Done: the owner asked for "sửa đơn và chi tiết đơn cho tài khoản chủ cửa hàng". Spec drafted
+  through the feature-spec lane AND implemented in the same session
+  ([docs/design/rentals/update-rental.md](docs/design/rentals/update-rental.md), FR-RENT-12/13 in
+  the SRS, ADR 0001 §3/§4 rows, rentals-aggregate.md §Sửa đơn + two invariant rows).
+  BE: `RentalEntity.update()` (open rentals only, never touches status, items reconciled by id,
+  every item re-blocked to period + CURRENT buffer), `saveUpdated` re-reads status under the
+  rental's row lock (`RentalStateChangedError` → `rejected_update_not_allowed`), `writeAggregate`
+  deletes items the aggregate dropped, `findBlockedDressIds(…, { excludeRentalId })`,
+  `PATCH /rentals/:id` (policy `rental:update`, owner-only — the first owner-only WRITE in
+  rentals) and `GET /rentals/:id` (`RentalDetailDto`, a superset of the list item; controller
+  registered LAST so `:id` cannot shadow `today-board`). No migration. FE: `/rentals/:id` detail
+  (notes shown for the first time, expected fee with its arithmetic, shared money dialog, cancel,
+  `Sửa đơn` for the owner), `/rentals/:id/edit` (owner gate, prefilled `RentalForm` — extracted
+  from `new-rental-route` and shared with `/rentals/new`), picker ignores the edited rental's own
+  conflicts, list customer name → detail. Contract re-emitted, both clients regenerated.
+- Numbers: be 185 unit (+16) · 98 e2e (+12, `rental-update.e2e-spec.ts`: extend 422/200, race
+  PATCH-vs-POST, raw UPDATE refused by EXCLUDE, swap/reprice, retired-kept vs retired-added, closed
+  → 422, staff → 403 envelope, detail read, discount > Σ → 400) on real Postgres with
+  `CLEANING_BUFFER_DAYS=2` · fe 117 vitest (+13) · check / lint / arch / both builds / qr-admin /
+  root lint green · fe arch (d) + `contract:check` red only on the uncommitted regenerated client.
+- **NOT committed, not pushed, not deployed** — the owner did not ask; the working tree holds BE +
+  `packages/contract` + BOTH generated clients + FE + docs, to be committed TOGETHER (as always).
+  `init.sh` cannot pass until then (its first step is `git diff --exit-code packages/contract`);
+  every gate behind that step was run individually and is green.
+- **Open for the owner (spec §6 — agent defaults, each reversible in one small change):**
+  1. Detail visible to every staff member (only `Sửa đơn` is owner-only)? — assumed YES.
+  2. Edit allowed for `booked` AND `out`; `returned`/`cancelled` fully immutable (even name/notes)?
+  3. Moving the start date to today does NOT flip a booked rental to `out` (an edit ≠ handover).
+  4. A dress retired after booking stays on the rental; only ADDED dresses are checked.
+  5. A removed dress's row is DELETED (not kept as `blocking=false`).
+  6. No per-dress price input on the UI yet (the API accepts `price`; kept dresses resend their
+     agreed price, added ones the catalog price shown).
+  7. Recorded money never blocks an edit (extending after a deposit is the common case).
+  8. Staff calling PATCH → guard 403 envelope (no named outcome).
+  9. Every edit re-blocks all items with the CURRENT buffer (a phone-only edit of an old
+     buffer-2 rental now blocks with 1).
+- Watch out: `writeAggregate` now runs a `DELETE … WHERE id <> ALL(kept)` on EVERY upsert path
+  (save/saveReturned/saveCancelled/saveUpdated) — harmless today because no other path drops
+  items, but a future path that builds a partial aggregate would silently delete rows.
+- Watch out: the edit form's live availability badge filters `conflicts[].rentalId` client-side;
+  a retired kept dress with only self-conflicts reads "Còn trống" (accepted edge, §6.Q4).
+- Watch out (tooling, Windows-side session): invoke `wsl.exe` from the PowerShell tool — Git
+  Bash rewrites `/tmp/x.sh` into a Windows path (exit 127); `./init.sh` lacks the exec bit
+  through the mount, use `bash ./init.sh`; export `CLEANING_BUFFER_DAYS=2` for e2e.
+- Next: the owner tests `/rentals/:id` + `Sửa đơn` on the LAN build, answers §6, then commit
+  (one commit, BE + contract + clients + FE + docs) and redeploy with
+  `~/deploy-dress/localprod-deploy.sh`. Backlog otherwise unchanged: `payments/correct-movement`
+  awaiting the owner, release lane r2, per-dress price input (create + edit) if wanted.
+
 ## 2026-09-18 (29) — today board keeps the day's hand-outs visible (owner ask)
 
 - Done: the owner asked (board screenshot) that a rental marked "Đã giao váy" stays on the day's

@@ -69,6 +69,16 @@ test('renders the rentals page with status badges and dress links', async () => 
   expect(screen.getByRole('link', { name: 'VD-900' })).toBeInTheDocument();
 });
 
+test('FR-RENT-12: the customer name opens the rental detail', async () => {
+  seedRentalList([makeRentalListItem()]);
+  renderList();
+
+  expect(await screen.findByRole('link', { name: 'Nguyễn Thị Hoa' })).toHaveAttribute(
+    'href',
+    '/rentals/rental-1',
+  );
+});
+
 test('an empty unfiltered list offers creating the first rental', async () => {
   renderList();
 

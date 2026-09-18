@@ -52,6 +52,18 @@ export class RentalItemEntity extends Entity<RentalItemProps> {
     this.setUpdatedAt(now);
   }
 
+  /** The rental's dates (or the cleaning buffer) moved: hold the dress for the new interval. */
+  reblock(blockedPeriod: RentalPeriod, now: Date): void {
+    this.props.blockedPeriod = blockedPeriod;
+    this.setUpdatedAt(now);
+  }
+
+  /** A new agreement with the customer for this dress (FR-RENT-13). */
+  reprice(price: Money, now: Date): void {
+    this.props.price = price;
+    this.setUpdatedAt(now);
+  }
+
   public validate(): void {
     this.guardAgainstEmpty(this.props.dressId, 'dressId');
     this.guardAgainstEmpty(this.props.price, 'price');

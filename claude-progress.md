@@ -3,6 +3,12 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-18 (30) — owner ask "sửa đơn + chi tiết đơn cho chủ cửa hàng": `rentals/update-rental`
+  = pass (33/33). Spec (`docs/design/rentals/update-rental.md`, FR-RENT-12/13) and code in one
+  session: `GET /rentals/:id` for every staff member, owner-only `PATCH /rentals/:id` that
+  re-blocks every item, reconciles dresses by id and re-reads status under the row lock;
+  FE `/rentals/:id` + `/rentals/:id/edit` on a shared `RentalForm`. be 185 unit / 98 e2e, fe 117.
+  NOT committed — the owner tests first and answers the 9 spec §6 defaults.
 - 2026-09-18 (29) — owner ask on the today board: a rental marked "Đã giao váy" now STAYS on the
   day's hand-out list (BE due-out = `booked` OR `out` starting that day, booked first; FE shows a
   done marker instead of the button). Read-side only — no migration, contract description-only.

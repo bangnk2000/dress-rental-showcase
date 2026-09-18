@@ -18,6 +18,28 @@ export interface RentalProps {
   items: RentalItemEntity[];
 }
 
+export interface UpdateRentalItemProps {
+  /** A kept dress carries its CURRENT item id; an added dress a fresh one (application layer decides). */
+  id: string;
+  dressId: string;
+  price: Money;
+}
+
+/**
+ * FR-RENT-13: what the owner may rewrite on an open rental. `undefined` = keep as is. Status is
+ * deliberately absent — pickup/return/cancel own it.
+ */
+export interface UpdateRentalProps {
+  customerName?: string;
+  customerPhone?: string;
+  period?: RentalPeriod;
+  /** `null` clears the notes. */
+  notes?: string | null;
+  discount?: Money;
+  /** The FULL new item list — items whose id is not in it are dropped. */
+  items?: UpdateRentalItemProps[];
+}
+
 export interface CreateRentalProps {
   customerName: string;
   customerPhone: string;

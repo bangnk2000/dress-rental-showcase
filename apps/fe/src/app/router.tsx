@@ -78,6 +78,20 @@ export const router = createBrowserRouter([
             },
           },
           {
+            path: 'rentals/:id',
+            lazy: async () => {
+              const { RentalDetailRoute } = await import('@/features/rentals');
+              return { Component: withBoundary(RentalDetailRoute) };
+            },
+          },
+          {
+            path: 'rentals/:id/edit',
+            lazy: async () => {
+              const { EditRentalRoute } = await import('@/features/rentals');
+              return { Component: withBoundary(EditRentalRoute) };
+            },
+          },
+          {
             path: 'users',
             lazy: async () => {
               const { UsersRoute } = await import('@/features/users');

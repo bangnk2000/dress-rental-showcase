@@ -8,8 +8,23 @@ export interface RentalRepositoryPort extends RepositoryPort<RentalEntity> {
   /**
    * Of the given dresses, the ones with a blocking item overlapping the period.
    * Availability precondition — the EXCLUDE constraint backs it against races.
+   *
+   * `excludeRentalId`: ignore that rental's own items — an edit (FR-RENT-13) must not collide
+   * with the booking it is replacing.
    */
-  findBlockedDressIds(dressIds: string[], blockedPeriod: RentalPeriod): Promise<string[]>;
+  findBlockedDressIds(
+    dressIds: string[],
+    blockedPeriod: RentalPeriod,
+    options?: { excludeRentalId?: string },
+  ): Promise<string[]>;
+
+  /**
+   * `save` for an EDIT (FR-RENT-13), plus a re-read of the status under the rental's row lock —
+   * the same lock cancel/return/record-collection take — so a rental closed in the meantime is
+   * never reopened by a stale aggregate (`RentalStateChangedError`, nothing written). Items no
+   * longer in the aggregate are deleted; an overlap race throws `RentalItemsOverlapError`.
+   */
+  saveUpdated(entity: RentalEntity): Promise<void>;
 
   /**
    * `save`, plus a check that the deposit the caller based its refund on is still what the ledger

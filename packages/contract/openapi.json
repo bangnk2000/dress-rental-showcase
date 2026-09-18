@@ -1331,6 +1331,126 @@
         ]
       }
     },
+    "/api/v1/rentals/{id}": {
+      "patch": {
+        "operationId": "UpdateRentalHttpController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRentalRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body (incl. an invalid date range or a discount above the sum of the new item prices)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the owner — GENERIC.FORBIDDEN envelope from the policy guard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_rental_not_found | rejected_update_not_allowed (carries currentStatus — returned/cancelled, pre-check or under the row lock) | rejected_dress_not_found | rejected_dress_retired (an ADDED dress) | rejected_dress_unavailable (new period incl. cleaning buffer overlaps another rental, pre-check AND race) — the dress codes carry dressIds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateRentalOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit an OPEN rental (owner-only, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list",
+        "tags": [
+          "rentals"
+        ]
+      },
+      "get": {
+        "operationId": "GetRentalHttpController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rental not found — a read that finds nothing is a fault, not an outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "One rental in full (FR-RENT-12): customer, dates, dresses with agreed prices and calendar blocks, discount, notes, status",
+        "tags": [
+          "rentals"
+        ]
+      }
+    },
     "/api/v1/dresses/{dressId}/availability": {
       "get": {
         "operationId": "CheckAvailabilityHttpController_check",
@@ -2911,6 +3031,91 @@
           "status"
         ]
       },
+      "UpdateRentalRequestDto": {
+        "type": "object",
+        "properties": {
+          "customerName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "Nguyễn Thị Hoa"
+          },
+          "customerPhone": {
+            "type": "string",
+            "pattern": "^[0-9+ ().-]{6,20}$",
+            "example": "0903123456"
+          },
+          "startDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "example": "2026-08-01",
+            "description": "New first rental day (inclusive); merged with the current end date if that is omitted"
+          },
+          "endDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "example": "2026-08-03",
+            "description": "New last rental day (inclusive); merged with the current start date if that is omitted"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "Khách quen, hẹn lấy 9h sáng",
+            "description": "null clears it"
+          },
+          "discountAmount": {
+            "type": "number",
+            "minimum": 0,
+            "example": 100000,
+            "description": "Discount on the rental fee in VND (integer, FR-RENT-11); must not exceed the sum of the (new) item prices (400 otherwise)"
+          },
+          "items": {
+            "uniqueItems": true,
+            "minItems": 1,
+            "description": "The FULL new dress list (1..n) — replaces the current one. Omit price to keep the agreed price of a kept dress / take the standard price of an added dress",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateRentalItemRequestDto"
+            }
+          }
+        }
+      },
+      "UpdateRentalOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_rental_not_found",
+              "rejected_update_not_allowed",
+              "rejected_dress_not_found",
+              "rejected_dress_retired",
+              "rejected_dress_unavailable"
+            ],
+            "type": "string"
+          },
+          "dressIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "currentStatus": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "BookedRangeDto": {
         "type": "object",
         "properties": {
@@ -3271,6 +3476,128 @@
           "dressCount",
           "dailyRateAmount",
           "suggestedLateFee"
+        ]
+      },
+      "RentalDetailDressDto": {
+        "type": "object",
+        "properties": {
+          "dressId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "example": "VD-001"
+          },
+          "name": {
+            "type": "string",
+            "example": "Váy cưới ren trắng"
+          },
+          "depositAmount": {
+            "type": "number",
+            "example": 3000000,
+            "description": "The catalog STANDARD deposit for this dress in VND — a reference figure. What was actually collected is the `deposit` total of GET /rentals/:id/payments (FR-PAY-02)"
+          },
+          "agreedPrice": {
+            "type": "number",
+            "example": 1500000,
+            "description": "The price agreed with THIS customer for this dress in VND (rental_items.price), which may differ from the catalog price"
+          },
+          "blockedUntilDate": {
+            "type": "string",
+            "example": "2026-08-05",
+            "description": "Last day this dress is held for the rental, cleaning buffer included (inclusive) — the derived \"cleaning\" state after the return date"
+          },
+          "blocking": {
+            "type": "boolean",
+            "example": true,
+            "description": "false once the rental is cancelled — the calendar is free again, the row is history"
+          }
+        },
+        "required": [
+          "dressId",
+          "code",
+          "name",
+          "depositAmount",
+          "agreedPrice",
+          "blockedUntilDate",
+          "blocking"
+        ]
+      },
+      "RentalDetailDto": {
+        "type": "object",
+        "properties": {
+          "rentalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerName": {
+            "type": "string",
+            "example": "Nguyễn Thị Hoa"
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "0903123456"
+          },
+          "status": {
+            "enum": [
+              "booked",
+              "out",
+              "returned",
+              "cancelled"
+            ],
+            "type": "string",
+            "example": "booked"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-08-01",
+            "description": "First rental day (inclusive)"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2026-08-03",
+            "description": "Last rental day (inclusive)"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "example": "Khách quen"
+          },
+          "discountAmount": {
+            "type": "number",
+            "example": 100000,
+            "description": "Discount on the rental fee in VND (FR-RENT-11); 0 = none. Expected rental fee = Σ dresses.agreedPrice − discountAmount."
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-07-30T09:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-07-31T09:00:00.000Z",
+            "description": "Last change to the rental (status move or owner edit)"
+          },
+          "dresses": {
+            "description": "Sorted by dress code",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RentalDetailDressDto"
+            }
+          }
+        },
+        "required": [
+          "rentalId",
+          "customerName",
+          "customerPhone",
+          "status",
+          "startDate",
+          "endDate",
+          "notes",
+          "discountAmount",
+          "createdAt",
+          "updatedAt",
+          "dresses"
         ]
       },
       "PaymentDto": {

@@ -39,6 +39,7 @@ function makeRepo(rental: RentalEntity | null): RentalRepositoryPort {
     save: jest.fn().mockResolvedValue(undefined),
     saveReturned: jest.fn().mockResolvedValue(undefined),
     saveCancelled: jest.fn().mockResolvedValue(undefined),
+    saveUpdated: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(rental),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
     nextId: jest.fn(() => 'unused'),

@@ -36,10 +36,13 @@ import type {
   LateFeeQuoteResponseDto,
   ListRentalsHttpControllerListParams,
   PickupRentalOutcomeDto,
+  RentalDetailDto,
   RentalListResponseDto,
   ReturnRentalOutcomeDto,
   ReturnRentalRequestDto,
-  TodayBoardResponseDto
+  TodayBoardResponseDto,
+  UpdateRentalOutcomeDto,
+  UpdateRentalRequestDto
 } from '../model';
 
 import { customInstance } from '../../mutator/custom-instance';
@@ -411,6 +414,163 @@ export const useReturnRentalHttpControllerSettle = <TError = ApiErrorResponseDto
       return useMutation(getReturnRentalHttpControllerSettleMutationOptions(options), queryClient);
     }
     /**
+ * @summary Edit an OPEN rental (owner-only, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list
+ */
+export const updateRentalHttpControllerUpdate = (
+    id: string,
+    updateRentalRequestDto: UpdateRentalRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<IdResponse>(
+      {url: `/api/v1/rentals/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateRentalRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getUpdateRentalHttpControllerUpdateMutationOptions = <TError = ApiErrorResponseDto | UpdateRentalOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRentalHttpControllerUpdate>>, TError,{id: string;data: UpdateRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRentalHttpControllerUpdate>>, TError,{id: string;data: UpdateRentalRequestDto}, TContext> => {
+
+const mutationKey = ['updateRentalHttpControllerUpdate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRentalHttpControllerUpdate>>, {id: string;data: UpdateRentalRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateRentalHttpControllerUpdate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRentalHttpControllerUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof updateRentalHttpControllerUpdate>>>
+    export type UpdateRentalHttpControllerUpdateMutationBody = UpdateRentalRequestDto
+    export type UpdateRentalHttpControllerUpdateMutationError = ApiErrorResponseDto | UpdateRentalOutcomeDto
+
+    /**
+ * @summary Edit an OPEN rental (owner-only, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list
+ */
+export const useUpdateRentalHttpControllerUpdate = <TError = ApiErrorResponseDto | UpdateRentalOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRentalHttpControllerUpdate>>, TError,{id: string;data: UpdateRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateRentalHttpControllerUpdate>>,
+        TError,
+        {id: string;data: UpdateRentalRequestDto},
+        TContext
+      > => {
+      return useMutation(getUpdateRentalHttpControllerUpdateMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary One rental in full (FR-RENT-12): customer, dates, dresses with agreed prices and calendar blocks, discount, notes, status
+ */
+export const getRentalHttpControllerGet = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<RentalDetailDto>(
+      {url: `/api/v1/rentals/${id}`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getGetRentalHttpControllerGetQueryKey = (id: string,) => {
+    return [
+    `/api/v1/rentals/${id}`
+    ] as const;
+    }
+
+
+export const getGetRentalHttpControllerGetQueryOptions = <TData = Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError = ApiErrorResponseDto>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRentalHttpControllerGetQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRentalHttpControllerGet>>> = ({ signal }) => getRentalHttpControllerGet(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetRentalHttpControllerGetQueryResult = NonNullable<Awaited<ReturnType<typeof getRentalHttpControllerGet>>>
+export type GetRentalHttpControllerGetQueryError = ApiErrorResponseDto
+
+
+export function useGetRentalHttpControllerGet<TData = Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError = ApiErrorResponseDto>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRentalHttpControllerGet>>,
+          TError,
+          Awaited<ReturnType<typeof getRentalHttpControllerGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRentalHttpControllerGet<TData = Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError = ApiErrorResponseDto>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRentalHttpControllerGet>>,
+          TError,
+          Awaited<ReturnType<typeof getRentalHttpControllerGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRentalHttpControllerGet<TData = Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError = ApiErrorResponseDto>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary One rental in full (FR-RENT-12): customer, dates, dresses with agreed prices and calendar blocks, discount, notes, status
+ */
+
+export function useGetRentalHttpControllerGet<TData = Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError = ApiErrorResponseDto>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRentalHttpControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetRentalHttpControllerGetQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+/**
  * @summary Is the dress free for [startDate, endDate]? (cleaning buffer included)
  */
 export const checkAvailabilityHttpControllerCheck = (

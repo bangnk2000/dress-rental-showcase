@@ -121,6 +121,41 @@
   "errors": {
     "rentalNotFound": "Lượt thuê này không còn tồn tại. Danh sách đã được làm mới."
   },
+  "detail": {
+    "title": "Lượt thuê của {{customer}}",
+    "info": {
+      "phone": "Điện thoại",
+      "period": "Thời gian thuê",
+      "blockedUntil": "Giữ váy tới hết",
+      "blockedUntilHint": "Đã tính thời gian giặt ủi sau ngày trả.",
+      "notBlocking": "Đã giải phóng lịch",
+      "discount": "Giảm giá",
+      "expectedFee": "Tiền thuê dự kiến",
+      "expectedFeeHint": "Tạm tính {{subtotal}} trừ giảm giá {{discount}}. Tiền cọc tính riêng.",
+      "createdAt": "Tạo lúc",
+      "notes": "Ghi chú",
+      "noNotes": "Không có ghi chú."
+    },
+    "dresses": {
+      "title": "Váy trong lượt thuê",
+      "agreedPrice": "Giá thoả thuận"
+    },
+    "actions": {
+      "edit": "Sửa đơn",
+      "cancel": "Huỷ",
+      "payments": "Tiền",
+      "back": "← Danh sách lượt thuê"
+    }
+  },
+  "edit": {
+    "title": "Sửa lượt thuê",
+    "submit": "Lưu thay đổi",
+    "success": "Đã cập nhật lượt thuê.",
+    "error": "Không lưu được thay đổi. Vui lòng thử lại.",
+    "notAllowed": "Không sửa được: lượt thuê đang ở trạng thái \"{{status}}\".",
+    "closed": "Lượt thuê đã đóng — không sửa được nữa.",
+    "backToDetail": "Xem lượt thuê"
+  },
   "collect": {
     "title": "Ghi nhận tiền đã thu",
     "submit": "Ghi nhận",

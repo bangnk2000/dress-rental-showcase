@@ -47,6 +47,10 @@ files here.
   renames FE hooks — deliberate breaking change only.
 - Swagger config is SHARED between `/docs` and the emit script via `src/app.setup.ts` — never
   configure swagger anywhere else.
+- Route ORDER is contract too: Express matches in registration order, so a `GET <ctx>/:id`
+  controller must be listed AFTER its literal siblings in the module (`rentals/today-board`
+  before `rentals/:id` — `GetRentalHttpController` is last for that reason, and ParseUUIDPipe
+  would 400 the board otherwise).
 - `openapi:emit` must stay OFFLINE: `OPENAPI_EMIT=1` swaps the DB pool for a throwing stub
   (`libs/db/database.module.ts`). If emit ever needs infra, fix the eager provider — don't
   weaken the stub.

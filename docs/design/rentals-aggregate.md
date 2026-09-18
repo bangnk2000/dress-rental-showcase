@@ -1,6 +1,6 @@
 # rentals — Tactical Design
 
-> Status: **as-built 2026-09-03** (FR-RENT-11 giảm giá; 2026-08-10: ADR 0001 + BR-1/2/3 proof tests trên Postgres thật + FR-RENT-09 phí trễ hạn + FR-RENT-10 pickup gate) · SRS: FR-RENT-01..11, BR-1..3, BR-5..6 · Context **Core**
+> Status: **as-built 2026-09-18** (FR-RENT-12/13 chi tiết + sửa đơn owner-only; 2026-09-03: FR-RENT-11 giảm giá; 2026-08-10: ADR 0001 + BR-1/2/3 proof tests trên Postgres thật + FR-RENT-09 phí trễ hạn + FR-RENT-10 pickup gate) · SRS: FR-RENT-01..13, BR-1..3, BR-5..6 · Context **Core**
 
 ## Vai trò & ranh giới
 
@@ -26,9 +26,10 @@ Aggregate trải **2 bảng** (`rentals` + `rental_items`) — repository overri
 | booked | `markPickedUp(now)` | out | FR-RENT-04 |
 | out | `markReturned(now)` | returned | **CHỈ từ out** (FR-RENT-10 bỏ lối tắt booked→returned); items TIẾP TỤC block hết buffer = "đang vệ sinh" (BR-5) |
 | booked, out | `cancel(now)` | cancelled | `item.unblock(now)` từng item → giải phóng lịch, giữ history (FR-RENT-06). Đơn `out` (và cả `booked`) chỉ huỷ được khi **sổ tiền TRỐNG** — check dưới row lock trong `saveCancelled` (repository), race với record-collection lấy cùng lock nên take turns |
+| booked, out | `update(changes, now, buffer)` | *(không đổi)* | **FR-RENT-13** (owner-only): viết lại NỘI DUNG — khách, kỳ thuê, item (reconcile theo id: giữ/thêm/bỏ — bỏ = XOÁ dòng), giá item, giảm giá, ghi chú; mọi item `reblock` = kỳ mới + buffer HIỆN HÀNH; `validate()` chạy lại (giảm giá ≤ Σ mới). KHÔNG đổi status. `saveUpdated` đọc lại status dưới row lock → `RentalStateChangedError` nếu đơn vừa bị đóng |
 
 Mọi transition khác → `Err(...NotAllowedError)` → controller render outcome
-`rejected_{pickup,return,cancel}_not_allowed` (422) kèm `currentStatus`; sổ có tiền →
+`rejected_{pickup,return,cancel,update}_not_allowed` (422) kèm `currentStatus`; sổ có tiền →
 `rejected_cancel_has_payments` ([ADR 0001](../adr/0001-outcome-model-at-the-http-boundary.md) §3).
 
 ## Bảng invariant-enforcement (mục load-bearing — spec 14 §3.1)
@@ -40,6 +41,8 @@ Mọi transition khác → `Err(...NotAllowedError)` → controller render outco
 | BR-3: status hợp lệ | State machine trong entity | `CHECK (status IN (...))` | outcome `rejected_*_not_allowed` (422) qua state machine; `CHECK` chỉ là lưới cuối | unit test entity (có) + e2e: UPDATE status rác bị `CHECK` chặn |
 | Giá item ≥ 0 | `Money` VO | `CHECK (price >= 0)` | 400 envelope | unit VO (có) |
 | FR-RENT-11: giảm giá ≥ 0 và ≤ Σ giá item | `Money` VO (≥ 0) + `RentalEntity.validate()` (≤ Σ — rule trải 2 bảng nên chỉ aggregate giữ được) | `CHECK (discount_amount >= 0)` (migration 1755400000000) | 400 envelope: `GENERIC.VALIDATION` (âm, DTO) / `GENERIC.ARGUMENT_INVALID` (vượt Σ) | unit `create-rental.service.spec.ts` (4 ca) + `test:e2e` → `rental-discount.e2e-spec.ts`: lưu + list đọc lại, vượt Σ → 400 không ghi gì, UPDATE âm bị CHECK chặn |
+| BR-1 **xuyên suốt sửa đơn** (FR-RENT-13): kỳ block MỚI của mọi item không giao với đơn khác | `findBlockedDressIds(…, { excludeRentalId })` pre-check trên kỳ mới + buffer, bỏ qua dòng của chính đơn | CÙNG `EXCLUDE rental_items_no_overlap` — UPDATE một dòng không bị so với chính nó, nhưng bị so với mọi dòng khác | `rejected_dress_unavailable` (422) + `dressIds` — pre-check LẪN race (`saveUpdated` → `RentalItemsOverlapError` → cùng outcome) | `rental-update.e2e-spec.ts`: gia hạn trùng đơn khác 422 / vào chỗ trống 200 (block của mọi item dời theo), race PATCH-vs-POST đúng một bên thắng, raw UPDATE `blocked_period` chồng lên đơn khác bị EXCLUDE chặn |
+| FR-RENT-13: chỉ đơn MỞ mới sửa được, và đơn đã đóng không bị bản sửa cũ mở lại | `RentalEntity.update()` + service pre-check `isOpen` | Không có constraint tĩnh diễn đạt được "dòng đã đóng thì bất biến" → **row lock + đọc lại status** trong `saveUpdated` (`SELECT … FOR UPDATE`, cùng lock với `saveCancelled`/`saveReturned`/record-collection) | `rejected_update_not_allowed` (422) + `currentStatus` — cả pre-check lẫn đường lock | unit `update-rental.service.spec.ts` (đóng trước / đóng dưới lock) + e2e: cancel rồi PATCH → 422, row và item không đổi |
 
 ## Phí trễ hạn (FR-RENT-09)
 
@@ -68,6 +71,20 @@ EXCLUDE đóng; hai staff cùng thao tác một đơn là kịch bản chấp nh
 | Read | `RentalListItemDto.discountAmount` (list); today-board không mang (không có màn hình tiền ở đó) |
 | FE | form tạo đơn: ô "Giảm giá (VND)" đọc lại số đã gộp nhóm; picker hiện Tạm tính / Giảm / Tiền thuê sau giảm; vượt tạm tính bị chặn ngay ở form (`form.errors.discountTooLarge`) trước khi gọi API |
 
+## Sửa đơn (FR-RENT-13) + chi tiết đơn (FR-RENT-12)
+
+| Mục | Chốt |
+| --- | --- |
+| Quyền | `PATCH /rentals/:id` = `rental:update`, policy **owner-only** (quyền ghi owner-only đầu tiên của rentals); staff → 403 envelope (guard). `GET /rentals/:id` = read, mọi nhân viên |
+| Trạng thái | Chỉ `booked`/`out`; update KHÔNG đổi status (không auto-`out` như create — §6.Q3 của spec) |
+| Item | Danh tính = váy: giữ lại → cùng dòng + giá thoả thuận (trừ khi gửi `price`); thêm mới → dòng mới + giá chuẩn (trừ khi gửi `price`); bỏ → **XOÁ dòng** (`writeAggregate` xoá các id không còn trong aggregate ở mọi đường upsert — các đường cũ không bớt item nên no-op). Váy giữ lại đã retired KHÔNG chặn; váy thêm mới retired → `rejected_dress_retired` |
+| Lịch block | Sau sửa, MỌI item = kỳ mới + `CLEANING_BUFFER_DAYS` hiện hành (kể cả khi chỉ sửa tên) |
+| Concurrency | Sửa vs đóng đơn: row lock + đọc lại status (`saveUpdated`); sửa vs đặt/sửa đơn khác cùng váy: EXCLUDE; hai owner cùng sửa một đơn: last-write (MVP) |
+| Read | `RentalDetailDto` = siêu tập `RentalListItemDto` (+ `updatedAt`, `dresses[].blockedUntilDate/blocking`) — dialog tiền dùng chung không cần adapter. Controller get-rental đăng ký CUỐI module (route `:id` sau `today-board`) |
+| FE | `/rentals/:id` (mọi nhân viên; nút Sửa chỉ owner), `/rentals/:id/edit` (owner; `RentalForm` dùng chung với `/rentals/new`; picker bỏ qua conflict có `rentalId` = đơn đang sửa) |
+
+Chi tiết + các quyết định mặc định chờ chủ tiệm xác nhận: [rentals/update-rental.md](./rentals/update-rental.md) §6.
+
 ## Persistence sketch
 
 `rentals` (id, customer_name, customer_phone, period **daterange**, status, notes, discount_amount, timestamps) ·
@@ -84,7 +101,7 @@ Quy ước daterange: domain dùng inclusive `[start,end]`; Postgres normalize h
 
 ## Domain events
 
-`RentalCreated / PickedUp / Returned / Cancelled` — publish trong transaction, **0 consumer**
+`RentalCreated / PickedUp / Returned / Cancelled / Updated` — publish trong transaction, **0 consumer**
 (hạ tầng chờ nhu cầu thật; không xây listener/outbox trước khi có — spec 01 §8).
 
 ## Open questions

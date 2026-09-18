@@ -121,6 +121,41 @@
   "errors": {
     "rentalNotFound": "This rental no longer exists. The list has been refreshed."
   },
+  "detail": {
+    "title": "Rental of {{customer}}",
+    "info": {
+      "phone": "Phone",
+      "period": "Rental period",
+      "blockedUntil": "Dresses held through",
+      "blockedUntilHint": "Cleaning time after the return date included.",
+      "notBlocking": "Calendar freed",
+      "discount": "Discount",
+      "expectedFee": "Expected rental fee",
+      "expectedFeeHint": "Subtotal {{subtotal}} minus discount {{discount}}. The deposit is separate.",
+      "createdAt": "Created",
+      "notes": "Notes",
+      "noNotes": "No notes."
+    },
+    "dresses": {
+      "title": "Dresses in this rental",
+      "agreedPrice": "Agreed price"
+    },
+    "actions": {
+      "edit": "Edit rental",
+      "cancel": "Cancel",
+      "payments": "Money",
+      "back": "← Rentals list"
+    }
+  },
+  "edit": {
+    "title": "Edit rental",
+    "submit": "Save changes",
+    "success": "Rental updated.",
+    "error": "Could not save the changes. Please try again.",
+    "notAllowed": "Cannot edit: the rental is \"{{status}}\".",
+    "closed": "This rental is closed — it can no longer be edited.",
+    "backToDetail": "View rental"
+  },
   "collect": {
     "title": "Record money collected",
     "submit": "Record",

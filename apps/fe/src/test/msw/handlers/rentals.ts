@@ -16,14 +16,17 @@ import type {
   PaymentDto,
   PaymentListResponseDto,
   RecordCollectionRequestDto,
+  RentalDetailDto,
   RentalListItemDto,
   RentalListResponseDto,
   ReturnRentalRequestDto,
   TodayBoardRentalDto,
   TodayBoardResponseDto,
+  UpdateRentalRequestDto,
 } from '@/api/generated/model';
 import {
   BookedRangeDtoStatus,
+  RentalDetailDtoStatus,
   RentalListItemDtoStatus,
   TodayBoardRentalDtoStatus,
 } from '@/api/generated/model';
@@ -51,6 +54,8 @@ let rentalPayments = new Map<string, PaymentDto[]>();
 let lateFeeQuotes = new Map<string, LateFeeQuoteResponseDto>();
 let lastCollectBody: RecordCollectionRequestDto | null = null;
 let lastCollectRentalId: string | null = null;
+let rentalDetails = new Map<string, RentalDetailDto>();
+let lastUpdateRental: { rentalId: string; body: UpdateRentalRequestDto } | null = null;
 
 /** Dresses that already have an overlapping booking — POST /rentals answers 409. */
 export function seedBlockedDresses(dressIds: string[]): void {
@@ -205,6 +210,43 @@ export function getLastCollectRentalId(): string | null {
   return lastCollectRentalId;
 }
 
+export function makeRentalDetail(overrides: Partial<RentalDetailDto> = {}): RentalDetailDto {
+  return {
+    rentalId: 'rental-1',
+    customerName: 'Nguyễn Thị Hoa',
+    customerPhone: '0903123456',
+    status: RentalDetailDtoStatus.booked,
+    startDate: '2099-08-01',
+    endDate: '2099-08-03',
+    notes: null,
+    discountAmount: 0,
+    createdAt: '2099-07-30T09:00:00.000Z',
+    updatedAt: '2099-07-30T09:00:00.000Z',
+    dresses: [
+      {
+        dressId: 'd1',
+        code: 'VD-001',
+        name: 'Váy cưới ren trắng',
+        depositAmount: 3_000_000,
+        agreedPrice: 1_500_000,
+        blockedUntilDate: '2099-08-05',
+        blocking: true,
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/** The rental served for GET /rentals/:id (FR-RENT-12); an unseeded id is the 404 envelope. */
+export function seedRentalDetail(detail: RentalDetailDto): void {
+  rentalDetails.set(detail.rentalId, detail);
+}
+
+/** The id + body of the most recent PATCH /rentals/:id (FR-RENT-13). */
+export function getLastUpdateRental(): { rentalId: string; body: UpdateRentalRequestDto } | null {
+  return lastUpdateRental;
+}
+
 /** The same arithmetic the API projection does, so a seeded ledger and its summary agree. */
 function summaryOf(payments: readonly PaymentDto[]): PaymentListResponseDto['summary'] {
   const total = (kind: PaymentDto['kind']): number =>
@@ -236,6 +278,8 @@ export function resetRentals(): void {
   rentalPayments = new Map();
   lastCollectBody = null;
   lastCollectRentalId = null;
+  rentalDetails = new Map();
+  lastUpdateRental = null;
 }
 
 function addDaysIso(iso: string, days: number): string {
@@ -371,5 +415,28 @@ export const rentalsHandlers: HttpHandler[] = [
     }
     const response: IdResponse = { id: 'rental-1' };
     return HttpResponse.json(response, { status: 201 });
+  }),
+
+  // GET /api/v1/rentals/:id — the seeded detail, or the 404 fault envelope. AFTER today-board
+  // on purpose: MSW takes the first matching handler and `:id` would swallow the literal path.
+  http.get('/api/v1/rentals/:id', ({ params }) => {
+    const detail = rentalDetails.get(params.id as string);
+    return detail
+      ? HttpResponse.json(detail)
+      : HttpResponse.json(
+          { error: { code: 'GENERIC.NOT_FOUND', message: 'Rental not found' } },
+          { status: 404 },
+        );
+  }),
+
+  // PATCH /api/v1/rentals/:id — 200 IdResponse, capturing what was sent. Rejections are seeded
+  // per test via server.use overrides.
+  http.patch('/api/v1/rentals/:id', async ({ params, request }) => {
+    lastUpdateRental = {
+      rentalId: params.id as string,
+      body: (await request.json()) as UpdateRentalRequestDto,
+    };
+    const response: IdResponse = { id: params.id as string };
+    return HttpResponse.json(response);
   }),
 ];

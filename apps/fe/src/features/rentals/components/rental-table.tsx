@@ -49,7 +49,15 @@ export function RentalTable({ rentals, onCancel, onShowPayments }: RentalTablePr
       <TableBody>
         {rentals.map((rental) => (
           <TableRow key={rental.rentalId}>
-            <TableCell className="font-medium">{rental.customerName}</TableCell>
+            <TableCell className="font-medium">
+              {/* The row's identity opens the rental (FR-RENT-12) — no extra "view" button. */}
+              <Link
+                to={`/rentals/${rental.rentalId}`}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                {rental.customerName}
+              </Link>
+            </TableCell>
             <TableCell>
               <a href={`tel:${rental.customerPhone}`}>{rental.customerPhone}</a>
             </TableCell>

@@ -20,7 +20,7 @@ Bốn bounded context: `identity` (đăng nhập/quyền), `catalog` (danh mục
 | Vai trò | Quyền |
 | --- | --- |
 | `staff` | Toàn bộ nghiệp vụ hằng ngày: danh mục, tạo/lấy/trả/hủy đơn, xem tiền |
-| `owner` | Như staff + các hành động rủi ro cao: **retire váy**, **miễn giảm phí trễ**, **quản lý tài khoản** (owner-only) |
+| `owner` | Như staff + các hành động rủi ro cao: **retire váy**, **miễn giảm phí trễ**, **quản lý tài khoản**, **sửa đơn** (owner-only) |
 
 AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/authz`.
 
@@ -114,6 +114,18 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   (sổ vẫn ghi số thực thu). Không được vượt Σ giá item (aggregate từ chối → 400
   `GENERIC.ARGUMENT_INVALID`); âm bị DTO và `CHECK (discount_amount >= 0)` chặn. Danh sách đơn trả
   `discountAmount`; tiền thuê GỢI Ý khi ghi nhận thu = Σ giá thoả thuận − giảm giá.
+- **FR-RENT-12** Chi tiết đơn (`GET /rentals/:id`, mọi nhân viên): khách, ngày, từng váy với giá
+  thoả thuận và ngày giữ váy tới (kể cả buffer), giảm giá, tiền thuê dự kiến, **ghi chú** (lần đầu
+  hiển thị), trạng thái, sổ tiền; hành động Tiền / Huỷ (đơn mở) / Sửa đơn (owner). Tên khách trên
+  danh sách là link tới chi tiết.
+- **FR-RENT-13** Sửa đơn (`PATCH /rentals/:id`, **owner-only** — policy `rental:update`): viết lại
+  nội dung của đơn còn MỞ (`booked|out`): khách, ngày, danh sách váy (thay thế — váy giữ lại giữ
+  dòng + giá thoả thuận, váy thêm mới lấy giá chuẩn, váy bỏ bị XOÁ dòng), giá từng váy, giảm giá,
+  ghi chú. KHÔNG đổi trạng thái (không auto-`out` như khi tạo). Sau khi sửa, mọi váy block = kỳ mới
+  + buffer hiện hành, và BR-1 phải đúng xuyên suốt: pre-check bỏ qua chính đơn, race → cùng
+  `rejected_dress_unavailable`. Đơn `returned`/`cancelled` → `rejected_update_not_allowed`
+  (+ `currentStatus`), kể cả khi việc đóng đơn chen vào giữa lúc tải và lúc lưu (đọc lại dưới row
+  lock). Quyết định + lý do: [design/rentals/update-rental.md](./design/rentals/update-rental.md) §6.
 
 ### payments
 - **FR-PAY-01** Xem các dòng tiền của một đơn (`GET /rentals/:id/payments`), kèm `summary` cộng
@@ -176,6 +188,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-RENT-10 (siết FR-RENT-05, nới FR-RENT-06) | `rentals/pickup-before-return` | [rentals/pickup-before-return.md](./design/rentals/pickup-before-return.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
 | FR-CAT-08 | `catalog/duplicate-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) §Nhân bản | pass |
 | FR-RENT-11 | `rentals/rental-discount` | [rentals-aggregate.md](./design/rentals-aggregate.md) §Giảm giá | pass |
+| FR-RENT-12, 13 | `rentals/update-rental` | [rentals/update-rental.md](./design/rentals/update-rental.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Sửa đơn | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

@@ -49,6 +49,11 @@ interface DressPickerProps {
   blocked: BlockedDresses | null;
   /** VND taken off the subtotal (FR-RENT-11), already parsed by the form; 0 = none. */
   discount: number;
+  /**
+   * When editing a rental (FR-RENT-13): its own bookings are what the edit replaces, so they
+   * are not conflicts — without this every kept dress reads "Vướng lịch" against itself.
+   */
+  ignoreRentalId?: string;
 }
 
 /**
@@ -64,6 +69,7 @@ export function DressPicker({
   period,
   blocked,
   discount,
+  ignoreRentalId,
 }: DressPickerProps) {
   const { t } = useTranslation('rentals');
   const [search, setSearch] = useState('');
@@ -136,6 +142,7 @@ export function DressPicker({
               period={period}
               rejected={blocked?.dressIds.includes(dress.id) ? blocked.reason : null}
               onRemove={onRemove}
+              {...(ignoreRentalId ? { ignoreRentalId } : {})}
             />
           ))}
           <li className="space-y-1 p-2 text-sm">
@@ -176,11 +183,13 @@ function SelectedDressRow({
   period,
   rejected,
   onRemove,
+  ignoreRentalId,
 }: {
   dress: SelectedDress;
   period: PickerPeriod | null;
   rejected: BlockedDresses['reason'] | null;
   onRemove: (dressId: string) => void;
+  ignoreRentalId?: string;
 }) {
   const { t } = useTranslation('rentals');
   const availability = useCheckAvailabilityHttpControllerCheck(
@@ -189,7 +198,15 @@ function SelectedDressRow({
     { query: { enabled: period !== null } },
   );
   const result = period ? availability.data : undefined;
-  const conflict = result?.conflicts[0];
+  // The rental being edited is not its own competitor: its bookings drop out of the verdict.
+  // A "busy" that came ONLY from them becomes free; a busy for another reason (retired) stays.
+  const conflicts = (result?.conflicts ?? []).filter(
+    (range) => ignoreRentalId === undefined || range.rentalId !== ignoreRentalId,
+  );
+  const available = result
+    ? result.available || (result.conflicts.length > 0 && conflicts.length === 0)
+    : undefined;
+  const conflict = conflicts[0];
 
   return (
     <li className={cn('space-y-1 p-2', rejected && 'bg-destructive/5')}>
@@ -201,9 +218,9 @@ function SelectedDressRow({
           <span className="whitespace-nowrap">{formatVnd(dress.rentalPrice)}</span>
         </span>
         <div className="flex shrink-0 items-center gap-2">
-          {result ? (
-            <Badge variant={result.available ? 'secondary' : 'destructive'}>
-              {result.available ? t('picker.availability.free') : t('picker.availability.busy')}
+          {available !== undefined ? (
+            <Badge variant={available ? 'secondary' : 'destructive'}>
+              {available ? t('picker.availability.free') : t('picker.availability.busy')}
             </Badge>
           ) : null}
           <Button type="button" variant="ghost" size="sm" onClick={() => onRemove(dress.id)}>
@@ -213,7 +230,7 @@ function SelectedDressRow({
       </div>
       {/* Why it is busy: the blocking booking runs to blockedUntilDate, cleaning buffer included —
           the same number the dress calendar shades. */}
-      {result && !result.available && conflict ? (
+      {available === false && conflict ? (
         <p className="text-sm text-destructive">
           {t('picker.availability.busyUntil', {
             date: formatDate(conflict.blockedUntilDate),

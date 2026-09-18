@@ -20,6 +20,7 @@ function makeRentalRepo(overrides: Partial<RentalRepositoryPort> = {}): RentalRe
     save: jest.fn().mockResolvedValue(undefined),
     saveReturned: jest.fn().mockResolvedValue(undefined),
     saveCancelled: jest.fn().mockResolvedValue(undefined),
+    saveUpdated: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(null),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
     nextId: jest.fn(() => `00000000-0000-4000-8000-00000000010${seq++}`),

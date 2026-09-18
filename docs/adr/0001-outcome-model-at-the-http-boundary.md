@@ -117,6 +117,9 @@ Quyền quản lý user chặn ở guard (`user:manage`, owner-only, fail-closed
 | `rentals/cancel-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-06 |
 | `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` (từ FR-RENT-10 chỉ còn `returned`/`cancelled` — đơn `out` sổ trống được huỷ) | `currentStatus` | FR-RENT-06, FR-RENT-10, BR-3 |
 | `rentals/cancel-rental` | `RentalCancelHasPaymentsError` | `rejected_cancel_has_payments` — sổ có tiền thì lối ra duy nhất là return | — | FR-RENT-10 |
+| `rentals/update-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-13 |
+| `rentals/update-rental` | `RentalUpdateNotAllowedError` | `rejected_update_not_allowed` — đơn `returned`/`cancelled`; pre-check LẪN đọc lại dưới row lock (`RentalStateChangedError` của repository) ra cùng mã | `currentStatus` | FR-RENT-13, BR-3 |
+| `rentals/update-rental` | `RentalDressNotFoundError` \| `RentalDressRetiredError` (chỉ váy THÊM MỚI) \| `DressUnavailableError` (pre-check bỏ qua dòng của chính đơn, VÀ đường race) | `rejected_dress_not_found` \| `rejected_dress_retired` \| `rejected_dress_unavailable` — dùng lại mã của create: cùng luật, cùng mã | `dressIds[]` | FR-RENT-13, BR-1 |
 
 ### payments
 
@@ -160,6 +163,9 @@ UNIQUE thành `CollectionConflictError`, service đọc lại sổ rồi trả �
 - Denial của `PoliciesGuard` (permission chưa đăng ký / role sai) → **403 envelope**
   `GENERIC.FORBIDDEN`. Repo này chưa có denial nghiệp vụ có tên nào (kiểu "không phải chủ đơn"),
   nên **chưa** có outcome 403 nào. Khi có, nó là `{ status: 'forbidden', reason }` (403).
+- `PATCH /rentals/:id` (FR-RENT-13, 2026-09-18): TOÀN BỘ endpoint là của owner (`rental:update`),
+  không có nhánh nào trong use case phân biệt theo vai trò → staff gọi = guard chặn = 403
+  **envelope**, giống `user:manage`/`dress:retire`. `GET /rentals/:id` là read: 404 envelope.
 
 ## 4. UI state matrix (FE + qr-admin)
 
@@ -193,6 +199,9 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_waiver_note_required` | GIỮ dialog, focus field Ghi chú + message bắt buộc lý do | `today:errors.waiverNoteRequired` |
 | `rejected_cancel_not_allowed` | toast nêu `currentStatus` + invalidate list/board | `rentals:cancel.notAllowed` / `today:cancel.notAllowed` |
 | `rejected_cancel_has_payments` | toast "sổ đã có tiền — đi đường return" + invalidate | `rentals:cancel.hasPayments` / `today:cancel.hasPayments` |
+| `rejected_update_not_allowed` | toast nêu `currentStatus` + invalidate list/board/detail + điều hướng về `/rentals/:id` (không còn gì để sửa) | `rentals:edit.notAllowed` |
+| `rejected_dress_not_found` / `_retired` / `_unavailable` (update) | GIỮ form sửa, message form-level + đánh dấu đúng hàng váy — CÙNG state với create vì `RentalForm` dùng chung | `rentals:form.errors.*` |
+| `rejected_rental_not_found` (update) | toast + invalidate + điều hướng `/rentals` | `rentals:errors.rentalNotFound` |
 | `rejected_deposit_already_recorded` / `rejected_rental_fee_already_recorded` | GIỮ dialog, field error trên ô tương ứng + invalidate sổ của đơn (danh sách phía trên hiện ngay dòng đã có) | `rentals:collect.errors.alreadyRecorded` |
 | `rejected_nothing_to_record` | message trên ô Tiền cọc; thực tế nút đã disabled khi cả hai ô trống | `rentals:collect.errors.nothingToRecord` |
 | `rejected_rental_closed` | đóng dialog, toast nêu `currentStatus` + invalidate list | `rentals:collect.rentalClosed` |

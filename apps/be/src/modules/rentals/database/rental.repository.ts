@@ -14,6 +14,7 @@ import { LOGGER_PORT, LoggerPort } from '../../../libs/ports/logger.port';
 import { DepositBasisChangedError } from '../application/ports/deposit-basis-changed.error';
 import { LedgerNotEmptyError } from '../application/ports/ledger-not-empty.error';
 import { RentalItemsOverlapError } from '../application/ports/rental-overlap.error';
+import { RentalStateChangedError } from '../application/ports/rental-state-changed.error';
 import { RentalRepositoryPort } from '../application/ports/rental.repository.port';
 import { RentalEntity } from '../domain/rental.entity';
 import { RentalPeriod } from '../domain/rental-period.value-object';
@@ -31,6 +32,9 @@ import {
 const dressIdSchema = z.object({ dress_id: z.string() });
 const collectedDepositSchema = z.object({ collected: z.number().int() });
 const movementCountSchema = z.object({ movements: z.number().int() });
+const rentalStatusSchema = z.object({
+  status: z.enum(['booked', 'out', 'returned', 'cancelled']),
+});
 
 /**
  * The aggregate spans rentals + rental_items, so the single-table helpers of
@@ -111,6 +115,26 @@ export class RentalRepository
     });
   }
 
+  /**
+   * An edit (FR-RENT-13) is only legal while the rental is OPEN, and "open" can change right up
+   * until this write: staff may cancel or return the rental while the owner has the edit form
+   * open. Re-read HERE, under the rental's row lock — the very lock saveCancelled/saveReturned
+   * and record-collection take — so the two operations take turns: either the close commits
+   * first and this read refuses the stale aggregate, or the edit commits first and the close
+   * runs on the edited rental. Writing the stale aggregate would set status back to booked and
+   * items back to blocking — a closed rental silently reopened.
+   */
+  async saveUpdated(entity: RentalEntity): Promise<void> {
+    await this.writeAggregate(entity, true, async (conn, record) => {
+      const { status } = await conn.one(sql.type(rentalStatusSchema)`
+        SELECT status FROM rentals WHERE id = ${record.rental.id} FOR UPDATE
+      `);
+      if (status !== 'booked' && status !== 'out') {
+        throw new RentalStateChangedError(status);
+      }
+    });
+  }
+
   override async findOneById(id: AggregateID): Promise<RentalEntity | null> {
     // ::text keeps ranges as literals for the mapper — slonik would otherwise
     // hand back parsed range objects that daterange.ts does not speak.
@@ -131,13 +155,20 @@ export class RentalRepository
   async findBlockedDressIds(
     dressIds: string[],
     blockedPeriod: RentalPeriod,
+    options: { excludeRentalId?: string } = {},
   ): Promise<string[]> {
     const range = toDateRangeLiteral(blockedPeriod.start, blockedPeriod.end);
+    // An edit replaces the rental's own booking, so its own rows are not a conflict (the EXCLUDE
+    // constraint agrees: an updated row is never checked against itself).
+    const notSelf = options.excludeRentalId
+      ? sql.fragment`AND rental_id <> ${options.excludeRentalId}`
+      : sql.fragment``;
     const rows = await this.pool.any(sql.type(dressIdSchema)`
       SELECT DISTINCT dress_id FROM rental_items
       WHERE blocking
         AND dress_id = ANY(${sql.array(dressIds, 'uuid')})
         AND blocked_period && ${range}::daterange
+        ${notSelf}
     `);
     return rows.map((row) => row.dress_id);
   }
@@ -151,6 +182,13 @@ export class RentalRepository
     try {
       await this.writeInTransaction(entity, async (conn, record) => {
         await precondition?.(conn, record);
+        if (upsert) {
+          // The aggregate is the truth: items it no longer holds leave the table (an edit dropped
+          // a dress, FR-RENT-13 §6.Q5). Deleted BEFORE the upserts so a removed row can never
+          // collide with what replaces it. Every pre-existing save path keeps all its items, so
+          // for them this is a no-op.
+          await this.deleteRemovedItems(conn, record);
+        }
         await this.writeRentalRow(conn, record.rental, upsert);
         for (const item of record.items) {
           await this.writeItemRow(conn, item, upsert);
@@ -165,6 +203,18 @@ export class RentalRepository
       }
       throw error;
     }
+  }
+
+  private async deleteRemovedItems(
+    conn: DatabaseTransactionConnection,
+    record: RentalModel,
+  ): Promise<void> {
+    const keptIds = record.items.map((item) => item.id);
+    await conn.query(sql.unsafe`
+      DELETE FROM rental_items
+      WHERE rental_id = ${record.rental.id}
+        AND NOT (id = ANY(${sql.array(keptIds, 'uuid')}))
+    `);
   }
 
   private async writeRentalRow(

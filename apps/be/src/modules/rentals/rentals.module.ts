@@ -11,12 +11,16 @@ import { PickupRentalHttpController } from './commands/pickup-rental/pickup-rent
 import { PickupRentalService } from './commands/pickup-rental/pickup-rental.service';
 import { ReturnRentalHttpController } from './commands/return-rental/return-rental.http.controller';
 import { ReturnRentalService } from './commands/return-rental/return-rental.service';
+import { UpdateRentalHttpController } from './commands/update-rental/update-rental.http.controller';
+import { UpdateRentalService } from './commands/update-rental/update-rental.service';
 import { DressLookupAdapter } from './database/dress-lookup.adapter';
 import { PaymentRecorderAdapter } from './database/payment-recorder.adapter';
 import { RentalMapper } from './database/rental.mapper';
 import { RentalRepository } from './database/rental.repository';
 import { CheckAvailabilityHttpController } from './queries/check-availability/check-availability.http.controller';
 import { CheckAvailabilityQueryHandler } from './queries/check-availability/check-availability.query-handler';
+import { GetRentalHttpController } from './queries/get-rental/get-rental.http.controller';
+import { GetRentalQueryHandler } from './queries/get-rental/get-rental.query-handler';
 import { GetTodayBoardHttpController } from './queries/get-today-board/get-today-board.http.controller';
 import { GetTodayBoardQueryHandler } from './queries/get-today-board/get-today-board.query-handler';
 import { ListBookedRangesHttpController } from './queries/list-booked-ranges/list-booked-ranges.http.controller';
@@ -34,11 +38,15 @@ import './rentals.policies';
     CancelRentalHttpController,
     PickupRentalHttpController,
     ReturnRentalHttpController,
+    UpdateRentalHttpController,
     CheckAvailabilityHttpController,
     GetTodayBoardHttpController,
     ListBookedRangesHttpController,
     ListRentalsHttpController,
     QuoteLateFeeHttpController,
+    // LAST on purpose: its `GET rentals/:id` would otherwise shadow `GET rentals/today-board`
+    // (Express matches in registration order; ParseUUIDPipe would 400 the board).
+    GetRentalHttpController,
   ],
   providers: [
     RentalMapper,
@@ -46,6 +54,8 @@ import './rentals.policies';
     CancelRentalService,
     PickupRentalService,
     ReturnRentalService,
+    UpdateRentalService,
+    GetRentalQueryHandler,
     CheckAvailabilityQueryHandler,
     GetTodayBoardQueryHandler,
     ListBookedRangesQueryHandler,

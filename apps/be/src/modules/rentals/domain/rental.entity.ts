@@ -5,15 +5,22 @@ import { Money } from '../../../libs/ddd/money.value-object';
 import { LateFeeQuote } from './late-fee.value-object';
 import { RentalItemEntity } from './rental-item.entity';
 import { RentalPeriod } from './rental-period.value-object';
-import { CreateRentalProps, RentalProps, RentalStatus } from './rental.types';
+import {
+  CreateRentalProps,
+  RentalProps,
+  RentalStatus,
+  UpdateRentalProps,
+} from './rental.types';
 import { RentalCancelledDomainEvent } from './events/rental-cancelled.domain-event';
 import { RentalCreatedDomainEvent } from './events/rental-created.domain-event';
 import { RentalPickedUpDomainEvent } from './events/rental-picked-up.domain-event';
 import { RentalReturnedDomainEvent } from './events/rental-returned.domain-event';
+import { RentalUpdatedDomainEvent } from './events/rental-updated.domain-event';
 import {
   RentalCancelNotAllowedError,
   RentalPickupNotAllowedError,
   RentalReturnNotAllowedError,
+  RentalUpdateNotAllowedError,
 } from './rental.errors';
 
 export class RentalEntity extends AggregateRoot<RentalProps> {
@@ -53,6 +60,11 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
 
   get status(): RentalStatus {
     return this.props.status;
+  }
+
+  /** booked|out — the rental still has a future: money can be recorded and content edited. */
+  get isOpen(): boolean {
+    return this.props.status === 'booked' || this.props.status === 'out';
   }
 
   get period(): RentalPeriod {
@@ -129,6 +141,57 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
     }
     this.setUpdatedAt(now);
     this.addEvent(new RentalCancelledDomainEvent({ aggregateId: this.id }));
+    return Ok(undefined);
+  }
+
+  /**
+   * FR-RENT-13: the owner rewrites the CONTENT of an open rental — never its status, which
+   * pickup/return/cancel own (an edit that moves the start to today is not a handover: §6.Q3).
+   *
+   * Items are reconciled by id: a kept dress keeps its row and takes the given price, an added
+   * dress gets a fresh row, a dress missing from the list is dropped. Afterwards EVERY item blocks
+   * the (new) period + the CURRENT cleaning buffer (§6.Q9) — the interval the EXCLUDE constraint
+   * guards; the availability pre-check for it lives in the application layer, which can see other
+   * rentals. `validate()` runs again at the end: a discount above the new item total throws and
+   * nothing is persisted.
+   */
+  update(
+    changes: UpdateRentalProps,
+    now: Date,
+    cleaningBufferDays: number,
+  ): Result<void, RentalUpdateNotAllowedError> {
+    if (!this.isOpen) {
+      return Err(new RentalUpdateNotAllowedError(this.props.status));
+    }
+    if (changes.customerName !== undefined) this.props.customerName = changes.customerName;
+    if (changes.customerPhone !== undefined) this.props.customerPhone = changes.customerPhone;
+    if (changes.period !== undefined) this.props.period = changes.period;
+    if (changes.notes !== undefined) this.props.notes = changes.notes;
+    if (changes.discount !== undefined) this.props.discount = changes.discount;
+
+    const blockedPeriod = this.props.period.extendEndByDays(cleaningBufferDays);
+    if (changes.items !== undefined) {
+      const current = new Map(this.props.items.map((item) => [item.id, item]));
+      this.props.items = changes.items.map((input) => {
+        const kept = current.get(input.id);
+        if (kept) {
+          kept.reprice(input.price, now);
+          return kept;
+        }
+        return RentalItemEntity.create({ ...input, blockedPeriod }, now);
+      });
+    }
+    for (const item of this.props.items) {
+      item.reblock(blockedPeriod, now);
+    }
+    this.setUpdatedAt(now);
+    this.validate();
+    this.addEvent(
+      new RentalUpdatedDomainEvent({
+        aggregateId: this.id,
+        dressIds: this.props.items.map((item) => item.dressId),
+      }),
+    );
     return Ok(undefined);
   }
 
