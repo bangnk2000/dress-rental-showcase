@@ -22,10 +22,16 @@
   → 422, staff → 403 envelope, detail read, discount > Σ → 400) on real Postgres with
   `CLEANING_BUFFER_DAYS=2` · fe 117 vitest (+13) · check / lint / arch / both builds / qr-admin /
   root lint green · fe arch (d) + `contract:check` red only on the uncommitted regenerated client.
-- **NOT committed, not pushed, not deployed** — the owner did not ask; the working tree holds BE +
-  `packages/contract` + BOTH generated clients + FE + docs, to be committed TOGETHER (as always).
-  `init.sh` cannot pass until then (its first step is `git diff --exit-code packages/contract`);
-  every gate behind that step was run individually and is green.
+- Committed on master as **`baa74ab`** (BE + `packages/contract` + BOTH generated clients + FE +
+  docs in ONE commit) at the owner's request the next morning; after the commit `contract:check`
+  and `pnpm arch` went green as expected. **Pushed to origin** (`131e4ce..baa74ab`, origin had
+  already been brought up to 131e4ce by the owner) and **deployed to the LAN instance** with
+  `~/deploy-dress/localprod-deploy.sh` (log `localprod-deploy-20260919.log`): kept
+  `CLEANING_BUFFER_DAYS=1` / `LATE_FEE_PER_DRESS_PER_DAY=20000`, kept the DB (10 migrations, 140
+  dresses), pm2 `dress-api-local` restarted; probes on :3001 — `GET`/`PATCH /rentals/<uuid>` 401
+  (route registered), `today-board` 401, unknown route 404; nginx :80 serves the new bundle.
+  Playwright happy path on the dev stack: `1 passed (27.7s)` — the today board still works with
+  `GET rentals/:id` registered after it. NOT deployed to the VPS (still at 601a469).
 - **Open for the owner (spec §6 — agent defaults, each reversible in one small change):**
   1. Detail visible to every staff member (only `Sửa đơn` is owner-only)? — assumed YES.
   2. Edit allowed for `booked` AND `out`; `returned`/`cancelled` fully immutable (even name/notes)?
@@ -46,10 +52,10 @@
 - Watch out (tooling, Windows-side session): invoke `wsl.exe` from the PowerShell tool — Git
   Bash rewrites `/tmp/x.sh` into a Windows path (exit 127); `./init.sh` lacks the exec bit
   through the mount, use `bash ./init.sh`; export `CLEANING_BUFFER_DAYS=2` for e2e.
-- Next: the owner tests `/rentals/:id` + `Sửa đơn` on the LAN build, answers §6, then commit
-  (one commit, BE + contract + clients + FE + docs) and redeploy with
-  `~/deploy-dress/localprod-deploy.sh`. Backlog otherwise unchanged: `payments/correct-movement`
-  awaiting the owner, release lane r2, per-dress price input (create + edit) if wanted.
+- Next: the owner tests `/rentals/:id` + `Sửa đơn` on the LAN build (http://192.168.1.11/) and
+  answers §6 — any veto is a small follow-up change. Backlog otherwise unchanged:
+  `payments/correct-movement` awaiting the owner, release lane r2 (the VPS is now THREE
+  releases behind the LAN), per-dress price input (create + edit) if wanted.
 
 ## 2026-09-18 (29) — today board keeps the day's hand-outs visible (owner ask)
 

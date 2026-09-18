@@ -7,8 +7,9 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md`; t
   = pass (33/33). Spec (`docs/design/rentals/update-rental.md`, FR-RENT-12/13) and code in one
   session: `GET /rentals/:id` for every staff member, owner-only `PATCH /rentals/:id` that
   re-blocks every item, reconciles dresses by id and re-reads status under the row lock;
-  FE `/rentals/:id` + `/rentals/:id/edit` on a shared `RentalForm`. be 185 unit / 98 e2e, fe 117.
-  NOT committed — the owner tests first and answers the 9 spec §6 defaults.
+  FE `/rentals/:id` + `/rentals/:id/edit` on a shared `RentalForm`. be 185 unit / 98 e2e, fe 117,
+  Playwright 1 passed. Committed `baa74ab`, pushed to origin and deployed to the LAN instance at
+  the owner's request (2026-09-19); the 9 spec §6 defaults await the owner's answers.
 - 2026-09-18 (29) — owner ask on the today board: a rental marked "Đã giao váy" now STAYS on the
   day's hand-out list (BE due-out = `booked` OR `out` starting that day, booked first; FE shows a
   done marker instead of the button). Read-side only — no migration, contract description-only.
