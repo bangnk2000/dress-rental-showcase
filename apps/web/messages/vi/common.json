@@ -1,0 +1,18 @@
+{
+  "site": {
+    "name": "Dress Rental",
+    "tagline": "Cho thuê váy"
+  },
+  "home": {
+    "title": "Sắp ra mắt",
+    "description": "Trang web của tiệm đang được xây dựng."
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "backHome": "Về trang chủ"
+  },
+  "error": {
+    "title": "Đã có lỗi xảy ra",
+    "retry": "Thử lại"
+  }
+}

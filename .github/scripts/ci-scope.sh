@@ -13,6 +13,7 @@ run_all() {
     echo "be=true"
     echo "fe=true"
     echo "qr=true"
+    echo "web=true"
     echo "contract=true"
   } >>"${GITHUB_OUTPUT}"
   echo "Running every job: $1"
@@ -59,13 +60,14 @@ fi
 be=false
 fe=false
 qr=false
+web=false
 contract=false
 
 if changed_matches '^apps/be/'; then
   be=true
 fi
 
-# fe and qr-admin compile against the committed OpenAPI contract, so a contract
+# fe, qr-admin and web compile against the committed OpenAPI contract, so a contract
 # change can break them even when their own sources are untouched.
 if changed_matches '^(apps/fe/|packages/contract/)'; then
   fe=true
@@ -75,11 +77,15 @@ if changed_matches '^(apps/qr-admin/|packages/contract/)'; then
   qr=true
 fi
 
+if changed_matches '^(apps/web/|packages/contract/)'; then
+  web=true
+fi
+
 # The contract job carries all three drift gates (docs/spec/init-monorepo-contract
 # /03-ci-and-runtime.md §1), and gate 3 -- `pnpm check` -- compiles be and type
-# checks both clients. Every app is an input to it, so any app change invalidates
+# checks every client. Every app is an input to it, so any app change invalidates
 # it. In practice only doc-only pull requests skip this job.
-if [ "${be}" = true ] || [ "${fe}" = true ] || [ "${qr}" = true ]; then
+if [ "${be}" = true ] || [ "${fe}" = true ] || [ "${qr}" = true ] || [ "${web}" = true ]; then
   contract=true
 fi
 
@@ -87,7 +93,8 @@ fi
   echo "be=${be}"
   echo "fe=${fe}"
   echo "qr=${qr}"
+  echo "web=${web}"
   echo "contract=${contract}"
 } >>"${GITHUB_OUTPUT}"
 
-echo "Jobs to run: be=${be} fe=${fe} qr=${qr} contract=${contract}"
+echo "Jobs to run: be=${be} fe=${fe} qr=${qr} web=${web} contract=${contract}"
