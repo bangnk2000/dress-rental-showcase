@@ -19,6 +19,9 @@
 QR admin được ship độc lập tại `apps/qr-admin/` (không phải feature của `apps/fe`); bootstrap + UX
 design của nó ở [qr-admin.md](./qr-admin.md). SRS phase QR: [../SRS-qr-url.md](../SRS-qr-url.md).
 
+Website công khai (Next.js) ở `apps/web/` — bootstrap brief + contract gaps (BE chưa có endpoint
+ẩn danh) ở [public-web.md](./public-web.md). Chưa có slice nào.
+
 Yêu cầu sản phẩm: [../SRS-dress-rental.md](../SRS-dress-rental.md) (FR/BR/NFR + bảng truy vết).
 
 ## Spec use-case (capability có rejection — lane B2.1)

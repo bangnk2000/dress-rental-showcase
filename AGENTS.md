@@ -9,6 +9,8 @@ to open when the task actually needs it:
 - `docs/spec/init-monorepo-contract/README.md` — monorepo/contract rules (this repo's shape)
 - `docs/spec/init-nestjs-hexagonal/README.md` — authoritative INSIDE `apps/be`
 - `docs/spec/init-react/README.md` — authoritative INSIDE `apps/fe` AND `apps/qr-admin`
+- `docs/spec/init-nextjs/README.md` — authoritative INSIDE `apps/web` (enter via its §Usage Flow
+  1b / `00-system-prompt.md` §Monorepo mode; repo-level deltas: `init-monorepo-contract` 01 §4b)
 - `docs/spec/init-harness/README.md` — session lifecycle rules behind this file
 - `docs/spec/init-feature-spec/README.md` — spec-before-code lane: use-case spec + outcome
   catalog + UI state matrix for ONE capability; its output feeds both `10-*-scaffold-prompt`
@@ -27,11 +29,12 @@ Product intent docs (this product, not the reusable spec):
 This file is the ONE harness in this repo — never create harness artifacts
 (`feature_list.json`, `init.sh`, handoff, checklist) under `apps/*`. An app-level **architecture
 contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
-`apps/fe/AGENTS.md` (`apps/qr-admin` has none yet).
+`apps/fe/AGENTS.md`, `apps/qr-admin/AGENTS.md`, `apps/web/AGENTS.md`.
 
 ## Current state (re-sync at every session end — see Session rules)
 
-**As of 2026-09-18 · `feature_list.json` is 33/33 `pass`, no tracked backlog, no shell routes.**
+**As of 2026-09-24 · `feature_list.json` is 34/34 `pass`, no tracked backlog; `apps/web` is a
+skeleton (placeholder home only) by design.**
 This section stays a MAP, not a description — each row's detail lives in the doc it points at.
 
 | Area | State | Detail lives in |
@@ -39,9 +42,10 @@ This section stays a MAP, not a description — each row's detail lives in the d
 | `apps/be` | 5 contexts: identity (JWT + ABAC), catalog (incl. duplicate-dress `<code>_<n>` numbering), rentals (Core; rental-level discount; `GET /rentals/:id` detail + **owner-only** `PATCH /rentals/:id` edit that re-blocks every item, reconciles dresses by id and re-reads status under the row lock), payments (read slice + its own aggregate/command for money collected), qr (owner-only). Offline `openapi:emit`. | `apps/be/AGENTS.md` + `docs/design/<ctx>-aggregate.md` + `docs/design/rentals/update-rental.md` |
 | `apps/fe` | Staff SPA: today board (actionable, device-local date, day-stepping in a transition; a rental handed out during the day stays on the hand-out list, marked done), dresses + detail with photos (size = XS…XL buttons; `Nhân bản` duplicates as `<code>_<n>`), new-rental form that checks each chosen dress against the dates and takes a rental-level discount, `/rentals` list (customer name → `/rentals/:id` detail: notes, dresses with agreed prices, expected fee, the shared money dialog, cancel, and `Sửa đơn` for the owner → `/rentals/:id/edit`, the SAME `RentalForm` as `/rentals/new`) with cancel + a money dialog on EVERY row (ledger, totals, and the collect form while the rental is open). Rentals mutations MUST invalidate the board AND list parameterless keys (staleTime 60s) — plus the rental's detail key when they touch one rental — and any mutation that moves money also the rental's payments key. | `apps/fe/AGENTS.md` (incl. §Screen rules) + `docs/design/` |
 | `apps/qr-admin` | Independent Vite/React app for owner QR URLs (own client, own tokens, own gates). | `apps/qr-admin/AGENTS.md` + `docs/design/qr-admin.md` |
+| `apps/web` | Public, anonymous Next.js 16 site (:3001) — SKELETON only: `[locale]/(public)` placeholder home (SSG), localized 404, robots/sitemap, vi-only next-intl, third generated client (fetch, DTO-returning), `/api/v1` rewrite to the BE. No session. The BE has NO anonymous endpoints yet — every data page starts with a BE change. | `apps/web/AGENTS.md` + `docs/design/public-web.md` |
 | Wire contract | ONE rule: returned `Result` Err → outcome body `{ status, ...payload }` (422/403); thrown → envelope `{ error: { … } }`. **401 = a guard rejected the access token, nothing else.** | [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md) — catalog §3, UI states §4 |
 | Invariant proof | `pnpm --filter be test:e2e` (98 tests) provokes the real EXCLUDE/UNIQUE/CHECK constraints — three concurrent races (booking overlap on create AND on edit, double deposit) and raw INSERT/UPDATEs that bypass the app. CI has a postgres service. | `apps/be/test/` + `apps/be/AGENTS.md` §Invariant-proof suite |
-| `docs/spec` | Six vendored `init-*` sets, synced 2026-08-09 from upstream `815fa0f`. | `docs/spec/README.md` |
+| `docs/spec` | Seven vendored `init-*` sets: five synced 2026-08-09 from upstream `815fa0f`; `init-nextjs` (new) + `init-monorepo-contract` synced 2026-09-24 from the upstream working tree (not yet committed upstream). | `docs/spec/README.md` |
 | Open by choice | `Idempotency-Key` unimplemented (DB constraint stops double-submit); cross-context table-read adapters kept. | `apps/fe/AGENTS.md` #8, `apps/be/AGENTS.md` #4 |
 | Not in root gates | Playwright (`pnpm --filter fe e2e`, vi happy path) — needs browsers + a live DB, but it is NOT manual any more: it starts the BE and the built FE itself and runs as the CI `e2e` job. | `apps/fe/AGENTS.md` #5, `.github/workflows/ci.yml` |
 | Release lane | First release prepared 2026-08-10 (`2026-08-10-r1`, the 20 features that existed at that pass — the four UI features and `payments/record-collection` after it are listed as NOT covered): readiness per feature, plan, rollback, seeded record. **Nothing is deployed** — it stops at go/no-go, and 7 prerequisites (PM2, Nginx same-origin, TLS, backup, secrets, catalog CSV, QR Admin origin) do not exist yet. | [`docs/releases/2026-08-10-r1/README.md`](docs/releases/2026-08-10-r1/README.md) |
@@ -51,27 +55,29 @@ Next-session candidates are in `session-handoff.md` (latest entry) — do not re
 ## Invariants (carry these into every session)
 
 1. **Contract is one-way:** `apps/be` source → `pnpm openapi:emit` → `packages/contract/openapi.json`
-   → `pnpm generate:api` → `apps/fe/src/api/generated/` **and** `apps/qr-admin/src/api/generated/`.
+   → `pnpm generate:api` → `apps/fe/src/api/generated/`, `apps/qr-admin/src/api/generated/` **and** `apps/web/src/api/generated/`.
    No generated artifact is EVER hand-edited. "FE needs a field" = BE change first, then
    `pnpm contract`.
 2. BE: dependencies point inward; SDKs only in adapters (init-nestjs-hexagonal rules).
 3. FE: no cross-feature imports; server state only in the TanStack Query cache (init-react rules).
 4. Cross-app sharing only through `packages/*` — apps never import each other.
 5. FE and BE ship as one unit (same origin in prod;
-   `docs/spec/init-monorepo-contract/03-ci-and-runtime.md` §3).
+   `docs/spec/init-monorepo-contract/03-ci-and-runtime.md` §3). `apps/web` is its own Node
+   process but stays same-origin for the browser through its `/api/v1` rewrite (01 §4b N5).
 6. Rental domain rule: booking overlap per dress is rejected at the DB level
    (Postgres `daterange` + exclusion constraint), never only in application code.
 
 ## Gates (in order — also encoded in `init.sh` and CI)
 
 ```
-pnpm contract:check         # emit + generate + git diff --exit-code, BOTH clients (drift gates 1+2)
-pnpm check                  # be build + fe tsc + qr-admin tsc (drift gate 3)
+pnpm contract:check         # emit + generate + git diff --exit-code, ALL three clients (drift gates 1+2)
+pnpm check                  # be build + fe tsc + qr-admin tsc + web typegen+tsc (drift gate 3)
 pnpm lint && pnpm arch      # arch also re-checks generated-client freshness
-pnpm test                   # be jest + fe/qr-admin vitest
+pnpm test                   # be jest + fe/qr-admin/web vitest
 pnpm --filter be test:e2e   # invariant proof on real Postgres (docker compose up -d first)
 pnpm --filter fe build
 pnpm --filter qr-admin build
+pnpm --filter web build      # route table = rendering truth
 ```
 
 Two things to know about these gates:

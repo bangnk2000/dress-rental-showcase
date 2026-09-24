@@ -88,6 +88,14 @@
       "dependencies": []
     },
     {
+      "id": "infra/web-bootstrap",
+      "title": "Bootstrap apps/web — public anonymous Next.js 16 site skeleton (no features) per docs/spec/init-nextjs monorepo mode, third generated client",
+      "status": "pass",
+      "evidence": "2026-09-24: apps/web per init-nextjs §Monorepo mode + init-monorepo-contract 01 §4b (both updated upstream in knowledge-system and re-vendored). Next 16.3.6 / React 19 / next-intl 4 (vi only, as-needed prefix) / Tailwind 4 postcss / Orval fetch client from packages/contract/openapi.json with includeHttpResponseReturnType:false + isomorphic custom-fetch (no session, model 0) + mapApiError. Wired into root generate:api / contract:check / check, init.sh (HAS_WEB) and CI (ci-scope web output + web job + contract-job diff path). bash init.sh (CLEANING_BUFFER_DAYS=2, compose DB up) exit 0: contract fresh, check incl. web (next typegen+tsc), lint, arch (web 7/7 PASS), test (web 3, fe 117, qr-admin 17, be 185), be e2e 98, fe/qr-admin/web builds. Web build route table: ● /vi (SSG via generateStaticParams), ○ robots.txt + sitemap.xml, ƒ [...rest] + proxy. Boundaries probe: a kernel file importing a feature fails lint. Runtime on next start :3001: GET / 200 <html lang=vi> <title>Sắp ra mắt · Dress Rental</title>; /khong-co 404 with the localized not-found; /vi 307 → /; robots + sitemap served with SITE_URL; with BE dist on :3000 GET /api/v1/auth/me via the web rewrite returns the SAME 401 GENERIC.UNAUTHORIZED envelope as the BE directly. Caveat: the web generated-client freshness diffs pass vacuously until apps/web is committed (untracked files are outside git diff). Deferred by design (apps/web/AGENTS.md deviations 3-4): shadcn components, plop, MSW, Playwright — with the first public slice; BE has no anonymous endpoints (docs/design/public-web.md §4).",
+      "dependencies": [],
+      "testedAt": "2026-09-24"
+    },
+    {
       "id": "qr/create-url-code",
       "title": "Owner creates, lists, previews and downloads direct-URL QR SVGs (FR-QR-01..05)",
       "status": "pass",

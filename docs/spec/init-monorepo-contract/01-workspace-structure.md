@@ -78,6 +78,34 @@ listed is unchanged.
 | 4 | Both sets' `13-harness-engineering.md`: one binding **per repo** | Neither is instantiated; the merged root binding (04) replaces both |
 | 5 | init-react 05/mutator: `VITE_API_BASE_URL` points at a separate API origin | Prod = same origin (`''`, API under `/api`) because FE and BE ship together (03 §3); dev = `http://localhost:3000` or a Vite proxy |
 
+## 4b. Adding Another Client App (a second SPA, or a Next.js site per `init-nextjs`)
+
+The contract stays single-source; every client is one more generated consumer. Adding one is a
+fixed checklist — skipping any line leaves a client the drift gates cannot see:
+
+1. `apps/<name>/package.json` with a stable `name` (root scripts filter by it) and the same
+   gate script names as the other apps: `check`, `lint`, `arch`, `test`, `build`, `generate:api`.
+2. Root `package.json`: append `pnpm --filter <name> generate:api` to `generate:api`, its
+   `src/api/generated` to the `contract:check` diff, and `pnpm --filter <name> check` to `check`.
+3. `init.sh`, CI (the contract job's diff + an app job + the change-scope filter, with
+   `packages/contract/` as an input) — same three edits.
+4. An app-level `apps/<name>/AGENTS.md` = architecture contract only (commands, rules,
+   §Deviations). The harness stays at the root: no `CLAUDE.md`, `feature_list.json`, `init.sh`
+   or handoff inside the app — the stack set's `13-harness-engineering.md` is reference only (§4 #4).
+5. Root `AGENTS.md` names the stack set authoritative inside the new app; `docs/spec/` vendors it.
+6. The app's bootstrap is ONE ledger entry (e.g. `infra/<name>-bootstrap`) with the new app's
+   gates + runtime proof as evidence.
+
+Next.js-specific deltas (`init-nextjs` defaults that change here, on top of §4 #1/#2/#4):
+
+| # | init-nextjs default | Monorepo delta |
+| --- | --- | --- |
+| N1 | 04 §1/§8: `openapi.json` at the app root; freshness diff covers `openapi.json` | `input: '../../packages/contract/openapi.json'`; the app diffs only its `src/api/generated` (the contract diff is the root's) |
+| N2 | 04 §1: rewrite `/api/be/:path*` → `${API_URL}/:path*` | If the emitted paths already carry the BE's global prefix (`/api/v1/...`), rewrite THAT prefix 1:1 (`/api/v1/:path*` → `${API_URL}/api/v1/:path*`) and let the server-side mutator base be `API_URL` — no second prefix to strip |
+| N3 | 13 §4 `init.sh` + harness-file presence check; 08 §2 `CLAUDE.md` per app | Neither — root harness only (item 4 above) |
+| N4 | Dev port 3000 | The NestJS BE owns 3000; give the Next app its own (`next dev --port <n>`) and record it in the app's `AGENTS.md` |
+| N5 | "FE and BE ship as one unit" means one static artifact behind the BE's origin (03 §3) | A Next app is its own Node process. Same-origin for the browser still holds via N2's rewrite; the release lane must list the extra process + its reverse-proxy route |
+
 ## 5. Smells
 
 - A second lockfile (`apps/*/pnpm-lock.yaml`) — the workspace has exactly one, at root.

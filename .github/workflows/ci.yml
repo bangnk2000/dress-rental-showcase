@@ -18,6 +18,7 @@ jobs:
       be: ${{ steps.filter.outputs.be }}
       fe: ${{ steps.filter.outputs.fe }}
       qr: ${{ steps.filter.outputs.qr }}
+      web: ${{ steps.filter.outputs.web }}
       contract: ${{ steps.filter.outputs.contract }}
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +43,7 @@ jobs:
       - run: pnpm openapi:emit
       - run: git diff --exit-code packages/contract
       - run: pnpm generate:api
-      - run: git diff --exit-code apps/fe/src/api/generated apps/qr-admin/src/api/generated
+      - run: git diff --exit-code apps/fe/src/api/generated apps/qr-admin/src/api/generated apps/web/src/api/generated
       - run: pnpm check
 
   be:
@@ -107,6 +108,21 @@ jobs:
       - run: pnpm --filter qr-admin lint && pnpm --filter qr-admin arch
       - run: pnpm --filter qr-admin test
       - run: pnpm --filter qr-admin build
+
+  web:
+    needs: scope
+    if: needs.scope.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web lint && pnpm --filter web arch
+      - run: pnpm --filter web test
+      # `next build` also type checks, and its route table is the rendering truth.
+      - run: pnpm --filter web build
 
   e2e:
     # The browser proof (infra/e2e-ci): the vi-locale happy path in a real Chromium against the

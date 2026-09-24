@@ -3,6 +3,13 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-24 (31) — owner ask "dựng khung public web bằng init-nextjs, chưa làm tính năng":
+  `infra/web-bootstrap` = pass (34/34). `apps/web` Next.js 16 skeleton (anonymous, vi-only,
+  SSG placeholder home, third generated client, `/api/v1` rewrite) wired into root scripts,
+  init.sh and CI; `init.sh` green. init-nextjs + init-monorepo-contract fixed upstream (monorepo
+  mode, session model 0, add-a-client checklist, 7 verified bugs) and re-vendored. Web design
+  system (DESIGN.md) applied: frontmatter roles, dark theme measured from the demo board.
+  Merged to master by PR (branch `feat/web-bootstrap`).
 - 2026-09-18 (30) — owner ask "sửa đơn + chi tiết đơn cho chủ cửa hàng": `rentals/update-rental`
   = pass (33/33). Spec (`docs/design/rentals/update-rental.md`, FR-RENT-12/13) and code in one
   session: `GET /rentals/:id` for every staff member, owner-only `PATCH /rentals/:id` that

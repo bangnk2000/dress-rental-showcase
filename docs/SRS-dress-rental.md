@@ -10,7 +10,10 @@
 
 Ứng dụng quản lý nội bộ cho tiệm cho thuê váy (~200 váy), thay thế quy trình Google Sheets.
 Staff-facing, tiếng Việt là ngôn ngữ chính (en phụ), PWA để nhân viên cài trên tablet/điện thoại
-của tiệm. Trang marketing công khai (WordPress/Haravan) **ngoài phạm vi** repo này.
+của tiệm. Trang marketing công khai (WordPress/Haravan) **ngoài phạm vi** repo này. **Thay đổi
+phạm vi 2026-09-24:** website công khai cho khách (ẩn danh, SSR/SEO) nay nằm trong repo tại
+`apps/web` — mới dựng khung, chưa có FR-WEB-* nào; mỗi trang công khai cần FR-id riêng trước khi
+làm ([design/public-web.md](./design/public-web.md)).
 
 Bốn bounded context: `identity` (đăng nhập/quyền), `catalog` (danh mục váy), `rentals`
 (đặt–lấy–trả–hủy + lịch + bảng hôm nay), `payments` (dòng tiền của đơn thuê).

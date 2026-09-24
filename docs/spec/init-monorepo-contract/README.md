@@ -33,7 +33,7 @@ runtime, and the single merged harness.
 | --- | --- |
 | One product, one team (or solo), NestJS API + React SPA | **Use this set** (00–04) |
 | BE and FE owned by separate teams with separate release trains, or the repos are already split and merging is off the table | **Use [05-polyrepo-variant.md](./05-polyrepo-variant.md)**: pinned contract + `contract:pull` + oasdiff breaking gate + drift notification |
-| Multiple frontends consuming one API | Still fits — add `apps/` entries; the contract stays the single source |
+| Multiple frontends consuming one API | Still fits — add `apps/` entries; the contract stays the single source. A server-rendered public site joins as a Next.js app per [`../init-nextjs/`](../init-nextjs/README.md) with the deltas in [01 §4b](./01-workspace-structure.md) |
 | Backend is not the OpenAPI source of truth (3rd-party API) | Out of scope — use init-react alone with its §6 fallback |
 
 ## File Map

@@ -1,5 +1,49 @@
 # Session Handoff
 
+## 2026-09-24 (31) — public web skeleton (`infra/web-bootstrap` = pass, branch `feat/web-bootstrap` → PR → master)
+
+- Done: the owner asked to scaffold a public web project in this repo with
+  `knowledge-system/prompts/init-nextjs`, no features, and to fix the prompt where it did not
+  match this repo's flow. `apps/web` = Next.js 16 App Router, anonymous (session model 0),
+  vi-only next-intl, `[locale]/(public)` placeholder home (SSG), localized 404, robots/sitemap,
+  third Orval client from `packages/contract/openapi.json`, `/api/v1` rewrite to the BE, dev/start
+  port 3001. Wired into root scripts, `init.sh`, CI (`web` scope + job). Scope change recorded in
+  SRS §1; bootstrap brief [docs/design/public-web.md](docs/design/public-web.md); architecture
+  contract `apps/web/AGENTS.md` (6 deviations).
+- Prompt fixes (upstream `knowledge-system/prompts`, working tree — NOT committed there; re-vendored
+  here, provenance in `docs/spec/README.md`): init-nextjs gained §Monorepo mode (00) + Usage Flow
+  1b (README) + session model 0 (05); init-monorepo-contract gained 01 §4b (add-a-client
+  checklist + Next.js deltas N1–N5). Real bugs fixed, each hit while building: Orval 8 fetch
+  types functions as `{data,status,headers}` while the spec mutator returns the body
+  (→ `includeHttpResponseReturnType: false`); mutator `cache: 'no-store'` after `...options`
+  silently overrode the documented public-cache opt-in; `check` = `tsc --noEmit` fails on a fresh
+  clone (→ `next typegen && tsc`); pnpm 11 `ERR_PNPM_IGNORED_BUILDS` for `@parcel/watcher` +
+  `@swc/core`; boundaries excerpt was v6 syntax and a single-file element warns in v7; typed
+  `Locale` vs `string` route params; `en` hard-coded as the schema locale.
+- Evidence: `bash init.sh` exit 0 (with `CLEANING_BUFFER_DAYS=2`, compose DB up) — see the ledger
+  entry for numbers, route table and the runtime probes.
+- Committed as ONE commit on `feat/web-bootstrap` (apps/web + root wiring + docs/spec + docs),
+  `contract:check` + `pnpm arch` re-run AFTER the commit (web client now tracked, so the freshness
+  diff is real), then merged to master by PR at the owner's request.
+- Next: commit the upstream prompt edits in knowledge-system, then update the provenance row. First real public page = new FR-WEB-*
+  + a BE anonymous read endpoint (brief §4), design-tier.
+- Later the same session: the owner supplied the web design system → saved verbatim as
+  `apps/web/DESIGN.md` ("Romantic Parisian Muse"), mapped into `globals.css` `@theme` (frontmatter
+  colors verbatim + prose-only brand colors `rose/blush/champagne/ivory/espresso/bisque/…`, text
+  roles, radii, spacing, `shadow-ambient`), Playfair Display + Plus Jakarta Sans via next/font
+  (`vietnamese` subset). Placeholder home / 404 / error restyled with token utilities only. web
+  check/lint/arch/test/build green; Playwright screenshots (1280 + 390 wide) show both fonts with
+  Vietnamese diacritics, bg #FCF9F6, headings #8A4F58. Owner then sent light/dark demo boards: pixel
+  sampling showed every component uses the FRONTMATTER roles and the prose hexes are only seed
+  colors → brand tokens removed, screens moved to role tokens (primary #6E3841, on-surface,
+  on-surface-variant). Then, at the owner's word ("làm theo đã đo được trên
+  ảnh"): buttons `rounded-sm` (demo buttons are near-square, not pills) and a dark theme via
+  `prefers-color-scheme` built from values measured on the dark board + Material-tone
+  derivations (table in §5). Computed colors verified in Playwright light + dark. No theme toggle yet.
+- Watch out: the dev DB container `dress-rental-db-1` was started for the runtime proof and left
+  running. `apps/web` is a separate Node process — the release lane must add it (N5). `next build`
+  now needs network to Google Fonts.
+
 ## 2026-09-18 (30) — rental detail + owner-only edit (`rentals/update-rental` = pass, UNCOMMITTED)
 
 - Done: the owner asked for "sửa đơn và chi tiết đơn cho tài khoản chủ cửa hàng". Spec drafted
