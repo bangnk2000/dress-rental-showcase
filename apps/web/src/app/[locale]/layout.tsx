@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Pr
   return {
     metadataBase: new URL(process.env.SITE_URL ?? 'http://localhost:3001'),
     title: { default: t('site.name'), template: `%s · ${t('site.name')}` },
-    description: t('site.tagline'),
+    description: t('site.description'),
   };
 }
 

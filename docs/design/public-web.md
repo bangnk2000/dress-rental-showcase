@@ -1,6 +1,7 @@
 # public-web — Bootstrap brief (Level 1)
 
-> Status: **skeleton as-built 2026-09-24** (khung, chưa có tính năng) · SRS: chưa có FR-WEB-* ·
+> Status: **skeleton as-built 2026-09-24**; trang công khai FR-WEB-01..04 trên dữ liệu mock
+> 2026-09-25 → [web/public-pages.md](./web/public-pages.md) · SRS: chưa có FR-WEB-* ·
 > API tags: chưa dùng tag nào · Spec: [init-nextjs](../spec/init-nextjs/README.md) §Usage Flow 1b +
 > [init-monorepo-contract 01 §4b](../spec/init-monorepo-contract/01-workspace-structure.md)
 

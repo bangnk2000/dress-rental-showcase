@@ -49,6 +49,11 @@ export default tseslint.config(
       }],
     },
   },
+  // Test files may reach across rings (they wire everything together) — same as apps/fe.
+  {
+    files: ['src/**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
+    rules: { 'boundaries/dependencies': 'off' },
+  },
   {
     files: ['src/**/*.{ts,tsx}'],
     ignores: ['src/api/**'],

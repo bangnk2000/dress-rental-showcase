@@ -1,25 +1,37 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
+import { listPublicDresses } from '@/api/mock/public-catalog';
+import { BottomTabBar } from '@/components/site/bottom-tab-bar';
+import { SiteFooter } from '@/components/site/site-footer';
+import { FeaturedCollection } from '@/features/catalog';
+import { HomeHero, HomePerks, HomePromo, StoreInfo } from '@/features/home';
 import { resolveLocale } from '@/i18n/locale';
 
-// Placeholder home — static (● SSG in the build route table). The first public capability
-// replaces this body with a feature slice; the page stays a thin Server Component.
+// FR-WEB-01 — ● SSG; dresses come from the mock catalogue at build time
+// (docs/design/web/public-pages.md §2).
 export async function generateMetadata({ params }: PageProps<'/[locale]'>): Promise<Metadata> {
   const locale = resolveLocale((await params).locale);
-  const t = await getTranslations({ locale, namespace: 'common' });
-  return { title: t('home.title'), alternates: { canonical: '/' } };
+  const t = await getTranslations({ locale, namespace: 'home' });
+  return { title: t('meta.title'), alternates: { canonical: '/' } };
 }
 
 export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   setRequestLocale(resolveLocale((await params).locale));
-  const t = await getTranslations('common');
+  // 8 cards: rendered 4 / 6 / 8 at mobile / md / xl (design/responsive.md §4).
+  const dresses = await listPublicDresses({ limit: 8 });
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col items-center justify-center gap-space-md px-margin-mobile text-center md:px-margin">
-      <p className="text-label-sm uppercase text-tertiary">{t('site.name')}</p>
-      <h1 className="font-display text-display-lg-mobile text-on-surface md:text-display-lg">{t('home.title')}</h1>
-      <p className="text-on-surface-variant">{t('home.description')}</p>
-    </main>
+    <>
+      <main className="pb-24 md:pb-0">
+        <HomeHero />
+        <StoreInfo />
+        <FeaturedCollection dresses={dresses} />
+        <HomePerks />
+        <HomePromo />
+      </main>
+      <SiteFooter />
+      <BottomTabBar />
+    </>
   );
 }

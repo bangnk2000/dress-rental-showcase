@@ -1,11 +1,46 @@
 {
   "site": {
-    "name": "Dress Rental",
-    "tagline": "Cho thuê váy"
+    "name": "Atelier Demo",
+    "tagline": "Cho thuê đồ xinh",
+    "taglineCity": "Cho thuê đồ xinh Hà Nội",
+    "description": "Atelier Demo — cho thuê váy tiệc, đầm dạ hội và áo dài cách tân tại 12 Phố Mẫu, Cầu Giấy, Hà Nội.",
+    "homeLabel": "Atelier Demo — Trang chủ"
   },
-  "home": {
-    "title": "Sắp ra mắt",
-    "description": "Trang web của tiệm đang được xây dựng."
+  "nav": {
+    "label": "Chính",
+    "home": "Trang chủ",
+    "collection": "Bộ sưu tập",
+    "contact": "Liên hệ",
+    "zalo": "Nhắn Zalo"
+  },
+  "shop": {
+    "address": "12 Phố Mẫu, Cầu Giấy, Hà Nội",
+    "addressFull": "12 Phố Mẫu, Q. Cầu Giấy, Hà Nội",
+    "addressShort": "12 Phố Mẫu, Cầu Giấy",
+    "hotline": "{phone} (Hỗ trợ 24/7)",
+    "hoursTitle": "Giờ mở cửa",
+    "weekdays": "Thứ 2 – Thứ 6",
+    "weekend": "Thứ 7 – CN",
+    "weekendLong": "Thứ 7 – Chủ Nhật",
+    "weekdaysHours": "14:00 – 22:00",
+    "weekendHours": "10:00 – 22:00",
+    "open": "Đang mở cửa",
+    "closed": "Đã đóng cửa",
+    "socialLine": "FB, IG, TikTok: {handle}",
+    "storePhotoAlt": "Mặt tiền Atelier Demo, 12 Phố Mẫu",
+    "social": {
+      "facebook": { "name": "Facebook", "detail": "Thuê đồ Atelier Demo" },
+      "instagram": { "name": "Instagram", "detail": "@atelierdemo" },
+      "tiktok": { "name": "TikTok", "detail": "@atelierdemo" },
+      "zalo": { "name": "Zalo", "detail": "0901 000 000 · 24/7" }
+    }
+  },
+  "footer": {
+    "blurb": "Đồng hành cùng vẻ đẹp rạng ngời của nàng trong mọi buổi tiệc.",
+    "copyright": "© Atelier Demo"
+  },
+  "price": {
+    "perDay": "/ngày"
   },
   "notFound": {
     "title": "Không tìm thấy trang",

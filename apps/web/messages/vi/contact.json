@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "title": "Liên hệ & cửa hàng",
+    "description": "Ghé Atelier Demo tại 12 Phố Mẫu, Cầu Giấy, Hà Nội — thử váy miễn phí, hotline & Zalo 0901 000 000."
+  },
+  "hero": {
+    "eyebrow": "Atelier Demo Atelier & Boutique",
+    "titlePrefix": "Ghé Thăm",
+    "titleEmphasis": "Atelier Demo",
+    "lead": "Không gian thử đồ xinh xắn dành riêng cho các nàng thơ Hà Nội."
+  },
+  "cta": {
+    "call": "Gọi ngay",
+    "maps": "Mở Google Maps"
+  },
+  "info": {
+    "addressLabel": "Địa chỉ",
+    "copy": "Sao chép địa chỉ",
+    "copied": "Đã sao chép địa chỉ",
+    "copyFailed": "Không sao chép được — nàng giữ lâu để chép nhé",
+    "floor": "• Mặt tiền tầng 1",
+    "hoursLabel": "Giờ mở cửa hàng ngày",
+    "socialLabel": "Kênh kết nối cùng Atelier Demo"
+  },
+  "photo": {
+    "alt": "Showroom Atelier Demo tại 12 Phố Mẫu với cửa kính đón nắng và hoa hồng",
+    "status": "Showroom đang mở cửa",
+    "caption": "Hàng trăm mẫu váy dự tiệc & kỷ yếu sẵn sàng chờ nàng"
+  },
+  "perks": {
+    "title": "Đặc Quyền Thuê Đồ Tại Atelier Demo",
+    "fitting": {
+      "title": "Thử đồ thoải mái & miễn phí",
+      "detail": "02 phòng thử đồ rộng rãi cho nàng thoải mái thử các mẫu váy xinh tại Atelier Demo."
+    },
+    "care": {
+      "title": "Chuẩn form – Thơm tho tinh tươm",
+      "detail": "Trang phục được giặt, là và kiểm tra cẩn thận trước khi trao tay nàng."
+    },
+    "delivery": {
+      "title": "Hỗ trợ ship hỏa tốc toàn Hà Nội",
+      "detail": "Nàng bận không qua lấy được? Đội ngũ Atelier Demo book xe giao tận cửa nhà đúng giờ hẹn."
+    }
+  }
+}

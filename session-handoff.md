@@ -1,5 +1,27 @@
 # Session Handoff
 
+## 2026-09-25 (32) — public pages on mock data (`web:public-pages` = pass, branch `feat/web-public-pages` → PR → master)
+
+- Done: owner asked to break the prototype (`apps/web/design/prototype/`) into tasks and build the
+  web project on mock API data first. Design + task list: [docs/design/web/public-pages.md](docs/design/web/public-pages.md)
+  (T1 tokens/utilities/assets · T2 site shell · T3 mock API · T4 catalog · T5 home · T6 contact ·
+  T7 routes/SEO · T8 tests/gates); FR-WEB-01..04 in the SRS + traceability row. Evidence in the ledger.
+- Decisions to confirm with the owner (public-pages.md §3): heart is a local toggle only; "Đang
+  mở cửa" computed in the browser on the shop clock; chip filtering client-side; URLs
+  `/bo-suu-tap`, `/lien-he`; mock photos = the Stitch export self-hosted (only 4 distinct dress
+  photos, 512px — placeholders, not the shop's real catalogue). Added a `/bo-suu-tap` listing page
+  the prototype did not have (its "Xem tất cả" pointed at `#`).
+- Next: owner review of the pages (`pnpm --filter web dev` → :3001), then commit on a branch →
+  PR. Replacing the mock = BE anonymous endpoints per public-pages.md §4 (design-tier BE slice) →
+  `pnpm contract` → swap the one import in the pages → delete `src/api/mock/`.
+- Watch out:
+  - A (group) layout that renders translated UI MUST call `setRequestLocale` itself, or every
+    route under it silently turns ƒ dynamic (the first build did exactly that).
+  - lucide-react v1 has no brand icons (Facebook/Instagram) — generic glyphs are used.
+  - Feature tests use `src/test/render.tsx`; `setup.ts` stubs `@/i18n/navigation` and `next/image`.
+  - The foreground-sleep hook also blocks heredocs that merely CONTAIN "sleep": write such scripts
+    with the Write tool.
+
 ## 2026-09-24 (31) — public web skeleton (`infra/web-bootstrap` = pass, branch `feat/web-bootstrap` → PR → master)
 
 - Done: the owner asked to scaffold a public web project in this repo with
