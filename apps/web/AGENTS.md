@@ -43,7 +43,8 @@ Env (server-only, `.env.example`): `API_URL`, `SITE_URL`. No `NEXT_PUBLIC_*` yet
   no hex or arbitrary value in a component. Change a value in `DESIGN.md` first, then the token.
   Dark theme = the `prefers-color-scheme: dark` block in `globals.css` overriding the SAME token
   names — a component never branches on theme (no `dark:` variants for colors). Buttons are
-  `rounded-sm` (the demo board), not pills.
+  pills (`rounded-full`, as are filter chips and badges — owner, 2026-09-25). Icons = `lucide-react`
+  only; no icon font or CDN (`docs/design/public-web.md` §5).
 - Every new public segment states its rendering mode + cache owner in its design doc, and the
   `pnpm --filter web build` route table must show it.
 

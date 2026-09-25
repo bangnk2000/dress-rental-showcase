@@ -11,7 +11,7 @@ export default function LocaleError({ reset }: { error: Error & { digest?: strin
       <button
         type="button"
         onClick={reset}
-        className="rounded-sm bg-primary px-space-lg py-space-sm text-label-lg uppercase text-on-primary transition-colors hover:bg-primary-hover"
+        className="rounded-full bg-primary px-space-lg py-space-sm text-label-lg uppercase text-on-primary transition-colors hover:bg-primary-hover"
       >
         {t('error.retry')}
       </button>

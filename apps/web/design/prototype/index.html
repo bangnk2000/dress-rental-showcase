@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atelier Demo responsive preview</title>
+<style>
+  :root { --bg: #f0edea; --fg: #1b1c1a; --muted: #524345; --accent: #6e3841; }
+  body { margin: 0; padding: 24px; background: var(--bg); color: var(--fg); font: 14px/1.5 system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 4px; } p { margin: 0 0 16px; color: var(--muted); }
+  nav a { margin-right: 12px; color: var(--accent); font-weight: 600; }
+  .row { display: flex; gap: 24px; align-items: flex-start; overflow-x: auto; padding-bottom: 16px; margin-bottom: 32px; }
+  figure { margin: 0; flex: none; }
+  figcaption { font-weight: 600; margin-bottom: 6px; }
+  .frame { overflow: hidden; border-radius: 12px; background: #fff; box-shadow: 0 12px 36px -4px rgba(138,79,88,.12); }
+  iframe { border: 0; transform-origin: 0 0; display: block; }
+</style>
+</head>
+<body>
+<h1>Atelier Demo — Home, Contact &amp; Product, mobile → tablet → desktop</h1>
+<p>Each frame is the real page at that viewport width, scaled to fit. Spec: <code>../responsive.md</code>. Open a page directly and resize to see the breakpoints switch at 768px and 1280px.</p>
+<nav><a href="home.html">home.html</a><a href="contact.html">contact.html</a><a href="product.html">product.html</a></nav>
+<div id="rows"></div>
+<script>
+  const sizes = [['Mobile 390', 390, 844, 0.6], ['Tablet 834', 834, 1112, 0.45], ['Desktop 1440', 1440, 900, 0.45]];
+  for (const page of ['home', 'contact', 'product']) {
+    const row = document.createElement('div'); row.className = 'row';
+    for (const [label, w, h, s] of sizes) {
+      row.insertAdjacentHTML('beforeend',
+        `<figure><figcaption>${page} · ${label}px</figcaption>
+         <div class="frame" style="width:${w * s}px;height:${h * s * 2}px">
+           <iframe src="${page}.html" title="${page} ${label}" style="width:${w}px;height:${h * 2}px;transform:scale(${s})"></iframe>
+         </div></figure>`);
+    }
+    document.getElementById('rows').append(row);
+  }
+</script>
+</body>
+</html>

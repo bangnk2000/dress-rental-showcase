@@ -1,0 +1,27 @@
+/* Shared prototype helpers — each maps to a rule in ../responsive.md. */
+html, body { margin: 0; }
+body { overflow-x: hidden; } /* safety net only; every section is built to fit (§6) */
+
+/* §5: keep the approved visual size, extend the touch target to >= 44x44 */
+.hit { position: relative; }
+.hit::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+}
+
+/* DESIGN.md Elevation: frosted silk glass for sticky bars */
+.frosted { background: rgba(251, 248, 245, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+
+/* §6: mobile chip row scrolls, the page never does */
+.chip-scroll { scroll-snap-type: x proximity; scrollbar-width: none; }
+.chip-scroll::-webkit-scrollbar { display: none; }
+.chip-scroll > * { scroll-snap-align: start; }
+
+/* §6: heart revealed on hover only where hover exists; always visible on touch */
+@media (hover: hover) {
+  .reveal { opacity: 0; transition: opacity .2s; }
+  .group:hover .reveal, .reveal:focus-visible { opacity: 1; }
+}
+
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+svg.lucide { stroke-width: 1.75; }
