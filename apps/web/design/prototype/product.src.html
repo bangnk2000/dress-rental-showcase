@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đầm Dạ Hội Lộng Lẫy — Atelier Demo (responsive prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="tw.js"></script>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="proto.css">
+</head>
+<body class="bg-surface font-sans text-on-surface antialiased">
+
+<!-- ═══ HEADER — shared; "Bộ sưu tập" is the active section ═══ -->
+<header class="frosted md:sticky md:top-0 md:z-40 md:shadow-ambient">
+  <div class="mx-auto flex h-14 max-w-page items-center justify-between px-margin-mobile md:h-[72px] md:px-space-lg xl:h-20 xl:px-margin">
+    <a href="home.html" class="flex items-center gap-2.5" aria-label="Atelier Demo — Trang chủ">
+      <img src="@@LOGO@@" alt="" class="h-10 w-10 rounded object-cover xl:h-12 xl:w-12">
+      <span class="flex flex-col leading-none">
+        <span class="font-display text-headline-sm text-primary">atelierdemo</span>
+        <span class="text-label-sm uppercase text-secondary">Cho thuê đồ xinh</span>
+      </span>
+    </a>
+    <nav aria-label="Chính" class="hidden md:flex md:items-center md:gap-space-lg xl:absolute xl:left-1/2 xl:-translate-x-1/2">
+      <a href="home.html" class="hit border-b-2 border-transparent py-1 text-label-lg text-on-surface-variant hover:text-primary">Trang chủ</a>
+      <a href="home.html#bo-suu-tap" aria-current="true" class="hit border-b-2 border-primary py-1 text-label-lg font-semibold text-primary">Bộ sưu tập</a>
+      <a href="contact.html" class="hit border-b-2 border-transparent py-1 text-label-lg text-on-surface-variant hover:text-primary">Liên hệ</a>
+    </nav>
+    <a href="https://zalo.me/0901000000" target="_blank" rel="noopener noreferrer"
+       class="hidden min-h-11 items-center gap-2 rounded-full border border-secondary-container px-5 text-label-lg text-primary transition-colors hover:bg-primary-fixed xl:inline-flex">
+      <i data-lucide="message-circle" class="h-4 w-4"></i>Nhắn Zalo
+    </a>
+  </div>
+</header>
+
+<!-- mobile: sticky action bar (below) replaces the tab bar → reserve its height -->
+<main class="pb-28 md:pb-space-xl">
+
+<!-- ═══ BREADCRUMB — mobile: back link only · md+: full trail ═══ -->
+<nav aria-label="Vị trí" class="mx-auto max-w-page px-margin-mobile py-space-xs md:px-space-lg md:py-space-md xl:px-margin">
+  <a href="home.html#bo-suu-tap" class="inline-flex min-h-11 items-center gap-1 text-label-lg text-on-surface-variant md:hidden"><i data-lucide="chevron-left" class="h-4 w-4"></i>Bộ sưu tập</a>
+  <ol class="hidden items-center gap-1.5 text-body-sm text-outline md:flex">
+    <li><a href="home.html" class="hit hover:text-primary">Trang chủ</a></li><li aria-hidden="true">/</li>
+    <li><a href="home.html#bo-suu-tap" class="hit hover:text-primary">Bộ sưu tập</a></li><li aria-hidden="true">/</li>
+    <li aria-current="page" class="text-on-surface-variant">Đầm Dạ Hội Lộng Lẫy</li>
+  </ol>
+</nav>
+
+<!-- ═══ PRODUCT — mobile: gallery → info (stacked) · md: gallery cols 1–4 | info cols 5–8 sticky · xl: gallery cols 1–7 (rail + image) | info cols 8–12 sticky ═══ -->
+<section class="mx-auto max-w-page md:grid md:grid-cols-8 md:gap-x-gutter md:px-space-lg xl:grid-cols-12 xl:px-margin">
+
+  <!-- GALLERY: one carousel at every size. mobile = swipe + counter · md = thumbnails below · xl = thumbnail rail on the left -->
+  <div class="md:col-span-4 xl:col-span-7 xl:flex xl:flex-row-reverse xl:items-start xl:gap-gutter">
+    <div class="relative xl:flex-1">
+      <div id="gallery" class="chip-scroll flex snap-x snap-mandatory overflow-x-auto md:rounded-md" aria-roledescription="carousel" aria-label="Ảnh sản phẩm">
+        <div class="aspect-dress w-full shrink-0 snap-center overflow-hidden"><img src="@@D1@@" alt="Đầm Dạ Hội Lộng Lẫy — toàn thân" class="h-full w-full object-cover"></div>
+        <div class="aspect-dress w-full shrink-0 snap-center overflow-hidden"><img src="@@D1@@" alt="Đầm Dạ Hội Lộng Lẫy — chi tiết ren thân áo" class="h-full w-full origin-top scale-150 object-cover"></div>
+        <div class="aspect-dress w-full shrink-0 snap-center overflow-hidden"><img src="@@D1@@" alt="Đầm Dạ Hội Lộng Lẫy — chi tiết tùng váy" class="h-full w-full origin-bottom scale-150 object-cover"></div>
+        <div class="aspect-dress w-full shrink-0 snap-center overflow-hidden"><img src="@@HERO@@" alt="Đầm trưng bày tại Atelier Demo" class="h-full w-full object-cover"></div>
+      </div>
+      <span class="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-label-sm font-semibold text-primary backdrop-blur">Có sẵn</span>
+      <button type="button" aria-label="Lưu Đầm Dạ Hội Lộng Lẫy" class="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-surface/85 text-primary backdrop-blur"><i data-lucide="heart" class="h-5 w-5"></i></button>
+      <span id="counter" class="absolute bottom-3 right-3 rounded-full bg-on-surface/60 px-2.5 py-1 text-label-sm text-on-primary md:hidden" aria-live="polite">1 / 4</span>
+    </div>
+    <div class="mt-3 hidden gap-2 md:flex xl:mt-0 xl:w-20 xl:flex-col" role="tablist" aria-label="Chọn ảnh">
+      <button type="button" data-go="0" aria-selected="true" class="thumb aspect-dress w-16 overflow-hidden rounded ring-2 ring-primary ring-offset-2 ring-offset-surface xl:w-full"><img src="@@D1@@" alt="" class="h-full w-full object-cover"></button>
+      <button type="button" data-go="1" aria-selected="false" class="thumb aspect-dress w-16 overflow-hidden rounded opacity-70 hover:opacity-100 xl:w-full"><img src="@@D1@@" alt="" class="h-full w-full origin-top scale-150 object-cover"></button>
+      <button type="button" data-go="2" aria-selected="false" class="thumb aspect-dress w-16 overflow-hidden rounded opacity-70 hover:opacity-100 xl:w-full"><img src="@@D1@@" alt="" class="h-full w-full origin-bottom scale-150 object-cover"></button>
+      <button type="button" data-go="3" aria-selected="false" class="thumb aspect-dress w-16 overflow-hidden rounded opacity-70 hover:opacity-100 xl:w-full"><img src="@@HERO@@" alt="" class="h-full w-full object-cover"></button>
+    </div>
+  </div>
+
+  <!-- INFO -->
+  <div class="px-margin-mobile pt-space-md md:sticky md:top-24 md:col-span-4 md:self-start md:px-0 md:pt-0 xl:top-28 xl:col-span-5 xl:col-start-8">
+    <p class="text-label-sm uppercase tracking-widest text-secondary">Gala &amp; Red Carpet</p>
+    <h1 class="mt-1 font-display text-headline-lg-mobile text-primary md:text-headline-md xl:text-headline-lg">Đầm Dạ Hội <em>Lộng Lẫy</em></h1>
+    <p class="mt-2 text-body-md text-on-surface-variant md:text-body-lg">Tùng xoè ren đính kết hạt cườm thủ công, dáng corset tôn eo — dành cho những đêm gala và tiệc cưới nàng muốn là tâm điểm.</p>
+
+    <div class="mt-space-md flex items-baseline gap-2 border-y border-surface-container-highest py-space-sm">
+      <span class="font-display text-headline-sm text-primary md:text-headline-md">350.000đ</span>
+      <span class="text-body-sm text-outline">/ngày</span>
+      <span class="ml-auto text-body-sm text-outline-variant line-through">2.800.000đ</span>
+    </div>
+
+    <!-- sizes: information, not a picker (no booking feature — §9) -->
+    <div class="mt-space-md">
+      <p class="text-label-sm uppercase text-outline">Size có sẵn</p>
+      <ul class="mt-2 flex flex-wrap gap-2" aria-label="Size">
+        <li class="rounded-full border border-outline-variant px-3.5 py-1.5 text-label-lg text-outline-variant line-through"><span class="sr-only">Hết size </span>XS</li>
+        <li class="rounded-full bg-primary-fixed px-3.5 py-1.5 text-label-lg text-on-primary-fixed">S</li>
+        <li class="rounded-full bg-primary-fixed px-3.5 py-1.5 text-label-lg text-on-primary-fixed">M</li>
+        <li class="rounded-full border border-outline-variant px-3.5 py-1.5 text-label-lg text-outline-variant line-through"><span class="sr-only">Hết size </span>L</li>
+      </ul>
+      <p class="mt-2 flex items-center gap-1.5 text-body-sm text-on-surface-variant"><i data-lucide="ruler" class="h-3.5 w-3.5 text-primary"></i>Chưa chắc size? Atelier Demo hỗ trợ bóp nới nhẹ.</p>
+    </div>
+
+    <!-- inline actions: md+ only (mobile uses the sticky bar) -->
+    <div class="mt-space-lg hidden flex-col gap-space-sm md:flex">
+      <a href="https://zalo.me/0901000000" target="_blank" rel="noopener noreferrer" class="flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-label-lg text-on-primary shadow-ambient transition-colors hover:bg-on-primary-fixed-variant"><i data-lucide="message-circle" class="h-4 w-4"></i>Nhắn Zalo giữ váy</a>
+      <a href="tel:0901000000" class="flex min-h-12 items-center justify-center gap-2 rounded-full border border-secondary-container px-6 text-label-lg text-primary transition-colors hover:bg-primary-fixed"><i data-lucide="phone" class="h-4 w-4"></i>Gọi 0901 000 000</a>
+    </div>
+
+    <ul class="mt-space-md grid gap-2 rounded-md bg-surface-container-low p-space-sm text-body-sm text-on-surface-variant md:p-space-md">
+      <li class="flex items-center gap-2"><i data-lucide="sparkles" class="h-4 w-4 shrink-0 text-primary"></i>Thử đồ miễn phí tại 12 Phố Mẫu, Cầu Giấy</li>
+      <li class="flex items-center gap-2"><i data-lucide="shirt" class="h-4 w-4 shrink-0 text-primary"></i>Giặt hấp, kiểm tra kỹ trước khi trao tay nàng</li>
+      <li class="flex items-center gap-2"><i data-lucide="truck" class="h-4 w-4 shrink-0 text-primary"></i>Ship hỏa tốc nội thành Hà Nội</li>
+    </ul>
+
+    <!-- details: accordions on mobile, open from md (script below) -->
+    <div class="mt-space-md divide-y divide-surface-container-highest border-y border-surface-container-highest">
+      <details class="group/d" data-open-md>
+        <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between text-label-lg">Chi tiết thiết kế<i data-lucide="chevron-down" class="h-4 w-4 transition-transform group-open/d:rotate-180"></i></summary>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-space-md gap-y-1.5 pb-space-md text-body-sm">
+          <dt class="text-outline">Chất liệu</dt><dd>Ren, tulle, hạt cườm đính tay</dd>
+          <dt class="text-outline">Dáng</dt><dd>Corset, chân váy xoè</dd>
+          <dt class="text-outline">Độ dài</dt><dd>Maxi chạm sàn</dd>
+          <dt class="text-outline">Màu</dt><dd>Hồng phấn</dd>
+          <dt class="text-outline">Dịp</dt><dd>Gala, tiệc cưới, chụp ảnh</dd>
+        </dl>
+      </details>
+      <details class="group/d" data-open-md>
+        <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between text-label-lg">Thuê váy thế nào?<i data-lucide="chevron-down" class="h-4 w-4 transition-transform group-open/d:rotate-180"></i></summary>
+        <ol class="list-decimal space-y-1.5 pb-space-md pl-5 text-body-sm text-on-surface-variant">
+          <li>Nhắn Zalo cho Atelier Demo ngày nàng cần váy và size.</li>
+          <li>Ghé tiệm thử miễn phí, hoặc nhận ship tận nơi.</li>
+          <li>Trả váy đúng hẹn — Atelier Demo lo phần giặt hấp.</li>
+        </ol>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RELATED — 2×2 · 3×1 · 4×1 ═══ -->
+<section aria-labelledby="related" class="mx-auto mt-space-lg max-w-page px-margin-mobile md:mt-space-xl md:px-space-lg xl:px-margin">
+  <div class="mb-space-md flex items-end justify-between gap-3">
+    <div>
+      <p class="text-label-sm uppercase tracking-widest text-secondary xl:text-label-lg">Gợi ý cho nàng</p>
+      <h2 id="related" class="font-display text-headline-sm text-primary md:text-headline-md">Có Thể Nàng Cũng Thích</h2>
+    </div>
+    <a href="home.html#bo-suu-tap" class="hit flex shrink-0 items-center gap-0.5 text-label-sm text-primary underline decoration-tertiary-fixed underline-offset-4 xl:text-label-lg">Xem tất cả <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></a>
+  </div>
+  <ul class="grid grid-cols-2 gap-3.5 md:grid-cols-3 md:gap-gutter xl:grid-cols-4">
+@@RELATED@@
+  </ul>
+</section>
+
+</main>
+
+<!-- ═══ MOBILE ACTION BAR — replaces the tab bar on this page (DESIGN.md "sticky booking bars") ═══ -->
+<div class="frosted pb-safe fixed inset-x-0 bottom-0 z-50 shadow-ambient md:hidden">
+  <div class="flex items-center gap-space-sm px-margin-mobile py-space-sm">
+    <div class="mr-auto leading-tight">
+      <p class="font-display text-title-md text-primary">350.000đ</p>
+      <p class="text-label-sm text-outline">/ngày</p>
+    </div>
+    <a href="tel:0901000000" aria-label="Gọi 0901 000 000" class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-secondary-container text-primary"><i data-lucide="phone" class="h-5 w-5"></i></a>
+    <a href="https://zalo.me/0901000000" target="_blank" rel="noopener noreferrer" class="flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-5 text-label-lg text-on-primary"><i data-lucide="message-circle" class="h-4 w-4"></i>Nhắn Zalo giữ váy</a>
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+  const g = document.getElementById('gallery'), counter = document.getElementById('counter');
+  const thumbs = [...document.querySelectorAll('.thumb')];
+  const current = () => Math.round(g.scrollLeft / g.clientWidth);
+  g.addEventListener('scroll', () => {
+    const i = current();
+    counter.textContent = `${i + 1} / ${g.children.length}`;
+    thumbs.forEach((t, j) => {
+      t.setAttribute('aria-selected', String(i === j));
+      t.classList.toggle('ring-2', i === j); t.classList.toggle('ring-primary', i === j);
+      t.classList.toggle('ring-offset-2', i === j); t.classList.toggle('opacity-70', i !== j);
+    });
+  }, { passive: true });
+  thumbs.forEach((t) => t.addEventListener('click', () => g.scrollTo({ left: g.clientWidth * +t.dataset.go, behavior: 'smooth' })));
+  // §6: details are accordions on mobile, always open from md up
+  const md = matchMedia('(min-width: 768px)');
+  const sync = () => document.querySelectorAll('[data-open-md]').forEach((d) => { d.open = md.matches; });
+  sync(); md.addEventListener('change', sync);
+</script>
+</body>
+</html>

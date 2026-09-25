@@ -91,10 +91,12 @@ cần: viền card/input #EADBDA → `outline-variant`; chip chưa chọn #F5EFE
 
 ### Bo góc và dark theme — áp theo số đo trên ảnh demo (chủ tiệm chốt 2026-09-24)
 
-5. **Bo góc:** ảnh là bản thu nhỏ nên không đo được px tuyệt đối, chỉ đo được hình dạng: nút
-   trong demo gần vuông (góc lẹm 1–2px trên nút 71×21px), KHÔNG phải pill. Nút → **`rounded-sm`**
-   (0.25rem); card/input giữ token frontmatter (`rounded-lg` / `rounded-default`). Công thức
-   "pill" trong phần mô tả không dùng.
+5. **Bo góc:** nút, chip lọc và badge → **pill (`rounded-full`)**, theo DESIGN.md §Shapes và bản
+   Stitch (`apps/web/design/stitch/`); card/input giữ token frontmatter (`rounded-lg` /
+   `rounded-default`). *Chủ tiệm đổi 2026-09-25 — thay quyết định 2026-09-24 "nút `rounded-sm`
+   theo góc gần vuông đo trên ảnh demo".*
+   **Icon:** `lucide-react` (component SVG, tree-shaken); không nạp icon font / CDN (Material
+   Symbols của Stitch quy về icon lucide gần nhất). Thêm dependency cùng slice đầu tiên dùng icon.
 6. **Dark theme:** tự theo hệ điều hành (`prefers-color-scheme: dark`), ghi đè cùng tên token trong
    `globals.css`. (m) = đo từ ảnh dark, (d) = suy ra từ scheme light theo quy tắc tone của Material.
    Mọi giá trị (m) đều khớp quy tắc này, vd. dark `on-surface-variant` #D6C2C3 = light

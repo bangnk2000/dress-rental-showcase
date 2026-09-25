@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trang chủ — Atelier Demo (responsive prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="tw.js"></script>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="proto.css">
+</head>
+<body class="bg-surface font-sans text-on-surface antialiased">
+
+<!-- ═══ HEADER — mobile: slim, scrolls away · md: sticky 72px + inline nav · xl: 80px + Zalo pill ═══ -->
+<header class="frosted md:sticky md:top-0 md:z-40 md:shadow-ambient">
+  <div class="mx-auto flex h-14 max-w-page items-center justify-between px-margin-mobile md:h-[72px] md:px-space-lg xl:h-20 xl:px-margin">
+    <a href="home.html" class="flex items-center gap-2.5" aria-label="Atelier Demo — Trang chủ">
+      <img src="@@LOGO@@" alt="" class="h-10 w-10 rounded object-cover xl:h-12 xl:w-12">
+      <span class="flex flex-col leading-none">
+        <span class="font-display text-headline-sm text-primary">atelierdemo</span>
+        <span class="text-label-sm uppercase text-secondary">Cho thuê đồ xinh</span>
+      </span>
+    </a>
+    <nav aria-label="Chính" class="hidden md:flex md:items-center md:gap-space-lg xl:absolute xl:left-1/2 xl:-translate-x-1/2">
+      <a href="home.html" aria-current="page" class="hit border-b-2 border-primary py-1 text-label-lg font-semibold text-primary">Trang chủ</a>
+      <a href="#bo-suu-tap" class="hit border-b-2 border-transparent py-1 text-label-lg text-on-surface-variant hover:text-primary">Bộ sưu tập</a>
+      <a href="contact.html" class="hit border-b-2 border-transparent py-1 text-label-lg text-on-surface-variant hover:text-primary">Liên hệ</a>
+    </nav>
+    <a href="https://zalo.me/0901000000" target="_blank" rel="noopener noreferrer"
+       class="hidden items-center gap-2 min-h-11 rounded-full border border-secondary-container px-5 text-label-lg text-primary transition-colors hover:bg-primary-fixed xl:inline-flex">
+      <i data-lucide="message-circle" class="h-4 w-4"></i>Nhắn Zalo
+    </a>
+  </div>
+</header>
+
+<main class="pb-24 md:pb-0">
+
+<!-- ═══ HERO — mobile: full-bleed 4:5 + card overlaps · md: framed 16:9 + card bottom-left · xl: text cols 1–7 over arched photo cols 7–12 ═══ -->
+<section class="relative md:mx-auto md:max-w-page md:px-space-lg md:pt-space-lg xl:grid xl:grid-cols-12 xl:items-center xl:gap-x-gutter xl:px-margin xl:pt-space-xl">
+  <div class="relative aspect-portrait max-h-[500px] w-full overflow-hidden md:aspect-video md:max-h-none md:rounded-xl xl:col-span-6 xl:col-start-7 xl:row-start-1 xl:aspect-portrait xl:rounded-b-md xl:rounded-t-full">
+    <img src="@@HERO@@" alt="Không gian Atelier Demo với những chiếc đầm tulle màu hồng phấn và ngà" class="h-full w-full object-cover">
+    <div class="absolute inset-0 bg-gradient-to-t from-surface via-surface/30 to-transparent md:from-surface/40 xl:hidden"></div>
+  </div>
+  <div class="relative z-10 -mt-24 px-margin-mobile md:-mt-40 md:w-3/4 md:px-0 md:pl-space-lg xl:col-span-7 xl:col-start-1 xl:row-start-1 xl:mt-0 xl:w-auto xl:pl-0">
+    <div class="flex flex-col items-center rounded-md bg-surface-container-lowest/95 p-6 text-center shadow-ambient backdrop-blur md:items-start md:p-space-lg md:text-left xl:p-space-xl">
+      <span class="mb-2 text-label-sm uppercase tracking-widest text-primary xl:text-label-lg">Atelier Demo Lookbook</span>
+      <h1 class="mb-3 font-display text-headline-lg-mobile text-primary md:text-headline-lg xl:text-display-lg">
+        Tỏa Sáng Trong<br><em class="text-secondary">Từng Khoảnh Khắc</em>
+      </h1>
+      <p class="mb-6 max-w-xs text-body-md text-on-surface-variant md:max-w-measure md:text-body-lg">
+        Bộ sưu tập váy tiệc &amp; váy lụa thiết kế cao cấp cho nàng thơ Hà Nội. Biến hóa lộng lẫy và kiêu sa trong những ngày đặc biệt.
+      </p>
+      <a href="#bo-suu-tap" class="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-label-lg text-on-primary transition-colors hover:bg-on-primary-fixed-variant md:w-auto md:min-w-40">
+        Xem Bộ Sưu Tập <i data-lucide="arrow-right" class="h-4 w-4"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STORE INFO — mobile: stacked rows · md: 2×2 · xl: one band of 4 cells ═══ -->
+<section aria-labelledby="visit" class="mx-auto mt-space-lg max-w-page px-margin-mobile md:mt-space-xl md:px-space-lg xl:px-margin">
+  <div class="rounded-md bg-surface-container p-space-md md:p-space-lg">
+    <div class="mb-space-md flex items-center justify-between gap-3 border-b border-outline-variant/40 pb-space-sm">
+      <h2 id="visit" class="flex items-center gap-2 text-title-md md:font-display md:text-headline-sm">
+        <i data-lucide="store" class="h-5 w-5 text-primary"></i>Ghé Thăm Không Gian Atelier Demo
+      </h2>
+      <span class="shrink-0 rounded-full bg-secondary-fixed px-3 py-1 text-label-sm uppercase text-on-secondary-fixed">Đang mở cửa</span>
+    </div>
+    <div class="grid gap-space-md md:grid-cols-2 md:gap-x-space-lg xl:grid-cols-4">
+      <!-- info row: address -->
+      <div class="flex items-start justify-between gap-3 xl:flex-col xl:justify-start">
+        <div class="flex items-start gap-3">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container-lowest text-primary"><i data-lucide="map-pin" class="h-4 w-4"></i></span>
+          <div><p class="text-label-sm uppercase text-outline">Địa chỉ Atelier</p><p class="text-body-md font-medium">12 Phố Mẫu, Cầu Giấy, Hà Nội</p></div>
+        </div>
+        <a href="https://maps.google.com/?q=56+Mai+Dich+Cau+Giay+Ha+Noi" target="_blank" rel="noopener noreferrer" class="hit flex shrink-0 items-center gap-1 rounded-full bg-surface-container-lowest px-3 py-1.5 text-label-sm text-primary">Chỉ đường <i data-lucide="navigation" class="h-3 w-3"></i></a>
+      </div>
+      <!-- info row: hotline -->
+      <div class="flex items-center justify-between gap-3 xl:flex-col xl:items-start xl:justify-start">
+        <div class="flex items-center gap-3">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container-lowest text-primary"><i data-lucide="phone" class="h-4 w-4"></i></span>
+          <div><p class="text-label-sm uppercase text-outline">Hotline &amp; Zalo</p><p class="text-body-md font-semibold text-primary">0901 000 000</p></div>
+        </div>
+        <div class="flex shrink-0 items-center gap-2">
+          <a href="tel:0901000000" aria-label="Gọi 0901 000 000" class="hit flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary"><i data-lucide="phone" class="h-4 w-4"></i></a>
+          <a href="https://zalo.me/0901000000" target="_blank" rel="noopener noreferrer" class="hit rounded-full bg-surface-container-lowest px-3 py-1.5 text-label-sm">Zalo</a>
+        </div>
+      </div>
+      <!-- info row: hours -->
+      <div class="flex items-start gap-3">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container-lowest text-primary"><i data-lucide="clock" class="h-4 w-4"></i></span>
+        <div><p class="text-label-sm uppercase text-outline">Khung giờ mở cửa</p>
+          <p class="text-body-sm text-on-surface-variant"><span class="font-medium text-on-surface">Thứ 2 – Thứ 6:</span> 14:00 – 22:00<br><span class="font-medium text-on-surface">Thứ 7 – CN:</span> 10:00 – 22:00</p></div>
+      </div>
+      <!-- info row: social -->
+      <a href="https://instagram.com/atelierdemo" target="_blank" rel="noopener noreferrer" class="flex min-h-11 items-center justify-between gap-3 rounded bg-surface-container-lowest/80 px-3 py-2 xl:self-start">
+        <span class="flex items-center gap-2 text-label-sm text-on-surface-variant"><i data-lucide="heart" class="h-4 w-4 text-secondary"></i>Instagram, TikTok &amp; FB</span>
+        <span class="text-label-sm font-semibold text-primary">@atelierdemo</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COLLECTION — chips: mobile scroll above header · md: wrap · xl: joins the header row ═══ -->
+<section id="bo-suu-tap" aria-labelledby="featured" class="mx-auto mt-space-lg max-w-page scroll-mt-24 px-margin-mobile md:mt-space-xl md:px-space-lg xl:px-margin">
+  <div class="mb-space-md flex flex-col gap-space-md xl:flex-row xl:items-end xl:gap-space-lg">
+    <div class="flex items-end justify-between gap-3 order-2 xl:contents">
+      <div class="xl:order-1">
+        <p class="text-label-sm uppercase tracking-widest text-secondary xl:text-label-lg">Curated pieces</p>
+        <h2 id="featured" class="font-display text-headline-sm text-primary md:text-headline-md">Bộ Sưu Tập Nổi Bật</h2>
+      </div>
+      <a href="#" class="hit flex shrink-0 items-center gap-0.5 text-label-sm text-primary underline decoration-tertiary-fixed underline-offset-4 xl:order-3 xl:text-label-lg">Xem tất cả <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></a>
+    </div>
+    <div class="relative order-1 -mx-margin-mobile md:mx-0 xl:order-2 xl:ml-auto">
+      <div class="chip-scroll flex gap-2 overflow-x-auto px-margin-mobile md:flex-wrap md:overflow-visible md:px-0" role="group" aria-label="Lọc theo dịp">
+        <button type="button" aria-pressed="true" class="hit shrink-0 rounded-full bg-primary px-4 py-2 text-label-sm text-on-primary">Tất Cả Thiết Kế</button>
+        <button type="button" aria-pressed="false" class="hit shrink-0 rounded-full bg-surface-container-high px-4 py-2 text-label-sm text-on-surface-variant hover:bg-secondary-container/50">Dạ Hội &amp; Gala</button>
+        <button type="button" aria-pressed="false" class="hit shrink-0 rounded-full bg-surface-container-high px-4 py-2 text-label-sm text-on-surface-variant hover:bg-secondary-container/50">Tiệc Sinh Nhật</button>
+        <button type="button" aria-pressed="false" class="hit shrink-0 rounded-full bg-surface-container-high px-4 py-2 text-label-sm text-on-surface-variant hover:bg-secondary-container/50">Áo Dài Nàng Thơ</button>
+      </div>
+      <div class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-surface md:hidden"></div>
+    </div>
+  </div>
+
+  <!-- 2 cols × 4 · 3 cols × 6 · 4 cols × 8 — never a half-empty last row -->
+  <ul class="grid grid-cols-2 gap-3.5 md:grid-cols-3 md:gap-gutter xl:grid-cols-4">
+@@CARDS@@
+  </ul>
+</section>
+
+<!-- ═══ PERKS — mobile: icon-top card · md: icon-left · xl: un-carded band with rules ═══ -->
+<section aria-label="Dịch vụ" class="mx-auto mt-space-lg max-w-page px-margin-mobile md:mt-space-xl md:px-space-lg xl:px-margin">
+  <ul class="grid grid-cols-3 gap-2 rounded-md bg-surface-container-low p-4 md:gap-gutter md:p-space-lg xl:divide-x xl:divide-outline-variant/50 xl:gap-0 xl:border-y xl:border-outline-variant/50 xl:bg-transparent xl:px-0">
+    <li class="flex flex-col items-center p-2 text-center md:flex-row md:items-start md:gap-3 md:text-left xl:px-space-lg">
+      <i data-lucide="shirt" class="mb-1 h-6 w-6 shrink-0 text-primary md:mb-0"></i>
+      <div><p class="text-label-sm font-semibold tracking-normal md:text-label-lg md:tracking-wide">Giặt Hấp Chuẩn</p><p class="text-label-sm tracking-normal text-on-surface-variant md:text-body-sm">Khử khuẩn thơm tho</p></div>
+    </li>
+    <li class="flex flex-col items-center p-2 text-center md:flex-row md:items-start md:gap-3 md:text-left xl:px-space-lg">
+      <i data-lucide="ruler" class="mb-1 h-6 w-6 shrink-0 text-primary md:mb-0"></i>
+      <div><p class="text-label-sm font-semibold tracking-normal md:text-label-lg md:tracking-wide">Chỉnh Size Vừa</p><p class="text-label-sm tracking-normal text-on-surface-variant md:text-body-sm">Hỗ trợ bóp nới nhẹ</p></div>
+    </li>
+    <li class="flex flex-col items-center p-2 text-center md:flex-row md:items-start md:gap-3 md:text-left xl:px-space-lg">
+      <i data-lucide="truck" class="mb-1 h-6 w-6 shrink-0 text-primary md:mb-0"></i>
+      <div><p class="text-label-sm font-semibold tracking-normal md:text-label-lg md:tracking-wide">Ship Hỏa Tốc</p><p class="text-label-sm tracking-normal text-on-surface-variant md:text-body-sm">Nội thành Hà Nội</p></div>
+    </li>
+  </ul>
+</section>
+
+<!-- ═══ PROMO — mobile: stacked · md+: text left, Zalo pill right ═══ -->
+<section class="mx-auto mt-space-lg max-w-page px-margin-mobile md:mt-space-xl md:px-space-lg xl:px-margin">
+  <div class="relative overflow-hidden rounded-md bg-gradient-to-br from-primary via-primary-container to-secondary p-6 text-on-primary shadow-ambient md:flex md:items-center md:justify-between md:gap-space-lg md:p-space-lg xl:px-space-xl xl:py-space-xl">
+    <div class="absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-on-primary/10 blur-xl xl:h-72 xl:w-72"></div>
+    <div class="relative md:max-w-measure">
+      <span class="mb-3 inline-block rounded-full bg-on-primary/20 px-3 py-1 text-label-sm uppercase tracking-widest">Dành riêng cho nàng</span>
+      <h2 class="mb-2 font-display text-headline-sm md:text-headline-md">Thử Váy Miễn Phí Tại Atelier Demo</h2>
+      <p class="text-body-sm text-on-primary-container md:text-body-md">Không gian thử đồ riêng tư, rộng rãi với hơn 200+ mẫu đầm thiết kế sẵn sàng cho nàng tỏa sáng.</p>
+    </div>
+    <a href="https://zalo.me/0901000000" target="_blank" rel="noopener noreferrer"
+       class="relative mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-surface-container-lowest px-6 text-label-lg text-primary transition-colors hover:bg-primary-fixed md:mt-0 md:w-auto md:shrink-0">
+      <i data-lucide="message-circle" class="h-4 w-4"></i>Nhắn Zalo
+    </a>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══ FOOTER — mobile: card · md: card, 2 cols · xl: full-width band, 4 cols ═══ -->
+<footer class="mt-space-lg pb-24 md:mt-space-xl md:pb-space-lg xl:bg-surface-container-low xl:pb-0">
+  <div class="mx-auto max-w-page px-margin-mobile md:px-space-lg xl:px-margin">
+    <div class="grid gap-4 rounded-md bg-surface-container-high/60 p-5 md:grid-cols-2 md:gap-x-space-lg md:p-space-lg xl:grid-cols-4 xl:rounded-none xl:bg-transparent xl:px-0 xl:py-space-xl">
+      <div class="flex items-center gap-4 md:row-span-2 md:items-start xl:row-span-1">
+        <img src="@@STORE@@" alt="Mặt tiền Atelier Demo, 12 Phố Mẫu" class="h-16 w-16 shrink-0 rounded object-cover xl:h-20 xl:w-20">
+        <div><p class="font-display text-title-md text-primary">atelierdemo</p><p class="text-label-sm uppercase text-secondary">Cho thuê đồ xinh Hà Nội</p><p class="mt-1 text-body-sm text-outline">Đồng hành cùng vẻ đẹp rạng ngời của nàng trong mọi buổi tiệc.</p></div>
+      </div>
+      <ul class="space-y-2 border-t border-outline-variant/30 pt-3 text-body-sm text-on-surface-variant md:border-0 md:pt-0">
+        <li class="flex items-center gap-2"><i data-lucide="map-pin" class="h-4 w-4 text-primary"></i>12 Phố Mẫu, Cầu Giấy, Hà Nội</li>
+        <li class="flex items-center gap-2"><i data-lucide="smartphone" class="h-4 w-4 text-primary"></i>0901 000 000 (Hỗ trợ 24/7)</li>
+      </ul>
+      <div class="hidden text-body-sm text-on-surface-variant xl:block">
+        <p class="mb-2 text-label-sm uppercase text-outline">Giờ mở cửa</p>
+        <p>Thứ 2 – Thứ 6: 14:00 – 22:00</p><p>Thứ 7 – CN: 10:00 – 22:00</p>
+      </div>
+      <p class="flex items-center gap-2 text-body-sm text-on-surface-variant"><i data-lucide="at-sign" class="h-4 w-4 text-primary"></i>FB, IG, TikTok: @atelierdemo</p>
+    </div>
+    <p class="pb-4 pt-2 text-center text-label-sm uppercase tracking-widest text-outline xl:border-t xl:border-outline-variant/40 xl:py-space-md">© Atelier Demo</p>
+  </div>
+</footer>
+
+<!-- ═══ BOTTOM TAB BAR — mobile only; md+ collapses into the header ═══ -->
+<nav aria-label="Chính" class="frosted pb-safe fixed inset-x-0 bottom-0 z-50 shadow-ambient md:hidden">
+  <div class="grid h-16 grid-cols-3">
+    <a href="home.html" aria-current="page" class="flex flex-col items-center justify-center gap-1 text-primary"><i data-lucide="home" class="h-5 w-5"></i><span class="text-label-sm font-semibold">Trang chủ</span></a>
+    <a href="#bo-suu-tap" class="flex flex-col items-center justify-center gap-1 text-on-surface-variant"><i data-lucide="shirt" class="h-5 w-5"></i><span class="text-label-sm">Bộ sưu tập</span></a>
+    <a href="contact.html" class="flex flex-col items-center justify-center gap-1 text-on-surface-variant"><i data-lucide="phone" class="h-5 w-5"></i><span class="text-label-sm">Liên hệ</span></a>
+  </div>
+</nav>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>
