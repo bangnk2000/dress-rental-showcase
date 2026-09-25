@@ -68,8 +68,9 @@ if changed_matches '^apps/be/'; then
 fi
 
 # fe, qr-admin and web compile against the committed OpenAPI contract, so a contract
-# change can break them even when their own sources are untouched.
-if changed_matches '^(apps/fe/|packages/contract/)'; then
+# change can break them even when their own sources are untouched. fe also bundles
+# packages/image-url (its own tests run in the fe job).
+if changed_matches '^(apps/fe/|packages/contract/|packages/image-url/)'; then
   fe=true
 fi
 

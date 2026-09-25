@@ -11,4 +11,6 @@ export interface ApiErrorDetailDto {
   /** Violated rule, e.g. 'min', 'format' */
   rule?: string;
   message: string;
+  /** Byte limit of a size rule — set by PHOTO.TOO_LARGE */
+  maxBytes?: number;
 }

@@ -28,6 +28,10 @@ report "(a1) no axios imports outside src/api/" "$HITS"
 HITS=$(grep -rEn "[^.A-Za-z]fetch\(" src "${SRC_TS[@]}" | grep -v '^src/api/' | grep -v '^src/test/' || true)
 report "(a2) no bare fetch() outside src/api/ (tests exempt)" "$HITS"
 
+# a3: the direct-to-storage photo PUT (catalog/dress-photo-upload) is HTTP too — it lives in src/api/.
+HITS=$(grep -rEn "XMLHttpRequest" src "${SRC_TS[@]}" | grep -v '^src/api/' | grep -v '^src/test/' | grep -vE '\.test\.tsx?:' || true)
+report "(a3) no XMLHttpRequest outside src/api/ (tests exempt)" "$HITS"
+
 # ── (b) feature isolation ────────────────────────────────────────────────────
 # b1: deep feature imports (static or dynamic) — only @/features/<name> (index) is public
 HITS=$(grep -rEn "@/features/[a-z0-9-]+/" src "${SRC_TS[@]}" || true)
@@ -108,6 +112,15 @@ report "(f2) no v3 @tailwind directives" "$HITS"
 
 HITS=$(grep -rEn "localStorage\.(set|get|remove)Item" src "${SRC_TS[@]}" | grep -v '^src/api/mutator/auth-tokens.ts' || true)
 report "(f3) localStorage only in src/api/mutator/auth-tokens.ts" "$HITS"
+
+# ── (g) image variants (catalog/dress-photo-upload §3) ───────────────────────
+# Cloudflare Images URLs are built ONLY by packages/image-url (shared with apps/web, invariant #4),
+# and the bucket origin is read in ONE place.
+HITS=$(grep -rEn "cdn-cgi/image" src "${SRC_TS[@]}" | grep -vE '\.test\.tsx?:' || true)
+report "(g1) no hand-built cdn-cgi/image URLs (use @dress-rental/image-url via @/lib/photo-url)" "$HITS"
+
+HITS=$(grep -rEn "VITE_IMAGE_BASE_URL" src "${SRC_TS[@]}" | grep -v '^src/lib/photo-url.ts' | grep -v '^src/types/env.d.ts' | grep -vE '\.test\.tsx?:' || true)
+report "(g2) VITE_IMAGE_BASE_URL read only in src/lib/photo-url.ts" "$HITS"
 
 if [ "$FAIL" -ne 0 ]; then
   echo "ARCH: violations found."

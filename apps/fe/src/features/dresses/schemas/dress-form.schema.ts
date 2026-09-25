@@ -7,6 +7,8 @@
  */
 import { z } from 'zod';
 
+import { MAX_PHOTOS, PHOTO_LINK_PATTERN } from '@/components/media/photo-upload-rules';
+
 const vndAmount = (requiredKey: string) =>
   z
     .string()
@@ -14,15 +16,6 @@ const vndAmount = (requiredKey: string) =>
     .min(1, requiredKey)
     .regex(/^[0-9]+$/, 'form.errors.amountInvalid');
 
-const PHOTO_URL_LINE = /^https?:\/\/\S+$/;
-
-/** Textarea value (one link per line) → cleaned URL list. */
-export function parsePhotoUrls(value: string): string[] {
-  return value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-}
 
 export const dressFormSchema = z.object({
   code: z
@@ -40,13 +33,16 @@ export const dressFormSchema = z.object({
   rentalPrice: vndAmount('form.errors.rentalPriceRequired'),
   depositAmount: vndAmount('form.errors.depositRequired'),
   notes: z.string().trim().max(2000, 'form.errors.notesTooLong'),
+  /**
+   * Finished photo URLs in display order (first = cover) — uploaded to R2 or pasted
+   * (catalog/dress-photo-upload). PhotoListField already refuses bad links and an 11th photo; this
+   * mirrors the API (`@ArrayMaxSize(10)`, http(s) URLs) so the form never sends what it rejects.
+   * Array-level refinements keep the message on the field, not on a hidden item path.
+   */
   photoUrls: z
-    .string()
-    .refine((value) => parsePhotoUrls(value).length <= 10, 'form.errors.photoUrlsTooMany')
-    .refine(
-      (value) => parsePhotoUrls(value).every((line) => PHOTO_URL_LINE.test(line)),
-      'form.errors.photoUrlInvalid',
-    ),
+    .array(z.string())
+    .refine((urls) => urls.length <= MAX_PHOTOS, 'form.errors.photoUrlsTooMany')
+    .refine((urls) => urls.every((url) => PHOTO_LINK_PATTERN.test(url)), 'form.errors.photoUrlInvalid'),
   /** Category id, or the NONE sentinel — Radix Select items cannot carry an empty value. */
   categoryId: z.string(),
   /** Owner-only (FR-CAT-05); '' = no value. The dialog only SENDS it for the owner. */
@@ -75,7 +71,7 @@ export const dressFormDefaults: DressFormValues = {
   rentalPrice: '',
   depositAmount: '',
   notes: '',
-  photoUrls: '',
+  photoUrls: [],
   categoryId: CATEGORY_NONE,
   purchasePrice: '',
 };

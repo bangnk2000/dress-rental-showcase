@@ -14,6 +14,7 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from './exceptions';
 
@@ -23,6 +24,7 @@ const STATUS_BY_TYPE: Array<[new (...args: never[]) => ExceptionBase, HttpStatus
   [ConflictException, HttpStatus.CONFLICT],
   [ForbiddenException, HttpStatus.FORBIDDEN],
   [UnauthorizedException, HttpStatus.UNAUTHORIZED],
+  [ServiceUnavailableException, HttpStatus.SERVICE_UNAVAILABLE],
 ];
 
 /**

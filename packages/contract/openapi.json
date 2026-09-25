@@ -1033,6 +1033,73 @@
         ]
       }
     },
+    "/api/v1/photos/upload-urls": {
+      "post": {
+        "operationId": "CreatePhotoUploadUrlHttpController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePhotoUploadUrlRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePhotoUploadUrlResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "PHOTO.UNSUPPORTED_TYPE (not JPEG/PNG/WebP) | PHOTO.TOO_LARGE (details[0].maxBytes) | GENERIC.VALIDATION",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "GENERIC.FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "PHOTO.STORAGE_UNAVAILABLE — R2 is not configured on this server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Presign ONE direct browser → R2 PUT (300 s; Content-Type, Content-Length and Cache-Control are signed)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/v1/rentals": {
       "post": {
         "operationId": "CreateRentalHttpController_create",
@@ -1966,6 +2033,10 @@
           },
           "message": {
             "type": "string"
+          },
+          "maxBytes": {
+            "type": "integer",
+            "description": "Byte limit of a size rule — set by PHOTO.TOO_LARGE"
           }
         },
         "required": [
@@ -2800,6 +2871,81 @@
         },
         "required": [
           "data"
+        ]
+      },
+      "CreatePhotoUploadUrlRequestDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ],
+            "type": "string",
+            "example": "image/jpeg"
+          },
+          "contentLength": {
+            "type": "integer",
+            "example": 2097152,
+            "description": "Exact file size in bytes; signed into the URL, so the PUT body must match it"
+          }
+        },
+        "required": [
+          "contentType",
+          "contentLength"
+        ]
+      },
+      "PhotoUploadHeadersDto": {
+        "type": "object",
+        "properties": {
+          "Content-Type": {
+            "type": "string",
+            "example": "image/jpeg"
+          },
+          "Cache-Control": {
+            "type": "string",
+            "example": "public, max-age=31536000, immutable"
+          }
+        },
+        "required": [
+          "Content-Type",
+          "Cache-Control"
+        ]
+      },
+      "CreatePhotoUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "description": "Presigned R2 PUT URL, valid for 300 s, for exactly one key"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "PUT"
+            ]
+          },
+          "headers": {
+            "$ref": "#/components/schemas/PhotoUploadHeadersDto"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://img.example.com/photos/2026/09/6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a.jpg",
+            "description": "Public URL of the photo once the PUT succeeds — append it to the dress photoUrls"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-09-25T10:05:00.000Z"
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "method",
+          "headers",
+          "url",
+          "expiresAt"
         ]
       },
       "CreateRentalItemRequestDto": {

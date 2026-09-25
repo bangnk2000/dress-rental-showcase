@@ -10,6 +10,13 @@ export class ApiErrorDetailDto {
 
   @ApiProperty()
   readonly message!: string;
+
+  @ApiProperty({
+    required: false,
+    type: 'integer',
+    description: 'Byte limit of a size rule — set by PHOTO.TOO_LARGE',
+  })
+  readonly maxBytes?: number;
 }
 
 export class ApiErrorBodyDto {

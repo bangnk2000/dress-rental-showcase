@@ -12,7 +12,11 @@ import { isAxiosError } from 'axios';
 
 export type ApiOutcome = { kind: 'outcome'; status: string } & Record<string, unknown>;
 
-export type ApiFaultDetail = { field?: string; rule?: string; message: string };
+/** Codes may add their own detail fields, e.g. `maxBytes` on `PHOTO.TOO_LARGE`. */
+export type ApiFaultDetail = { field?: string; rule?: string; message: string } & Record<
+  string,
+  unknown
+>;
 
 export type ApiFault = {
   kind: 'fault';

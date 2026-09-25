@@ -3,6 +3,11 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-25 (33) — owner ask "backend + CMS phục vụ `apps/web/src/api/mock`": specs
+  `catalog/public-listing` (FR-CAT-09) and `catalog/dress-photo-upload` (FR-CAT-10/11) approved;
+  the latter built = pass (36/36): BE-signed browser→R2 PUT, `PhotoListField` in the dress form,
+  Cloudflare Images variants via `packages/image-url`. be 207 unit / 108 e2e, fe 131, image-url 8;
+  real dev-bucket browser proof passed. Branch `feat/dress-photo-upload` → PR. Not deployed.
 - 2026-09-25 (32) — owner ask "dựa vào apps/web/design/prototype break tasks và triển khai code với
   mockapi data trước": `web:public-pages` = pass (35/35). Tasks T1–T8 + rendering + BE change-request
   draft in `docs/design/web/public-pages.md` (FR-WEB-01..04 added to the SRS). Home, /bo-suu-tap,

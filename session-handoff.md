@@ -1,5 +1,33 @@
 # Session Handoff
 
+## 2026-09-25 (33) — photo upload to R2 + Cloudflare Images (`catalog/dress-photo-upload` = pass, branch `feat/dress-photo-upload` → PR)
+
+- Done: owner asked to replace the web mock with real BE data managed from the CMS. Two specs
+  approved after 3 Q&A rounds: [catalog/public-listing.md](docs/design/catalog/public-listing.md)
+  (FR-CAT-09 — NOT built yet) and [catalog/dress-photo-upload.md](docs/design/catalog/dress-photo-upload.md)
+  (FR-CAT-10/11 — built, as-built §8). SRS gained FR-CAT-09..11 + FR-WEB-05 and traceability rows.
+  Work split across subagents: R2 spike (outside the repo) ∥ BE slice → `pnpm contract` → FE
+  (`packages/image-url` + `PhotoListField`). Real-bucket browser proof passed (evidence in the ledger).
+- Next: `catalog/public-listing` (spec approved, every §6 question answered) — migration
+  `dress_listings` + `dress_listing_items`, aggregate, owner/staff commands, `@Public()` controller
+  with throttler → `pnpm contract` → CMS `features/listings` (reuses `PhotoListField` + the
+  uploader via prop). Then `web:public-catalog-live` (swap `apps/web/src/api/mock/public-catalog.ts`,
+  ISR 300 s, `next/image` custom loader over `@dress-rental/image-url`, fixed widths).
+- Watch out:
+  - R2: `@aws-sdk` presigner does NOT sign content-type/cache-control by default — the adapter
+    passes `signableHeaders`; `requestChecksumCalculation: 'WHEN_REQUIRED'` removes a bogus CRC.
+    The bucket CORS MUST list `Cache-Control` in AllowedHeaders (first real run was blocked by it).
+  - Prod still needs: its own bucket + `img.example.com` custom domain + CORS for
+    `https://cms.example.com`, R2 env in `/root/.dress-secrets`, and `VITE_IMAGE_BASE_URL` at FE
+    BUILD time. NOT deployed.
+  - `ApiErrorDetailDto` gained optional `maxBytes` (all three clients regenerated) — `PHOTO.TOO_LARGE`
+    carries it in `error.details[0]`.
+  - Pre-existing gap found: be depcruise rules anchored on `^node_modules/` (`domain-stays-pure`,
+    `commands-no-sql-driver`) never match under pnpm (`../../node_modules/.pnpm/…`) — fix in its own change.
+  - Dev leftovers on purpose: test dresses `PHOTO-*` in the dev DB, their objects in
+    `dress-rental-dev-media`; spike scratch in `~/spike-r2`.
+  - The user does not want `.env` files read by the agent — load them only at runtime.
+
 ## 2026-09-25 (32) — public pages on mock data (`web:public-pages` = pass, branch `feat/web-public-pages` → PR → master)
 
 - Done: owner asked to break the prototype (`apps/web/design/prototype/`) into tasks and build the

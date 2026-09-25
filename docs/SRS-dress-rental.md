@@ -79,6 +79,18 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   `rejected_dress_code_taken`. Mã váy từ đây cho phép `_`. (b) Kích cỡ trên form **chọn bằng nút**
   XS / S / M / L / XL (chạm lại để bỏ); API vẫn giữ `sizeLabel` text tự do ≤ 20 ký tự — giá trị cũ
   (CSV) ngoài 5 cỡ hiện thành nút thứ sáu đang chọn khi sửa, không bị xoá ngầm.
+- **FR-CAT-09** Mẫu công khai (website): nhân viên tạo "mẫu" (tên, slug, tagline, mô tả, ≥ 1 dịp
+  trong 6 dịp cố định, giá bán tham khảo, thông số, ảnh, cờ Hot) và gắn váy vào (một váy thuộc
+  nhiều mẫu). Size/giá/còn-hết trên web **suy ra** từ váy `active` đang gắn (giá "X / 2 ngày",
+  không xét lịch). Đăng/ẩn hai chiều; slug khoá sau lần đăng đầu; staff chỉ xoá mẫu chưa từng
+  đăng, owner xoá mọi mẫu. API ẩn danh `GET /public/dresses[/:slug]` chỉ trả trường công khai.
+  Spec: [design/catalog/public-listing.md](./design/catalog/public-listing.md).
+- **FR-CAT-10** Upload ảnh trong CMS khi tạo/sửa váy (và mẫu): trình duyệt PUT **thẳng lên R2**
+  bằng URL tạm do BE ký (JPEG/PNG/WebP, ≤ 10 MB, hết hạn 5 phút); URL ảnh lưu vào `photo_urls`
+  như link; link dán tay vẫn được; xoá ảnh khỏi váy không xoá file R2.
+  Spec: [design/catalog/dress-photo-upload.md](./design/catalog/dress-photo-upload.md).
+- **FR-CAT-11** Ảnh R2 được phát qua **Cloudflare Images** (biến thể theo width, `format=auto`)
+  ở cả web lẫn CMS; link ngoài R2 hiển thị nguyên vẹn. Cùng spec với FR-CAT-10 §3.
 
 ### rentals
 - **FR-RENT-01** Tạo đơn thuê: khách (tên/điện thoại) + NHIỀU váy + khoảng ngày **inclusive**
@@ -146,10 +158,13 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 - **FR-WEB-01** Trang chủ công khai: hero, thông tin tiệm (địa chỉ, hotline/Zalo, giờ mở cửa,
   mạng xã hội), bộ sưu tập nổi bật lọc theo dịp, đặc quyền, lời mời thử váy qua Zalo.
 - **FR-WEB-02** Bộ sưu tập (`/bo-suu-tap`): mọi váy công khai, lọc theo dịp; mỗi thẻ dẫn tới chi tiết.
-- **FR-WEB-03** Chi tiết váy (`/bo-suu-tap/<slug>`): ảnh, giá thuê/ngày, giá bán tham khảo, size
+- **FR-WEB-03** Chi tiết váy (`/bo-suu-tap/<slug>`): ảnh, giá thuê "X / 2 ngày" (chốt 2026-09-25 —
+  giá một lượt, không phải giá/ngày), giá bán tham khảo, size
   còn/hết (thông tin, KHÔNG đặt lịch), chi tiết thiết kế, cách thuê, liên hệ Zalo/gọi, váy gợi ý.
 - **FR-WEB-04** Liên hệ (`/lien-he`): địa chỉ (sao chép), chỉ đường Google Maps, gọi, giờ mở cửa,
   kênh mạng xã hội, đặc quyền.
+- **FR-WEB-05** Web đọc catalogue thật từ `GET /public/dresses[/:slug]` (FR-CAT-09) thay mock,
+  ISR 5 phút, ảnh qua Cloudflare Images (FR-CAT-11); xoá `apps/web/src/api/mock/`.
 - Dữ liệu váy hiện là **mock** trong `apps/web` (BE chưa có endpoint ẩn danh) — thiết kế + BE change
   request nháp: [design/web/public-pages.md](./design/web/public-pages.md).
 
@@ -204,6 +219,9 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-RENT-11 | `rentals/rental-discount` | [rentals-aggregate.md](./design/rentals-aggregate.md) §Giảm giá | pass |
 | FR-RENT-12, 13 | `rentals/update-rental` | [rentals/update-rental.md](./design/rentals/update-rental.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Sửa đơn | pass |
 | FR-WEB-01..04 | `web:public-pages` (mock data) | [web/public-pages.md](./design/web/public-pages.md) | pass |
+| FR-CAT-10, 11 | `catalog/dress-photo-upload` | [catalog/dress-photo-upload.md](./design/catalog/dress-photo-upload.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
+| FR-CAT-09 | `catalog/public-listing` | [catalog/public-listing.md](./design/catalog/public-listing.md) (spec `approved`) | not-started |
+| FR-WEB-05 | `web:public-catalog-live` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Thứ tự làm, [web/public-pages.md](./design/web/public-pages.md) §4 | not-started |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

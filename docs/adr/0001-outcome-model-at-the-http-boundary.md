@@ -166,6 +166,20 @@ UNIQUE thành `CollectionConflictError`, service đọc lại sổ rồi trả �
 - `PATCH /rentals/:id` (FR-RENT-13, 2026-09-18): TOÀN BỘ endpoint là của owner (`rental:update`),
   không có nhánh nào trong use case phân biệt theo vai trò → staff gọi = guard chặn = 403
   **envelope**, giống `user:manage`/`dress:retire`. `GET /rentals/:id` là read: 404 envelope.
+- `catalog/dress-photo-upload` — `POST /photos/upload-urls` (FR-CAT-10, 2026-09-25, spec
+  [catalog/dress-photo-upload.md](../design/catalog/dress-photo-upload.md) §2): không có từ chối
+  nghiệp vụ — loại/cỡ sai là **input invalid**, thiếu cấu hình R2 là **lỗi kỹ thuật**, nên service
+  **throw** và filter render envelope. Đây là các **envelope code có tên** đầu tiên ngoài `GENERIC.*`
+  (FE branch theo `error.code`, không theo HTTP status):
+
+  | Envelope code | HTTP | Khi nào | `details` |
+  | --- | --- | --- | --- |
+  | `PHOTO.UNSUPPORTED_TYPE` | 400 | `contentType` ∉ {`image/jpeg`, `image/png`, `image/webp`} — kiểm ở service, KHÔNG ở DTO, để không thành `GENERIC.VALIDATION` | — |
+  | `PHOTO.TOO_LARGE` | 400 | `contentLength` ≤ 0 hoặc > `MAX_PHOTO_BYTES` (mặc định 10485760) | `[{ field: 'contentLength', rule: 'max', message, maxBytes }]` |
+  | `PHOTO.STORAGE_UNAVAILABLE` | 503 | thiếu một trong `R2_*` / `IMAGE_PUBLIC_BASE_URL` trên server | — |
+
+  Thứ tự: guard (`photo:upload`, mọi nhân viên) → loại → cỡ → cấu hình. Body sai hình (không phải
+  số nguyên, field thừa) vẫn là `GENERIC.VALIDATION`.
 
 ## 4. UI state matrix (FE + qr-admin)
 
@@ -206,6 +220,9 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_nothing_to_record` | message trên ô Tiền cọc; thực tế nút đã disabled khi cả hai ô trống | `rentals:collect.errors.nothingToRecord` |
 | `rejected_rental_closed` | đóng dialog, toast nêu `currentStatus` + invalidate list | `rentals:collect.rentalClosed` |
 | `rejected_deposit_basis_changed` | GIỮ dialog: tính lại hoàn cọc theo `collectedDeposit` server trả về, toast nêu số mới, invalidate sổ của đơn | `today:returnDialog.deposit.changed` |
+| *fault* `PHOTO.UNSUPPORTED_TYPE` (400) | ô ảnh (`PhotoListField`): thumbnail đỏ + message, nút xoá (CMS đã kiểm tại chỗ — đây là phòng hờ) | `media:errors.unsupportedType` |
+| *fault* `PHOTO.TOO_LARGE` (400, `details[0].maxBytes`) | ô ảnh: thumbnail đỏ + message giới hạn, nút xoá | `media:errors.tooLarge` |
+| *fault* `PHOTO.STORAGE_UNAVAILABLE` (503) | ô ảnh: thumbnail đỏ + **Thử lại**; ô dán link vẫn dùng được | `media:errors.storageUnavailable` |
 | *fault* `GENERIC.VALIDATION` (400 + `details[]`) | `form.setError` theo `details[].field` | (message từ server) |
 | *fault* còn lại trên mutation | toast lỗi chung + cho bấm lại | `common:errors.generic` |
 | *fault* còn lại trên query | route error boundary | — |

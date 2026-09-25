@@ -92,6 +92,7 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter fe lint && pnpm --filter fe arch
+      - run: pnpm --filter @dress-rental/image-url check && pnpm --filter @dress-rental/image-url test
       - run: pnpm --filter fe test
       - run: pnpm --filter fe build
 

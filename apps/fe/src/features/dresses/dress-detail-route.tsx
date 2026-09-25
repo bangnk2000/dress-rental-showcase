@@ -17,6 +17,7 @@ import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { formatVnd } from '@/lib/format';
+import { PHOTO_WIDTH, photoUrl } from '@/lib/photo-url';
 
 import { AvailabilityChecker } from './components/availability-checker';
 import { BookingCalendar } from './components/booking-calendar';
@@ -135,10 +136,12 @@ function DressDetail({ dressId }: { dressId: string }) {
           <section className="space-y-2">
             <h2 className="text-base font-semibold">{t('detail.photos.title')}</h2>
             <div className="flex flex-wrap gap-2">
-              {dress.photoUrls.map((url) => (
-                <a key={url} href={url} target="_blank" rel="noreferrer">
+              {/* The tile shows the 640 variant (the CMS's large view); the link still opens the
+                  original as stored. Index keys: a dress may list the same link twice. */}
+              {dress.photoUrls.map((url, index) => (
+                <a key={`${index}-${url}`} href={url} target="_blank" rel="noreferrer">
                   <img
-                    src={url}
+                    src={photoUrl(url, PHOTO_WIDTH.large)}
                     alt={dress.code}
                     loading="lazy"
                     className="h-28 w-28 rounded-md border object-cover"

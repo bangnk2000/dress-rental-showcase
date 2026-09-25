@@ -1,0 +1,25 @@
+{
+  "photos": {
+    "upload": "Upload photos",
+    "fileInput": "Choose photos to upload",
+    "hint": "JPG, PNG or WebP, up to {{maxMb}} MB each. The first photo is the cover.",
+    "addLink": "Add link",
+    "linkInput": "Photo link",
+    "linkPlaceholder": "https://...",
+    "linkInvalid": "The link must start with http:// or https://",
+    "cover": "Cover",
+    "limit": "At most {{max}} photos",
+    "photo": "Photo {{index}}",
+    "uploading": "Uploading {{percent}}%",
+    "retry": "Retry photo {{index}}",
+    "remove": "Remove photo {{index}}",
+    "moveLeft": "Move photo {{index}} left",
+    "moveRight": "Move photo {{index}} right"
+  },
+  "errors": {
+    "unsupportedType": "Only JPG, PNG and WebP images are accepted",
+    "tooLarge": "Image too large (max {{maxMb}} MB)",
+    "storageUnavailable": "Photo storage is not available. Try again later or use Add link.",
+    "uploadFailed": "Upload failed. Please try again."
+  }
+}

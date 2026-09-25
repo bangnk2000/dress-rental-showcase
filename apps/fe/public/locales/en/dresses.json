@@ -51,8 +51,7 @@
       "rentalPrice": "Rental price (VND)",
       "depositAmount": "Deposit (VND)",
       "notes": "Notes",
-      "photoUrls": "Photos (one link per line)",
-      "photoUrlsPlaceholder": "https://...",
+      "photoUrls": "Photos",
       "category": "Category",
       "purchasePrice": "Purchase price (VND) — owner only"
     },
@@ -67,7 +66,7 @@
       "amountInvalid": "The amount must be a non-negative whole number",
       "notesTooLong": "Notes are at most 2000 characters",
       "duplicateCode": "This dress code already exists",
-      "photoUrlInvalid": "Each line must be a valid http(s) link",
+      "photoUrlInvalid": "Each photo must be a valid http(s) link",
       "photoUrlsTooMany": "At most 10 photos"
     },
     "success": "Dress added to the catalog",

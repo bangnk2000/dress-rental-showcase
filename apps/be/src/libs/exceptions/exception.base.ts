@@ -3,6 +3,8 @@ export interface ErrorDetail {
   field?: string;
   rule?: string;
   message: string;
+  /** The byte limit a size rule enforces — `PHOTO.TOO_LARGE` carries it for the FE message. */
+  maxBytes?: number;
 }
 
 export interface SerializedException {
