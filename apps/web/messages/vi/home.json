@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "title": "Cho thuê váy tiệc & đầm dạ hội tại Hà Nội"
+  },
+  "hero": {
+    "eyebrow": "Atelier Demo Lookbook",
+    "titleLine1": "Tỏa Sáng Trong",
+    "titleLine2": "Từng Khoảnh Khắc",
+    "lead": "Bộ sưu tập váy tiệc & váy lụa thiết kế cao cấp cho nàng thơ Hà Nội. Biến hóa lộng lẫy và kiêu sa trong những ngày đặc biệt.",
+    "cta": "Xem Bộ Sưu Tập",
+    "imageAlt": "Không gian Atelier Demo với những chiếc đầm tulle màu hồng phấn và ngà"
+  },
+  "visit": {
+    "title": "Ghé Thăm Không Gian Atelier Demo",
+    "addressLabel": "Địa chỉ Atelier",
+    "directions": "Chỉ đường",
+    "hotlineLabel": "Hotline & Zalo",
+    "call": "Gọi {phone}",
+    "zalo": "Zalo",
+    "hoursLabel": "Khung giờ mở cửa",
+    "social": "Instagram, TikTok & FB"
+  },
+  "perks": {
+    "label": "Dịch vụ",
+    "laundry": {
+      "title": "Giặt Hấp Chuẩn",
+      "detail": "Khử khuẩn thơm tho"
+    },
+    "fitting": {
+      "title": "Chỉnh Size Vừa",
+      "detail": "Hỗ trợ bóp nới nhẹ"
+    },
+    "delivery": {
+      "title": "Ship Hỏa Tốc",
+      "detail": "Nội thành Hà Nội"
+    }
+  },
+  "promo": {
+    "eyebrow": "Dành riêng cho nàng",
+    "title": "Thử Váy Miễn Phí Tại Atelier Demo",
+    "body": "Không gian thử đồ riêng tư, rộng rãi với hơn 200+ mẫu đầm thiết kế sẵn sàng cho nàng tỏa sáng.",
+    "cta": "Nhắn Zalo"
+  }
+}

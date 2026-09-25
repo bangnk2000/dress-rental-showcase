@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "title": "Bộ sưu tập váy cho thuê",
+    "description": "Váy dạ hội, đầm tiệc, váy sinh nhật và áo dài cách tân cho thuê tại Atelier Demo, 12 Phố Mẫu, Cầu Giấy."
+  },
+  "page": {
+    "eyebrow": "Atelier Demo Collection",
+    "title": "Bộ Sưu Tập",
+    "lead": "Hơn 200 mẫu váy tiệc, đầm dạ hội và áo dài — ghé tiệm thử miễn phí hoặc nhắn Zalo để giữ váy."
+  },
+  "featured": {
+    "eyebrow": "Curated pieces",
+    "title": "Bộ Sưu Tập Nổi Bật",
+    "viewAll": "Xem tất cả"
+  },
+  "filter": {
+    "label": "Lọc theo dịp",
+    "all": "Tất Cả Thiết Kế",
+    "gala": "Dạ Hội & Gala",
+    "birthday": "Tiệc Sinh Nhật",
+    "ao-dai": "Áo Dài Nàng Thơ",
+    "empty": "Chưa có mẫu nào cho dịp này — nhắn Zalo để Atelier Demo gợi ý nàng nhé."
+  },
+  "badge": {
+    "available": "Có sẵn",
+    "new": "Mới về",
+    "hot": "Hot Trend"
+  },
+  "card": {
+    "save": "Lưu {name}"
+  },
+  "detail": {
+    "breadcrumbLabel": "Vị trí",
+    "gallery": "Ảnh sản phẩm",
+    "thumbnails": "Chọn ảnh",
+    "showImage": "Xem ảnh {index}",
+    "counter": "{current} / {total}",
+    "sizesTitle": "Size có sẵn",
+    "sizesLabel": "Size",
+    "soldOut": "Hết size",
+    "sizeHelp": "Chưa chắc size? Atelier Demo hỗ trợ bóp nới nhẹ.",
+    "holdOnZalo": "Nhắn Zalo giữ váy",
+    "call": "Gọi {phone}",
+    "perks": {
+      "fitting": "Thử đồ miễn phí tại 12 Phố Mẫu, Cầu Giấy",
+      "laundry": "Giặt hấp, kiểm tra kỹ trước khi trao tay nàng",
+      "delivery": "Ship hỏa tốc nội thành Hà Nội"
+    },
+    "specsTitle": "Chi tiết thiết kế",
+    "specs": {
+      "material": "Chất liệu",
+      "silhouette": "Dáng",
+      "length": "Độ dài",
+      "color": "Màu",
+      "occasions": "Dịp"
+    },
+    "howTitle": "Thuê váy thế nào?",
+    "how": {
+      "step1": "Nhắn Zalo cho Atelier Demo ngày nàng cần váy và size.",
+      "step2": "Ghé tiệm thử miễn phí, hoặc nhận ship tận nơi.",
+      "step3": "Trả váy đúng hẹn — Atelier Demo lo phần giặt hấp."
+    }
+  },
+  "related": {
+    "eyebrow": "Gợi ý cho nàng",
+    "title": "Có Thể Nàng Cũng Thích",
+    "viewAll": "Xem tất cả"
+  }
+}

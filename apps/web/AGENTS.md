@@ -33,6 +33,13 @@ Env (server-only, `.env.example`): `API_URL`, `SITE_URL`. No `NEXT_PUBLIC_*` yet
   for a public cached surface). Orval runs with `includeHttpResponseReturnType: false`, so
   generated functions resolve to the DTO.
 - `src/api/errors.ts` (`mapApiError`) is the only reader of wire error shapes (ADR 0001).
+- **`src/api/mock/` is TEMPORARY** (FR-WEB-01..04, `docs/design/web/public-pages.md`): the public
+  catalogue has no BE endpoint yet, so `public-catalog.ts` serves in-process mock DTOs with the
+  signatures a generated client will have. Pages call it; features take DTOs as props and import
+  only its types. When the anonymous endpoints ship: BE slice → `pnpm contract` → swap this one
+  import for the generated functions → delete the folder. Never grow it into a second BE.
+- Site shell (header, nav, bottom tab bar, footer, open badge) is kernel: `src/components/site/`;
+  shop facts (phone, Zalo, maps, hours) are config in `src/lib/shop.ts`, copy in `common.shop`.
 - Every user-facing string goes through next-intl (`messages/vi/<namespace>.json`, aggregated in
   `messages/vi.ts`; `vi` is the schema locale). Features navigate via `@/i18n/navigation`.
   Route params are narrowed with `resolveLocale` (`src/i18n/locale.ts`) — never cast.
@@ -57,9 +64,11 @@ Env (server-only, `.env.example`): `API_URL`, `SITE_URL`. No `NEXT_PUBLIC_*` yet
 3. **No shadcn components, no `components.json` yet** — nothing renders UI worth a primitive;
    `lib/utils.ts` `cn()` is ready. Fonts ARE loaded (`next/font/google`, Playfair Display +
    Plus Jakarta Sans, `vietnamese` subset), so `next build` needs network to Google Fonts.
-4. **No plop generator, no MSW, no Playwright yet** — no feature slice or server data exists.
-   GAP to close with the first slice: plop (or a hand-copied slice shape), MSW handlers +
-   `renderWithProviders`, and a Playwright spec for the RSC/SEO half (09).
+4. **No plop generator, no MSW, no Playwright yet** — slices are hand-copied (`features/<name>/
+   index.ts` + `components/` + colocated `*.test.tsx`); `src/test/render.tsx` `renderWithProviders`
+   wraps the real vi catalogue, and `src/test/setup.ts` stubs `@/i18n/navigation` (plain anchor) and
+   `next/image` (plain img). MSW arrives with the first slice that reads HTTP (today's data is the
+   in-process mock). GAP still open: a Playwright spec for the RSC/SEO half (09).
 5. **`src/proxy.ts` is not a boundaries element** — v7 element patterns match folders; the proxy
    imports only `src/i18n`. Classify it via `boundaries/files` if it ever grows.
 6. **`global-error.tsx` copy is inline** — it replaces the root layout, so no intl provider exists

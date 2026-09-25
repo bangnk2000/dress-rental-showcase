@@ -3,6 +3,12 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-25 (32) — owner ask "dựa vào apps/web/design/prototype break tasks và triển khai code với
+  mockapi data trước": `web:public-pages` = pass (35/35). Tasks T1–T8 + rendering + BE change-request
+  draft in `docs/design/web/public-pages.md` (FR-WEB-01..04 added to the SRS). Home, /bo-suu-tap,
+  /bo-suu-tap/[slug], /lien-he built from the prototype on an in-process mock catalogue
+  (`apps/web/src/api/mock/`), all ● SSG. web check/lint/arch/test (24)/build green; runtime +
+  Playwright at 390/834/1440: no overflow, no target under 44px, no console errors. NOT committed.
 - 2026-09-24 (31) — owner ask "dựng khung public web bằng init-nextjs, chưa làm tính năng":
   `infra/web-bootstrap` = pass (34/34). `apps/web` Next.js 16 skeleton (anonymous, vi-only,
   SSG placeholder home, third generated client, `/api/v1` rewrite) wired into root scripts,

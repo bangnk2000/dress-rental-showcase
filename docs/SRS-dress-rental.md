@@ -12,8 +12,8 @@
 Staff-facing, tiếng Việt là ngôn ngữ chính (en phụ), PWA để nhân viên cài trên tablet/điện thoại
 của tiệm. Trang marketing công khai (WordPress/Haravan) **ngoài phạm vi** repo này. **Thay đổi
 phạm vi 2026-09-24:** website công khai cho khách (ẩn danh, SSR/SEO) nay nằm trong repo tại
-`apps/web` — mới dựng khung, chưa có FR-WEB-* nào; mỗi trang công khai cần FR-id riêng trước khi
-làm ([design/public-web.md](./design/public-web.md)).
+`apps/web` — các trang FR-WEB-01..04 đã dựng trên dữ liệu mock (2026-09-25); mỗi trang công khai cần FR-id
+riêng trước khi làm ([design/public-web.md](./design/public-web.md)).
 
 Bốn bounded context: `identity` (đăng nhập/quyền), `catalog` (danh mục váy), `rentals`
 (đặt–lấy–trả–hủy + lịch + bảng hôm nay), `payments` (dòng tiền của đơn thuê).
@@ -142,6 +142,17 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   cọc chuẩn chỉ là số tham chiếu khi đơn chưa ghi nhận cọc. Quyết định + lý do:
   [design/payments/record-collection.md](./design/payments/record-collection.md) §6.
 
+### web (website công khai, `apps/web`)
+- **FR-WEB-01** Trang chủ công khai: hero, thông tin tiệm (địa chỉ, hotline/Zalo, giờ mở cửa,
+  mạng xã hội), bộ sưu tập nổi bật lọc theo dịp, đặc quyền, lời mời thử váy qua Zalo.
+- **FR-WEB-02** Bộ sưu tập (`/bo-suu-tap`): mọi váy công khai, lọc theo dịp; mỗi thẻ dẫn tới chi tiết.
+- **FR-WEB-03** Chi tiết váy (`/bo-suu-tap/<slug>`): ảnh, giá thuê/ngày, giá bán tham khảo, size
+  còn/hết (thông tin, KHÔNG đặt lịch), chi tiết thiết kế, cách thuê, liên hệ Zalo/gọi, váy gợi ý.
+- **FR-WEB-04** Liên hệ (`/lien-he`): địa chỉ (sao chép), chỉ đường Google Maps, gọi, giờ mở cửa,
+  kênh mạng xã hội, đặc quyền.
+- Dữ liệu váy hiện là **mock** trong `apps/web` (BE chưa có endpoint ẩn danh) — thiết kế + BE change
+  request nháp: [design/web/public-pages.md](./design/web/public-pages.md).
+
 ## 4. Business rules (BR — bảng enforce chi tiết nằm trong design docs)
 
 | # | Rule | Enforce |
@@ -192,6 +203,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-CAT-08 | `catalog/duplicate-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) §Nhân bản | pass |
 | FR-RENT-11 | `rentals/rental-discount` | [rentals-aggregate.md](./design/rentals-aggregate.md) §Giảm giá | pass |
 | FR-RENT-12, 13 | `rentals/update-rental` | [rentals/update-rental.md](./design/rentals/update-rental.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Sửa đơn | pass |
+| FR-WEB-01..04 | `web:public-pages` (mock data) | [web/public-pages.md](./design/web/public-pages.md) | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được
