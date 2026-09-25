@@ -7,11 +7,10 @@ import { isShopOpen } from '@/lib/shop';
 import { cn } from '@/lib/utils';
 
 /**
- * "Đang mở cửa" / "Đã đóng cửa" on the shop's clock. Pages are static, so this is only known in the
- * browser: nothing renders until mount, then it re-checks every minute (docs/design/web/public-pages.md §3.2).
+ * Whether the shop is open on its own clock. Pages are static, so this is only known in the
+ * browser: `null` until mount, then re-checked every minute (docs/design/web/public-pages.md §3.2).
  */
-export function ShopOpenBadge({ className }: { className?: string }) {
-  const t = useTranslations('common.shop');
+export function useShopOpen(): boolean | null {
   const [open, setOpen] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -20,6 +19,14 @@ export function ShopOpenBadge({ className }: { className?: string }) {
     const id = window.setInterval(check, 60_000);
     return () => window.clearInterval(id);
   }, []);
+
+  return open;
+}
+
+/** "Đang mở cửa" / "Đã đóng cửa" badge — nothing renders until the browser knows. */
+export function ShopOpenBadge({ className }: { className?: string }) {
+  const t = useTranslations('common.shop');
+  const open = useShopOpen();
 
   if (open === null) return null;
   return (

@@ -21,6 +21,7 @@ import { useTranslations } from 'next-intl';
 import { shop, type SocialKey } from '@/lib/shop';
 
 import { CopyAddressButton } from './copy-address-button';
+import { ShowroomStatus } from './showroom-status';
 
 // lucide v1 ships no brand marks — nearest generic glyphs (apps/web/AGENTS.md: lucide only).
 const socialIcons: Record<SocialKey, LucideIcon> = {
@@ -171,10 +172,7 @@ export function ContactPage() {
             className="object-cover"
           />
           <figcaption className="absolute inset-x-0 bottom-0 bg-linear-to-t from-inverse-surface/80 to-transparent p-space-md pt-space-xl text-inverse-on-surface md:p-space-lg">
-            <p className="flex items-center gap-1.5 text-label-sm uppercase">
-              <span className="h-2 w-2 rounded-full bg-secondary-container" />
-              {t('photo.status')}
-            </p>
+            <ShowroomStatus />
             <p className="font-display text-headline-sm md:text-headline-md">{ts('addressShort')}</p>
             <p className="text-body-sm">{t('photo.caption')}</p>
           </figcaption>

@@ -58,13 +58,12 @@ export function DressGallery({ images, overlay }: { images: PublicImage[]; overl
           {t('counter', { current: current + 1, total: images.length })}
         </span>
       </div>
-      <div role="tablist" aria-label={t('thumbnails')} className="mt-3 hidden gap-2 md:flex xl:mt-0 xl:w-20 xl:flex-col">
+      <div role="group" aria-label={t('thumbnails')} className="mt-3 hidden gap-2 md:flex xl:mt-0 xl:w-20 xl:flex-col">
         {images.map((img, i) => (
           <button
             key={img.src}
             type="button"
-            role="tab"
-            aria-selected={i === current}
+            aria-pressed={i === current}
             aria-label={t('showImage', { index: i + 1 })}
             onClick={() => go(i)}
             className={cn(

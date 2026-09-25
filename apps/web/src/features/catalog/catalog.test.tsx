@@ -62,7 +62,17 @@ describe('DressDetail (FR-WEB-03)', () => {
 
     expect(screen.getByRole('link', { name: /Nhắn Zalo giữ váy/ })).toHaveAttribute('href', 'https://zalo.me/0901000000');
     expect(screen.getByRole('link', { name: /Gọi 0901 000 000/ })).toHaveAttribute('href', 'tel:0901000000');
-    expect(screen.getByText('Ren, tulle, hạt cườm đính tay')).toBeInTheDocument();
+    expect(screen.getAllByText('Ren, tulle, hạt cườm đính tay')).toHaveLength(2);
+  });
+
+  test('specs are in the markup outside any <details> for md+, without JavaScript toggling', async () => {
+    const dress = (await getPublicDress('dam-da-hoi-long-lay'))!;
+    renderWithProviders(<DressDetail dress={dress} />);
+
+    const [mobile, desktop] = screen.getAllByText('Ren, tulle, hạt cườm đính tay');
+    expect(mobile?.closest('details')).not.toBeNull();
+    expect(desktop?.closest('details')).toBeNull();
+    expect(desktop?.closest('.md\\:block')).not.toBeNull();
   });
 
   test('a thumbnail selects its photo and moves the counter', async () => {
@@ -70,9 +80,9 @@ describe('DressDetail (FR-WEB-03)', () => {
     renderWithProviders(<DressDetail dress={dress} />);
 
     expect(screen.getByText(`1 / ${dress.images.length}`)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: 'Xem ảnh 2' }));
-    expect(screen.getByRole('tab', { name: 'Xem ảnh 2' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: 'Xem ảnh 1' })).toHaveAttribute('aria-selected', 'false');
+    fireEvent.click(screen.getByRole('button', { name: 'Xem ảnh 2' }));
+    expect(screen.getByRole('button', { name: 'Xem ảnh 2' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Xem ảnh 1' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByText(`2 / ${dress.images.length}`)).toBeInTheDocument();
   });
 

@@ -39,4 +39,18 @@ describe('ContactPage (FR-WEB-04)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Sao chép địa chỉ/ }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Không sao chép được'));
   });
+
+  test.each([
+    ['Mon 09:00 in Hà Nội', '2026-09-21T02:00:00Z', 'Showroom đã đóng cửa'],
+    ['Mon 15:00 in Hà Nội', '2026-09-21T08:00:00Z', 'Showroom đang mở cửa'],
+  ])('the showroom status follows the shop clock (%s)', async (_label, iso, text) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(iso));
+    try {
+      renderWithProviders(<ContactPage />);
+      expect(await screen.findByText(text)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

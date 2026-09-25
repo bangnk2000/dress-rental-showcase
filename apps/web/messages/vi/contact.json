@@ -25,6 +25,7 @@
   "photo": {
     "alt": "Showroom Atelier Demo tại 12 Phố Mẫu với cửa kính đón nắng và hoa hồng",
     "status": "Showroom đang mở cửa",
+    "statusClosed": "Showroom đã đóng cửa",
     "caption": "Hàng trăm mẫu váy dự tiệc & kỷ yếu sẵn sàng chờ nàng"
   },
   "perks": {
