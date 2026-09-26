@@ -32,6 +32,18 @@ module.exports = {
       to: { path: '^node_modules/(slonik|pg)' },
     },
     {
+      name: 'aws-sdk-only-in-r2-adapter',
+      comment:
+        'R2 SDK stays behind PhotoUploadSignerPort (docs/design/catalog/dress-photo-upload.md §2 R2).',
+      severity: 'error',
+      from: {
+        path: '^src/',
+        pathNot: '^src/modules/catalog/database/r2-photo-upload-signer\\.adapter\\.ts$',
+      },
+      // unanchored: pnpm may resolve through node_modules/.pnpm/<pkg>/node_modules/@aws-sdk/…
+      to: { path: 'node_modules/@aws-sdk/' },
+    },
+    {
       name: 'no-circular',
       severity: 'error',
       from: {},

@@ -33,6 +33,8 @@ import type {
   CreateCategoryRequestDto,
   CreateDressOutcomeDto,
   CreateDressRequestDto,
+  CreatePhotoUploadUrlRequestDto,
+  CreatePhotoUploadUrlResponseDto,
   DeleteCategoryOutcomeDto,
   DressListResponseDto,
   DressResponseDto,
@@ -1107,3 +1109,67 @@ export function useListPriceHistoryHttpControllerListSuspense<TData = Awaited<Re
 
 
 
+/**
+ * @summary Presign ONE direct browser → R2 PUT (300 s; Content-Type, Content-Length and Cache-Control are signed)
+ */
+export const createPhotoUploadUrlHttpControllerCreate = (
+    createPhotoUploadUrlRequestDto: CreatePhotoUploadUrlRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<CreatePhotoUploadUrlResponseDto>(
+      {url: `/api/v1/photos/upload-urls`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createPhotoUploadUrlRequestDto, signal
+    },
+      options);
+    }
+
+
+
+
+export const getCreatePhotoUploadUrlHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, TError,{data: CreatePhotoUploadUrlRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, TError,{data: CreatePhotoUploadUrlRequestDto}, TContext> => {
+
+const mutationKey = ['createPhotoUploadUrlHttpControllerCreate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, {data: CreatePhotoUploadUrlRequestDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPhotoUploadUrlHttpControllerCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePhotoUploadUrlHttpControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>>
+    export type CreatePhotoUploadUrlHttpControllerCreateMutationBody = CreatePhotoUploadUrlRequestDto
+    export type CreatePhotoUploadUrlHttpControllerCreateMutationError = ApiErrorResponseDto
+
+    /**
+ * @summary Presign ONE direct browser → R2 PUT (300 s; Content-Type, Content-Length and Cache-Control are signed)
+ */
+export const useCreatePhotoUploadUrlHttpControllerCreate = <TError = ApiErrorResponseDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, TError,{data: CreatePhotoUploadUrlRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>,
+        TError,
+        {data: CreatePhotoUploadUrlRequestDto},
+        TContext
+      > => {
+      return useMutation(getCreatePhotoUploadUrlHttpControllerCreateMutationOptions(options), queryClient);
+    }

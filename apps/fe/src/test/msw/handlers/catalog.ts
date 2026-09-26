@@ -8,6 +8,8 @@ import type {
   CategoryDto,
   CreateCategoryRequestDto,
   CreateDressRequestDto,
+  CreatePhotoUploadUrlRequestDto,
+  CreatePhotoUploadUrlResponseDto,
   DressListResponseDto,
   DressResponseDto,
   DuplicateDressRequestDto,
@@ -16,7 +18,10 @@ import type {
   PriceHistoryEntryDto,
   UpdateDressRequestDto,
 } from '@/api/generated/model';
-import { DressResponseDtoStatus } from '@/api/generated/model';
+import {
+  CreatePhotoUploadUrlResponseDtoMethod,
+  DressResponseDtoStatus,
+} from '@/api/generated/model';
 
 const DEFAULT_LIMIT = 20;
 
@@ -52,6 +57,9 @@ export function resetCatalog(): void {
   categories = [];
   priceHistory = [];
   lastDuplicate = null;
+  lastUpdateDressBody = null;
+  photoUploadUrlRequests = [];
+  photoPuts = [];
   nextId = 1;
 }
 
@@ -86,7 +94,72 @@ export function seedPriceHistory(seed: PriceHistoryEntryDto[]): void {
   priceHistory = [...seed];
 }
 
+/**
+ * Direct-to-R2 photo upload (catalog/dress-photo-upload). The fake storage lives at PHOTO_STORAGE_ORIGIN
+ * (the presigned PUT target) and serves public URLs under PHOTO_PUBLIC_BASE. The key is derived
+ * from the declared contentLength, so a test can tell which file became which URL regardless of
+ * the order requests arrive in.
+ */
+export const PHOTO_STORAGE_ORIGIN = 'https://r2.test';
+export const PHOTO_PUBLIC_BASE = 'https://img.test';
+
+export function photoPublicUrl(contentLength: number): string {
+  return `${PHOTO_PUBLIC_BASE}/photos/2026/09/${contentLength}.jpg`;
+}
+
+export interface RecordedPhotoPut {
+  url: string;
+  contentType: string | null;
+  cacheControl: string | null;
+  authorization: string | null;
+}
+
+let photoUploadUrlRequests: CreatePhotoUploadUrlRequestDto[] = [];
+let photoPuts: RecordedPhotoPut[] = [];
+
+/** Bodies of every POST /photos/upload-urls, in arrival order. */
+export function getPhotoUploadUrlRequests(): CreatePhotoUploadUrlRequestDto[] {
+  return photoUploadUrlRequests;
+}
+
+/** Every PUT that reached the fake storage, in arrival order. */
+export function getPhotoPuts(): RecordedPhotoPut[] {
+  return photoPuts;
+}
+
+/** Default PUT behaviour, reusable by tests that wrap it (delay / fail first attempt). */
+export function recordPhotoPut(request: Request): Response {
+  photoPuts.push({
+    url: request.url,
+    contentType: request.headers.get('content-type'),
+    cacheControl: request.headers.get('cache-control'),
+    authorization: request.headers.get('authorization'),
+  });
+  return new HttpResponse(null, { status: 200 });
+}
+
 export const catalogHandlers: HttpHandler[] = [
+  // POST /api/v1/photos/upload-urls — the presign; errors are envelopes (ADR 0001 §3 PHOTO.*).
+  http.post('/api/v1/photos/upload-urls', async ({ request }) => {
+    const body = (await request.json()) as CreatePhotoUploadUrlRequestDto;
+    photoUploadUrlRequests.push(body);
+    const key = `photos/2026/09/${body.contentLength}.jpg`;
+    const response: CreatePhotoUploadUrlResponseDto = {
+      uploadUrl: `${PHOTO_STORAGE_ORIGIN}/bucket/${key}?X-Amz-Signature=test-${photoUploadUrlRequests.length}`,
+      method: CreatePhotoUploadUrlResponseDtoMethod.PUT,
+      headers: {
+        'Content-Type': body.contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+      url: photoPublicUrl(body.contentLength),
+      expiresAt: '2026-09-25T00:05:00.000Z',
+    };
+    return HttpResponse.json(response, { status: 201 });
+  }),
+
+  // PUT <presigned uploadUrl> — the fake R2 bucket.
+  http.put(`${PHOTO_STORAGE_ORIGIN}/*`, ({ request }) => recordPhotoPut(request)),
+
   // PATCH /api/v1/dresses/:id — partial update; both rejections are outcome bodies (ADR 0001 §3).
   http.patch('/api/v1/dresses/:id', async ({ params, request }) => {
     const dress = dresses.find((candidate) => candidate.id === params.id);

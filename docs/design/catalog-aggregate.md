@@ -60,8 +60,10 @@ Size (FR-CAT-08b) là quyết định FE thuần: nút XS/S/M/L/XL, API giữ te
 
 Bảng `dresses` (id, code UNIQUE, size, rental_price, deposit_amount, status, `photo_urls
 text[]`, `category_id uuid NULL REFERENCES categories ON DELETE RESTRICT`, timestamps) ·
-`categories` (id, name + UNIQUE lower(name), timestamps). Ảnh là LINK (không upload/storage —
-ngoài phạm vi MVP). Seed một lần: `pnpm --filter be import:dresses <csv>` — cột `category`
+`categories` (id, name + UNIQUE lower(name), timestamps). Ảnh vẫn lưu là LINK trong `photo_urls`;
+từ FR-CAT-10 (2026-09-25) CMS upload thẳng lên R2 bằng URL do BE ký rồi lưu URL công khai — xem
+[catalog/dress-photo-upload.md](./catalog/dress-photo-upload.md) (port `PhotoUploadSignerPort`,
+adapter R2 là nơi DUY NHẤT import `@aws-sdk/*`). Seed một lần: `pnpm --filter be import:dresses <csv>` — cột `category`
 optional, tên chưa có thì TỰ TẠO (FR-CAT-07 §6.Q2).
 
 Policy: `category:create/update` mọi staff; `category:delete` owner-only (§6.Q1).

@@ -68,8 +68,11 @@ if changed_matches '^apps/be/'; then
 fi
 
 # fe, qr-admin and web compile against the committed OpenAPI contract, so a contract
-# change can break them even when their own sources are untouched.
-if changed_matches '^(apps/fe/|packages/contract/)'; then
+# change can break them even when their own sources are untouched. packages/image-url
+# is shared by fe and web (docs/design/catalog/dress-photo-upload.md): fe bundles it
+# and runs its tests; web is its planned second consumer, so it is in web's matcher
+# already. Keep these matchers in sync when a package gains a consumer.
+if changed_matches '^(apps/fe/|packages/contract/|packages/image-url/)'; then
   fe=true
 fi
 
@@ -77,7 +80,7 @@ if changed_matches '^(apps/qr-admin/|packages/contract/)'; then
   qr=true
 fi
 
-if changed_matches '^(apps/web/|packages/contract/)'; then
+if changed_matches '^(apps/web/|packages/contract/|packages/image-url/)'; then
   web=true
 fi
 

@@ -51,8 +51,7 @@
       "rentalPrice": "Giá thuê (VND)",
       "depositAmount": "Tiền cọc (VND)",
       "notes": "Ghi chú",
-      "photoUrls": "Ảnh (mỗi dòng một liên kết)",
-      "photoUrlsPlaceholder": "https://...",
+      "photoUrls": "Ảnh",
       "category": "Danh mục",
       "purchasePrice": "Giá nhập (VND) — chỉ chủ tiệm thấy"
     },
@@ -67,7 +66,7 @@
       "amountInvalid": "Số tiền phải là số nguyên không âm",
       "notesTooLong": "Ghi chú tối đa 2000 ký tự",
       "duplicateCode": "Mã váy đã tồn tại",
-      "photoUrlInvalid": "Mỗi dòng phải là một liên kết http(s) hợp lệ",
+      "photoUrlInvalid": "Mỗi ảnh phải là một liên kết http(s) hợp lệ",
       "photoUrlsTooMany": "Tối đa 10 ảnh"
     },
     "success": "Đã thêm váy vào danh mục",

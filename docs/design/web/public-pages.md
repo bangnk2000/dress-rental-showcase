@@ -45,6 +45,10 @@ Khi có BE: đổi thành ISR (`revalidate`) — quyết định cùng BE change
 
 ## 4. BE change request (bản nháp — cho slice thay mock)
 
+> **Thay thế 2026-09-25** bởi spec đã duyệt [catalog/public-listing.md](../catalog/public-listing.md)
+> (FR-CAT-09) — khác bản nháp dưới: `occasions[]` (nhiều dịp), bỏ `occasionLabel`,
+> `rentalPricePerDay` → `rentalPrice` ("X / 2 ngày"), `retailPrice` nullable. Bản nháp giữ lại làm lịch sử.
+
 `GET /api/v1/public/dresses` và `GET /api/v1/public/dresses/{slug}`, **không cần bearer**, DTO chỉ
 chứa trường công khai (không giá vốn, không khách, không lịch):
 

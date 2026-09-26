@@ -6,6 +6,8 @@ import { CreateCategoryHttpController } from './commands/create-category/create-
 import { CreateCategoryService } from './commands/create-category/create-category.service';
 import { CreateDressHttpController } from './commands/create-dress/create-dress.http.controller';
 import { CreateDressService } from './commands/create-dress/create-dress.service';
+import { CreatePhotoUploadUrlHttpController } from './commands/create-photo-upload-url/create-photo-upload-url.http.controller';
+import { CreatePhotoUploadUrlService } from './commands/create-photo-upload-url/create-photo-upload-url.service';
 import { DeleteCategoryHttpController } from './commands/delete-category/delete-category.http.controller';
 import { DeleteCategoryService } from './commands/delete-category/delete-category.service';
 import { DuplicateDressHttpController } from './commands/duplicate-dress/duplicate-dress.http.controller';
@@ -20,6 +22,7 @@ import { CategoryMapper } from './database/category.mapper';
 import { CategoryRepository } from './database/category.repository';
 import { DressMapper } from './database/dress.mapper';
 import { DressRepository } from './database/dress.repository';
+import { photoUploadSignerProvider } from './database/photo-upload-signer.provider';
 import { GetDressHttpController } from './queries/get-dress/get-dress.http.controller';
 import { GetDressQueryHandler } from './queries/get-dress/get-dress.query-handler';
 import { ListCategoriesHttpController } from './queries/list-categories/list-categories.http.controller';
@@ -44,6 +47,7 @@ import './catalog.policies';
     DeleteCategoryHttpController,
     ListCategoriesHttpController,
     ListPriceHistoryHttpController,
+    CreatePhotoUploadUrlHttpController,
   ],
   providers: [
     DressMapper,
@@ -59,6 +63,8 @@ import './catalog.policies';
     GetDressQueryHandler,
     ListCategoriesQueryHandler,
     ListPriceHistoryQueryHandler,
+    CreatePhotoUploadUrlService,
+    photoUploadSignerProvider,
     { provide: DRESS_REPOSITORY, useClass: DressRepository },
     { provide: CATEGORY_REPOSITORY, useClass: CategoryRepository },
   ],

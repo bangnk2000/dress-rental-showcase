@@ -1,6 +1,7 @@
 import { ImageIcon } from 'lucide-react';
 import { useState } from 'react';
 
+import { PHOTO_WIDTH, photoUrl } from '@/lib/photo-url';
 import { cn } from '@/lib/utils';
 
 interface PhotoThumbnailProps {
@@ -18,8 +19,10 @@ interface PhotoThumbnailProps {
  * it degrades to the placeholder instead of a broken-image glyph. The failed URL is remembered
  * rather than a boolean, so a row that later receives a different photo tries again.
  */
-export function PhotoThumbnail({ src, className }: PhotoThumbnailProps) {
+export function PhotoThumbnail({ src: stored, className }: PhotoThumbnailProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  // R2 photos render through the 160px Cloudflare Images variant; legacy links pass through.
+  const src = stored ? photoUrl(stored, PHOTO_WIDTH.thumbnail) : null;
   const showImage = Boolean(src) && src !== failedSrc;
 
   return (

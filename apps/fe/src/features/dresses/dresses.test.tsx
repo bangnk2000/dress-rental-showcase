@@ -2,15 +2,20 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
-import { beforeEach, expect, test } from 'vitest';
+import { http } from 'msw';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { clearTokens, setTokens } from '@/api/mutator/auth-tokens';
 import { Toaster } from '@/components/ui/sonner';
 import {
+  PHOTO_PUBLIC_BASE,
+  PHOTO_STORAGE_ORIGIN,
   getLastCreatedCategory,
   getLastDuplicate,
   getLastUpdateDressBody,
   makeDress,
+  photoPublicUrl,
+  recordPhotoPut,
   resetCatalog,
   seedCategories,
   seedDresses,
@@ -18,6 +23,7 @@ import {
 } from '@/test/msw/handlers/catalog';
 import { testTokenPair } from '@/test/msw/handlers/identity';
 import { makeBookedRange, resetRentals, seedBookedRanges } from '@/test/msw/handlers/rentals';
+import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/render';
 
 import { DressDetailRoute } from './dress-detail-route';
@@ -50,6 +56,10 @@ beforeEach(() => {
   resetCatalog();
   resetRentals();
   clearTokens(); // owner-only tests opt back in with setTokens
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 function renderDetail(route: string) {
@@ -100,6 +110,31 @@ test('a dress with a photo shows it in the list; one without falls back to the p
   const images = container.querySelectorAll('img');
   expect(images).toHaveLength(1);
   expect(images[0]).toHaveAttribute('src', 'https://example.test/a.jpg');
+});
+
+test('list thumbnails of R2 photos load the 160px Cloudflare Images variant', async () => {
+  vi.stubEnv('VITE_IMAGE_BASE_URL', PHOTO_PUBLIC_BASE);
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', photoUrls: [photoPublicUrl(123)] })]);
+  const { container } = renderList();
+  await screen.findByText('DR-001');
+
+  expect(container.querySelector('img')).toHaveAttribute(
+    'src',
+    `${PHOTO_PUBLIC_BASE}/cdn-cgi/image/width=160,quality=80,format=auto,fit=scale-down/photos/2026/09/123.jpg`,
+  );
+});
+
+test('the detail gallery shows the 640 variant and still links to the original', async () => {
+  vi.stubEnv('VITE_IMAGE_BASE_URL', PHOTO_PUBLIC_BASE);
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001', photoUrls: [photoPublicUrl(456)] })]);
+  renderDetail('/dresses/d1');
+
+  const img = await screen.findByRole('img', { name: 'DR-001' });
+  expect(img).toHaveAttribute(
+    'src',
+    `${PHOTO_PUBLIC_BASE}/cdn-cgi/image/width=640,quality=80,format=auto,fit=scale-down/photos/2026/09/456.jpg`,
+  );
+  expect(img.closest('a')).toHaveAttribute('href', photoPublicUrl(456));
 });
 
 test('shows the no-dresses empty state when the catalog is empty', async () => {
@@ -288,32 +323,88 @@ test('editing from the detail page prefills the dialog and saves changes incl. p
   const nameInput = screen.getByLabelText('Tên váy');
   await user.clear(nameInput);
   await user.type(nameInput, 'Đầm đỏ mới');
-  fireEvent.change(screen.getByLabelText('Ảnh (mỗi dòng một liên kết)'), {
-    target: { value: 'https://example.com/a.jpg' },
-  });
+  // the pasted-link path of the photo field (owner kept it — spec §6 Q4)
+  await user.type(screen.getByLabelText('Link ảnh'), 'https://example.com/a.jpg');
+  await user.click(screen.getByRole('button', { name: 'Thêm link' }));
   await user.click(screen.getByRole('button', { name: 'Lưu' }));
 
   expect(await screen.findByText('Đã cập nhật váy')).toBeInTheDocument();
+  expect(getLastUpdateDressBody()?.photoUrls).toEqual(['https://example.com/a.jpg']);
   // invalidation refetched the detail: new name in the header, photo rendered
   expect(await screen.findByText('DR-001 — Đầm đỏ mới')).toBeInTheDocument();
   expect(await screen.findByRole('img')).toHaveAttribute('src', 'https://example.com/a.jpg');
 });
 
-test('an invalid photo link line blocks the save with a translated error', async () => {
+test('an invalid pasted photo link is refused by the photo field, not added', async () => {
   seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
   const user = userEvent.setup();
   renderDetail('/dresses/d1');
   await screen.findByRole('button', { name: 'Sửa' });
 
   await user.click(screen.getByRole('button', { name: 'Sửa' }));
-  fireEvent.change(await screen.findByLabelText('Ảnh (mỗi dòng một liên kết)'), {
-    target: { value: 'khong-phai-link' },
-  });
-  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+  // Enter adds the link — it must NOT submit the dress form
+  await user.type(await screen.findByLabelText('Link ảnh'), 'khong-phai-link{Enter}');
 
   expect(
-    await screen.findByText('Mỗi dòng phải là một liên kết http(s) hợp lệ'),
+    await screen.findByText('Link phải bắt đầu bằng http:// hoặc https://'),
   ).toBeInTheDocument();
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  expect(getLastUpdateDressBody()).toBeNull();
+});
+
+test('editing: Save stays disabled while a photo uploads, then saves the uploaded URL after the existing ones', async () => {
+  seedDresses([
+    makeDress({ id: 'd1', code: 'DR-001', photoUrls: ['https://example.com/old.jpg'] }),
+  ]);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  server.use(
+    http.put(`${PHOTO_STORAGE_ORIGIN}/*`, async ({ request }) => {
+      await gate;
+      return recordPhotoPut(request);
+    }),
+  );
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await user.click(await screen.findByRole('button', { name: 'Sửa' }));
+
+  await user.upload(
+    await screen.findByLabelText('Chọn ảnh để tải lên'),
+    new File([new Uint8Array(700)], 'new.jpg', { type: 'image/jpeg' }),
+  );
+
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Lưu' })).toBeDisabled());
+  release();
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Lưu' })).toBeEnabled());
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  expect(await screen.findByText('Đã cập nhật váy')).toBeInTheDocument();
+  expect(getLastUpdateDressBody()?.photoUrls).toEqual([
+    'https://example.com/old.jpg',
+    photoPublicUrl(700),
+  ]);
+});
+
+test('removing a photo in the edit dialog sends the shorter list — no delete request exists (R5)', async () => {
+  seedDresses([
+    makeDress({
+      id: 'd1',
+      code: 'DR-001',
+      photoUrls: ['https://example.com/a.jpg', 'https://example.com/b.jpg'],
+    }),
+  ]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await user.click(await screen.findByRole('button', { name: 'Sửa' }));
+
+  await user.click(await screen.findByRole('button', { name: 'Xoá ảnh 1' }));
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  expect(await screen.findByText('Đã cập nhật váy')).toBeInTheDocument();
+  // onUnhandledRequest: 'error' would fail the test on any stray DELETE
+  expect(getLastUpdateDressBody()?.photoUrls).toEqual(['https://example.com/b.jpg']);
 });
 
 test('editing to a taken code renders the rejected_dress_code_taken field error', async () => {

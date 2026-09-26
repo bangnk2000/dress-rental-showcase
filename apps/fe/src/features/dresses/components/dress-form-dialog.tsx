@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useId } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -14,11 +14,13 @@ import {
   useUpdateDressHttpControllerUpdate,
 } from '@/api/generated/catalog/catalog';
 import { useMeHttpControllerMe } from '@/api/generated/identity/identity';
+import { usePhotoUploader } from '@/api/use-photo-uploader';
 import type {
   CreateDressRequestDto,
   DressResponseDto,
   UpdateDressRequestDto,
 } from '@/api/generated/model';
+import { PhotoListField } from '@/components/media/photo-list-field';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -45,13 +47,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 
 import {
   CATEGORY_NONE,
   dressFormDefaults,
   dressFormSchema,
-  parsePhotoUrls,
   type DressFormValues,
 } from '../schemas/dress-form.schema';
 import { DressFormMessage } from './dress-form-message';
@@ -72,7 +72,7 @@ function toFormValues(dress: DressResponseDto): DressFormValues {
     rentalPrice: String(dress.rentalPrice),
     depositAmount: String(dress.depositAmount),
     notes: dress.notes ?? '',
-    photoUrls: dress.photoUrls.join('\n'),
+    photoUrls: [...dress.photoUrls],
     categoryId: dress.categoryId ?? CATEGORY_NONE,
     // Staff responses have no key at all — the form value stays '' and is never sent back.
     purchasePrice: dress.purchasePrice != null ? String(dress.purchasePrice) : '',
@@ -84,7 +84,7 @@ function toFormValues(dress: DressResponseDto): DressFormValues {
  * along ONLY for the owner (FR-CAT-05) — a staff request carrying it would be a named 403.
  */
 function toCreateDressRequest(values: DressFormValues, isOwner: boolean): CreateDressRequestDto {
-  const photoUrls = parsePhotoUrls(values.photoUrls);
+  const { photoUrls } = values;
   return {
     code: values.code,
     name: values.name,
@@ -111,7 +111,7 @@ function toUpdateDressRequest(values: DressFormValues, isOwner: boolean): Update
     rentalPrice: Number(values.rentalPrice),
     depositAmount: Number(values.depositAmount),
     notes: values.notes ? values.notes : null,
-    photoUrls: parsePhotoUrls(values.photoUrls),
+    photoUrls: values.photoUrls,
     categoryId: values.categoryId === CATEGORY_NONE ? null : values.categoryId,
     ...(isOwner
       ? { purchasePrice: values.purchasePrice ? Number(values.purchasePrice) : null }
@@ -124,6 +124,10 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
   const { t: tCommon } = useTranslation('common'); // shared verbs only
   const queryClient = useQueryClient();
   const sizeLabelId = useId();
+  const photosLabelId = useId();
+  // Photos go straight to storage (catalog/dress-photo-upload); Save waits for every one (flow d).
+  const uploadPhoto = usePhotoUploader();
+  const [photosUploading, setPhotosUploading] = useState(false);
 
   const form = useForm<DressFormValues>({
     resolver: zodResolver(dressFormSchema),
@@ -208,6 +212,7 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
   });
 
   const onSubmit = form.handleSubmit((values) => {
+    if (photosUploading) return; // Save is disabled too; Enter in a field must not slip past it
     if (dress) {
       updateDress.mutate({ id: dress.id, data: toUpdateDressRequest(values, isOwner) });
     } else {
@@ -217,7 +222,8 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      {/* Scrolls on a short screen: the photo grid can add two rows of tiles. */}
+      <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{dress ? t('form.editTitle') : t('form.title')}</DialogTitle>
           <DialogDescription>
@@ -346,14 +352,14 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
               name="photoUrls"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('form.fields.photoUrls')}</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      rows={3}
-                      placeholder={t('form.fields.photoUrlsPlaceholder')}
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormLabel id={photosLabelId}>{t('form.fields.photoUrls')}</FormLabel>
+                  <PhotoListField
+                    value={field.value}
+                    onChange={field.onChange}
+                    upload={uploadPhoto}
+                    onUploadingChange={setPhotosUploading}
+                    aria-labelledby={photosLabelId}
+                  />
                   <DressFormMessage />
                 </FormItem>
               )}
@@ -377,7 +383,10 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
                   {tCommon('actions.cancel')}
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={createDress.isPending || updateDress.isPending}>
+              <Button
+                type="submit"
+                disabled={createDress.isPending || updateDress.isPending || photosUploading}
+              >
                 {tCommon('actions.save')}
               </Button>
             </DialogFooter>

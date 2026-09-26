@@ -12,3 +12,5 @@ registerPolicy('dress:retire', ({ subject }) => subject.role === 'owner');
 registerPolicy('category:create', () => true);
 registerPolicy('category:update', () => true);
 registerPolicy('category:delete', ({ subject }) => subject.role === 'owner');
+// FR-CAT-10: whoever may create/edit a dress may upload its photos (dress-photo-upload.md §2).
+registerPolicy('photo:upload', () => true);

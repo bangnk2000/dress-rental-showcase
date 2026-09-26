@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+/** `KEY=` in an env file means "not set", not "set to the empty string". */
+function emptyToUndefined(value: unknown): unknown {
+  return typeof value === 'string' && value.trim() === '' ? undefined : value;
+}
+
+function optionalString() {
+  return z.preprocess(emptyToUndefined, z.string().trim().optional());
+}
+
 export const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -16,6 +25,24 @@ export const configSchema = z.object({
    * the shop needs to change it without a deploy.
    */
   LATE_FEE_PER_DRESS_PER_DAY: z.coerce.number().int().min(0).default(200_000),
+  /**
+   * FR-CAT-10 photo upload (docs/design/catalog/dress-photo-upload.md §5). ALL optional: any of the
+   * five missing (or empty) → the signer is disabled and only `POST /photos/upload-urls` answers
+   * 503; the rest of the app boots normally, and `openapi:emit` needs none of them.
+   */
+  R2_ACCOUNT_ID: optionalString(),
+  R2_ACCESS_KEY_ID: optionalString(),
+  R2_SECRET_ACCESS_KEY: optionalString(),
+  R2_BUCKET: optionalString(),
+  /** Public read origin of the bucket (custom domain), stored in `photo_urls`; no trailing slash. */
+  IMAGE_PUBLIC_BASE_URL: z.preprocess(
+    emptyToUndefined,
+    z
+      .url()
+      .transform((url) => url.replace(/\/+$/, ''))
+      .optional(),
+  ),
+  MAX_PHOTO_BYTES: z.coerce.number().int().positive().default(10_485_760),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;

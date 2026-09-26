@@ -68,7 +68,15 @@ async function waitForServer(baseUrl: string, child: ChildProcess): Promise<void
  * filter, Postgres constraints) exactly as production runs it, and it sidesteps loading ESM-only
  * slonik inside jest's CommonJS registry.
  */
-export async function startE2eApp(): Promise<E2eContext> {
+export async function startE2eApp(
+  options: {
+    /**
+     * Extra env for the api process, applied last. Use '' to UNSET a key: the app treats an empty
+     * value as missing, and a key present in the process env is not refilled from apps/be/.env.
+     */
+    env?: Record<string, string>;
+  } = {},
+): Promise<E2eContext> {
   const databaseUrl = e2eDatabaseUrl();
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -86,6 +94,7 @@ export async function startE2eApp(): Promise<E2eContext> {
       JWT_REFRESH_SECRET:
         process.env.JWT_REFRESH_SECRET ?? 'e2e-jwt-refresh-secret-0123456789',
       CLEANING_BUFFER_DAYS: process.env.CLEANING_BUFFER_DAYS ?? '2',
+      ...options.env,
     },
     stdio: ['ignore', 'ignore', 'inherit'],
   });

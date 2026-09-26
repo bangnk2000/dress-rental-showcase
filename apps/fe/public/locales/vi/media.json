@@ -1,0 +1,25 @@
+{
+  "photos": {
+    "upload": "Tải ảnh lên",
+    "fileInput": "Chọn ảnh để tải lên",
+    "hint": "JPG, PNG hoặc WebP, tối đa {{maxMb}} MB mỗi ảnh. Ảnh đầu tiên là ảnh bìa.",
+    "addLink": "Thêm link",
+    "linkInput": "Link ảnh",
+    "linkPlaceholder": "https://...",
+    "linkInvalid": "Link phải bắt đầu bằng http:// hoặc https://",
+    "cover": "Bìa",
+    "limit": "Tối đa {{max}} ảnh",
+    "photo": "Ảnh {{index}}",
+    "uploading": "Đang tải {{percent}}%",
+    "retry": "Thử lại ảnh {{index}}",
+    "remove": "Xoá ảnh {{index}}",
+    "moveLeft": "Đưa ảnh {{index}} sang trái",
+    "moveRight": "Đưa ảnh {{index}} sang phải"
+  },
+  "errors": {
+    "unsupportedType": "Chỉ nhận ảnh JPG, PNG, WebP",
+    "tooLarge": "Ảnh quá lớn (tối đa {{maxMb}} MB)",
+    "storageUnavailable": "Kho ảnh chưa sẵn sàng. Thử lại sau hoặc dùng Thêm link.",
+    "uploadFailed": "Tải ảnh lên thất bại. Vui lòng thử lại."
+  }
+}
