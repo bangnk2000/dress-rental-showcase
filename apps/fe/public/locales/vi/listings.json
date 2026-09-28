@@ -1,0 +1,137 @@
+{
+  "title": "Website",
+  "list": {
+    "create": "Tạo mẫu",
+    "empty": "Chưa có mẫu nào trên website",
+    "emptyHint": "Tạo mẫu đầu tiên, gắn váy và ảnh rồi đăng lên web.",
+    "loading": "Đang tải danh sách mẫu",
+    "hot": "Hot",
+    "activeSizes": "{{count}} size còn",
+    "columns": {
+      "cover": "Ảnh bìa",
+      "name": "Tên mẫu",
+      "occasions": "Dịp",
+      "sizes": "Size còn",
+      "status": "Trạng thái"
+    }
+  },
+  "status": {
+    "draft": "Nháp",
+    "published": "Đã đăng",
+    "hidden": "Ẩn (hết váy)"
+  },
+  "occasions": {
+    "gala": "Gala & Red Carpet",
+    "birthday": "Birthday & Prom",
+    "ao-dai": "Dạo Phố & Lễ Tết",
+    "tea-party": "Tea Party & Picnic",
+    "wedding-guest": "Wedding Guest",
+    "yearbook": "Chụp Ảnh Kỷ Yếu"
+  },
+  "form": {
+    "newTitle": "Tạo mẫu",
+    "editTitle": "Sửa mẫu trên website",
+    "dressesAfterSave": "Lưu mẫu trước — sau đó gắn váy ở mục Size & váy.",
+    "fields": {
+      "name": "Tên mẫu",
+      "slug": "Đường link (slug)",
+      "tagline": "Câu giới thiệu ngắn",
+      "description": "Mô tả",
+      "occasions": "Dịp (chọn một hoặc nhiều)",
+      "retailPrice": "Giá bán tham khảo (VND)",
+      "photos": "Ảnh",
+      "isHot": "Hot",
+      "specs": {
+        "title": "Thông số",
+        "material": "Chất liệu",
+        "silhouette": "Dáng",
+        "length": "Độ dài",
+        "color": "Màu",
+        "occasionsText": "Dịp phù hợp (chữ hiển thị)"
+      }
+    },
+    "slugHint": "Link trên web: /bo-suu-tap/<slug>. Tự điền từ tên, sửa được cho tới khi đăng lần đầu.",
+    "slugLocked": "Đã đăng — không đổi được link",
+    "retailPriceHint": "Giá một chiếc mới ngoài thị trường, để khách so sánh. Bỏ trống nếu không có.",
+    "isHotHint": "Bật để mẫu hiện nhãn Hot và đứng đầu trang chủ.",
+    "create": "Tạo mẫu",
+    "save": "Lưu",
+    "back": "Về danh sách",
+    "uploadingPhotos": "Đang tải ảnh…",
+    "photoUploadFailed": "Có ảnh chưa tải lên được — mẫu chưa được lưu. Bấm Lưu để thử lại.",
+    "createSuccess": "Đã tạo mẫu — giờ gắn váy ở mục Size & váy",
+    "updateSuccess": "Đã lưu mẫu",
+    "error": "Thao tác thất bại. Vui lòng thử lại.",
+    "errors": {
+      "nameRequired": "Vui lòng nhập tên mẫu",
+      "nameTooLong": "Tên mẫu tối đa 120 ký tự",
+      "slugInvalid": "Slug chỉ gồm chữ thường không dấu, số và dấu gạch nối, tối đa 80 ký tự",
+      "taglineTooLong": "Câu giới thiệu tối đa 160 ký tự",
+      "descriptionTooLong": "Mô tả tối đa 2000 ký tự",
+      "occasionsRequired": "Chọn ít nhất một dịp",
+      "amountInvalid": "Số tiền phải là số nguyên không âm",
+      "specTooLong": "Tối đa 120 ký tự",
+      "photoUrlInvalid": "Mỗi ảnh phải là một liên kết http(s) hợp lệ",
+      "photoUrlsTooMany": "Tối đa 10 ảnh",
+      "photoInvalid": "Xoá các ảnh bị đánh dấu đỏ trước khi lưu"
+    }
+  },
+  "dresses": {
+    "title": "Size & váy",
+    "searchLabel": "Tìm váy theo mã hoặc tên",
+    "searchPlaceholder": "VD: DR-001",
+    "noResults": "Không tìm thấy váy phù hợp",
+    "add": "Gắn",
+    "addFor": "Gắn {{code}}",
+    "attachGroup": "Gắn cả nhóm mã",
+    "attachGroupFor": "Gắn cả nhóm mã {{code}}",
+    "empty": "Chưa gắn váy nào — mẫu cần ít nhất một váy đang cho thuê để hiện trên web.",
+    "freesize": "Freesize",
+    "priceMismatch": "Các size đang khác giá — web hiện giá thấp nhất",
+    "unsaved": "Có thay đổi chưa lưu",
+    "save": "Lưu size & váy",
+    "saveSuccess": "Đã cập nhật váy của mẫu",
+    "remove": "Bỏ",
+    "removeFor": "Bỏ {{code}}",
+    "columns": {
+      "size": "Size",
+      "code": "Mã",
+      "name": "Tên váy",
+      "rentalPrice": "Giá thuê",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "status": {
+      "active": "Đang cho thuê",
+      "retired": "Ngừng khai thác"
+    }
+  },
+  "publish": {
+    "publish": "Đăng lên web",
+    "unpublish": "Ẩn khỏi web",
+    "viewOnWeb": "Xem trên web",
+    "publishSuccess": "Đã đăng mẫu lên web",
+    "unpublishSuccess": "Đã ẩn mẫu khỏi web"
+  },
+  "delete": {
+    "button": "Xoá mẫu",
+    "title": "Xoá mẫu {{name}}?",
+    "confirm": "Mẫu bị xoá hẳn; các váy vẫn giữ nguyên trong danh mục.",
+    "publishedWarning": "Mẫu đang hiện trên website, link sẽ thành 404.",
+    "staffDisabled": "Mẫu đã từng đăng — chỉ chủ tiệm được xoá",
+    "success": "Đã xoá mẫu"
+  },
+  "errors": {
+    "slugTaken": "Link {{slug}} đã được mẫu khác dùng — chọn slug khác",
+    "slugLocked": "Mẫu đã được đăng — không đổi được link nữa",
+    "photoRequired": "Mẫu đang đăng phải giữ ít nhất một ảnh",
+    "notPublishable": {
+      "title": "Chưa đăng được — còn thiếu {{missing}}",
+      "photo": "ảnh",
+      "activeDress": "váy đang cho thuê"
+    },
+    "dressNotFound": "Có váy không còn trong danh mục — đã bỏ khỏi danh sách, kiểm tra rồi lưu lại",
+    "notFound": "Mẫu không còn tồn tại",
+    "deleteOwnerOnly": "Mẫu đã từng đăng — chỉ chủ tiệm được xoá"
+  }
+}

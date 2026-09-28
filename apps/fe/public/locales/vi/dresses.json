@@ -104,7 +104,8 @@
       "category": "Danh mục",
       "categoryNone": "Chưa phân loại",
       "purchasePrice": "Giá nhập",
-      "purchasePriceNone": "Chưa nhập"
+      "purchasePriceNone": "Chưa nhập",
+      "listings": "Thuộc mẫu"
     },
     "calendar": {
       "title": "Lịch đặt",

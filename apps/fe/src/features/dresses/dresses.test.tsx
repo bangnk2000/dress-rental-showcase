@@ -267,6 +267,36 @@ test('the detail route shows dress info and shades rented/buffer days on the cal
   expect(statusOf('2099-08-08')).toBe('free');
 });
 
+test('FR-CAT-09: the detail names the listings the dress belongs to, each linking to its edit page', async () => {
+  seedDresses([
+    makeDress({
+      id: 'd1',
+      code: 'DR-001',
+      listings: [
+        { id: 'l1', name: 'Đầm Ánh Trăng' },
+        { id: 'l2', name: 'Váy Gala' },
+      ],
+    }),
+    makeDress({ id: 'd2', code: 'DR-002', listings: [] }),
+  ]);
+  renderDetail('/dresses/d1');
+
+  expect(await screen.findByText('Thuộc mẫu:')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Đầm Ánh Trăng' })).toHaveAttribute(
+    'href',
+    '/website/l1',
+  );
+  expect(screen.getByRole('link', { name: 'Váy Gala' })).toHaveAttribute('href', '/website/l2');
+});
+
+test('FR-CAT-09: a dress in no listing shows no "Thuộc mẫu" row', async () => {
+  seedDresses([makeDress({ id: 'd2', code: 'DR-002', listings: [] })]);
+  renderDetail('/dresses/d2');
+
+  expect(await screen.findByText(/^DR-002 — /)).toBeInTheDocument();
+  expect(screen.queryByText('Thuộc mẫu:')).not.toBeInTheDocument();
+});
+
 test('the availability checker reports a free range', async () => {
   seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
   const user = userEvent.setup();

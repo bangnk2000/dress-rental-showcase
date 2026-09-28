@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { toast } from 'sonner';
 
 import { outcomeStatus } from '@/api/errors';
@@ -132,6 +132,21 @@ function DressDetail({ dressId }: { dressId: string }) {
             </div>
           ))}
         </dl>
+        {/* FR-CAT-09: the public listings this dress is a size of — plain links, no import of the
+            listings feature (the URL is the contract). */}
+        {dress.listings.length > 0 ? (
+          <p className="text-sm">
+            <span className="text-muted-foreground">{t('detail.info.listings')}: </span>
+            {dress.listings.map((listing, index) => (
+              <span key={listing.id}>
+                {index > 0 ? ', ' : null}
+                <Link to={`/website/${listing.id}`} className="font-medium hover:underline">
+                  {listing.name}
+                </Link>
+              </span>
+            ))}
+          </p>
+        ) : null}
         {dress.photoUrls.length > 0 ? (
           <section className="space-y-2">
             <h2 className="text-base font-semibold">{t('detail.photos.title')}</h2>

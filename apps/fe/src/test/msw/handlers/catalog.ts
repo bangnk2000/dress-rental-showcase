@@ -14,9 +14,16 @@ import type {
   DressResponseDto,
   DuplicateDressRequestDto,
   DuplicateDressResponseDto,
+  CreateListingRequestDto,
   IdResponse,
+  ListingDressDto,
+  ListingDto,
+  ListingListItemDto,
+  ListingListResponseDto,
   PriceHistoryEntryDto,
+  SetListingDressesRequestDto,
   UpdateDressRequestDto,
+  UpdateListingRequestDto,
 } from '@/api/generated/model';
 import {
   DressResponseDtoStatus,
@@ -62,6 +69,7 @@ export function resetCatalog(): void {
   photoUploadUrlRequests = [];
   photoPuts = [];
   nextId = 1;
+  resetListings();
 }
 
 let categories: CategoryDto[] = [];
@@ -139,7 +147,254 @@ export function recordPhotoPut(request: Request): Response {
   return new HttpResponse(null, { status: 200 });
 }
 
+/**
+ * Public listings (catalog/public-listing). Stored WITHOUT their dresses: `dressIds` point into the
+ * dress store above, so GET /listings/:id derives `dresses` (and the list its counts) the way the
+ * real read model does — a dress retired in a test shows up retired in the listing.
+ */
+export type ListingRecord = Omit<ListingDto, 'dresses'> & { dressIds: string[] };
+
+let listings: ListingRecord[] = [];
+let nextListingId = 1;
+
+export function makeListing(overrides: Partial<ListingRecord> = {}): ListingRecord {
+  const id = nextListingId++;
+  return {
+    id: `listing-${id}`,
+    slug: `mau-${id}`,
+    name: `Mẫu ${id}`,
+    tagline: '',
+    description: '',
+    occasions: ['gala'],
+    retailPrice: null,
+    specs: { material: null, silhouette: null, length: null, color: null, occasionsText: null },
+    photoUrls: [],
+    isHot: false,
+    publishedAt: null,
+    firstPublishedAt: null,
+    dressIds: [],
+    createdAt: '2026-09-01T00:00:00.000Z',
+    updatedAt: '2026-09-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function seedListings(seed: ListingRecord[]): void {
+  listings = seed.map((listing) => ({ ...listing, dressIds: [...listing.dressIds] }));
+}
+
+export function getListings(): ListingRecord[] {
+  return listings;
+}
+
+export interface ListingRequests {
+  create: CreateListingRequestDto[];
+  update: UpdateListingRequestDto[];
+  setDresses: SetListingDressesRequestDto[];
+  publish: string[];
+  unpublish: string[];
+  remove: string[];
+}
+
+let listingRequests: ListingRequests = emptyListingRequests();
+
+function emptyListingRequests(): ListingRequests {
+  return { create: [], update: [], setDresses: [], publish: [], unpublish: [], remove: [] };
+}
+
+/** Every listing write body, per endpoint, in arrival order. */
+export function getListingRequests(): ListingRequests {
+  return listingRequests;
+}
+
+function resetListings(): void {
+  listings = [];
+  nextListingId = 1;
+  listingRequests = emptyListingRequests();
+}
+
+function listingDresses(listing: ListingRecord): ListingDressDto[] {
+  return listing.dressIds.flatMap((id) => {
+    const dress = dresses.find((candidate) => candidate.id === id);
+    return dress
+      ? [
+          {
+            id: dress.id,
+            code: dress.code,
+            name: dress.name,
+            sizeLabel: dress.sizeLabel,
+            rentalPrice: dress.rentalPrice,
+            status: dress.status,
+          },
+        ]
+      : [];
+  });
+}
+
+function toListingDto(listing: ListingRecord): ListingDto {
+  const dto: ListingDto & { dressIds?: string[] } = {
+    ...listing,
+    dresses: listingDresses(listing),
+  };
+  delete dto.dressIds;
+  return dto;
+}
+
+function toListingListItem(listing: ListingRecord): ListingListItemDto {
+  const attached = listingDresses(listing);
+  const active = attached.filter((dress) => dress.status === DressResponseDtoStatus.active);
+  return {
+    id: listing.id,
+    slug: listing.slug,
+    name: listing.name,
+    occasions: listing.occasions,
+    isHot: listing.isHot,
+    coverUrl: listing.photoUrls[0] ?? null,
+    publishedAt: listing.publishedAt,
+    firstPublishedAt: listing.firstPublishedAt,
+    dressCount: attached.length,
+    activeDressCount: active.length,
+    activeSizeCount: new Set(active.map((dress) => dress.sizeLabel ?? 'Freesize')).size,
+    visibleOnWeb: listing.publishedAt !== null && active.length > 0,
+    updatedAt: listing.updatedAt,
+  };
+}
+
+const listingNotFound = () =>
+  HttpResponse.json({ status: 'rejected_listing_not_found' }, { status: 422 });
+
+const listingHandlers: HttpHandler[] = [
+  http.get('/api/v1/listings', () => {
+    const body: ListingListResponseDto = { data: listings.map(toListingListItem) };
+    return HttpResponse.json(body);
+  }),
+
+  http.get('/api/v1/listings/:id', ({ params }) => {
+    const listing = listings.find((candidate) => candidate.id === params.id);
+    if (!listing) {
+      return HttpResponse.json(
+        { error: { code: 'GENERIC.NOT_FOUND', message: 'Listing not found' } },
+        { status: 404 },
+      );
+    }
+    return HttpResponse.json(toListingDto(listing));
+  }),
+
+  http.post('/api/v1/listings', async ({ request }) => {
+    const body = (await request.json()) as CreateListingRequestDto;
+    listingRequests.create.push(body);
+    const slug = body.slug ?? `generated-${nextListingId}`;
+    if (listings.some((listing) => listing.slug === slug)) {
+      return HttpResponse.json({ status: 'rejected_listing_slug_taken', slug }, { status: 422 });
+    }
+    const listing = makeListing({
+      slug,
+      name: body.name,
+      tagline: body.tagline ?? '',
+      description: body.description ?? '',
+      occasions: body.occasions,
+      retailPrice: body.retailPrice ?? null,
+      photoUrls: body.photoUrls ?? [],
+      isHot: body.isHot ?? false,
+    });
+    listings.push(listing);
+    const response: IdResponse = { id: listing.id };
+    return HttpResponse.json(response, { status: 201 });
+  }),
+
+  http.patch('/api/v1/listings/:id', async ({ params, request }) => {
+    const body = (await request.json()) as UpdateListingRequestDto;
+    listingRequests.update.push(body);
+    const listing = listings.find((candidate) => candidate.id === params.id);
+    if (!listing) return listingNotFound();
+    if (body.slug !== undefined && body.slug !== listing.slug) {
+      if (listing.firstPublishedAt !== null) {
+        return HttpResponse.json({ status: 'rejected_listing_slug_locked' }, { status: 422 });
+      }
+      if (listings.some((candidate) => candidate.slug === body.slug)) {
+        return HttpResponse.json(
+          { status: 'rejected_listing_slug_taken', slug: body.slug },
+          { status: 422 },
+        );
+      }
+    }
+    if (body.photoUrls !== undefined && body.photoUrls.length === 0 && listing.publishedAt) {
+      return HttpResponse.json({ status: 'rejected_listing_photo_required' }, { status: 422 });
+    }
+    Object.assign(listing, {
+      ...(body.name !== undefined ? { name: body.name } : {}),
+      ...(body.slug !== undefined ? { slug: body.slug } : {}),
+      ...(body.tagline !== undefined ? { tagline: body.tagline } : {}),
+      ...(body.description !== undefined ? { description: body.description } : {}),
+      ...(body.occasions !== undefined ? { occasions: body.occasions } : {}),
+      ...(body.retailPrice !== undefined ? { retailPrice: body.retailPrice } : {}),
+      ...(body.photoUrls !== undefined ? { photoUrls: body.photoUrls } : {}),
+      ...(body.isHot !== undefined ? { isHot: body.isHot } : {}),
+    });
+    const response: IdResponse = { id: listing.id };
+    return HttpResponse.json(response);
+  }),
+
+  http.put('/api/v1/listings/:id/dresses', async ({ params, request }) => {
+    const body = (await request.json()) as SetListingDressesRequestDto;
+    listingRequests.setDresses.push(body);
+    const listing = listings.find((candidate) => candidate.id === params.id);
+    if (!listing) return listingNotFound();
+    const missing = body.dressIds.filter((id) => !dresses.some((dress) => dress.id === id));
+    if (missing.length > 0) {
+      return HttpResponse.json(
+        { status: 'rejected_dress_not_found', dressIds: missing },
+        { status: 422 },
+      );
+    }
+    listing.dressIds = [...body.dressIds];
+    const response: IdResponse = { id: listing.id };
+    return HttpResponse.json(response);
+  }),
+
+  http.post('/api/v1/listings/:id/publish', ({ params }) => {
+    listingRequests.publish.push(String(params.id));
+    const listing = listings.find((candidate) => candidate.id === params.id);
+    if (!listing) return listingNotFound();
+    const missing: string[] = [];
+    if (listing.photoUrls.length === 0) missing.push('photo');
+    if (!listingDresses(listing).some((dress) => dress.status === DressResponseDtoStatus.active)) {
+      missing.push('active_dress');
+    }
+    if (missing.length > 0) {
+      return HttpResponse.json(
+        { status: 'rejected_listing_not_publishable', missing },
+        { status: 422 },
+      );
+    }
+    const now = '2026-09-29T00:00:00.000Z';
+    listing.publishedAt = listing.publishedAt ?? now;
+    listing.firstPublishedAt = listing.firstPublishedAt ?? now;
+    const response: IdResponse = { id: listing.id };
+    return HttpResponse.json(response);
+  }),
+
+  http.post('/api/v1/listings/:id/unpublish', ({ params }) => {
+    listingRequests.unpublish.push(String(params.id));
+    const listing = listings.find((candidate) => candidate.id === params.id);
+    if (!listing) return listingNotFound();
+    listing.publishedAt = null;
+    const response: IdResponse = { id: listing.id };
+    return HttpResponse.json(response);
+  }),
+
+  // DELETE — the role rule (R8) is the server's; tests provoke the 403 outcome with server.use.
+  http.delete('/api/v1/listings/:id', ({ params }) => {
+    listingRequests.remove.push(String(params.id));
+    const listing = listings.find((candidate) => candidate.id === params.id);
+    if (!listing) return listingNotFound();
+    listings = listings.filter((candidate) => candidate.id !== listing.id);
+    return new HttpResponse(null, { status: 204 });
+  }),
+];
+
 export const catalogHandlers: HttpHandler[] = [
+  ...listingHandlers,
   // POST /api/v1/photos/upload-urls — the presign; errors are envelopes (ADR 0001 §3 PHOTO.*).
   http.post('/api/v1/photos/upload-urls', async ({ request }) => {
     const body = (await request.json()) as CreatePhotoUploadUrlsRequestDto;

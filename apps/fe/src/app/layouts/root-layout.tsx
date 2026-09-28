@@ -14,6 +14,8 @@ export function RootLayout() {
     { to: '/', label: t('nav.today'), end: true },
     { to: '/dresses', label: t('nav.dresses'), end: false },
     { to: '/rentals', label: t('nav.rentals'), end: false },
+    // Every staff member manages the public listings (FR-CAT-09, owner decision E).
+    { to: '/website', label: t('nav.website'), end: false },
     // Account management is owner-only; hiding the link is display — the route AND the BE
     // policy both re-check.
     ...(user?.role === 'owner' ? [{ to: '/users', label: t('nav.users'), end: false }] : []),

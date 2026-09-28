@@ -1,0 +1,137 @@
+{
+  "title": "Website",
+  "list": {
+    "create": "New listing",
+    "empty": "No listings on the website yet",
+    "emptyHint": "Create the first listing, attach dresses and photos, then publish it.",
+    "loading": "Loading listings",
+    "hot": "Hot",
+    "activeSizes": "{{count}} size(s) available",
+    "columns": {
+      "cover": "Cover",
+      "name": "Listing",
+      "occasions": "Occasions",
+      "sizes": "Available sizes",
+      "status": "Status"
+    }
+  },
+  "status": {
+    "draft": "Draft",
+    "published": "Published",
+    "hidden": "Hidden (no dresses)"
+  },
+  "occasions": {
+    "gala": "Gala & Red Carpet",
+    "birthday": "Birthday & Prom",
+    "ao-dai": "Dạo Phố & Lễ Tết",
+    "tea-party": "Tea Party & Picnic",
+    "wedding-guest": "Wedding Guest",
+    "yearbook": "Chụp Ảnh Kỷ Yếu"
+  },
+  "form": {
+    "newTitle": "New listing",
+    "editTitle": "Edit website listing",
+    "dressesAfterSave": "Save the listing first — then attach dresses under Sizes & dresses.",
+    "fields": {
+      "name": "Listing name",
+      "slug": "Link (slug)",
+      "tagline": "Tagline",
+      "description": "Description",
+      "occasions": "Occasions (one or more)",
+      "retailPrice": "Reference retail price (VND)",
+      "photos": "Photos",
+      "isHot": "Hot",
+      "specs": {
+        "title": "Specs",
+        "material": "Material",
+        "silhouette": "Silhouette",
+        "length": "Length",
+        "color": "Color",
+        "occasionsText": "Suitable for (display text)"
+      }
+    },
+    "slugHint": "Web link: /bo-suu-tap/<slug>. Filled from the name; editable until the first publish.",
+    "slugLocked": "Published — the link can no longer change",
+    "retailPriceHint": "Market price of a new one, for customers to compare. Leave blank if unknown.",
+    "isHotHint": "Turn on to show the Hot badge and put the listing first on the home page.",
+    "create": "Create listing",
+    "save": "Save",
+    "back": "Back to list",
+    "uploadingPhotos": "Uploading photos…",
+    "photoUploadFailed": "Some photos did not upload — the listing was not saved. Press Save to retry.",
+    "createSuccess": "Listing created — now attach dresses under Sizes & dresses",
+    "updateSuccess": "Listing saved",
+    "error": "The action failed. Please try again.",
+    "errors": {
+      "nameRequired": "Enter the listing name",
+      "nameTooLong": "At most 120 characters",
+      "slugInvalid": "Lowercase letters without accents, digits and dashes only, at most 80 characters",
+      "taglineTooLong": "At most 160 characters",
+      "descriptionTooLong": "At most 2000 characters",
+      "occasionsRequired": "Pick at least one occasion",
+      "amountInvalid": "The amount must be a non-negative whole number",
+      "specTooLong": "At most 120 characters",
+      "photoUrlInvalid": "Every photo must be a valid http(s) link",
+      "photoUrlsTooMany": "At most 10 photos",
+      "photoInvalid": "Remove the photos marked red before saving"
+    }
+  },
+  "dresses": {
+    "title": "Sizes & dresses",
+    "searchLabel": "Find a dress by code or name",
+    "searchPlaceholder": "e.g. DR-001",
+    "noResults": "No matching dress",
+    "add": "Attach",
+    "addFor": "Attach {{code}}",
+    "attachGroup": "Attach the whole code group",
+    "attachGroupFor": "Attach the whole code group {{code}}",
+    "empty": "No dresses attached — a listing needs at least one active dress to show on the web.",
+    "freesize": "Freesize",
+    "priceMismatch": "The sizes have different prices — the web shows the lowest",
+    "unsaved": "Unsaved changes",
+    "save": "Save sizes & dresses",
+    "saveSuccess": "The listing's dresses were updated",
+    "remove": "Remove",
+    "removeFor": "Remove {{code}}",
+    "columns": {
+      "size": "Size",
+      "code": "Code",
+      "name": "Dress",
+      "rentalPrice": "Rental price",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "retired": "Retired"
+    }
+  },
+  "publish": {
+    "publish": "Publish on the web",
+    "unpublish": "Hide from the web",
+    "viewOnWeb": "View on the web",
+    "publishSuccess": "The listing is published",
+    "unpublishSuccess": "The listing is hidden from the web"
+  },
+  "delete": {
+    "button": "Delete listing",
+    "title": "Delete listing {{name}}?",
+    "confirm": "The listing is deleted for good; its dresses stay in the catalog.",
+    "publishedWarning": "This listing is live on the website — its link will become a 404.",
+    "staffDisabled": "This listing was published — only the owner can delete it",
+    "success": "Listing deleted"
+  },
+  "errors": {
+    "slugTaken": "The link {{slug}} is used by another listing — pick another slug",
+    "slugLocked": "The listing was published — its link can no longer change",
+    "photoRequired": "A published listing must keep at least one photo",
+    "notPublishable": {
+      "title": "Cannot publish yet — missing {{missing}}",
+      "photo": "a photo",
+      "activeDress": "an active dress"
+    },
+    "dressNotFound": "Some dresses no longer exist — they were removed from the list; check and save again",
+    "notFound": "This listing no longer exists",
+    "deleteOwnerOnly": "This listing was published — only the owner can delete it"
+  }
+}

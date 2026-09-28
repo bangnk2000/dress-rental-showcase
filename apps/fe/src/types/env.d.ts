@@ -7,6 +7,11 @@ interface ImportMetaEnv {
    * from their stored URL unchanged (no Cloudflare Images variants).
    */
   readonly VITE_IMAGE_BASE_URL?: string;
+  /**
+   * Public origin of the website (`apps/web`), e.g. `https://example.com`. The CMS links a
+   * published listing to `<origin>/bo-suu-tap/<slug>`; unset → the "Xem trên web" link is hidden.
+   */
+  readonly VITE_WEB_ORIGIN?: string;
 }
 
 interface ImportMeta {

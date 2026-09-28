@@ -9,6 +9,7 @@ import { initReactI18next } from 'react-i18next';
 import auth from '../../public/locales/vi/auth.json';
 import common from '../../public/locales/vi/common.json';
 import dresses from '../../public/locales/vi/dresses.json';
+import listings from '../../public/locales/vi/listings.json';
 import media from '../../public/locales/vi/media.json';
 import rentals from '../../public/locales/vi/rentals.json';
 import today from '../../public/locales/vi/today.json';
@@ -20,9 +21,9 @@ void i18nForTests.use(initReactI18next).init({
   lng: 'vi',
   fallbackLng: 'vi',
   defaultNS: 'common',
-  ns: ['common', 'auth', 'dresses', 'media', 'rentals', 'today', 'users'],
+  ns: ['common', 'auth', 'dresses', 'listings', 'media', 'rentals', 'today', 'users'],
   resources: {
-    vi: { common, auth, dresses, media, rentals, today, users },
+    vi: { common, auth, dresses, listings, media, rentals, today, users },
   },
   interpolation: { escapeValue: false },
   initAsync: false, // synchronous init — no act() noise from the ready flip
