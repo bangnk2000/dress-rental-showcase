@@ -8,6 +8,7 @@ import {
 } from '../../application/ports/dress-listing.repository.port';
 import {
   ListingGoneError,
+  ListingNoActiveDressConflictError,
   ListingPhotoCheckError,
 } from '../../application/ports/listing-write-conflict.errors';
 import {
@@ -49,6 +50,10 @@ export class PublishListingService
       if (error instanceof ListingPhotoCheckError) {
         // The photos were removed after our load — the CHECK is the last net (R3).
         return Err(new ListingNotPublishableError(['photo'], error));
+      }
+      if (error instanceof ListingNoActiveDressConflictError) {
+        // The last active dress was detached/retired after our count — the write's EXISTS caught it.
+        return Err(new ListingNotPublishableError(['active_dress'], error));
       }
       if (error instanceof ListingGoneError) return Err(new ListingNotFoundError(error));
       throw error;

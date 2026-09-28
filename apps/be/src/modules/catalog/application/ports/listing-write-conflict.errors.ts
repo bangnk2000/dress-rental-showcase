@@ -30,6 +30,17 @@ export class ListingPhotoCheckError extends Error {
   }
 }
 
+/**
+ * The publish UPDATE's `EXISTS (active dress)` matched nothing — the last active dress was
+ * detached or retired between the pre-check and the write.
+ */
+export class ListingNoActiveDressConflictError extends Error {
+  constructor() {
+    super('The listing lost its last active dress before the publish landed');
+    this.name = 'ListingNoActiveDressConflictError';
+  }
+}
+
 /** The listing row no longer exists (deleted concurrently). */
 export class ListingGoneError extends Error {
   constructor(cause?: Error) {

@@ -378,6 +378,33 @@ describe('public listings — CMS commands (real Postgres)', () => {
       });
     });
 
+    it('publish ∥ detaching the last dress: publish either lands first or is refused, never 5xx', async () => {
+      for (let round = 0; round < 6; round += 1) {
+        const id = idOf(await createListing({ slug: `dam-tach-${round}` }));
+        const dressId = await context.db.seedDress(`DETACH-${round}`);
+        expect((await setDresses(id, [dressId])).status).toBe(200);
+
+        const [published, detached] = await Promise.all([publish(id), setDresses(id, [])]);
+        expect(detached.status).toBe(200);
+        const row = (await listingRow(id))!;
+        if (published.status === 200) {
+          // Serialised BEFORE the detach: legal, R5 hides a published listing without active dresses.
+          expect(row.published_at).not.toBeNull();
+        } else {
+          // The detach committed first: the publish UPDATE's EXISTS matched nothing.
+          expect(published.status).toBe(422);
+          expect(published.body).toEqual({
+            status: 'rejected_listing_not_publishable',
+            missing: ['active_dress'],
+          });
+          expect(row.published_at).toBeNull();
+          expect(row.first_published_at).toBeNull();
+        }
+        // Once the dress is gone, a new publish is always refused.
+        expect((await publish(id)).status).toBe(422);
+      }
+    });
+
     it('publishing twice (and after unpublish) keeps first_published_at; staff may publish', async () => {
       const id = await publishedListing();
       const first = (await listingRow(id))!;

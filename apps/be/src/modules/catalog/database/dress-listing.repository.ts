@@ -13,6 +13,7 @@ import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { DressListingRepositoryPort } from '../application/ports/dress-listing.repository.port';
 import {
   ListingGoneError,
+  ListingNoActiveDressConflictError,
   ListingPhotoCheckError,
   ListingSlugConflictError,
   ListingSlugLockedConflictError,
@@ -175,6 +176,8 @@ export class DressListingRepository implements DressListingRepositoryPort {
   async markPublished(listingId: AggregateID, now: Date): Promise<void> {
     // COALESCE keeps both timestamps of an already-published listing (idempotent) and makes
     // first_published_at write-once — the anchor of R2, R8 and the "new" badge.
+    // The active-dress precondition lives IN the write: a concurrent detach/retire that commits
+    // before this statement makes it match 0 rows instead of publishing a listing with no dress.
     const result = await this.translate(() =>
       this.pool.query(sql.unsafe`
         UPDATE dress_listings SET
@@ -182,9 +185,19 @@ export class DressListingRepository implements DressListingRepositoryPort {
           first_published_at = COALESCE(first_published_at, ${iso(now)}),
           updated_at = ${iso(now)}
         WHERE id = ${listingId}
+          AND EXISTS (
+            SELECT 1 FROM dress_listing_items i
+            JOIN dresses d ON d.id = i.dress_id AND d.status = 'active'
+            WHERE i.listing_id = ${listingId}
+          )
       `),
     );
-    if (result.rowCount === 0) throw new ListingGoneError();
+    if (result.rowCount === 0) {
+      const stillThere = await this.pool.maybeOne(sql.unsafe`
+        SELECT 1 FROM dress_listings WHERE id = ${listingId}
+      `);
+      throw stillThere ? new ListingNoActiveDressConflictError() : new ListingGoneError();
+    }
   }
 
   async markUnpublished(listingId: AggregateID, now: Date): Promise<void> {

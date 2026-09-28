@@ -1,6 +1,7 @@
 import { DressListingRepositoryPort } from '../application/ports/dress-listing.repository.port';
 import {
   ListingGoneError,
+  ListingNoActiveDressConflictError,
   ListingPhotoCheckError,
   ListingSlugConflictError,
   ListingSlugLockedConflictError,
@@ -240,6 +241,14 @@ describe('PublishListingService', () => {
     });
     const result = await new PublishListingService(repo).execute(publish());
     expect((result.unwrapErr() as ListingNotPublishableError).missing).toEqual(['photo']);
+  });
+
+  it('the last active dress leaving between count and write → not_publishable [active_dress]', async () => {
+    const repo = makeRepo({
+      markPublished: jest.fn().mockRejectedValue(new ListingNoActiveDressConflictError()),
+    });
+    const result = await new PublishListingService(repo).execute(publish());
+    expect((result.unwrapErr() as ListingNotPublishableError).missing).toEqual(['active_dress']);
   });
 
   it('happy path writes through the COALESCE publish', async () => {
