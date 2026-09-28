@@ -18,7 +18,7 @@
   (the listing form reuses `PhotoListField` — it must run `uploadLocalPhotos` in ITS Save too).
   Before deploying photos: one real dev-bucket browser run of the new Save flow (not done).
 - Watch out:
-  - FIXED this session: `be test:e2e` failed 6 rentals cases locally (buffer off by one day) while
+  - FIXED this session (`infra/e2e-buffer-pin`, PR #17): `be test:e2e` failed 6 rentals cases locally (buffer off by one day) while
     CI was green — `test/load-env.ts` pulls `apps/be/.env` into jest, and `startE2eApp` took
     `CLEANING_BUFFER_DAYS` from it (this machine: 1) although the specs compute dates with 2. The
     harness now PINS `CLEANING_BUFFER_DAYS='2'` (`apps/be/test/e2e-app.ts`); a spec needing

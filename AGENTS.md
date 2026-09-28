@@ -33,7 +33,7 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 
 ## Current state (re-sync at every session end — see Session rules)
 
-**As of 2026-09-29 · `feature_list.json` is 37/37 `pass`, all on master (`catalog/photo-upload-on-submit` merged by PR #16, `a1881f0`; photo upload not deployed);
+**As of 2026-09-29 · `feature_list.json` is 38/38 `pass`, all on master (`catalog/photo-upload-on-submit` merged by PR #16, `a1881f0`; photo upload not deployed);
 `apps/web` still has its public pages on MOCK catalogue data — next: `catalog/public-listing` (spec approved), then `web:public-catalog-live`.**
 This section stays a MAP, not a description — each row's detail lives in the doc it points at.
 
