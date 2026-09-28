@@ -43,6 +43,20 @@ export const configSchema = z.object({
       .optional(),
   ),
   MAX_PHOTO_BYTES: z.coerce.number().int().positive().default(10_485_760),
+  /**
+   * Rate limit of the ANONYMOUS `/public/*` endpoints only (docs/design/catalog/public-listing.md
+   * §Contract check): LIMIT requests per TTL seconds per client IP (X-Forwarded-For behind the
+   * local nginx — main.ts trusts loopback proxies). Staff routes are never throttled.
+   */
+  PUBLIC_THROTTLE_LIMIT: z.coerce.number().int().positive().default(60),
+  PUBLIC_THROTTLE_TTL_SEC: z.coerce.number().int().positive().default(60),
+  /**
+   * true (default): a request whose client IP is loopback is not throttled — that is the web's
+   * own ISR server calling from the same VPS. The e2e suite sets it false to prove the 429.
+   */
+  PUBLIC_THROTTLE_SKIP_LOOPBACK: z
+    .preprocess(emptyToUndefined, z.enum(['true', 'false', '1', '0']).optional())
+    .transform((value) => value === undefined || value === 'true' || value === '1'),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;

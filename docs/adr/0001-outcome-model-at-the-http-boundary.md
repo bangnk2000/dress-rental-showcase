@@ -100,6 +100,24 @@ Quyền quản lý user chặn ở guard (`user:manage`, owner-only, fail-closed
 | `catalog/duplicate-dress` | `DressNotFoundError` | `rejected_dress_not_found` | — | FR-CAT-08 |
 | `catalog/duplicate-dress` | `DressCodeAlreadyExistsError` (thua race đánh số `_n` 3 lần liên tiếp — service đã tự đếm lại) | `rejected_dress_code_taken` | `dressCode` | FR-CAT-08 |
 
+Mẫu công khai — aggregate `DressListing` (FR-CAT-09, 2026-09-29, spec
+[catalog/public-listing.md](../design/catalog/public-listing.md) §2). Mọi code có HAI người gác:
+pre-check/entity ở service VÀ ràng buộc/điều kiện nằm trong câu ghi ở adapter — cả hai ra cùng mã.
+
+| Use case | Domain error (returned) | Outcome code | Payload | FR |
+| --- | --- | --- | --- | --- |
+| `catalog/create-listing` | `ListingSlugTakenError` (pre-check HOẶC `UNIQUE(slug)` khi thua race) | `rejected_listing_slug_taken` | `slug` | FR-CAT-09 R1 |
+| `catalog/update-listing` | `ListingNotFoundError` | `rejected_listing_not_found` | — | FR-CAT-09 |
+| `catalog/update-listing` | `ListingSlugTakenError` (pre-check HOẶC `UNIQUE(slug)`) | `rejected_listing_slug_taken` | `slug` | FR-CAT-09 R1 |
+| `catalog/update-listing` | `ListingSlugLockedError` (entity: mẫu ĐÃ TỪNG đăng; HOẶC `UPDATE … WHERE first_published_at IS NULL` khớp 0 dòng vì publish chen giữa) | `rejected_listing_slug_locked` | — | FR-CAT-09 R2 |
+| `catalog/update-listing` | `ListingPhotoRequiredError` (entity HOẶC CHECK `published ⇒ cardinality(photo_urls) ≥ 1`) | `rejected_listing_photo_required` | — | FR-CAT-09 R3 |
+| `catalog/set-listing-dresses` | `ListingNotFoundError` \| `ListingDressesNotFoundError` | `rejected_listing_not_found` \| `rejected_dress_not_found` (dùng lại mã: cùng nghĩa "id váy không tồn tại") | `dressIds[]` (chỉ các id không tồn tại) | FR-CAT-09 |
+| `catalog/publish-listing` | `ListingNotFoundError` | `rejected_listing_not_found` | — | FR-CAT-09 |
+| `catalog/publish-listing` | `ListingNotPublishableError` (thiếu ảnh / không có váy `active`; CHECK ảnh bắn khi ảnh bị xoá chen giữa → `['photo']`) | `rejected_listing_not_publishable` | `missing: ('photo' \| 'active_dress')[]` — liệt kê ĐỦ | FR-CAT-09 R3 |
+| `catalog/unpublish-listing` | `ListingNotFoundError` | `rejected_listing_not_found` | — | FR-CAT-09 |
+| `catalog/delete-listing` | `ListingNotFoundError` | `rejected_listing_not_found` | — | FR-CAT-09 |
+| `catalog/delete-listing` | `ListingDeleteOwnerOnlyError` (staff + mẫu ĐÃ TỪNG đăng; `DELETE … AND first_published_at IS NULL` khớp 0 dòng vì publish chen giữa → cùng mã) | `forbidden` (**403**) + `reason: 'listing_published_owner_only'` | — | FR-CAT-09 R8 |
+
 ### rentals
 
 | Use case | Domain error (returned) | Outcome code | Payload | FR |
@@ -180,6 +198,12 @@ UNIQUE thành `CollectionConflictError`, service đọc lại sổ rồi trả �
 
   Thứ tự: guard (`photo:upload`, mọi nhân viên) → loại → cỡ → cấu hình. Body sai hình (không phải
   số nguyên, field thừa) vẫn là `GENERIC.VALIDATION`.
+- Catalogue ẩn danh `GET /public/dresses` · `GET /public/dresses/:slug` (FR-WEB-05, 2026-09-29, spec
+  [catalog/public-listing.md](../design/catalog/public-listing.md)): query, không có từ chối nghiệp
+  vụ. Slug chưa đăng / hết váy `active` → **404 envelope** `GENERIC.NOT_FOUND` (web chỉ cần "có /
+  không"); `?occasion=` lạ → 400 `GENERIC.VALIDATION`; vượt rate limit → **429 envelope**
+  `GENERIC.HTTP` (chỉ `/public/*`, key theo IP client). Slug sai định dạng / dịp lạ / 0 dịp / giá
+  âm trên các lệnh CMS `listing:*` là **input invalid** → 400 envelope, KHÔNG phải outcome.
 
 ## 4. UI state matrix (FE + qr-admin)
 
@@ -220,6 +244,13 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_nothing_to_record` | message trên ô Tiền cọc; thực tế nút đã disabled khi cả hai ô trống | `rentals:collect.errors.nothingToRecord` |
 | `rejected_rental_closed` | đóng dialog, toast nêu `currentStatus` + invalidate list | `rentals:collect.rentalClosed` |
 | `rejected_deposit_basis_changed` | GIỮ dialog: tính lại hoàn cọc theo `collectedDeposit` server trả về, toast nêu số mới, invalidate sổ của đơn | `today:returnDialog.deposit.changed` |
+| `rejected_listing_slug_taken` | GIỮ form mẫu, lỗi dưới ô slug kèm `slug` | `listings:errors.slugTaken` |
+| `rejected_listing_slug_locked` | GIỮ form mẫu, lỗi dưới ô slug + refetch chi tiết mẫu (ô slug thành chỉ đọc) | `listings:errors.slugLocked` |
+| `rejected_listing_photo_required` | GIỮ form mẫu, lỗi ở ô ảnh | `listings:errors.photoRequired` |
+| `rejected_listing_not_publishable` | toast liệt kê `missing` | `listings:errors.notPublishable.photo` / `listings:errors.notPublishable.activeDress` |
+| `rejected_dress_not_found` (gắn váy vào mẫu) | toast + refetch picker váy | `listings:errors.dressNotFound` |
+| `rejected_listing_not_found` | toast + điều hướng `/website` | `listings:errors.notFound` |
+| `forbidden` (`listing_published_owner_only`) | phòng hờ — nút Xoá của staff đã disabled + tooltip; nếu vẫn tới: toast | `listings:errors.deleteOwnerOnly` |
 | *fault* `PHOTO.UNSUPPORTED_TYPE` (400) | ô ảnh (`PhotoListField`): file ở `files.<i>` đỏ + message, nút xoá; váy không được lưu (CMS đã kiểm tại chỗ — đây là phòng hờ) | `media:errors.unsupportedType` |
 | *fault* `PHOTO.TOO_LARGE` (400, `details[0].maxBytes`) | ô ảnh: file ở `files.<i>` đỏ + message giới hạn, nút xoá; váy không được lưu | `media:errors.tooLarge` |
 | *fault* `PHOTO.STORAGE_UNAVAILABLE` (503) | ô ảnh: các file chờ tải đỏ, váy không được lưu, bấm **Lưu** lần nữa để thử lại; ô dán link vẫn dùng được | `media:errors.storageUnavailable` |

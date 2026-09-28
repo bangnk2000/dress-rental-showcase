@@ -412,6 +412,528 @@
         ]
       }
     },
+    "/api/v1/listings": {
+      "post": {
+        "operationId": "CreateListingHttpController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateListingRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body: slug format, 0 / unknown / repeated occasions, negative price",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_listing_slug_taken (carries slug)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateListingOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a public listing (draft) — FR-CAT-09",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "get": {
+        "operationId": "ListListingsHttpController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List every public listing, drafts included, with dress/size counts (auth-only read)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/listings/{id}": {
+      "patch": {
+        "operationId": "UpdateListingHttpController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateListingRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_listing_not_found | rejected_listing_slug_taken (carries slug) | rejected_listing_slug_locked | rejected_listing_photo_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateListingOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a listing (partial; omitted fields are kept)",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "delete": {
+        "operationId": "DeleteListingHttpController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "Named denial: forbidden + reason listing_published_owner_only — staff may not delete a listing that was ever published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingDeleteForbiddenOutcomeDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_listing_not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteListingOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a listing (owner: any; staff: only a listing that was never published). Dresses are untouched.",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "get": {
+        "operationId": "GetListingHttpController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Listing not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get one listing with its attached dresses (auth-only read)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/listings/{id}/dresses": {
+      "put": {
+        "operationId": "SetListingDressesHttpController_setDresses",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetListingDressesRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_listing_not_found | rejected_dress_not_found (carries dressIds)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetListingDressesOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Replace the set of dresses attached to a listing",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/listings/{id}/publish": {
+      "post": {
+        "operationId": "PublishListingHttpController_publish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_listing_not_found | rejected_listing_not_publishable (carries missing[])",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishListingOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Publish a listing on the website (idempotent; needs a photo and an active dress)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/listings/{id}/unpublish": {
+      "post": {
+        "operationId": "UnpublishListingHttpController_unpublish",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Business rejection: rejected_listing_not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnpublishListingOutcomeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Hide a listing from the website (idempotent; the slug stays locked)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/public/dresses": {
+      "get": {
+        "operationId": "ListPublicDressesHttpController_list",
+        "parameters": [
+          {
+            "name": "occasion",
+            "required": false,
+            "in": "query",
+            "description": "Only listings that include this occasion",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "gala",
+                "birthday",
+                "ao-dai",
+                "tea-party",
+                "wedding-guest",
+                "yearbook"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Omit for every visible listing",
+            "schema": {
+              "minimum": 1,
+              "maximum": 500,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicDressSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown occasion / bad limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Public catalogue: published listings with ≥ 1 active dress, hot first then newest (anonymous)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/public/dresses/{slug}": {
+      "get": {
+        "operationId": "GetPublicDressHttpController_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicDressDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not on the web",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "One public listing by slug (anonymous); 404 when unpublished or out of active dresses",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/v1/dresses": {
       "post": {
         "operationId": "CreateDressHttpController_create",
@@ -2327,6 +2849,831 @@
           "data"
         ]
       },
+      "ListingSpecsRequestDto": {
+        "type": "object",
+        "properties": {
+          "material": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "Lụa satin"
+          },
+          "silhouette": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "Chữ A"
+          },
+          "length": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "Dài chấm gót"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "Đỏ rượu"
+          },
+          "occasionsText": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "Dạ tiệc, sinh nhật",
+            "description": "Free text shown as the \"occasions\" spec cell on the web (not the occasion codes)"
+          }
+        }
+      },
+      "CreateListingRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "Đầm dạ hội Ánh Trăng"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "dam-da-hoi-anh-trang",
+            "description": "Public URL key; omit to derive it from the name (diacritics stripped, đ→d). Locked after the first publish."
+          },
+          "tagline": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 160,
+            "example": "Lấp lánh như ánh trăng",
+            "description": "≤ 160 chars; default \"\""
+          },
+          "description": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2000,
+            "description": "≤ 2000 chars; default \"\""
+          },
+          "occasions": {
+            "type": "array",
+            "uniqueItems": true,
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": [
+                "gala",
+                "birthday",
+                "ao-dai",
+                "tea-party",
+                "wedding-guest",
+                "yearbook"
+              ]
+            },
+            "example": [
+              "gala",
+              "birthday"
+            ]
+          },
+          "retailPrice": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "example": 4500000,
+            "description": "Market price of a new one (VND), for comparison only — NOT the purchase price"
+          },
+          "specs": {
+            "$ref": "#/components/schemas/ListingSpecsRequestDto"
+          },
+          "photoUrls": {
+            "maxItems": 10,
+            "description": "Photo URLs (http/https), max 10; the first one is the cover",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 1,
+              "pattern": "^https?:\\/\\/\\S+$"
+            }
+          },
+          "isHot": {
+            "type": "boolean",
+            "example": false,
+            "description": "Hot badge, switched by hand"
+          }
+        },
+        "required": [
+          "name",
+          "occasions"
+        ]
+      },
+      "CreateListingOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_listing_slug_taken"
+            ]
+          },
+          "slug": {
+            "type": "string",
+            "description": "The slug that is already in use"
+          }
+        },
+        "required": [
+          "status",
+          "slug"
+        ]
+      },
+      "ListingListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "occasions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "gala",
+                "birthday",
+                "ao-dai",
+                "tea-party",
+                "wedding-guest",
+                "yearbook"
+              ]
+            }
+          },
+          "isHot": {
+            "type": "boolean"
+          },
+          "coverUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "First photo URL, null when none"
+          },
+          "publishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "firstPublishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "dressCount": {
+            "type": "number",
+            "description": "Attached dresses (any status)"
+          },
+          "activeDressCount": {
+            "type": "number",
+            "description": "Attached dresses that are active"
+          },
+          "activeSizeCount": {
+            "type": "number",
+            "description": "Distinct sizes among the active attached dresses (\"còn\" sizes)"
+          },
+          "visibleOnWeb": {
+            "type": "boolean",
+            "description": "Actually visible on the web = published AND ≥ 1 active dress (R5). published && !visibleOnWeb = \"Ẩn (hết váy)\""
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "occasions",
+          "isHot",
+          "coverUrl",
+          "publishedAt",
+          "firstPublishedAt",
+          "dressCount",
+          "activeDressCount",
+          "activeSizeCount",
+          "visibleOnWeb",
+          "updatedAt"
+        ]
+      },
+      "ListingListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingListItemDto"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "UpdateListingRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "Đầm dạ hội Ánh Trăng"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "example": "dam-da-hoi-anh-trang",
+            "description": "New slug — refused (rejected_listing_slug_locked) once the listing was ever published"
+          },
+          "tagline": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 160,
+            "description": "≤ 160 chars"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 2000,
+            "description": "≤ 2000 chars"
+          },
+          "occasions": {
+            "type": "array",
+            "uniqueItems": true,
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": [
+                "gala",
+                "birthday",
+                "ao-dai",
+                "tea-party",
+                "wedding-guest",
+                "yearbook"
+              ]
+            }
+          },
+          "retailPrice": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "description": "VND; null clears it"
+          },
+          "specs": {
+            "$ref": "#/components/schemas/ListingSpecsRequestDto"
+          },
+          "photoUrls": {
+            "maxItems": 10,
+            "description": "Photo URLs (http/https), max 10 — replaces the whole list; a PUBLISHED listing must keep ≥ 1",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 1,
+              "pattern": "^https?:\\/\\/\\S+$"
+            }
+          },
+          "isHot": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateListingOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_listing_not_found",
+              "rejected_listing_slug_taken",
+              "rejected_listing_slug_locked",
+              "rejected_listing_photo_required"
+            ],
+            "type": "string"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The slug that is already in use"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "SetListingDressesRequestDto": {
+        "type": "object",
+        "properties": {
+          "dressIds": {
+            "maxItems": 200,
+            "description": "The COMPLETE list of dresses of this listing (replaces the current set; [] detaches all). Retired dresses may be attached — they just never show on the web.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "dressIds"
+        ]
+      },
+      "SetListingDressesOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_listing_not_found",
+              "rejected_dress_not_found"
+            ],
+            "type": "string"
+          },
+          "dressIds": {
+            "description": "Dress ids that do not exist",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "PublishListingOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "rejected_listing_not_found",
+              "rejected_listing_not_publishable"
+            ],
+            "type": "string"
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "photo",
+                "active_dress"
+              ]
+            },
+            "description": "What the listing lacks: a photo and/or an attached active dress"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "UnpublishListingOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_listing_not_found"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ListingDeleteForbiddenOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "forbidden"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "listing_published_owner_only"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "reason"
+        ]
+      },
+      "DeleteListingOutcomeDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "rejected_listing_not_found"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ListingSpecsDto": {
+        "type": "object",
+        "properties": {
+          "material": {
+            "type": "string",
+            "nullable": true
+          },
+          "silhouette": {
+            "type": "string",
+            "nullable": true
+          },
+          "length": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "occasionsText": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "material",
+          "silhouette",
+          "length",
+          "color",
+          "occasionsText"
+        ]
+      },
+      "ListingDressDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "code": {
+            "type": "string",
+            "example": "VD-012"
+          },
+          "name": {
+            "type": "string",
+            "example": "Váy dạ hội đỏ"
+          },
+          "sizeLabel": {
+            "type": "string",
+            "nullable": true,
+            "example": "M",
+            "description": "null = Freesize on the web"
+          },
+          "rentalPrice": {
+            "type": "number",
+            "example": 1500000,
+            "description": "Rental price in VND"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "retired"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sizeLabel",
+          "rentalPrice",
+          "status"
+        ]
+      },
+      "ListingDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "slug": {
+            "type": "string",
+            "example": "dam-da-hoi-anh-trang"
+          },
+          "name": {
+            "type": "string",
+            "example": "Đầm dạ hội Ánh Trăng"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "occasions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "gala",
+                "birthday",
+                "ao-dai",
+                "tea-party",
+                "wedding-guest",
+                "yearbook"
+              ]
+            }
+          },
+          "retailPrice": {
+            "type": "number",
+            "nullable": true,
+            "description": "Reference retail price in VND"
+          },
+          "specs": {
+            "$ref": "#/components/schemas/ListingSpecsDto"
+          },
+          "photoUrls": {
+            "description": "Photo URLs; the first one is the cover",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isHot": {
+            "type": "boolean"
+          },
+          "publishedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Non-null = published now"
+          },
+          "firstPublishedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Non-null = was ever published: the slug is locked and only the owner may delete"
+          },
+          "dresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingDressDto"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-09-25T10:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-09-25T10:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "tagline",
+          "description",
+          "occasions",
+          "retailPrice",
+          "specs",
+          "photoUrls",
+          "isHot",
+          "publishedAt",
+          "firstPublishedAt",
+          "dresses",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PublicImageDto": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "type": "string",
+            "description": "Original URL (R2 or a legacy link); optimisation is the renderer’s job"
+          },
+          "alt": {
+            "type": "string",
+            "example": "Đầm dạ hội Ánh Trăng — ảnh 2"
+          }
+        },
+        "required": [
+          "src",
+          "alt"
+        ]
+      },
+      "PublicDressSummaryDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "dam-da-hoi-anh-trang"
+          },
+          "name": {
+            "type": "string",
+            "example": "Đầm dạ hội Ánh Trăng"
+          },
+          "tagline": {
+            "type": "string",
+            "example": "Lấp lánh như ánh trăng"
+          },
+          "occasions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "gala",
+                "birthday",
+                "ao-dai",
+                "tea-party",
+                "wedding-guest",
+                "yearbook"
+              ]
+            }
+          },
+          "badge": {
+            "enum": [
+              "available",
+              "new",
+              "hot"
+            ],
+            "type": "string",
+            "description": "hot > new (first published ≤ 30 days) > available"
+          },
+          "rentalPrice": {
+            "type": "number",
+            "example": 1500000,
+            "description": "VND for ONE rental of 2 days (the web writes \"X / 2 ngày\") — min over the active dresses"
+          },
+          "retailPrice": {
+            "type": "number",
+            "nullable": true,
+            "description": "Reference retail price (VND)"
+          },
+          "cover": {
+            "$ref": "#/components/schemas/PublicImageDto"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "tagline",
+          "occasions",
+          "badge",
+          "rentalPrice",
+          "retailPrice",
+          "cover"
+        ]
+      },
+      "PublicSizeDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "example": "M",
+            "description": "XS, S, M, L, XL, then free sizes A→Z, \"Freesize\" last"
+          },
+          "available": {
+            "type": "boolean",
+            "description": "At least one active dress of this size (bookings are not considered)"
+          }
+        },
+        "required": [
+          "label",
+          "available"
+        ]
+      },
+      "PublicDressSpecsDto": {
+        "type": "object",
+        "properties": {
+          "material": {
+            "type": "string",
+            "nullable": true
+          },
+          "silhouette": {
+            "type": "string",
+            "nullable": true
+          },
+          "length": {
+            "type": "string",
+            "nullable": true
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          },
+          "occasions": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free-text occasions cell"
+          }
+        },
+        "required": [
+          "material",
+          "silhouette",
+          "length",
+          "color",
+          "occasions"
+        ]
+      },
+      "PublicDressDetailDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "dam-da-hoi-anh-trang"
+          },
+          "name": {
+            "type": "string",
+            "example": "Đầm dạ hội Ánh Trăng"
+          },
+          "tagline": {
+            "type": "string",
+            "example": "Lấp lánh như ánh trăng"
+          },
+          "occasions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "gala",
+                "birthday",
+                "ao-dai",
+                "tea-party",
+                "wedding-guest",
+                "yearbook"
+              ]
+            }
+          },
+          "badge": {
+            "enum": [
+              "available",
+              "new",
+              "hot"
+            ],
+            "type": "string",
+            "description": "hot > new (first published ≤ 30 days) > available"
+          },
+          "rentalPrice": {
+            "type": "number",
+            "example": 1500000,
+            "description": "VND for ONE rental of 2 days (the web writes \"X / 2 ngày\") — min over the active dresses"
+          },
+          "retailPrice": {
+            "type": "number",
+            "nullable": true,
+            "description": "Reference retail price (VND)"
+          },
+          "cover": {
+            "$ref": "#/components/schemas/PublicImageDto"
+          },
+          "description": {
+            "type": "string"
+          },
+          "images": {
+            "description": "Every photo in order; the first is the cover",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicImageDto"
+            }
+          },
+          "sizes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicSizeDto"
+            }
+          },
+          "specs": {
+            "$ref": "#/components/schemas/PublicDressSpecsDto"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "tagline",
+          "occasions",
+          "badge",
+          "rentalPrice",
+          "retailPrice",
+          "cover",
+          "description",
+          "images",
+          "sizes",
+          "specs"
+        ]
+      },
       "CreateDressRequestDto": {
         "type": "object",
         "properties": {
@@ -2589,6 +3936,23 @@
           "status"
         ]
       },
+      "DressListingRefDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a"
+          },
+          "name": {
+            "type": "string",
+            "example": "Đầm dạ hội Ánh Trăng"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
       "DressResponseDto": {
         "type": "object",
         "properties": {
@@ -2648,6 +4012,13 @@
             "nullable": true,
             "description": "What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omitted entirely for staff (absence = not your field; null = the owner has not entered it). Feeds no computation."
           },
+          "listings": {
+            "description": "Public listings (FR-CAT-09) this dress is attached to, by name; [] when none",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DressListingRefDto"
+            }
+          },
           "createdAt": {
             "type": "string",
             "example": "2026-07-30T10:00:00.000Z"
@@ -2664,6 +4035,7 @@
           "notes",
           "photoUrls",
           "categoryId",
+          "listings",
           "createdAt"
         ]
       },

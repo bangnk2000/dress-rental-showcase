@@ -37,6 +37,7 @@ function makeRepo(overrides: Partial<DressRepositoryPort> = {}): DressRepository
     findOneByCode: jest.fn().mockResolvedValue(null),
     findCodesStartingWith: jest.fn().mockResolvedValue([]),
     insertWithHistory: jest.fn().mockResolvedValue(undefined),
+    insertDuplicateWithHistory: jest.fn().mockResolvedValue(undefined),
     saveWithPriceHistory: jest.fn().mockResolvedValue(undefined),
     nextId: jest.fn().mockReturnValue(COPY_ID),
     ...overrides,
@@ -55,7 +56,7 @@ describe('DuplicateDressService (FR-CAT-08)', () => {
     expect(result.isOk()).toBe(true);
     expect(result.unwrap()).toEqual({ id: COPY_ID, code: 'VD-012_1' });
     expect(repo.findCodesStartingWith).toHaveBeenCalledWith('VD-012_');
-    const copy = (repo.insertWithHistory as jest.Mock).mock.calls[0][0] as DressEntity;
+    const copy = (repo.insertDuplicateWithHistory as jest.Mock).mock.calls[0][0] as DressEntity;
     const props = copy.getProps();
     expect(props.code.unpack()).toBe('VD-012_1');
     expect(props.name).toBe('Váy cưới đuôi cá');
@@ -68,7 +69,9 @@ describe('DuplicateDressService (FR-CAT-08)', () => {
     expect(props.purchasePrice?.amount).toBe(8_000_000);
     expect(props.status).toBe('active');
     // the v1 price-history row names the actor (FR-CAT-06)
-    expect((repo.insertWithHistory as jest.Mock).mock.calls[0][1]).toBe(ACTOR_ID);
+    expect((repo.insertDuplicateWithHistory as jest.Mock).mock.calls[0][1]).toBe(ACTOR_ID);
+    // R7 (public-listing): the source id travels along so its listing pairs are copied atomically
+    expect((repo.insertDuplicateWithHistory as jest.Mock).mock.calls[0][2]).toBe(SOURCE_ID);
   });
 
   it('numbers after the highest existing copy', async () => {
@@ -100,7 +103,7 @@ describe('DuplicateDressService (FR-CAT-08)', () => {
     await service.execute(command('L'));
     await service.execute(command(null));
 
-    const calls = (repo.insertWithHistory as jest.Mock).mock.calls;
+    const calls = (repo.insertDuplicateWithHistory as jest.Mock).mock.calls;
     expect((calls[0][0] as DressEntity).getProps().sizeLabel).toBe('L');
     expect((calls[1][0] as DressEntity).getProps().sizeLabel).toBeNull();
   });
@@ -112,7 +115,7 @@ describe('DuplicateDressService (FR-CAT-08)', () => {
 
     expect(result.isErr()).toBe(true);
     expect(result.unwrapErr()).toBeInstanceOf(DressNotFoundError);
-    expect(repo.insertWithHistory).not.toHaveBeenCalled();
+    expect(repo.insertDuplicateWithHistory).not.toHaveBeenCalled();
   });
 
   it('a lost numbering race recounts and retries with the next number', async () => {
@@ -122,7 +125,7 @@ describe('DuplicateDressService (FR-CAT-08)', () => {
         .fn()
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce(['VD-012_1']),
-      insertWithHistory: jest
+      insertDuplicateWithHistory: jest
         .fn()
         .mockRejectedValueOnce(new DressCodeConflictError())
         .mockResolvedValueOnce(undefined),
@@ -131,12 +134,12 @@ describe('DuplicateDressService (FR-CAT-08)', () => {
     const result = await new DuplicateDressService(repo).execute(command());
 
     expect(result.unwrap().code).toBe('VD-012_2');
-    expect(repo.insertWithHistory).toHaveBeenCalledTimes(2);
+    expect(repo.insertDuplicateWithHistory).toHaveBeenCalledTimes(2);
   });
 
   it('losing the race three times answers the same rejected_dress_code_taken as create-dress', async () => {
     const repo = makeRepo({
-      insertWithHistory: jest.fn().mockRejectedValue(new DressCodeConflictError()),
+      insertDuplicateWithHistory: jest.fn().mockRejectedValue(new DressCodeConflictError()),
     });
 
     const result = await new DuplicateDressService(repo).execute(command());
@@ -145,6 +148,6 @@ describe('DuplicateDressService (FR-CAT-08)', () => {
     const error = result.unwrapErr();
     expect(error).toBeInstanceOf(DressCodeAlreadyExistsError);
     expect((error as DressCodeAlreadyExistsError).dressCode).toBe('VD-012_1');
-    expect(repo.insertWithHistory).toHaveBeenCalledTimes(3);
+    expect(repo.insertDuplicateWithHistory).toHaveBeenCalledTimes(3);
   });
 });

@@ -5,6 +5,7 @@ import { DB_POOL } from '../../../../libs/db/db.di-tokens';
 import { toDate } from '../../../../libs/utils/date';
 import { dressSchema } from '../../database/dress.persistence.model';
 import { DressResponseDto } from '../../dtos/dress.response.dto';
+import { listingRefsByDress } from '../dress-listing-refs';
 import { GetDressQuery } from './get-dress.query';
 
 @QueryHandler(GetDressQuery)
@@ -20,6 +21,7 @@ export class GetDressQueryHandler
       SELECT * FROM dresses WHERE id = ${query.dressId}
     `);
     if (!row) return null;
+    const listings = await listingRefsByDress(this.pool, [row.id]);
 
     return Object.assign(new DressResponseDto(), {
       id: row.id,
@@ -35,6 +37,7 @@ export class GetDressQueryHandler
       // FR-CAT-05 R2: OMITTED for staff (absence = not your field), null = owner not entered.
       ...(query.readerRole === 'owner' ? { purchasePrice: row.purchase_price } : {}),
       createdAt: toDate(row.created_at).toISOString(),
+      listings: listings.get(row.id) ?? [],
     });
   }
 }

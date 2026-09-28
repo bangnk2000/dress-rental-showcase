@@ -6,6 +6,7 @@ import { DB_POOL } from '../../../../libs/db/db.di-tokens';
 import { toDate } from '../../../../libs/utils/date';
 import { dressSchema } from '../../database/dress.persistence.model';
 import { DressResponseDto } from '../../dtos/dress.response.dto';
+import { listingRefsByDress } from '../dress-listing-refs';
 import { ListDressesQuery } from './list-dresses.query';
 import { DressListResponseDto } from './list-dresses.response.dto';
 
@@ -43,6 +44,10 @@ export class ListDressesQueryHandler
     const { total } = await this.pool.one(
       sql.type(countSchema)`SELECT count(*)::int AS total FROM dresses ${where}`,
     );
+    const listings = await listingRefsByDress(
+      this.pool,
+      rows.rows.map((row) => row.id),
+    );
 
     return Object.assign(new DressListResponseDto(), {
       data: rows.rows.map((row) =>
@@ -60,6 +65,7 @@ export class ListDressesQueryHandler
           // FR-CAT-05 R2: OMITTED for staff; null = the owner has not entered it.
           ...(query.readerRole === 'owner' ? { purchasePrice: row.purchase_price } : {}),
           createdAt: toDate(row.created_at).toISOString(),
+          listings: listings.get(row.id) ?? [],
         }),
       ),
       count: total,

@@ -41,6 +41,7 @@ export function makeDress(overrides: Partial<DressResponseDto> = {}): DressRespo
     notes: null,
     photoUrls: [],
     categoryId: null,
+    listings: [],
     createdAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   };

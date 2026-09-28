@@ -1,6 +1,3 @@
-import { SetMetadata } from '@nestjs/common';
-
-export const IS_PUBLIC_KEY = 'is_public';
-
-/** Skip JWT authentication for this endpoint (login, refresh, health). */
-export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
+// Moved to the shared kernel (catalog's `/public/*` routes need it too); re-exported so the
+// identity imports keep their path.
+export { IS_PUBLIC_KEY, Public } from '../../../libs/authz/public.decorator';

@@ -14,3 +14,7 @@ registerPolicy('category:update', () => true);
 registerPolicy('category:delete', ({ subject }) => subject.role === 'owner');
 // FR-CAT-10: whoever may create/edit a dress may upload its photos (dress-photo-upload.md §2).
 registerPolicy('photo:upload', () => true);
+// FR-CAT-09 public listings (docs/design/catalog/public-listing.md §6.E): every staff member
+// manages the website, publish/unpublish included. Deleting an EVER-published listing is
+// owner-only, but that is a named rule INSIDE the use case (403 outcome), not this guard.
+registerPolicy('listing:manage', () => true);

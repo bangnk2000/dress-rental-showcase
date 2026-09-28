@@ -4,6 +4,7 @@
  * dress-rental API
  * OpenAPI spec version: 0
  */
+import type { DressListingRefDto } from './dressListingRefDto';
 import type { DressResponseDtoStatus } from './dressResponseDtoStatus';
 
 export interface DressResponseDto {
@@ -31,5 +32,7 @@ export interface DressResponseDto {
      * @nullable
      */
   purchasePrice?: number | null;
+  /** Public listings (FR-CAT-09) this dress is attached to, by name; [] when none */
+  listings: DressListingRefDto[];
   createdAt: string;
 }
