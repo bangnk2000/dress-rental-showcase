@@ -1,5 +1,33 @@
 # Session Handoff
 
+## 2026-09-29 (34) — photos upload only on Save, one batch (`catalog/photo-upload-on-submit` = pass, PR #16 → master `a1881f0`)
+
+- Done: owner ask "khi submit form thì mới upload toàn bộ ảnh lên R2 và tối ưu lại luồng upload và
+  đọc dữ liệu trên R2 hiện tại đang bị lặp lại nhiều quá". Three decisions (batch signing · stop,
+  don't save the dress on a partial failure · detail link = 1280 variant) recorded in
+  [dress-photo-upload.md §9](docs/design/catalog/dress-photo-upload.md). BE `POST /photos/upload-urls`
+  is now `{ files[] }` → `{ uploads[] }` (breaking, not deployed → fine) → `pnpm contract`; FE
+  `PhotoListField` only edits a `PhotoItem` list, the dress form's Save uploads (`photo-items.ts`
+  `uploadLocalPhotos`); ADR 0001 `PHOTO.*` rows + `apps/fe/AGENTS.md` photo rule updated.
+  Commits `81a4f97` (harness re-sync after #15), `5e743bc` (feature), `f94f458` (Codex fix).
+- First run of the new user-level skill `pr-codex-review` (`~/.claude/skills/pr-codex-review/`):
+  Codex round 0 → C1 P1 "Cancel/Esc while the dress POST/PATCH is in flight still saves the dress"
+  → fixed (dismissal refused while the request is in flight) → round 1 APPROVE → CI green → merged.
+  One fix round of three used.
+- Next: unchanged — `catalog/public-listing` (spec approved), then `web:public-catalog-live`
+  (the listing form reuses `PhotoListField` — it must run `uploadLocalPhotos` in ITS Save too).
+  Before deploying photos: one real dev-bucket browser run of the new Save flow (not done).
+- Watch out:
+  - FIXED this session (`infra/e2e-buffer-pin`, PR #17): `be test:e2e` failed 6 rentals cases locally (buffer off by one day) while
+    CI was green — `test/load-env.ts` pulls `apps/be/.env` into jest, and `startE2eApp` took
+    `CLEANING_BUFFER_DAYS` from it (this machine: 1) although the specs compute dates with 2. The
+    harness now PINS `CLEANING_BUFFER_DAYS='2'` (`apps/be/test/e2e-app.ts`); a spec needing
+    another buffer passes `options.env`. Full suite 110/110 locally. Lesson: any e2e default read
+    via `process.env.X ?? …` is overridden by the local `.env` — pin what the assertions assume.
+  - Root has no `prettier` binary (`pnpm exec prettier` fails) — formatting is whatever eslint enforces.
+  - Editing `feature_list.json` with `JSON.stringify` reflows every inline `dependencies` array —
+    append entries textually to keep the diff to the new entry.
+
 ## 2026-09-25 (33) — photo upload to R2 + Cloudflare Images (`catalog/dress-photo-upload` = pass, branch `feat/dress-photo-upload` → PR #15 → master)
 
 - Merged 2026-09-26 (`50893c2`). Codex review left one P2, fixed in `effb24d`: `.github/scripts/ci-scope.sh`

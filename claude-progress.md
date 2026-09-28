@@ -3,6 +3,12 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-29 (34) — owner ask "upload ảnh khi submit form, tối ưu upload/đọc R2":
+  `catalog/photo-upload-on-submit` = pass (37/37): photos reach R2 only on Save, one batch
+  signing request, dress saved only if every PUT succeeded, no read-back of fresh uploads, detail
+  160/1280 variants (§9). be 208 unit, photo e2e 13/13, fe 139. PR #16 via the new
+  `pr-codex-review` skill (1 Codex P1 fixed, round 1 APPROVE, CI green) → master `a1881f0`. Not deployed.
+  Also: e2e harness pins the cleaning buffer (6 local-only rentals failures fixed, 110/110).
 - 2026-09-25 (33) — owner ask "backend + CMS phục vụ `apps/web/src/api/mock`": specs
   `catalog/public-listing` (FR-CAT-09) and `catalog/dress-photo-upload` (FR-CAT-10/11) approved;
   the latter built = pass (36/36): BE-signed browser→R2 PUT, `PhotoListField` in the dress form,

@@ -93,7 +93,11 @@ export async function startE2eApp(
       JWT_SECRET: process.env.JWT_SECRET ?? 'e2e-jwt-secret-value-0123456789',
       JWT_REFRESH_SECRET:
         process.env.JWT_REFRESH_SECRET ?? 'e2e-jwt-refresh-secret-0123456789',
-      CLEANING_BUFFER_DAYS: process.env.CLEANING_BUFFER_DAYS ?? '2',
+      // Pinned, NOT read from the env: the expected dates in the rentals specs are computed with a
+      // 2-day buffer, and loadEnvFile() (e2e-database-url.ts) pulls apps/be/.env — whose value is a
+      // per-machine shop setting — into this process. A spec that needs another buffer passes it
+      // through `options.env`.
+      CLEANING_BUFFER_DAYS: '2',
       ...options.env,
     },
     stdio: ['ignore', 'ignore', 'inherit'],
