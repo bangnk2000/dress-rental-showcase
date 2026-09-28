@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { delay, http, HttpResponse } from 'msw';
 import { useState } from 'react';
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, onTestFinished, test, vi } from 'vitest';
 
 import { usePhotoUploader } from '@/api/use-photo-uploader';
 import {
@@ -17,25 +17,47 @@ import {
 import { server } from '@/test/msw/server';
 import { renderWithProviders } from '@/test/render';
 
+import { toPhotoItems, uploadLocalPhotos, type PhotoItem } from './photo-items';
 import { PhotoListField } from './photo-list-field';
 
-/** The field wired to the REAL uploader (generated client + XHR PUT) against MSW. */
+/**
+ * The field plus the dress form's Save step, wired to the REAL uploader (generated client + XHR
+ * PUT) against MSW — the same `uploadLocalPhotos` call the dialog makes.
+ */
 function Harness({ initial = [] }: { initial?: string[] }) {
-  const [urls, setUrls] = useState<string[]>(initial);
-  const [uploading, setUploading] = useState(false);
+  const [photos, setPhotos] = useState<PhotoItem[]>(() => toPhotoItems(initial));
+  const [progress, setProgress] = useState<Record<string, number> | null>(null);
+  const [saved, setSaved] = useState<boolean | null>(null);
   const upload = usePhotoUploader();
+
+  async function save() {
+    setProgress({});
+    const result = await uploadLocalPhotos(photos, upload, {
+      onProgress: (id, percent) => setProgress((prev) => (prev ? { ...prev, [id]: percent } : prev)),
+    });
+    setProgress(null);
+    setPhotos(result.items);
+    setSaved(result.ok);
+  }
+
   return (
     <>
       <span id="photos-label">Ảnh</span>
       <PhotoListField
-        value={urls}
-        onChange={setUrls}
-        upload={upload}
-        onUploadingChange={setUploading}
+        value={photos}
+        onChange={setPhotos}
+        progress={progress}
         aria-labelledby="photos-label"
       />
-      <output data-testid="value">{JSON.stringify(urls)}</output>
-      <output data-testid="uploading">{String(uploading)}</output>
+      <button type="button" onClick={() => void save()}>
+        Lưu
+      </button>
+      <output data-testid="value">
+        {JSON.stringify(
+          photos.map((photo) => (photo.kind === 'stored' ? photo.url : `local:${photo.file.size}`)),
+        )}
+      </output>
+      <output data-testid="saved">{String(saved)}</output>
     </>
   );
 }
@@ -52,8 +74,10 @@ function sizedFile(name: string, type: string, size: number): File {
 }
 
 const fileInput = () => screen.getByLabelText('Chọn ảnh để tải lên');
+const saveButton = () => screen.getByRole('button', { name: 'Lưu' });
 const currentValue = (): string[] =>
   JSON.parse(screen.getByTestId('value').textContent ?? '[]') as string[];
+const saved = () => screen.getByTestId('saved').textContent;
 
 beforeEach(() => {
   resetCatalog();
@@ -63,8 +87,21 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-test('choosing two files → two upload URLs + two PUTs → value in the order the files were chosen', async () => {
-  // The FIRST file's PUT is slower, so it finishes second: the value must still follow selection order.
+test('choosing files uploads NOTHING; they wait as "not saved yet" until Save', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<Harness />);
+
+  await user.upload(fileInput(), [jpeg(111), jpeg(222)]);
+
+  expect(currentValue()).toEqual(['local:111', 'local:222']);
+  expect(screen.getAllByText('Chờ lưu')).toHaveLength(2);
+  expect(screen.getByText('Bìa')).toBeInTheDocument();
+  expect(getPhotoUploadUrlRequests()).toHaveLength(0);
+  expect(getPhotoPuts()).toHaveLength(0);
+});
+
+test('Save signs every chosen file in ONE request, PUTs each, and keeps the chosen order', async () => {
+  // The FIRST file's PUT is slower, so it finishes second: the order must still follow the list.
   server.use(
     http.put(`${PHOTO_STORAGE_ORIGIN}/*`, async ({ request }) => {
       if (request.url.includes('/111.jpg')) await delay(40);
@@ -75,16 +112,22 @@ test('choosing two files → two upload URLs + two PUTs → value in the order t
   renderWithProviders(<Harness />);
 
   await user.upload(fileInput(), [jpeg(111), jpeg(222)]);
+  await user.click(saveButton());
 
-  await waitFor(() => expect(currentValue()).toEqual([photoPublicUrl(111), photoPublicUrl(222)]));
+  await waitFor(() => expect(saved()).toBe('true'));
+  expect(currentValue()).toEqual([photoPublicUrl(111), photoPublicUrl(222)]);
   expect(getPhotoUploadUrlRequests()).toEqual([
-    { contentType: 'image/jpeg', contentLength: 111 },
-    { contentType: 'image/jpeg', contentLength: 222 },
+    {
+      files: [
+        { contentType: 'image/jpeg', contentLength: 111 },
+        { contentType: 'image/jpeg', contentLength: 222 },
+      ],
+    },
   ]);
   const puts = getPhotoPuts();
   expect(puts).toHaveLength(2);
   for (const put of puts) {
-    // exactly the signed headers, the exact bytes, and never our bearer token
+    // exactly the signed headers, and never our bearer token
     expect(put.contentType).toBe('image/jpeg');
     expect(put.cacheControl).toBe('public, max-age=31536000, immutable');
     expect(put.authorization).toBeNull();
@@ -95,11 +138,51 @@ test('choosing two files → two upload URLs + two PUTs → value in the order t
     '/bucket/photos/2026/09/111.jpg',
     '/bucket/photos/2026/09/222.jpg',
   ]);
-  expect(screen.getByTestId('uploading')).toHaveTextContent('false');
-  expect(screen.getByText('Bìa')).toBeInTheDocument();
 });
 
-test('a GIF and an 11 MB file are refused on the spot without calling the API', async () => {
+test('stored photos and chosen files reorder together; Save keeps that order and signs only the files', async () => {
+  const user = userEvent.setup();
+  renderWithProviders(<Harness initial={['https://a.test/old.jpg']} />);
+
+  await user.upload(fileInput(), [jpeg(333)]);
+  await user.click(screen.getByRole('button', { name: 'Đưa ảnh 2 sang trái' }));
+  expect(currentValue()).toEqual(['local:333', 'https://a.test/old.jpg']);
+
+  await user.click(saveButton());
+
+  await waitFor(() => expect(saved()).toBe('true'));
+  expect(currentValue()).toEqual([photoPublicUrl(333), 'https://a.test/old.jpg']);
+  expect(getPhotoUploadUrlRequests()).toEqual([
+    { files: [{ contentType: 'image/jpeg', contentLength: 333 }] },
+  ]);
+});
+
+test('an uploaded photo keeps showing its local preview — it is not fetched back from storage', async () => {
+  vi.stubEnv('VITE_IMAGE_BASE_URL', PHOTO_PUBLIC_BASE);
+  // jsdom cannot make object URLs from its File; give the field one so there IS a preview to keep.
+  const original = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
+  Object.defineProperty(URL, 'createObjectURL', {
+    value: () => 'blob:local-preview',
+    configurable: true,
+    writable: true,
+  });
+  onTestFinished(() => {
+    if (original) Object.defineProperty(URL, 'createObjectURL', original);
+    else Reflect.deleteProperty(URL, 'createObjectURL');
+  });
+  const user = userEvent.setup();
+  const { container } = renderWithProviders(<Harness />);
+
+  await user.upload(fileInput(), [jpeg(444)]);
+  await user.click(saveButton());
+
+  await waitFor(() => expect(saved()).toBe('true'));
+  expect(currentValue()).toEqual([photoPublicUrl(444)]);
+  const sources = Array.from(container.querySelectorAll('img')).map((img) => img.getAttribute('src'));
+  expect(sources).toEqual(['blob:local-preview']);
+});
+
+test('a GIF and an 11 MB file are refused on the spot, never sent, and only removable', async () => {
   const user = userEvent.setup({ applyAccept: false });
   renderWithProviders(<Harness />);
 
@@ -111,16 +194,13 @@ test('a GIF and an 11 MB file are refused on the spot without calling the API', 
   expect(await screen.findByText('Chỉ nhận ảnh JPG, PNG, WebP')).toBeInTheDocument();
   expect(screen.getByText('Ảnh quá lớn (tối đa 10 MB)')).toBeInTheDocument();
   expect(getPhotoUploadUrlRequests()).toHaveLength(0);
-  expect(getPhotoPuts()).toHaveLength(0);
-  // a wrong file never uploads, so there is nothing to retry — only remove
-  expect(screen.queryByRole('button', { name: /^Thử lại/ })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Xoá ảnh 1' }));
   await user.click(screen.getByRole('button', { name: 'Xoá ảnh 1' }));
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(currentValue()).toEqual([]);
 });
 
-test('400 PHOTO.TOO_LARGE shows the limit the server sent in details[0].maxBytes', async () => {
+test('400 PHOTO.TOO_LARGE blames the file named in details and shows the server limit', async () => {
   server.use(
     http.post('/api/v1/photos/upload-urls', () =>
       HttpResponse.json(
@@ -128,7 +208,14 @@ test('400 PHOTO.TOO_LARGE shows the limit the server sent in details[0].maxBytes
           error: {
             code: 'PHOTO.TOO_LARGE',
             message: 'too large',
-            details: [{ field: 'contentLength', rule: 'max', message: 'too large', maxBytes: 5_242_880 }],
+            details: [
+              {
+                field: 'files.1.contentLength',
+                rule: 'max',
+                message: 'too large',
+                maxBytes: 5_242_880,
+              },
+            ],
             correlationId: 'c-1',
           },
         },
@@ -139,14 +226,19 @@ test('400 PHOTO.TOO_LARGE shows the limit the server sent in details[0].maxBytes
   const user = userEvent.setup();
   renderWithProviders(<Harness />);
 
-  await user.upload(fileInput(), [jpeg(300)]);
+  await user.upload(fileInput(), [jpeg(300), jpeg(301)]);
+  await user.click(saveButton());
 
-  expect(await screen.findByText('Ảnh quá lớn (tối đa 5 MB)')).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Thử lại ảnh 1' })).not.toBeInTheDocument();
+  await waitFor(() => expect(saved()).toBe('false'));
+  const tiles = screen.getAllByRole('listitem');
+  expect(within(tiles[1] as HTMLElement).getByText('Ảnh quá lớn (tối đa 5 MB)')).toBeInTheDocument();
+  expect(
+    within(tiles[0] as HTMLElement).getByText('Tải ảnh lên thất bại. Vui lòng thử lại.'),
+  ).toBeInTheDocument();
   expect(getPhotoPuts()).toHaveLength(0);
 });
 
-test('503 PHOTO.STORAGE_UNAVAILABLE offers retry, and retry requests a NEW upload URL', async () => {
+test('503 PHOTO.STORAGE_UNAVAILABLE marks the files; the next Save signs again and succeeds', async () => {
   let attempts = 0;
   server.use(
     http.post('/api/v1/photos/upload-urls', () => {
@@ -162,40 +254,55 @@ test('503 PHOTO.STORAGE_UNAVAILABLE offers retry, and retry requests a NEW uploa
   renderWithProviders(<Harness />);
 
   await user.upload(fileInput(), [jpeg(400)]);
+  await user.click(saveButton());
   expect(
     await screen.findByText('Kho ảnh chưa sẵn sàng. Thử lại sau hoặc dùng Thêm link.'),
   ).toBeInTheDocument();
-  expect(currentValue()).toEqual([]);
+  expect(saved()).toBe('false');
 
-  await user.click(screen.getByRole('button', { name: 'Thử lại ảnh 1' }));
+  await user.click(saveButton());
 
-  await waitFor(() => expect(currentValue()).toEqual([photoPublicUrl(400)]));
+  await waitFor(() => expect(saved()).toBe('true'));
+  expect(currentValue()).toEqual([photoPublicUrl(400)]);
   expect(attempts).toBe(2);
   expect(getPhotoPuts()).toHaveLength(1);
 });
 
-test('a PUT refused by storage (403 expired) shows upload-failed; retry signs again and re-PUTs', async () => {
-  let puts = 0;
+test('one PUT refused by storage: the other photo is kept, and the next Save re-signs ONLY the failed one', async () => {
+  let refused = false;
   server.use(
     http.put(`${PHOTO_STORAGE_ORIGIN}/*`, ({ request }) => {
-      puts += 1;
-      if (puts === 1) return new HttpResponse('<Error><Code>ExpiredRequest</Code></Error>', { status: 403 });
+      if (request.url.includes('/502.jpg') && !refused) {
+        refused = true;
+        return new HttpResponse('<Error><Code>ExpiredRequest</Code></Error>', { status: 403 });
+      }
       return recordPhotoPut(request);
     }),
   );
   const user = userEvent.setup();
   renderWithProviders(<Harness />);
 
-  await user.upload(fileInput(), [jpeg(500)]);
-  expect(await screen.findByText('Tải ảnh lên thất bại. Vui lòng thử lại.')).toBeInTheDocument();
+  await user.upload(fileInput(), [jpeg(501), jpeg(502)]);
+  await user.click(saveButton());
 
-  await user.click(screen.getByRole('button', { name: 'Thử lại ảnh 1' }));
+  await waitFor(() => expect(saved()).toBe('false'));
+  expect(currentValue()).toEqual([photoPublicUrl(501), 'local:502']);
+  expect(screen.getByText('Tải ảnh lên thất bại. Vui lòng thử lại.')).toBeInTheDocument();
 
-  await waitFor(() => expect(currentValue()).toEqual([photoPublicUrl(500)]));
-  expect(getPhotoUploadUrlRequests()).toHaveLength(2); // a new URL per attempt
+  await user.click(saveButton());
+
+  await waitFor(() => expect(saved()).toBe('true'));
+  expect(currentValue()).toEqual([photoPublicUrl(501), photoPublicUrl(502)]);
+  expect(getPhotoUploadUrlRequests().map((request) => request.files)).toEqual([
+    [
+      { contentType: 'image/jpeg', contentLength: 501 },
+      { contentType: 'image/jpeg', contentLength: 502 },
+    ],
+    [{ contentType: 'image/jpeg', contentLength: 502 }],
+  ]);
 });
 
-test('while a photo uploads it shows its progress and reports uploading', async () => {
+test('while Save uploads, each file shows its progress and the list is read-only', async () => {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -210,14 +317,17 @@ test('while a photo uploads it shows its progress and reports uploading', async 
   renderWithProviders(<Harness />);
 
   await user.upload(fileInput(), [jpeg(600)]);
+  await user.click(saveButton());
 
   expect(await screen.findByText(/^Đang tải \d+%$/)).toBeInTheDocument();
-  await waitFor(() => expect(screen.getByTestId('uploading')).toHaveTextContent('true'));
+  expect(screen.getByRole('button', { name: 'Xoá ảnh 1' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Tải ảnh lên' })).toBeDisabled();
 
   release();
-  await waitFor(() => expect(screen.getByTestId('uploading')).toHaveTextContent('false'));
+  await waitFor(() => expect(saved()).toBe('true'));
   expect(currentValue()).toEqual([photoPublicUrl(600)]);
   expect(screen.queryByText(/^Đang tải/)).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Xoá ảnh 1' })).toBeEnabled();
 });
 
 test('←/→ reorder, ✕ removes, and the cover label follows the first photo', async () => {

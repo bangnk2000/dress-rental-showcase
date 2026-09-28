@@ -2,7 +2,7 @@
   "photos": {
     "upload": "Upload photos",
     "fileInput": "Choose photos to upload",
-    "hint": "JPG, PNG or WebP, up to {{maxMb}} MB each. The first photo is the cover.",
+    "hint": "JPG, PNG or WebP, up to {{maxMb}} MB each. Photos upload when you press Save. The first photo is the cover.",
     "addLink": "Add link",
     "linkInput": "Photo link",
     "linkPlaceholder": "https://...",
@@ -11,10 +11,10 @@
     "limit": "At most {{max}} photos",
     "photo": "Photo {{index}}",
     "uploading": "Uploading {{percent}}%",
-    "retry": "Retry photo {{index}}",
     "remove": "Remove photo {{index}}",
     "moveLeft": "Move photo {{index}} left",
-    "moveRight": "Move photo {{index}} right"
+    "moveRight": "Move photo {{index}} right",
+    "pending": "Not saved yet"
   },
   "errors": {
     "unsupportedType": "Only JPG, PNG and WebP images are accepted",

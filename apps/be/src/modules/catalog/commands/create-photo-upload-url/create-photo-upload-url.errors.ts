@@ -7,14 +7,21 @@ import {
  * Envelope codes of catalog/dress-photo-upload (ADR 0001 §3 "Không có outcome" — photo upload).
  * No BUSINESS rejection here: a wrong type/size is invalid input and missing storage is a technical
  * fault, so these are THROWN and rendered as `{ error: { code, … } }` by the global filter.
+ * One bad file fails the whole batch; `details[0].field` names which one (`files.<i>.…`).
  */
 
 /** 400 — not image/jpeg, image/png or image/webp. */
 export class PhotoUnsupportedTypeException extends ArgumentInvalidException {
   override readonly code = 'PHOTO.UNSUPPORTED_TYPE';
 
-  constructor() {
-    super('Only JPEG, PNG and WebP images are accepted');
+  constructor(readonly index: number) {
+    super('Only JPEG, PNG and WebP images are accepted', undefined, undefined, [
+      {
+        field: `files.${index}.contentType`,
+        rule: 'in',
+        message: 'Only JPEG, PNG and WebP images are accepted',
+      },
+    ]);
   }
 }
 
@@ -22,10 +29,13 @@ export class PhotoUnsupportedTypeException extends ArgumentInvalidException {
 export class PhotoTooLargeException extends ArgumentInvalidException {
   override readonly code = 'PHOTO.TOO_LARGE';
 
-  constructor(readonly maxBytes: number) {
+  constructor(
+    readonly maxBytes: number,
+    readonly index: number,
+  ) {
     super(`Photo must be between 1 and ${maxBytes} bytes`, undefined, undefined, [
       {
-        field: 'contentLength',
+        field: `files.${index}.contentLength`,
         rule: 'max',
         message: `Photo must be between 1 and ${maxBytes} bytes`,
         maxBytes,

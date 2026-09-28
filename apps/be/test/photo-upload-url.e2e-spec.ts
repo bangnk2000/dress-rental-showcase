@@ -1,9 +1,10 @@
 import { E2eContext, startE2eApp } from './e2e-app';
 
 /**
- * FR-CAT-10 (docs/design/catalog/dress-photo-upload.md §2): the signing endpoint over the real
- * wire — guard, validation order, envelope codes. Signing is local HMAC, so FAKE R2 credentials
- * produce a well-formed URL without any network; nothing here talks to Cloudflare.
+ * FR-CAT-10 (docs/design/catalog/dress-photo-upload.md §2, §9): the signing endpoint over the real
+ * wire — guard, validation order, envelope codes, one batch per form submit. Signing is local HMAC,
+ * so FAKE R2 credentials produce well-formed URLs without any network; nothing here talks to
+ * Cloudflare.
  */
 const FAKE_R2_ENV = {
   R2_ACCOUNT_ID: 'e2efakeaccount',
@@ -33,6 +34,14 @@ interface UploadUrlBody {
   expiresAt: string;
 }
 
+interface UploadUrlsBody {
+  uploads: UploadUrlBody[];
+}
+
+const one = (contentType: string, contentLength: number) => ({
+  files: [{ contentType, contentLength }],
+});
+
 describe('photo upload-url signing (R2 configured with fake keys)', () => {
   let context: E2eContext;
 
@@ -49,10 +58,12 @@ describe('photo upload-url signing (R2 configured with fake keys)', () => {
 
   it('201: presigned PUT with signed Content-Type/Content-Length/Cache-Control, 300 s, public url', async () => {
     const before = Date.now();
-    const response = await sign({ contentType: 'image/png', contentLength: 2_097_152 });
+    const response = await sign(one('image/png', 2_097_152));
     expect(response.status).toBe(201);
 
-    const body = response.body as UploadUrlBody;
+    const { uploads } = response.body as UploadUrlsBody;
+    expect(uploads).toHaveLength(1);
+    const body = uploads[0]!;
     expect(Object.keys(body).sort()).toEqual(
       ['expiresAt', 'headers', 'method', 'uploadUrl', 'url'].sort(),
     );
@@ -80,48 +91,86 @@ describe('photo upload-url signing (R2 configured with fake keys)', () => {
     expect(expiresAt - Date.now()).toBeLessThanOrEqual(301_000);
   });
 
-  it('staff (not only the owner) may sign — photo:upload is every authenticated role', async () => {
-    const response = await sign({ contentType: 'image/jpeg', contentLength: 1 }, context.staffToken);
+  it('one request signs the whole form submit: N files → N uploads, same order, distinct keys', async () => {
+    const response = await sign({
+      files: [
+        { contentType: 'image/jpeg', contentLength: 100 },
+        { contentType: 'image/png', contentLength: 200 },
+        { contentType: 'image/webp', contentLength: 300 },
+      ],
+    });
     expect(response.status).toBe(201);
-    expect((response.body as UploadUrlBody).url).toMatch(/\.jpg$/);
+    const { uploads } = response.body as UploadUrlsBody;
+    expect(uploads.map((upload) => upload.headers['Content-Type'])).toEqual([
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ]);
+    expect(uploads.map((upload) => upload.url.split('.').pop())).toEqual(['jpg', 'png', 'webp']);
+    expect(new Set(uploads.map((upload) => upload.url)).size).toBe(3);
+  });
+
+  it('staff (not only the owner) may sign — photo:upload is every authenticated role', async () => {
+    const response = await sign(one('image/jpeg', 1), context.staffToken);
+    expect(response.status).toBe(201);
+    expect((response.body as UploadUrlsBody).uploads[0]!.url).toMatch(/\.jpg$/);
   });
 
   it('401 without a token', async () => {
-    const response = await sign({ contentType: 'image/jpeg', contentLength: 1 }, null);
+    const response = await sign(one('image/jpeg', 1), null);
     expect(response.status).toBe(401);
   });
 
   it('400 PHOTO.UNSUPPORTED_TYPE for a non-whitelisted type (envelope, not GENERIC.VALIDATION)', async () => {
-    const response = await sign({ contentType: 'image/gif', contentLength: 1000 });
+    const response = await sign(one('image/gif', 1000));
     expect(response.status).toBe(400);
-    expect(response.body).toMatchObject({ error: { code: 'PHOTO.UNSUPPORTED_TYPE' } });
-    expect((response.body as { error: object }).error).not.toHaveProperty('details');
+    expect(response.body).toMatchObject({
+      error: { code: 'PHOTO.UNSUPPORTED_TYPE', details: [{ field: 'files.0.contentType' }] },
+    });
   });
 
   it.each([10_485_761, 0])('400 PHOTO.TOO_LARGE with maxBytes for contentLength %p', async (n) => {
-    const response = await sign({ contentType: 'image/jpeg', contentLength: n });
+    const response = await sign(one('image/jpeg', n));
     expect(response.status).toBe(400);
     expect(response.body).toMatchObject({
       error: {
         code: 'PHOTO.TOO_LARGE',
-        details: [{ field: 'contentLength', rule: 'max', maxBytes: 10_485_760 }],
+        details: [{ field: 'files.0.contentLength', rule: 'max', maxBytes: 10_485_760 }],
       },
     });
   });
 
+  it('one bad file fails the whole batch and names its index', async () => {
+    const response = await sign({
+      files: [
+        { contentType: 'image/jpeg', contentLength: 100 },
+        { contentType: 'image/jpeg', contentLength: 10_485_761 },
+      ],
+    });
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({
+      error: { code: 'PHOTO.TOO_LARGE', details: [{ field: 'files.1.contentLength' }] },
+    });
+  });
+
   it('exactly MAX_PHOTO_BYTES is accepted', async () => {
-    const response = await sign({ contentType: 'image/webp', contentLength: 10_485_760 });
+    const response = await sign(one('image/webp', 10_485_760));
     expect(response.status).toBe(201);
   });
 
-  it('400 GENERIC.VALIDATION for a malformed body (non-integer size, extra field)', async () => {
-    const fractional = await sign({ contentType: 'image/jpeg', contentLength: 1.5 });
-    expect(fractional.status).toBe(400);
-    expect(fractional.body).toMatchObject({ error: { code: 'GENERIC.VALIDATION' } });
-
-    const extra = await sign({ contentType: 'image/jpeg', contentLength: 10, key: 'x' });
-    expect(extra.status).toBe(400);
-    expect(extra.body).toMatchObject({ error: { code: 'GENERIC.VALIDATION' } });
+  it('400 GENERIC.VALIDATION for a malformed body (non-integer size, extra field, empty or >10 files)', async () => {
+    const malformed = [
+      one('image/jpeg', 1.5),
+      { files: [{ contentType: 'image/jpeg', contentLength: 10, key: 'x' }] },
+      { files: [] },
+      { files: Array.from({ length: 11 }, () => ({ contentType: 'image/jpeg', contentLength: 1 })) },
+      { contentType: 'image/jpeg', contentLength: 10 },
+    ];
+    for (const body of malformed) {
+      const response = await sign(body);
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({ error: { code: 'GENERIC.VALIDATION' } });
+    }
   });
 });
 
@@ -139,7 +188,7 @@ describe('photo upload-url signing (R2 NOT configured)', () => {
   it('the app boots and the endpoint alone answers 503 PHOTO.STORAGE_UNAVAILABLE', async () => {
     const response = await context.request(PATH, {
       method: 'POST',
-      body: { contentType: 'image/jpeg', contentLength: 1000 },
+      body: one('image/jpeg', 1000),
       token: context.token,
     });
     expect(response.status).toBe(503);
@@ -152,7 +201,7 @@ describe('photo upload-url signing (R2 NOT configured)', () => {
   it('type/size validation still runs first (400 before 503)', async () => {
     const response = await context.request(PATH, {
       method: 'POST',
-      body: { contentType: 'image/gif', contentLength: 1000 },
+      body: one('image/gif', 1000),
       token: context.token,
     });
     expect(response.status).toBe(400);

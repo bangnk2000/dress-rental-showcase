@@ -1,10 +1,12 @@
 import { imageUrl } from '@dress-rental/image-url';
 
 /**
- * The CMS's fixed variant widths (docs/design/catalog/dress-photo-upload.md §3): a fixed set keeps
- * the number of Cloudflare Images variants bounded.
+ * The CMS's fixed variant widths (docs/design/catalog/dress-photo-upload.md §3, §9): a fixed set
+ * keeps the number of Cloudflare Images variants bounded. Every tile — list, picker, form, detail —
+ * uses `thumbnail`, so a photo is transformed and fetched once and then served from cache
+ * everywhere; `large` is only what opening a photo shows (never the ~2 MB original).
  */
-export const PHOTO_WIDTH = { thumbnail: 160, large: 640 } as const;
+export const PHOTO_WIDTH = { thumbnail: 160, large: 1280 } as const;
 
 /**
  * A dress photo at a display width. R2 photos (under `VITE_IMAGE_BASE_URL`) become Cloudflare Images

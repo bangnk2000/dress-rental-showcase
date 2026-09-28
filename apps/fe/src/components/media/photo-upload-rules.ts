@@ -55,22 +55,29 @@ export function validatePhotoFile(file: File): PhotoUploadError | null {
   return null;
 }
 
-export interface PhotoUploadCallbacks {
-  /** 0–100, from XHR `upload.onprogress`. */
-  onProgress: (percent: number) => void;
-  /** Aborts the PUT (the field unmounted / the photo was removed). */
+export interface PhotoUploadOptions {
+  /** 0–100 for the file at `index`, from XHR `upload.onprogress`. */
+  onProgress: (index: number, percent: number) => void;
+  /** Aborts every PUT still running (the form was closed). */
   signal?: AbortSignal;
 }
 
+/** Per-file outcome of one batch; the uploader never rejects, one bad file never sinks the rest. */
+export type PhotoUploadResult = { ok: true; url: string } | { ok: false; error: PhotoUploadError };
+
 /**
- * Uploads ONE already-validated file and resolves its public URL (the value stored in
- * `photoUrls`). Rejects with a `PhotoUploadError`. Every call requests a NEW upload URL, so
- * "retry" is simply calling it again (CMS flow c).
+ * Uploads a batch of already-validated files — ONE request signs every URL, then one PUT per file
+ * runs in parallel — and resolves one result per file, in input order (docs/design/catalog/
+ * dress-photo-upload.md §9). Every call signs NEW URLs, so "retry" is simply calling it again with
+ * the files that failed.
  *
- * Injected into `PhotoListField` by the feature: the kernel may not import `src/api`
+ * Injected by the feature (the dress form calls it on Save): the kernel may not import `src/api`
  * (init-react 02 §4), and the uploader needs the generated client.
  */
-export type PhotoUploader = (file: File, callbacks: PhotoUploadCallbacks) => Promise<string>;
+export type PhotoUploader = (
+  files: readonly File[],
+  options: PhotoUploadOptions,
+) => Promise<PhotoUploadResult[]>;
 
 /** http(s) link check for a pasted photo URL — same rule the dress form schema applies. */
 export const PHOTO_LINK_PATTERN = /^https?:\/\/\S+$/;

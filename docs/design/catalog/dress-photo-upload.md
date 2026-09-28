@@ -200,7 +200,8 @@ Mục 1, 2 (response chỉ có URL + headers, không lộ bucket/secret), 5, 7 (
 
 ## 8. Re-sync as-built (2026-09-25)
 
-Đã làm đủ §7.1–§7.5 trên nhánh `feat/dress-photo-upload`. Chỗ lệch so với spec và lý do:
+Đã làm đủ §7.1–§7.5 trên nhánh `feat/dress-photo-upload`, merge vào master qua PR #15
+(`50893c2`, 2026-09-26). Chỗ lệch so với spec và lý do:
 
 | Chỗ lệch | Vì sao |
 | --- | --- |
@@ -215,3 +216,33 @@ Guardrail mới: depcruise `aws-sdk-only-in-r2-adapter` (BE); fe arch (a3) XHR c
 (g1) không tự dựng URL `cdn-cgi/image`, (g2) chỉ `src/lib/photo-url.ts` đọc `VITE_IMAGE_BASE_URL`.
 Phát hiện kèm (chưa sửa): luật depcruise cũ neo `^node_modules/` (`domain-stays-pure`,
 `commands-no-sql-driver`) không bao giờ khớp dưới pnpm (`../../node_modules/.pnpm/…`).
+
+## 9. Sửa đổi 2026-09-29 — upload khi bấm Lưu, ký một lần, đọc ít hơn
+
+Chủ tiệm 2026-09-29: *"khi submit form thì mới upload toàn bộ ảnh lên R2 và tối ưu lại luồng upload
+và đọc dữ liệu trên R2 hiện tại đang bị lặp lại nhiều quá"*. Chốt 3 câu (cùng ngày): ký gộp một
+request · có ảnh lỗi thì dừng, không lưu váy · link xem ảnh mở biến thể 1280.
+
+Vấn đề của bản §8: chọn file là PUT ngay → đóng dialog / xoá ảnh vẫn để lại object rác trên R2
+(R5 không bao giờ xoá); mỗi ảnh một `POST /photos/upload-urls`; upload xong ô ảnh bỏ preview cục bộ
+và tải lại chính ảnh đó từ R2 (thêm một lần đọc + một biến thể); trang chi tiết hiện ô 112 px bằng
+biến thể 640 và link mở ảnh gốc ~2 MB.
+
+| Mục | Trước (§2, §4) | Sau |
+| --- | --- | --- |
+| Lúc upload | chọn file → ký + PUT ngay (CMS flow b) | chọn file → chỉ preview cục bộ, nhãn "Chờ lưu"; **Lưu** → upload rồi mới `POST/PATCH /dresses` |
+| Ký URL | `{ contentType, contentLength }` → một URL, mỗi ảnh một request | `{ files: [{ contentType, contentLength }] }` (1–10) → `{ uploads: [...] }` cùng thứ tự; MỘT request mỗi lần Lưu. Một file sai → cả lô 400, `details[0].field = files.<i>.…` |
+| Lỗi PUT | ảnh đỏ + nút **Thử lại** riêng | dừng, váy KHÔNG được lưu, toast; ảnh đã lên giữ URL, ảnh lỗi đỏ; bấm **Lưu** lần nữa chỉ ký + PUT lại ảnh lỗi |
+| Ảnh sai loại/cỡ | đỏ + xoá | như cũ, và schema chặn Lưu tới khi xoá (`form.errors.photoInvalid`) |
+| Nút Lưu (flow d) | khoá khi có ảnh đang tải | khoá trong lúc Lưu (`isSubmitting`), nhãn "Đang tải ảnh…"; danh sách ảnh chỉ-đọc trong lúc đó |
+| Huỷ / đóng dialog | PUT đang chạy bị huỷ, ảnh đã lên thành rác | chưa có gì lên R2; đang upload lúc Lưu → huỷ PUT, không lưu váy; request POST/PATCH váy ĐÃ gửi thì không rút lại được → Huỷ/✕/Esc bị chặn tới khi có kết quả (Codex review PR #16, C1) |
+| Ảnh vừa upload trong form | tải lại biến thể 160 từ R2 | giữ object URL cục bộ (`StoredPhoto.previewUrl`) — không đọc lại |
+| Thứ tự | ảnh mới luôn nối sau ảnh cũ | ảnh cũ và ảnh chờ đổi chỗ chung một danh sách |
+| Trang chi tiết | ô = biến thể 640, link = ảnh gốc | ô = biến thể **160** (trùng cache với danh sách), link = biến thể **1280** |
+| Key React ô ảnh | `${index}-${url}` (đổi thứ tự = remount `<img>`) | id ổn định |
+
+Code: BE `create-photo-upload-url/*` (DTO mảng, service kiểm hết rồi mới ký); FE
+`components/media/photo-items.ts` (`PhotoItem`, `uploadLocalPhotos`), `photo-list-field.tsx` (không
+còn upload), `api/use-photo-uploader.ts` (uploader theo lô, không bao giờ reject — kết quả từng
+file), `features/dresses/components/dress-form-dialog.tsx` (bước upload trong `onSubmit`),
+`lib/photo-url.ts` (`large` = 1280). CORS bucket không đổi (vẫn chỉ PUT).

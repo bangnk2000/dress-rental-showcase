@@ -8,8 +8,8 @@ import type {
   CategoryDto,
   CreateCategoryRequestDto,
   CreateDressRequestDto,
-  CreatePhotoUploadUrlRequestDto,
-  CreatePhotoUploadUrlResponseDto,
+  CreatePhotoUploadUrlsRequestDto,
+  CreatePhotoUploadUrlsResponseDto,
   DressListResponseDto,
   DressResponseDto,
   DuplicateDressRequestDto,
@@ -19,8 +19,8 @@ import type {
   UpdateDressRequestDto,
 } from '@/api/generated/model';
 import {
-  CreatePhotoUploadUrlResponseDtoMethod,
   DressResponseDtoStatus,
+  PhotoUploadUrlDtoMethod,
 } from '@/api/generated/model';
 
 const DEFAULT_LIMIT = 20;
@@ -114,11 +114,11 @@ export interface RecordedPhotoPut {
   authorization: string | null;
 }
 
-let photoUploadUrlRequests: CreatePhotoUploadUrlRequestDto[] = [];
+let photoUploadUrlRequests: CreatePhotoUploadUrlsRequestDto[] = [];
 let photoPuts: RecordedPhotoPut[] = [];
 
-/** Bodies of every POST /photos/upload-urls, in arrival order. */
-export function getPhotoUploadUrlRequests(): CreatePhotoUploadUrlRequestDto[] {
+/** Bodies of every POST /photos/upload-urls (one per Save), in arrival order. */
+export function getPhotoUploadUrlRequests(): CreatePhotoUploadUrlsRequestDto[] {
   return photoUploadUrlRequests;
 }
 
@@ -141,18 +141,22 @@ export function recordPhotoPut(request: Request): Response {
 export const catalogHandlers: HttpHandler[] = [
   // POST /api/v1/photos/upload-urls — the presign; errors are envelopes (ADR 0001 §3 PHOTO.*).
   http.post('/api/v1/photos/upload-urls', async ({ request }) => {
-    const body = (await request.json()) as CreatePhotoUploadUrlRequestDto;
+    const body = (await request.json()) as CreatePhotoUploadUrlsRequestDto;
     photoUploadUrlRequests.push(body);
-    const key = `photos/2026/09/${body.contentLength}.jpg`;
-    const response: CreatePhotoUploadUrlResponseDto = {
-      uploadUrl: `${PHOTO_STORAGE_ORIGIN}/bucket/${key}?X-Amz-Signature=test-${photoUploadUrlRequests.length}`,
-      method: CreatePhotoUploadUrlResponseDtoMethod.PUT,
-      headers: {
-        'Content-Type': body.contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-      url: photoPublicUrl(body.contentLength),
-      expiresAt: '2026-09-25T00:05:00.000Z',
+    const response: CreatePhotoUploadUrlsResponseDto = {
+      uploads: body.files.map((file) => {
+        const key = `photos/2026/09/${file.contentLength}.jpg`;
+        return {
+          uploadUrl: `${PHOTO_STORAGE_ORIGIN}/bucket/${key}?X-Amz-Signature=test-${photoUploadUrlRequests.length}`,
+          method: PhotoUploadUrlDtoMethod.PUT,
+          headers: {
+            'Content-Type': file.contentType,
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+          url: photoPublicUrl(file.contentLength),
+          expiresAt: '2026-09-25T00:05:00.000Z',
+        };
+      }),
     };
     return HttpResponse.json(response, { status: 201 });
   }),

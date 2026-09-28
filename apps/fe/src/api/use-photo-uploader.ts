@@ -1,48 +1,63 @@
 /**
- * Direct-to-R2 photo upload (docs/design/catalog/dress-photo-upload.md §2 CMS flow b–c).
+ * Direct-to-R2 photo upload (docs/design/catalog/dress-photo-upload.md §2 CMS flow b–c, §9).
+ * Called ONCE per form Save with every photo that still has to be uploaded:
  *
- *   1. POST /api/v1/photos/upload-urls through the generated client (the ONE API door: auth header,
- *      401 refresh) → { uploadUrl, headers, url }.
- *   2. PUT the File itself to `uploadUrl` with EXACTLY the returned headers. That request goes to
- *      R2, not to our API: it bypasses the Orval mutator and carries NO bearer token — the signature
- *      in the URL is the credential. XMLHttpRequest, not fetch, because only XHR reports upload
- *      progress. Content-Length is never set by hand (a forbidden header): the browser derives it
- *      from `File.size`, which is exactly the length signed in step 1.
+ *   1. ONE POST /api/v1/photos/upload-urls through the generated client (the ONE API door: auth
+ *      header, 401 refresh) → one { uploadUrl, headers, url } per file, in order.
+ *   2. PUT each File to its `uploadUrl`, in parallel, with EXACTLY the returned headers. Those
+ *      requests go to R2, not to our API: they bypass the Orval mutator and carry NO bearer token —
+ *      the signature in the URL is the credential. XMLHttpRequest, not fetch, because only XHR
+ *      reports upload progress. Content-Length is never set by hand (a forbidden header): the
+ *      browser derives it from `File.size`, which is exactly the length signed in step 1.
  *
- * Lives in `src/api/` because it is HTTP and needs the generated client; the kernel field
- * (`components/media/photo-list-field.tsx`) receives it as a prop.
+ * Lives in `src/api/` because it is HTTP and needs the generated client; the kernel
+ * (`components/media/photo-items.ts`) receives it as a parameter.
  */
 import { useCallback } from 'react';
 
-import { PhotoUploadError, type PhotoUploader } from '@/components/media/photo-upload-rules';
+import {
+  PhotoUploadError,
+  type PhotoUploadResult,
+  type PhotoUploader,
+} from '@/components/media/photo-upload-rules';
 
 import { mapApiError } from './errors';
 import { useCreatePhotoUploadUrlHttpControllerCreate } from './generated/catalog/catalog';
-import type {
-  CreatePhotoUploadUrlRequestDtoContentType,
-  CreatePhotoUploadUrlResponseDto,
-} from './generated/model';
+import type { PhotoUploadFileDtoContentType, PhotoUploadUrlDto } from './generated/model';
 
-/** Envelope code → per-photo state (ADR 0001 §4, `media:errors.*`). */
-function toPhotoUploadError(error: unknown): PhotoUploadError {
+/**
+ * Envelope code → per-photo state (ADR 0001 §4, `media:errors.*`). A 400 names the offending file
+ * (`details[0].field` = `files.<i>.…`); that file gets the reason, the rest were simply not signed.
+ */
+function toPhotoUploadErrors(error: unknown, count: number): PhotoUploadError[] {
+  const failed = Array.from({ length: count }, () => new PhotoUploadError('uploadFailed'));
   const mapped = mapApiError(error);
-  if (mapped.kind === 'fault') {
-    switch (mapped.code) {
-      case 'PHOTO.UNSUPPORTED_TYPE':
-        return new PhotoUploadError('unsupportedType');
-      case 'PHOTO.TOO_LARGE': {
-        const maxBytes = mapped.details?.[0]?.maxBytes;
-        return new PhotoUploadError('tooLarge', typeof maxBytes === 'number' ? maxBytes : undefined);
-      }
-      case 'PHOTO.STORAGE_UNAVAILABLE':
-        return new PhotoUploadError('storageUnavailable');
+  if (mapped.kind !== 'fault') return failed;
+
+  const detail = mapped.details?.[0];
+  const index = Number(/^files\.(\d+)\./.exec(detail?.field ?? '')?.[1] ?? Number.NaN);
+  const blame = (reason: PhotoUploadError) => {
+    if (Number.isInteger(index) && index < count) failed[index] = reason;
+    return failed;
+  };
+  switch (mapped.code) {
+    case 'PHOTO.UNSUPPORTED_TYPE':
+      return blame(new PhotoUploadError('unsupportedType'));
+    case 'PHOTO.TOO_LARGE': {
+      const maxBytes = detail?.maxBytes;
+      return blame(
+        new PhotoUploadError('tooLarge', typeof maxBytes === 'number' ? maxBytes : undefined),
+      );
     }
+    case 'PHOTO.STORAGE_UNAVAILABLE':
+      return failed.map(() => new PhotoUploadError('storageUnavailable'));
+    default:
+      return failed;
   }
-  return new PhotoUploadError('uploadFailed');
 }
 
 function putToStorage(
-  ticket: CreatePhotoUploadUrlResponseDto,
+  ticket: PhotoUploadUrlDto,
   file: File,
   onProgress: (percent: number) => void,
   signal: AbortSignal | undefined,
@@ -83,31 +98,52 @@ function putToStorage(
   });
 }
 
-/** The uploader `PhotoListField` expects — one call = one new upload URL + one PUT. */
+/** The batch uploader the dress form runs on Save — one signing request + one PUT per file. */
 export function usePhotoUploader(): PhotoUploader {
-  // The field renders every failure per photo, so the app-wide "mutation failed" toast
+  // The form renders every failure per photo, so the app-wide "mutation failed" toast
   // (providers.tsx) is overridden with a no-op.
   const { mutateAsync } = useCreatePhotoUploadUrlHttpControllerCreate({
     mutation: { onError: () => {} },
   });
 
   return useCallback<PhotoUploader>(
-    async (file, { onProgress, signal }) => {
-      let ticket: CreatePhotoUploadUrlResponseDto;
+    async (files, { onProgress, signal }) => {
+      if (files.length === 0) return [];
+
+      let uploads: PhotoUploadUrlDto[];
       try {
-        ticket = await mutateAsync({
+        ({ uploads } = await mutateAsync({
           data: {
-            // The field validated the type locally; the BE re-checks it either way.
-            contentType: file.type as CreatePhotoUploadUrlRequestDtoContentType,
-            contentLength: file.size,
+            files: files.map((file) => ({
+              // The field validated the type locally; the BE re-checks it either way.
+              contentType: file.type as PhotoUploadFileDtoContentType,
+              contentLength: file.size,
+            })),
           },
-        });
+        }));
       } catch (error) {
-        throw toPhotoUploadError(error);
+        return toPhotoUploadErrors(error, files.length).map((reason) => ({
+          ok: false,
+          error: reason,
+        }));
       }
-      await putToStorage(ticket, file, onProgress, signal);
-      onProgress(100);
-      return ticket.url;
+
+      return Promise.all(
+        files.map(async (file, index): Promise<PhotoUploadResult> => {
+          const ticket = uploads[index];
+          if (!ticket) return { ok: false, error: new PhotoUploadError('uploadFailed') };
+          try {
+            await putToStorage(ticket, file, (percent) => onProgress(index, percent), signal);
+            onProgress(index, 100);
+            return { ok: true, url: ticket.url };
+          } catch (error) {
+            return {
+              ok: false,
+              error: error instanceof PhotoUploadError ? error : new PhotoUploadError('uploadFailed'),
+            };
+          }
+        }),
+      );
     },
     [mutateAsync],
   );
