@@ -7,7 +7,12 @@
  */
 import { z } from 'zod';
 
-import { MAX_PHOTOS, PHOTO_LINK_PATTERN } from '@/components/media/photo-upload-rules';
+import {
+  isRejectedPhoto,
+  isValidPhotoLink,
+  type PhotoItem,
+} from '@/components/media/photo-items';
+import { MAX_PHOTOS } from '@/components/media/photo-upload-rules';
 
 const vndAmount = (requiredKey: string) =>
   z
@@ -34,15 +39,17 @@ export const dressFormSchema = z.object({
   depositAmount: vndAmount('form.errors.depositRequired'),
   notes: z.string().trim().max(2000, 'form.errors.notesTooLong'),
   /**
-   * Finished photo URLs in display order (first = cover) — uploaded to R2 or pasted
-   * (catalog/dress-photo-upload). PhotoListField already refuses bad links and an 11th photo; this
-   * mirrors the API (`@ArrayMaxSize(10)`, http(s) URLs) so the form never sends what it rejects.
-   * Array-level refinements keep the message on the field, not on a hidden item path.
+   * Photos in display order (first = cover): stored URLs (R2 or pasted) and chosen files that Save
+   * uploads first (catalog/dress-photo-upload §9). PhotoListField already refuses bad links and an
+   * 11th photo; this mirrors the API (`@ArrayMaxSize(10)`, http(s) URLs) and holds Save while a
+   * file that no upload can fix (wrong type / too large) is still in the list. Array-level
+   * refinements keep the message on the field, not on a hidden item path.
    */
-  photoUrls: z
-    .array(z.string())
-    .refine((urls) => urls.length <= MAX_PHOTOS, 'form.errors.photoUrlsTooMany')
-    .refine((urls) => urls.every((url) => PHOTO_LINK_PATTERN.test(url)), 'form.errors.photoUrlInvalid'),
+  photos: z
+    .array(z.custom<PhotoItem>())
+    .refine((photos) => photos.length <= MAX_PHOTOS, 'form.errors.photoUrlsTooMany')
+    .refine((photos) => photos.every(isValidPhotoLink), 'form.errors.photoUrlInvalid')
+    .refine((photos) => !photos.some(isRejectedPhoto), 'form.errors.photoInvalid'),
   /** Category id, or the NONE sentinel — Radix Select items cannot carry an empty value. */
   categoryId: z.string(),
   /** Owner-only (FR-CAT-05); '' = no value. The dialog only SENDS it for the owner. */
@@ -71,7 +78,7 @@ export const dressFormDefaults: DressFormValues = {
   rentalPrice: '',
   depositAmount: '',
   notes: '',
-  photoUrls: [],
+  photos: [],
   categoryId: CATEGORY_NONE,
   purchasePrice: '',
 };

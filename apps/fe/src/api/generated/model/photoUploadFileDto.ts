@@ -4,10 +4,10 @@
  * dress-rental API
  * OpenAPI spec version: 0
  */
-import type { CreatePhotoUploadUrlRequestDtoContentType } from './createPhotoUploadUrlRequestDtoContentType';
+import type { PhotoUploadFileDtoContentType } from './photoUploadFileDtoContentType';
 
-export interface CreatePhotoUploadUrlRequestDto {
-  contentType: CreatePhotoUploadUrlRequestDtoContentType;
+export interface PhotoUploadFileDto {
+  contentType: PhotoUploadFileDtoContentType;
   /** Exact file size in bytes; signed into the URL, so the PUT body must match it */
   contentLength: number;
 }

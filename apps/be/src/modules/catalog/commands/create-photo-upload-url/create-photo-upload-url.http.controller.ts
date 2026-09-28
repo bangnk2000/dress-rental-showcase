@@ -10,10 +10,11 @@ import {
 import { RequirePermission } from '../../../../libs/authz/require-permission.decorator';
 import { ApiErrorResponseDto } from '../../../../libs/exceptions';
 import { CreatePhotoUploadUrlCommand } from './create-photo-upload-url.command';
-import { CreatePhotoUploadUrlRequestDto } from './create-photo-upload-url.request.dto';
+import { CreatePhotoUploadUrlsRequestDto } from './create-photo-upload-url.request.dto';
 import {
-  CreatePhotoUploadUrlResponseDto,
+  CreatePhotoUploadUrlsResponseDto,
   PhotoUploadHeadersDto,
+  PhotoUploadUrlDto,
 } from './create-photo-upload-url.response.dto';
 import { PhotoUploadUrl } from './create-photo-upload-url.service';
 
@@ -27,14 +28,14 @@ export class CreatePhotoUploadUrlHttpController {
   @RequirePermission('photo:upload')
   @ApiOperation({
     summary:
-      'Presign ONE direct browser → R2 PUT (300 s; Content-Type, Content-Length and Cache-Control are signed)',
+      'Presign one direct browser → R2 PUT per file, for all photos of one form submit (300 s; Content-Type, Content-Length and Cache-Control are signed)',
   })
-  @ApiCreatedResponse({ type: CreatePhotoUploadUrlResponseDto })
+  @ApiCreatedResponse({ type: CreatePhotoUploadUrlsResponseDto })
   @ApiResponse({
     status: 400,
     type: ApiErrorResponseDto,
     description:
-      'PHOTO.UNSUPPORTED_TYPE (not JPEG/PNG/WebP) | PHOTO.TOO_LARGE (details[0].maxBytes) | GENERIC.VALIDATION',
+      'PHOTO.UNSUPPORTED_TYPE | PHOTO.TOO_LARGE (details[0].maxBytes) — details[0].field = files.<i>.… names the file; GENERIC.VALIDATION',
   })
   @ApiResponse({ status: 403, type: ApiErrorResponseDto, description: 'GENERIC.FORBIDDEN' })
   @ApiResponse({
@@ -43,20 +44,23 @@ export class CreatePhotoUploadUrlHttpController {
     description: 'PHOTO.STORAGE_UNAVAILABLE — R2 is not configured on this server',
   })
   async create(
-    @Body() body: CreatePhotoUploadUrlRequestDto,
-  ): Promise<CreatePhotoUploadUrlResponseDto> {
-    const signed: PhotoUploadUrl = await this.commandBus.execute(
+    @Body() body: CreatePhotoUploadUrlsRequestDto,
+  ): Promise<CreatePhotoUploadUrlsResponseDto> {
+    const signed: PhotoUploadUrl[] = await this.commandBus.execute(
       new CreatePhotoUploadUrlCommand({
-        contentType: body.contentType,
-        contentLength: body.contentLength,
+        files: body.files.map(({ contentType, contentLength }) => ({ contentType, contentLength })),
       }),
     );
-    return Object.assign(new CreatePhotoUploadUrlResponseDto(), {
-      uploadUrl: signed.uploadUrl,
-      method: signed.method,
-      headers: Object.assign(new PhotoUploadHeadersDto(), signed.headers),
-      url: signed.url,
-      expiresAt: signed.expiresAt.toISOString(),
+    return Object.assign(new CreatePhotoUploadUrlsResponseDto(), {
+      uploads: signed.map((upload) =>
+        Object.assign(new PhotoUploadUrlDto(), {
+          uploadUrl: upload.uploadUrl,
+          method: upload.method,
+          headers: Object.assign(new PhotoUploadHeadersDto(), upload.headers),
+          url: upload.url,
+          expiresAt: upload.expiresAt.toISOString(),
+        }),
+      ),
     });
   }
 }

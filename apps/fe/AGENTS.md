@@ -42,11 +42,13 @@ files here.
   route error boundary via `isServerOrNetworkError`; mutation → local toast + retry, never thrown to
   the boundary. Adding an outcome to the BE means adding its row to ADR 0001 §4 and its key to
   vi + en in the same commit.
-- **Photos go straight to R2** (`catalog/dress-photo-upload`): `src/api/use-photo-uploader.ts` signs
-  through the generated client, then PUTs the File by XHR to the presigned URL with exactly the
-  returned headers and NO bearer token (arch a3: XHR only in `src/api/`). The kernel field
-  `components/media/photo-list-field.tsx` receives that uploader as a prop — the kernel never
-  imports `src/api`. Photo display goes through `@/lib/photo-url` → `@dress-rental/image-url`, the
+- **Photos go straight to R2, on Save only** (`catalog/dress-photo-upload` §9): the field
+  `components/media/photo-list-field.tsx` only edits a list of `PhotoItem`s (stored URL | chosen
+  file, `photo-items.ts`) and uploads nothing. The dress form's Save runs `uploadLocalPhotos` with
+  the batch uploader from `src/api/use-photo-uploader.ts` — ONE signing request through the
+  generated client, then one XHR PUT per file with exactly the returned headers and NO bearer token
+  (arch a3: XHR only in `src/api/`) — and saves the dress only when every photo uploaded. The
+  kernel never imports `src/api`. Photo display goes through `@/lib/photo-url` → `@dress-rental/image-url`, the
   one reader of `VITE_IMAGE_BASE_URL` (arch g1/g2).
 
 ## Deviations from the stack spec (deliberate, keep consistent)

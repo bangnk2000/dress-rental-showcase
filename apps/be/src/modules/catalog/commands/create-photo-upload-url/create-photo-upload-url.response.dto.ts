@@ -13,7 +13,7 @@ export class PhotoUploadHeadersDto {
   readonly 'Cache-Control'!: string;
 }
 
-export class CreatePhotoUploadUrlResponseDto {
+export class PhotoUploadUrlDto {
   @ApiProperty({ description: 'Presigned R2 PUT URL, valid for 300 s, for exactly one key' })
   readonly uploadUrl!: string;
 
@@ -31,4 +31,12 @@ export class CreatePhotoUploadUrlResponseDto {
 
   @ApiProperty({ format: 'date-time', example: '2026-09-25T10:05:00.000Z' })
   readonly expiresAt!: string;
+}
+
+export class CreatePhotoUploadUrlsResponseDto {
+  @ApiProperty({
+    type: [PhotoUploadUrlDto],
+    description: 'One upload per requested file, in the order of `files`',
+  })
+  readonly uploads!: PhotoUploadUrlDto[];
 }

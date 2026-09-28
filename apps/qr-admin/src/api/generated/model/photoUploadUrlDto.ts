@@ -4,13 +4,13 @@
  * dress-rental API
  * OpenAPI spec version: 0
  */
-import type { CreatePhotoUploadUrlResponseDtoMethod } from './createPhotoUploadUrlResponseDtoMethod';
 import type { PhotoUploadHeadersDto } from './photoUploadHeadersDto';
+import type { PhotoUploadUrlDtoMethod } from './photoUploadUrlDtoMethod';
 
-export interface CreatePhotoUploadUrlResponseDto {
+export interface PhotoUploadUrlDto {
   /** Presigned R2 PUT URL, valid for 300 s, for exactly one key */
   uploadUrl: string;
-  method: CreatePhotoUploadUrlResponseDtoMethod;
+  method: PhotoUploadUrlDtoMethod;
   headers: PhotoUploadHeadersDto;
   /** Public URL of the photo once the PUT succeeds — append it to the dress photoUrls */
   url: string;

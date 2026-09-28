@@ -136,12 +136,18 @@ function DressDetail({ dressId }: { dressId: string }) {
           <section className="space-y-2">
             <h2 className="text-base font-semibold">{t('detail.photos.title')}</h2>
             <div className="flex flex-wrap gap-2">
-              {/* The tile shows the 640 variant (the CMS's large view); the link still opens the
-                  original as stored. Index keys: a dress may list the same link twice. */}
+              {/* The tile shows the SAME 160 variant as the list (already cached); the link opens
+                  the large variant, not the ~2 MB original. Index keys: a dress may list the same
+                  link twice. */}
               {dress.photoUrls.map((url, index) => (
-                <a key={`${index}-${url}`} href={url} target="_blank" rel="noreferrer">
+                <a
+                  key={`${index}-${url}`}
+                  href={photoUrl(url, PHOTO_WIDTH.large)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   <img
-                    src={photoUrl(url, PHOTO_WIDTH.large)}
+                    src={photoUrl(url, PHOTO_WIDTH.thumbnail)}
                     alt={dress.code}
                     loading="lazy"
                     className="h-28 w-28 rounded-md border object-cover"

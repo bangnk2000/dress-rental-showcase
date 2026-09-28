@@ -67,14 +67,17 @@
       "notesTooLong": "Ghi chú tối đa 2000 ký tự",
       "duplicateCode": "Mã váy đã tồn tại",
       "photoUrlInvalid": "Mỗi ảnh phải là một liên kết http(s) hợp lệ",
-      "photoUrlsTooMany": "Tối đa 10 ảnh"
+      "photoUrlsTooMany": "Tối đa 10 ảnh",
+      "photoInvalid": "Xoá các ảnh bị đánh dấu đỏ trước khi lưu"
     },
     "success": "Đã thêm váy vào danh mục",
     "error": "Không thể thêm váy. Vui lòng thử lại.",
     "updateSuccess": "Đã cập nhật váy",
     "updateError": "Không thể cập nhật váy. Vui lòng thử lại.",
     "categoryNone": "Không phân loại",
-    "sizeHint": "Chạm để chọn kích cỡ, chạm lại để bỏ chọn."
+    "sizeHint": "Chạm để chọn kích cỡ, chạm lại để bỏ chọn.",
+    "photoUploadFailed": "Có ảnh chưa tải lên được — váy chưa được lưu. Bấm Lưu để thử lại.",
+    "uploadingPhotos": "Đang tải ảnh…"
   },
   "detail": {
     "title": "Chi tiết váy",

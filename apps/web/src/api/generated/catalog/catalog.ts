@@ -33,8 +33,8 @@ import type {
   CreateCategoryRequestDto,
   CreateDressOutcomeDto,
   CreateDressRequestDto,
-  CreatePhotoUploadUrlRequestDto,
-  CreatePhotoUploadUrlResponseDto,
+  CreatePhotoUploadUrlsRequestDto,
+  CreatePhotoUploadUrlsResponseDto,
   DeleteCategoryOutcomeDto,
   DressListResponseDto,
   DressResponseDto,
@@ -1202,16 +1202,16 @@ export const getCreatePhotoUploadUrlHttpControllerCreateUrl = () => {
 }
 
 /**
- * @summary Presign ONE direct browser → R2 PUT (300 s; Content-Type, Content-Length and Cache-Control are signed)
+ * @summary Presign one direct browser → R2 PUT per file, for all photos of one form submit (300 s; Content-Type, Content-Length and Cache-Control are signed)
  */
-export const createPhotoUploadUrlHttpControllerCreate = async (createPhotoUploadUrlRequestDto: CreatePhotoUploadUrlRequestDto, options?: Parameters<typeof customFetch>[1]): Promise<CreatePhotoUploadUrlResponseDto> => {
+export const createPhotoUploadUrlHttpControllerCreate = async (createPhotoUploadUrlsRequestDto: CreatePhotoUploadUrlsRequestDto, options?: Parameters<typeof customFetch>[1]): Promise<CreatePhotoUploadUrlsResponseDto> => {
 
-  return customFetch<CreatePhotoUploadUrlResponseDto>(getCreatePhotoUploadUrlHttpControllerCreateUrl(),
+  return customFetch<CreatePhotoUploadUrlsResponseDto>(getCreatePhotoUploadUrlHttpControllerCreateUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(createPhotoUploadUrlRequestDto)
+    body: JSON.stringify(createPhotoUploadUrlsRequestDto)
   }
 );}
 
@@ -1220,8 +1220,8 @@ export const createPhotoUploadUrlHttpControllerCreate = async (createPhotoUpload
 
 
 export const getCreatePhotoUploadUrlHttpControllerCreateMutationOptions = <TError = ApiErrorResponseDto,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, TError,{data: CreatePhotoUploadUrlRequestDto}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, TError,{data: CreatePhotoUploadUrlRequestDto}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, TError,{data: CreatePhotoUploadUrlsRequestDto}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, TError,{data: CreatePhotoUploadUrlsRequestDto}, TContext> => {
 
 const mutationKey = ['createPhotoUploadUrlHttpControllerCreate'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1233,7 +1233,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, {data: CreatePhotoUploadUrlRequestDto}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, {data: CreatePhotoUploadUrlsRequestDto}> = (props) => {
           const {data} = props ?? {};
 
           return  createPhotoUploadUrlHttpControllerCreate(data,requestOptions)
@@ -1247,18 +1247,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreatePhotoUploadUrlHttpControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>>
-    export type CreatePhotoUploadUrlHttpControllerCreateMutationBody = CreatePhotoUploadUrlRequestDto
+    export type CreatePhotoUploadUrlHttpControllerCreateMutationBody = CreatePhotoUploadUrlsRequestDto
     export type CreatePhotoUploadUrlHttpControllerCreateMutationError = ApiErrorResponseDto
 
     /**
- * @summary Presign ONE direct browser → R2 PUT (300 s; Content-Type, Content-Length and Cache-Control are signed)
+ * @summary Presign one direct browser → R2 PUT per file, for all photos of one form submit (300 s; Content-Type, Content-Length and Cache-Control are signed)
  */
 export const useCreatePhotoUploadUrlHttpControllerCreate = <TError = ApiErrorResponseDto,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, TError,{data: CreatePhotoUploadUrlRequestDto}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>, TError,{data: CreatePhotoUploadUrlsRequestDto}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof createPhotoUploadUrlHttpControllerCreate>>,
         TError,
-        {data: CreatePhotoUploadUrlRequestDto},
+        {data: CreatePhotoUploadUrlsRequestDto},
         TContext
       > => {
       return useMutation(getCreatePhotoUploadUrlHttpControllerCreateMutationOptions(options), queryClient);

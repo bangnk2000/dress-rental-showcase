@@ -32,14 +32,22 @@ export interface PhotoUploadUrl {
   expiresAt: Date;
 }
 
+function extensionOf(contentType: string): string | undefined {
+  return Object.prototype.hasOwnProperty.call(PHOTO_EXTENSIONS, contentType)
+    ? PHOTO_EXTENSIONS[contentType]
+    : undefined;
+}
+
 /**
- * Validation order per docs/design/catalog/dress-photo-upload.md §2 flow: type → size → storage.
- * The guard (`photo:upload`) ran before this handler. Failures are THROWN envelope faults, not
- * returned outcomes — there is no business rejection in this use case (ADR 0001 §3).
+ * Validation order per docs/design/catalog/dress-photo-upload.md §2 flow: type → size → storage,
+ * over EVERY file before anything is signed — one bad file fails the batch (the CMS checked them
+ * locally, so a batch failure means a client bug or a lower server limit). The guard
+ * (`photo:upload`) ran before this handler. Failures are THROWN envelope faults, not returned
+ * outcomes — there is no business rejection in this use case (ADR 0001 §3).
  */
 @CommandHandler(CreatePhotoUploadUrlCommand)
 export class CreatePhotoUploadUrlService
-  implements ICommandHandler<CreatePhotoUploadUrlCommand, PhotoUploadUrl>
+  implements ICommandHandler<CreatePhotoUploadUrlCommand, PhotoUploadUrl[]>
 {
   constructor(
     @Inject(PHOTO_UPLOAD_SIGNER)
@@ -47,39 +55,41 @@ export class CreatePhotoUploadUrlService
     private readonly config: ConfigService,
   ) {}
 
-  async execute(command: CreatePhotoUploadUrlCommand): Promise<PhotoUploadUrl> {
-    const extension = Object.prototype.hasOwnProperty.call(PHOTO_EXTENSIONS, command.contentType)
-      ? PHOTO_EXTENSIONS[command.contentType]
-      : undefined;
-    if (!extension) throw new PhotoUnsupportedTypeException();
-
+  async execute(command: CreatePhotoUploadUrlCommand): Promise<PhotoUploadUrl[]> {
     const maxBytes = this.config.getOrThrow<number>('MAX_PHOTO_BYTES');
-    if (command.contentLength <= 0 || command.contentLength > maxBytes) {
-      throw new PhotoTooLargeException(maxBytes);
-    }
+    const extensions = command.files.map((file, index) => {
+      const extension = extensionOf(file.contentType);
+      if (!extension) throw new PhotoUnsupportedTypeException(index);
+      if (file.contentLength <= 0 || file.contentLength > maxBytes) {
+        throw new PhotoTooLargeException(maxBytes, index);
+      }
+      return extension;
+    });
 
     const baseUrl = this.config.get<string>('IMAGE_PUBLIC_BASE_URL')?.trim().replace(/\/+$/, '');
     if (!this.signer.isConfigured() || !baseUrl) throw new PhotoStorageUnavailableException();
 
     const now = new Date();
-    const yyyy = String(now.getUTCFullYear());
-    const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
-    const key = `photos/${yyyy}/${mm}/${randomUUID()}.${extension}`;
+    const prefix = `photos/${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 
-    const signed = await this.signer.sign({
-      key,
-      contentType: command.contentType,
-      contentLength: command.contentLength,
-      expiresInSeconds: PHOTO_UPLOAD_EXPIRES_IN_SECONDS,
-      cacheControl: PHOTO_CACHE_CONTROL,
-    });
-
-    return {
-      uploadUrl: signed.uploadUrl,
-      method: 'PUT',
-      headers: signed.headers,
-      url: `${baseUrl}/${key}`,
-      expiresAt: signed.expiresAt,
-    };
+    return Promise.all(
+      command.files.map(async (file, index) => {
+        const key = `${prefix}/${randomUUID()}.${extensions[index]}`;
+        const signed = await this.signer.sign({
+          key,
+          contentType: file.contentType,
+          contentLength: file.contentLength,
+          expiresInSeconds: PHOTO_UPLOAD_EXPIRES_IN_SECONDS,
+          cacheControl: PHOTO_CACHE_CONTROL,
+        });
+        return {
+          uploadUrl: signed.uploadUrl,
+          method: 'PUT' as const,
+          headers: signed.headers,
+          url: `${baseUrl}/${key}`,
+          expiresAt: signed.expiresAt,
+        };
+      }),
+    );
   }
 }

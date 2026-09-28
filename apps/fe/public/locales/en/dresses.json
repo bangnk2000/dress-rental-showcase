@@ -67,14 +67,17 @@
       "notesTooLong": "Notes are at most 2000 characters",
       "duplicateCode": "This dress code already exists",
       "photoUrlInvalid": "Each photo must be a valid http(s) link",
-      "photoUrlsTooMany": "At most 10 photos"
+      "photoUrlsTooMany": "At most 10 photos",
+      "photoInvalid": "Remove the photos marked in red before saving"
     },
     "success": "Dress added to the catalog",
     "error": "Could not add the dress. Please try again.",
     "updateSuccess": "Dress updated",
     "updateError": "Could not update the dress. Please try again.",
     "categoryNone": "Unclassified",
-    "sizeHint": "Tap to pick a size, tap again to clear."
+    "sizeHint": "Tap to pick a size, tap again to clear.",
+    "photoUploadFailed": "Some photos did not upload — the dress was not saved. Press Save to try again.",
+    "uploadingPhotos": "Uploading photos…"
   },
   "detail": {
     "title": "Dress detail",

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -20,6 +20,13 @@ import type {
   DressResponseDto,
   UpdateDressRequestDto,
 } from '@/api/generated/model';
+import {
+  photoUrlsOf,
+  revokePhotoPreviews,
+  toPhotoItems,
+  uploadLocalPhotos,
+  type PhotoItem,
+} from '@/components/media/photo-items';
 import { PhotoListField } from '@/components/media/photo-list-field';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,7 +79,7 @@ function toFormValues(dress: DressResponseDto): DressFormValues {
     rentalPrice: String(dress.rentalPrice),
     depositAmount: String(dress.depositAmount),
     notes: dress.notes ?? '',
-    photoUrls: [...dress.photoUrls],
+    photos: toPhotoItems(dress.photoUrls),
     categoryId: dress.categoryId ?? CATEGORY_NONE,
     // Staff responses have no key at all — the form value stays '' and is never sent back.
     purchasePrice: dress.purchasePrice != null ? String(dress.purchasePrice) : '',
@@ -82,9 +89,13 @@ function toFormValues(dress: DressResponseDto): DressFormValues {
 /**
  * Form values (strings) → create body; blank optional fields are omitted. purchasePrice rides
  * along ONLY for the owner (FR-CAT-05) — a staff request carrying it would be a named 403.
+ * `photoUrls` = the photos AFTER Save uploaded the chosen files.
  */
-function toCreateDressRequest(values: DressFormValues, isOwner: boolean): CreateDressRequestDto {
-  const { photoUrls } = values;
+function toCreateDressRequest(
+  values: DressFormValues,
+  photoUrls: string[],
+  isOwner: boolean,
+): CreateDressRequestDto {
   return {
     code: values.code,
     name: values.name,
@@ -103,7 +114,11 @@ function toCreateDressRequest(values: DressFormValues, isOwner: boolean): Create
  * EXCEPT purchasePrice for staff: the field must be ABSENT from their request (presence — even
  * null — is the refused act, FR-CAT-05).
  */
-function toUpdateDressRequest(values: DressFormValues, isOwner: boolean): UpdateDressRequestDto {
+function toUpdateDressRequest(
+  values: DressFormValues,
+  photoUrls: string[],
+  isOwner: boolean,
+): UpdateDressRequestDto {
   return {
     code: values.code,
     name: values.name,
@@ -111,7 +126,7 @@ function toUpdateDressRequest(values: DressFormValues, isOwner: boolean): Update
     rentalPrice: Number(values.rentalPrice),
     depositAmount: Number(values.depositAmount),
     notes: values.notes ? values.notes : null,
-    photoUrls: values.photoUrls,
+    photoUrls,
     categoryId: values.categoryId === CATEGORY_NONE ? null : values.categoryId,
     ...(isOwner
       ? { purchasePrice: values.purchasePrice ? Number(values.purchasePrice) : null }
@@ -125,9 +140,11 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
   const queryClient = useQueryClient();
   const sizeLabelId = useId();
   const photosLabelId = useId();
-  // Photos go straight to storage (catalog/dress-photo-upload); Save waits for every one (flow d).
-  const uploadPhoto = usePhotoUploader();
-  const [photosUploading, setPhotosUploading] = useState(false);
+  // Chosen photos reach storage only on Save, all in one batch (catalog/dress-photo-upload §9).
+  const uploadPhotos = usePhotoUploader();
+  /** Per-photo % while Save uploads; null = not uploading. */
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number> | null>(null);
+  const uploadAbort = useRef<AbortController | null>(null);
 
   const form = useForm<DressFormValues>({
     resolver: zodResolver(dressFormSchema),
@@ -145,13 +162,29 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
 
   // Re-prime on every open: the SAME dialog instance serves create and edit,
   // and the dress in the cache may have changed since the last open.
-  const { reset } = form;
+  const { reset, getValues } = form;
   useEffect(() => {
-    if (open) reset(dress ? toFormValues(dress) : dressFormDefaults);
-  }, [open, dress, reset]);
+    if (!open) return;
+    revokePhotoPreviews(getValues('photos'));
+    reset(dress ? toFormValues(dress) : dressFormDefaults);
+  }, [open, dress, reset, getValues]);
+
+  // Unmount: stop any upload still running and release the local previews.
+  useEffect(
+    () => () => {
+      uploadAbort.current?.abort();
+      revokePhotoPreviews(getValues('photos'));
+    },
+    [getValues],
+  );
 
   function handleOpenChange(next: boolean) {
-    if (!next) form.reset();
+    if (!next) {
+      // Closing mid-Save abandons it: the PUTs stop and the dress is not saved.
+      uploadAbort.current?.abort();
+      revokePhotoPreviews(form.getValues('photos'));
+      form.reset();
+    }
     onOpenChange(next);
   }
 
@@ -211,14 +244,48 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
     },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
-    if (photosUploading) return; // Save is disabled too; Enter in a field must not slip past it
+  /**
+   * Save step 1 (§9): upload every chosen file in one batch. Uploaded photos turn into URLs in the
+   * form right away, so a later Save (after a failed photo or a rejected dress) never uploads them
+   * twice. Resolves the photos to send, or null = do not save the dress.
+   */
+  async function uploadChosenPhotos(photos: PhotoItem[]): Promise<PhotoItem[] | null> {
+    if (!photos.some((photo) => photo.kind === 'local')) return photos;
+    const controller = new AbortController();
+    uploadAbort.current = controller;
+    setUploadProgress({});
+    try {
+      const result = await uploadLocalPhotos(photos, uploadPhotos, {
+        signal: controller.signal,
+        onProgress: (id, percent) =>
+          setUploadProgress((prev) => (prev ? { ...prev, [id]: percent } : prev)),
+      });
+      if (controller.signal.aborted) return null; // the dialog was closed — nobody is looking
+      form.setValue('photos', result.items);
+      if (!result.ok) {
+        toast.error(t('form.photoUploadFailed'));
+        return null;
+      }
+      return result.items;
+    } finally {
+      if (uploadAbort.current === controller) uploadAbort.current = null;
+      setUploadProgress(null);
+    }
+  }
+
+  // Save is disabled while submitting; handleSubmit also ignores a second Enter meanwhile.
+  const onSubmit = form.handleSubmit(async (values) => {
+    const photos = await uploadChosenPhotos(values.photos);
+    if (!photos) return;
+    const photoUrls = photoUrlsOf(photos);
     if (dress) {
-      updateDress.mutate({ id: dress.id, data: toUpdateDressRequest(values, isOwner) });
+      updateDress.mutate({ id: dress.id, data: toUpdateDressRequest(values, photoUrls, isOwner) });
     } else {
-      createDress.mutate({ data: toCreateDressRequest(values, isOwner) });
+      createDress.mutate({ data: toCreateDressRequest(values, photoUrls, isOwner) });
     }
   });
+
+  const saving = form.formState.isSubmitting || createDress.isPending || updateDress.isPending;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -349,15 +416,14 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
             ) : null}
             <FormField
               control={form.control}
-              name="photoUrls"
+              name="photos"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel id={photosLabelId}>{t('form.fields.photoUrls')}</FormLabel>
                   <PhotoListField
                     value={field.value}
                     onChange={field.onChange}
-                    upload={uploadPhoto}
-                    onUploadingChange={setPhotosUploading}
+                    progress={uploadProgress}
                     aria-labelledby={photosLabelId}
                   />
                   <DressFormMessage />
@@ -383,11 +449,8 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
                   {tCommon('actions.cancel')}
                 </Button>
               </DialogClose>
-              <Button
-                type="submit"
-                disabled={createDress.isPending || updateDress.isPending || photosUploading}
-              >
-                {tCommon('actions.save')}
+              <Button type="submit" disabled={saving}>
+                {uploadProgress ? t('form.uploadingPhotos') : tCommon('actions.save')}
               </Button>
             </DialogFooter>
           </form>

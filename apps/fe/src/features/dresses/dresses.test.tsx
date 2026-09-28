@@ -13,6 +13,8 @@ import {
   getLastCreatedCategory,
   getLastDuplicate,
   getLastUpdateDressBody,
+  getPhotoPuts,
+  getPhotoUploadUrlRequests,
   makeDress,
   photoPublicUrl,
   recordPhotoPut,
@@ -124,7 +126,7 @@ test('list thumbnails of R2 photos load the 160px Cloudflare Images variant', as
   );
 });
 
-test('the detail gallery shows the 640 variant and still links to the original', async () => {
+test('the detail gallery reuses the list 160 variant and opens the 1280 variant, never the original', async () => {
   vi.stubEnv('VITE_IMAGE_BASE_URL', PHOTO_PUBLIC_BASE);
   seedDresses([makeDress({ id: 'd1', code: 'DR-001', photoUrls: [photoPublicUrl(456)] })]);
   renderDetail('/dresses/d1');
@@ -132,9 +134,12 @@ test('the detail gallery shows the 640 variant and still links to the original',
   const img = await screen.findByRole('img', { name: 'DR-001' });
   expect(img).toHaveAttribute(
     'src',
-    `${PHOTO_PUBLIC_BASE}/cdn-cgi/image/width=640,quality=80,format=auto,fit=scale-down/photos/2026/09/456.jpg`,
+    `${PHOTO_PUBLIC_BASE}/cdn-cgi/image/width=160,quality=80,format=auto,fit=scale-down/photos/2026/09/456.jpg`,
   );
-  expect(img.closest('a')).toHaveAttribute('href', photoPublicUrl(456));
+  expect(img.closest('a')).toHaveAttribute(
+    'href',
+    `${PHOTO_PUBLIC_BASE}/cdn-cgi/image/width=1280,quality=80,format=auto,fit=scale-down/photos/2026/09/456.jpg`,
+  );
 });
 
 test('shows the no-dresses empty state when the catalog is empty', async () => {
@@ -352,7 +357,7 @@ test('an invalid pasted photo link is refused by the photo field, not added', as
   expect(getLastUpdateDressBody()).toBeNull();
 });
 
-test('editing: Save stays disabled while a photo uploads, then saves the uploaded URL after the existing ones', async () => {
+test('editing: a chosen photo uploads only on Save, Save stays busy meanwhile, then the dress gets its URL after the existing ones', async () => {
   seedDresses([
     makeDress({ id: 'd1', code: 'DR-001', photoUrls: ['https://example.com/old.jpg'] }),
   ]);
@@ -374,17 +379,96 @@ test('editing: Save stays disabled while a photo uploads, then saves the uploade
     await screen.findByLabelText('Chọn ảnh để tải lên'),
     new File([new Uint8Array(700)], 'new.jpg', { type: 'image/jpeg' }),
   );
+  expect(screen.getByText('Chờ lưu')).toBeInTheDocument();
+  expect(getPhotoUploadUrlRequests()).toHaveLength(0);
 
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Lưu' })).toBeDisabled());
-  release();
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Lưu' })).toBeEnabled());
   await user.click(screen.getByRole('button', { name: 'Lưu' }));
 
+  const busy = await screen.findByRole('button', { name: 'Đang tải ảnh…' });
+  expect(busy).toBeDisabled();
+  expect(getLastUpdateDressBody()).toBeNull(); // the dress waits for its photos
+  release();
+
   expect(await screen.findByText('Đã cập nhật váy')).toBeInTheDocument();
+  expect(getPhotoUploadUrlRequests()).toHaveLength(1);
   expect(getLastUpdateDressBody()?.photoUrls).toEqual([
     'https://example.com/old.jpg',
     photoPublicUrl(700),
   ]);
+});
+
+test('closing the dialog with a chosen photo uploads nothing — no orphan object in storage', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await user.click(await screen.findByRole('button', { name: 'Sửa' }));
+
+  await user.upload(
+    await screen.findByLabelText('Chọn ảnh để tải lên'),
+    new File([new Uint8Array(710)], 'new.jpg', { type: 'image/jpeg' }),
+  );
+  await user.click(screen.getByRole('button', { name: 'Hủy' }));
+
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(getPhotoUploadUrlRequests()).toHaveLength(0);
+  expect(getPhotoPuts()).toHaveLength(0);
+  expect(getLastUpdateDressBody()).toBeNull();
+});
+
+test('a photo that fails to upload keeps the dialog open and the dress unsaved; the next Save uploads only it', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  let refused = false;
+  server.use(
+    http.put(`${PHOTO_STORAGE_ORIGIN}/*`, ({ request }) => {
+      if (request.url.includes('/722.jpg') && !refused) {
+        refused = true;
+        return new Response(null, { status: 403 });
+      }
+      return recordPhotoPut(request);
+    }),
+  );
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await user.click(await screen.findByRole('button', { name: 'Sửa' }));
+
+  await user.upload(await screen.findByLabelText('Chọn ảnh để tải lên'), [
+    new File([new Uint8Array(721)], 'a.jpg', { type: 'image/jpeg' }),
+    new File([new Uint8Array(722)], 'b.jpg', { type: 'image/jpeg' }),
+  ]);
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  expect(
+    await screen.findByText('Có ảnh chưa tải lên được — váy chưa được lưu. Bấm Lưu để thử lại.'),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  expect(getLastUpdateDressBody()).toBeNull();
+
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  expect(await screen.findByText('Đã cập nhật váy')).toBeInTheDocument();
+  expect(getPhotoUploadUrlRequests().map((request) => request.files.length)).toEqual([2, 1]);
+  expect(getLastUpdateDressBody()?.photoUrls).toEqual([photoPublicUrl(721), photoPublicUrl(722)]);
+});
+
+test('a wrong-type photo blocks Save until it is removed', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  const user = userEvent.setup({ applyAccept: false });
+  renderDetail('/dresses/d1');
+  await user.click(await screen.findByRole('button', { name: 'Sửa' }));
+
+  await user.upload(
+    await screen.findByLabelText('Chọn ảnh để tải lên'),
+    new File(['x'], 'anim.gif', { type: 'image/gif' }),
+  );
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+
+  expect(await screen.findByText('Xoá các ảnh bị đánh dấu đỏ trước khi lưu')).toBeInTheDocument();
+  expect(getPhotoUploadUrlRequests()).toHaveLength(0);
+  expect(getLastUpdateDressBody()).toBeNull();
+
+  await user.click(screen.getByRole('button', { name: 'Xoá ảnh 1' }));
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+  expect(await screen.findByText('Đã cập nhật váy')).toBeInTheDocument();
 });
 
 test('removing a photo in the edit dialog sends the shorter list — no delete request exists (R5)', async () => {

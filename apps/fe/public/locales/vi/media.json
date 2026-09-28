@@ -2,7 +2,7 @@
   "photos": {
     "upload": "Tải ảnh lên",
     "fileInput": "Chọn ảnh để tải lên",
-    "hint": "JPG, PNG hoặc WebP, tối đa {{maxMb}} MB mỗi ảnh. Ảnh đầu tiên là ảnh bìa.",
+    "hint": "JPG, PNG hoặc WebP, tối đa {{maxMb}} MB mỗi ảnh. Ảnh được tải lên khi bấm Lưu. Ảnh đầu tiên là ảnh bìa.",
     "addLink": "Thêm link",
     "linkInput": "Link ảnh",
     "linkPlaceholder": "https://...",
@@ -11,10 +11,10 @@
     "limit": "Tối đa {{max}} ảnh",
     "photo": "Ảnh {{index}}",
     "uploading": "Đang tải {{percent}}%",
-    "retry": "Thử lại ảnh {{index}}",
     "remove": "Xoá ảnh {{index}}",
     "moveLeft": "Đưa ảnh {{index}} sang trái",
-    "moveRight": "Đưa ảnh {{index}} sang phải"
+    "moveRight": "Đưa ảnh {{index}} sang phải",
+    "pending": "Chờ lưu"
   },
   "errors": {
     "unsupportedType": "Chỉ nhận ảnh JPG, PNG, WebP",
