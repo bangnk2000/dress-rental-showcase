@@ -70,8 +70,9 @@ export class DuplicateDressService
       );
 
       try {
-        // v1 of the copy's price log rides in the SAME transaction (FR-CAT-06 R1/R4).
-        await this.dressRepo.insertWithHistory(copy, command.actorId);
+        // v1 of the copy's price log (FR-CAT-06 R1/R4) AND its listing memberships
+        // (public-listing R7) ride in the SAME transaction.
+        await this.dressRepo.insertDuplicateWithHistory(copy, command.actorId, source.id);
         return Ok({ id: copy.id, code: lastCode });
       } catch (error) {
         if (error instanceof DressCodeConflictError) {

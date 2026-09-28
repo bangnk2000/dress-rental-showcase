@@ -20,6 +20,17 @@ export interface DressRepositoryPort extends RepositoryPort<DressEntity> {
   insertWithHistory(entity: DressEntity, changedById: string | null): Promise<void>;
 
   /**
+   * `insertWithHistory` for a DUPLICATE (FR-CAT-08), plus — in the SAME transaction — a copy of
+   * every (listing, source dress) pair onto the new dress (public-listing R7): the copy becomes a
+   * new size of every listing its source belongs to, or nothing is written.
+   */
+  insertDuplicateWithHistory(
+    copy: DressEntity,
+    changedById: string | null,
+    sourceDressId: string,
+  ): Promise<void>;
+
+  /**
    * `save`, plus ONE price-history row in the SAME transaction. The CALLER decides whether the
    * prices actually changed (it holds the before-values); this method just guarantees atomicity.
    */

@@ -55,6 +55,25 @@ export class DressRepository
     );
   }
 
+  async insertDuplicateWithHistory(
+    copy: DressEntity,
+    changedById: string | null,
+    sourceDressId: string,
+  ): Promise<void> {
+    await this.translateCodeConflict(() =>
+      this.writeInTransaction(copy, async (conn, record) => {
+        await this.insertRow(conn, record);
+        await this.insertHistoryRow(conn, record, changedById);
+        // R7 (public-listing): the copy joins every listing of its source, atomically.
+        await conn.query(sql.unsafe`
+          INSERT INTO dress_listing_items (listing_id, dress_id)
+          SELECT listing_id, ${record.id} FROM dress_listing_items WHERE dress_id = ${sourceDressId}
+          ON CONFLICT DO NOTHING
+        `);
+      }),
+    );
+  }
+
   async saveWithPriceHistory(entity: DressEntity, changedById: string | null): Promise<void> {
     await this.translateCodeConflict(() =>
       this.writeInTransaction(entity, async (conn, record) => {

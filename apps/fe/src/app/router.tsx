@@ -92,6 +92,27 @@ export const router = createBrowserRouter([
             },
           },
           {
+            path: 'website',
+            lazy: async () => {
+              const { ListingsRoute } = await import('@/features/listings');
+              return { Component: withBoundary(ListingsRoute) };
+            },
+          },
+          {
+            path: 'website/new',
+            lazy: async () => {
+              const { NewListingRoute } = await import('@/features/listings');
+              return { Component: withBoundary(NewListingRoute) };
+            },
+          },
+          {
+            path: 'website/:id',
+            lazy: async () => {
+              const { EditListingRoute } = await import('@/features/listings');
+              return { Component: withBoundary(EditListingRoute) };
+            },
+          },
+          {
             path: 'users',
             lazy: async () => {
               const { UsersRoute } = await import('@/features/users');

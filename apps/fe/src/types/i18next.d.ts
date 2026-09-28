@@ -10,6 +10,7 @@ import type media from '../../public/locales/vi/media.json';
 import type rentals from '../../public/locales/vi/rentals.json';
 import type today from '../../public/locales/vi/today.json';
 import type users from '../../public/locales/vi/users.json';
+import type listings from '../../public/locales/vi/listings.json';
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -22,6 +23,7 @@ declare module 'i18next' {
       rentals: typeof rentals;
       today: typeof today;
       users: typeof users;
+      listings: typeof listings;
     };
   }
 }

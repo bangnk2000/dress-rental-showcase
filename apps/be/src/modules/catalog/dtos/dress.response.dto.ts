@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+/** A public listing this dress belongs to (the "Thuộc mẫu" line of the dress detail). */
+export class DressListingRefDto {
+  @ApiProperty({ example: '6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a' })
+  readonly id!: string;
+
+  @ApiProperty({ example: 'Đầm dạ hội Ánh Trăng' })
+  readonly name!: string;
+}
+
 export class DressResponseDto {
   @ApiProperty({ example: '6f1e2c3a-6b1a-4e6a-9f57-0b6c2f1e2c3a' })
   readonly id!: string;
@@ -43,6 +52,12 @@ export class DressResponseDto {
       'What the shop paid (VND, FR-CAT-05). OWNER-ONLY: omitted entirely for staff (absence = not your field; null = the owner has not entered it). Feeds no computation.',
   })
   readonly purchasePrice?: number | null;
+
+  @ApiProperty({
+    type: [DressListingRefDto],
+    description: 'Public listings (FR-CAT-09) this dress is attached to, by name; [] when none',
+  })
+  readonly listings!: DressListingRefDto[];
 
   @ApiProperty({ example: '2026-07-30T10:00:00.000Z' })
   readonly createdAt!: string;

@@ -104,7 +104,8 @@
       "category": "Category",
       "categoryNone": "Unclassified",
       "purchasePrice": "Purchase price",
-      "purchasePriceNone": "Not entered"
+      "purchasePriceNone": "Not entered",
+      "listings": "Part of listings"
     },
     "calendar": {
       "title": "Booking calendar",

@@ -270,3 +270,24 @@ endpoint + field; `DressResponseDto.listings` là field mới bắt buộc nhưn
    SSG → ISR 300s, `next/image` loader Cloudflare, xoá `src/api/mock/`.
 
 Mỗi bước = một entry ledger, một PR. Deploy (thêm process `apps/web`, nginx) thuộc release lane.
+
+## As-built (2026-09-29, branch `feat/public-listing`)
+
+BE `9f368ee`, CMS in the following commit. Choices the spec left open, taken conservatively:
+
+| # | Choice |
+| --- | --- |
+| 1 | `tagline`/`description` optional on create, default `''`, stored NOT NULL — public DTOs always return strings |
+| 2 | `GET /listings` rows carry `dressCount`, `activeDressCount`, `activeSizeCount`, `coverUrl`, `visibleOnWeb` (= published AND ≥ 1 active dress → badge "Ẩn (hết váy)") |
+| 3 | `DressResponseDto.listings` is filled on get-dress AND list-dresses (one extra query per page) |
+| 4 | `images` includes the cover first; alt `"<name> — ảnh <n>"` uses the 1-based position |
+| 5 | Sizes: every attached dress contributes its size; a retired-only size shows `available: false`; free sizes sort `localeCompare('vi')` |
+| 6 | `GET /public/dresses` without `limit` returns every visible listing (max 500) |
+| 7 | Throttler per IP per route, `PUBLIC_THROTTLE_LIMIT`/`_TTL_SEC` (60/60), loopback skipped (`PUBLIC_THROTTLE_SKIP_LOOPBACK`, default true — the web's ISR server); `trust proxy` = loopback only, so a client-sent `X-Forwarded-For` cannot spoof the key; in-memory store = one API process |
+| 8 | Owner delete hitting 0 rows → `rejected_listing_not_found`; staff 0 rows → re-read: row still there → 403 outcome, else not_found |
+| 9 | Extra FE keys `listings:errors.dressNotFound` / `.notFound` (ADR 0001 §4) |
+| 10 | Public controllers tagged `catalog` (tag = context) — web imports from `generated/catalog` |
+| 11 | `@Public()` moved to `libs/authz/public.decorator.ts` (catalog may not import identity; identity re-exports it) |
+| 12 | CMS: `/website/new` saves content only, then replaces the URL with `/website/:id` where "Size & váy" appears; "Gắn cả nhóm mã" = `GET /dresses?q=<code>&limit=100` filtered to `<code>` + `<code>_<n>` (retired included); "Xem trên web" needs `VITE_WEB_ORIGIN` at build time (hidden when unset) |
+
+Release-lane items (not code): nginx must forward `X-Forwarded-For` for `/api/v1/public/*` and may add `limit_req`; `PUBLIC_THROTTLE_*` defaults suffice; `VITE_WEB_ORIGIN` in the CMS build.

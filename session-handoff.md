@@ -1,5 +1,32 @@
 # Session Handoff
 
+## 2026-09-29 (35) — public listings + first anonymous API (`catalog/public-listing` = pass, PR #18 → master)
+
+- Done: owner ask "triển khai feature catalog/public-listing" against the spec approved 2026-09-25.
+  BE `9f368ee` (DressListing aggregate, migration `1755500000000_dress_listings`, 6 listing
+  commands, `GET /listings[/:id]`, `DressResponseDto.listings`, duplicate copies memberships,
+  `@Public()` `GET /public/dresses[/:slug]` + throttler, ADR 0001 rows, contract regenerated) →
+  CMS `73df752` (`features/listings` at `/website`, dress detail "Thuộc mẫu"). Evidence in the
+  ledger: be unit 263, be e2e 145/145 (+35), fe 167 (+28), full init.sh green, Playwright 1/1.
+  Twelve open choices resolved conservatively → [public-listing.md §As-built](docs/design/catalog/public-listing.md).
+- PR #18: Codex round 0 → C1 P1 (publish vs a concurrent detach of the last active dress) fixed in
+  `555bac6` (conditional publish UPDATE + e2e race) → round 1 APPROVE → CI green → merged. e2e 146.
+- Next: `web:public-catalog-live` (swap
+  `apps/web/src/api/mock/public-catalog.ts` for the generated `catalog` client — public ops are
+  tagged `catalog`; ISR 300 s; `next/image` loader over `@dress-rental/image-url`; delete the mock).
+  The web DTO differs from the mock: `occasions[]` (no `occasionLabel`), `rentalPrice` (per 2-day
+  rental, not per day), `retailPrice` nullable.
+- Watch out:
+  - Any environment running the new API MUST run the migration first: `list-dresses`/`get-dress`
+    now read `dress_listings`, so an unmigrated DB turns `/dresses` into a 500 (hit locally —
+    Playwright failed until `pnpm --filter be migrate`).
+  - Release lane: nginx must forward `X-Forwarded-For` on `/api/v1/public/*` (the API trusts only a
+    loopback proxy); throttler store is in-memory (one API process); CMS needs `VITE_WEB_ORIGIN`
+    at build time or "Xem trên web" stays hidden; `PUBLIC_THROTTLE_*` not added to
+    `apps/be/.env.example` (the agent does not open `.env*` files — add by hand if wanted).
+  - `@Public()` now lives in `apps/be/src/libs/authz/public.decorator.ts` (identity re-exports it).
+  - Not proven: a real-browser run of `/website` photo upload against the dev R2 bucket.
+
 ## 2026-09-29 (34) — photos upload only on Save, one batch (`catalog/photo-upload-on-submit` = pass, PR #16 → master `a1881f0`)
 
 - Done: owner ask "khi submit form thì mới upload toàn bộ ảnh lên R2 và tối ưu lại luồng upload và

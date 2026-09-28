@@ -17,7 +17,7 @@ export class E2eDb {
 
   async truncate(): Promise<void> {
     await this.query(
-      'TRUNCATE rental_items, rentals, payments, dresses, categories, qr_links, staff_users RESTART IDENTITY CASCADE',
+      'TRUNCATE rental_items, rentals, payments, dress_listing_items, dress_listings, dresses, categories, qr_links, staff_users RESTART IDENTITY CASCADE',
     );
   }
 
