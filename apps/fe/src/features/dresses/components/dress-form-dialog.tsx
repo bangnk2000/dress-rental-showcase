@@ -178,14 +178,26 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
     [getValues],
   );
 
+  function closeDialog() {
+    // Closing while Save uploads abandons it: the PUTs stop and the dress is not saved.
+    uploadAbort.current?.abort();
+    revokePhotoPreviews(form.getValues('photos'));
+    form.reset();
+    onOpenChange(false);
+  }
+
+  /** True from the moment the dress POST/PATCH is sent until it settles. */
+  const dressRequestInFlight = useRef(false);
+
   function handleOpenChange(next: boolean) {
-    if (!next) {
-      // Closing mid-Save abandons it: the PUTs stop and the dress is not saved.
-      uploadAbort.current?.abort();
-      revokePhotoPreviews(form.getValues('photos'));
-      form.reset();
+    if (next) {
+      onOpenChange(true);
+      return;
     }
-    onOpenChange(next);
+    // A sent dress request cannot be taken back — dismissing now would still save the dress, so
+    // Cancel, ✕ and Escape wait for the answer (the answer itself closes via closeDialog).
+    if (dressRequestInFlight.current) return;
+    closeDialog();
   }
 
   async function invalidateDressQueries() {
@@ -204,10 +216,13 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
   // global "mutation failed" toast for these mutations.
   const createDress = useCreateDressHttpControllerCreate({
     mutation: {
+      onSettled: () => {
+        dressRequestInFlight.current = false;
+      },
       onSuccess: async () => {
         await invalidateDressQueries();
         toast.success(t('form.success'));
-        handleOpenChange(false);
+        closeDialog();
       },
       onError: (error) => {
         if (outcomeStatus(error) === 'rejected_dress_code_taken') {
@@ -221,10 +236,13 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
 
   const updateDress = useUpdateDressHttpControllerUpdate({
     mutation: {
+      onSettled: () => {
+        dressRequestInFlight.current = false;
+      },
       onSuccess: async () => {
         await invalidateDressQueries();
         toast.success(t('form.updateSuccess'));
-        handleOpenChange(false);
+        closeDialog();
       },
       onError: async (error) => {
         switch (outcomeStatus(error)) {
@@ -235,7 +253,7 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
             // Someone deleted/retired it under us: the dialog has nothing left to edit.
             await invalidateDressQueries();
             toast.error(t('errors.notFound'));
-            handleOpenChange(false);
+            closeDialog();
             return;
           default:
             toast.error(t('form.updateError'));
@@ -278,6 +296,7 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
     const photos = await uploadChosenPhotos(values.photos);
     if (!photos) return;
     const photoUrls = photoUrlsOf(photos);
+    dressRequestInFlight.current = true;
     if (dress) {
       updateDress.mutate({ id: dress.id, data: toUpdateDressRequest(values, photoUrls, isOwner) });
     } else {
@@ -285,7 +304,8 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
     }
   });
 
-  const saving = form.formState.isSubmitting || createDress.isPending || updateDress.isPending;
+  const dressPending = createDress.isPending || updateDress.isPending;
+  const saving = form.formState.isSubmitting || dressPending;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -445,7 +465,7 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
             />
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="outline">
+                <Button type="button" variant="outline" disabled={dressPending}>
                   {tCommon('actions.cancel')}
                 </Button>
               </DialogClose>

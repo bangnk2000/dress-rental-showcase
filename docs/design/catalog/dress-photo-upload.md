@@ -235,7 +235,7 @@ biến thể 640 và link mở ảnh gốc ~2 MB.
 | Lỗi PUT | ảnh đỏ + nút **Thử lại** riêng | dừng, váy KHÔNG được lưu, toast; ảnh đã lên giữ URL, ảnh lỗi đỏ; bấm **Lưu** lần nữa chỉ ký + PUT lại ảnh lỗi |
 | Ảnh sai loại/cỡ | đỏ + xoá | như cũ, và schema chặn Lưu tới khi xoá (`form.errors.photoInvalid`) |
 | Nút Lưu (flow d) | khoá khi có ảnh đang tải | khoá trong lúc Lưu (`isSubmitting`), nhãn "Đang tải ảnh…"; danh sách ảnh chỉ-đọc trong lúc đó |
-| Huỷ / đóng dialog | PUT đang chạy bị huỷ, ảnh đã lên thành rác | chưa có gì lên R2; nếu đang Lưu thì huỷ PUT và không lưu váy |
+| Huỷ / đóng dialog | PUT đang chạy bị huỷ, ảnh đã lên thành rác | chưa có gì lên R2; đang upload lúc Lưu → huỷ PUT, không lưu váy; request POST/PATCH váy ĐÃ gửi thì không rút lại được → Huỷ/✕/Esc bị chặn tới khi có kết quả (Codex review PR #16, C1) |
 | Ảnh vừa upload trong form | tải lại biến thể 160 từ R2 | giữ object URL cục bộ (`StoredPhoto.previewUrl`) — không đọc lại |
 | Thứ tự | ảnh mới luôn nối sau ảnh cũ | ảnh cũ và ảnh chờ đổi chỗ chung một danh sách |
 | Trang chi tiết | ô = biến thể 640, link = ảnh gốc | ô = biến thể **160** (trùng cache với danh sách), link = biến thể **1280** |

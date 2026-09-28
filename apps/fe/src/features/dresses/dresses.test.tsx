@@ -415,6 +415,73 @@ test('closing the dialog with a chosen photo uploads nothing — no orphan objec
   expect(getLastUpdateDressBody()).toBeNull();
 });
 
+test('closing the dialog while Save is still uploading abandons it — the dress is never saved', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  server.use(
+    http.put(`${PHOTO_STORAGE_ORIGIN}/*`, async ({ request }) => {
+      await gate;
+      return recordPhotoPut(request);
+    }),
+  );
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await user.click(await screen.findByRole('button', { name: 'Sửa' }));
+
+  await user.upload(
+    await screen.findByLabelText('Chọn ảnh để tải lên'),
+    new File([new Uint8Array(715)], 'new.jpg', { type: 'image/jpeg' }),
+  );
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+  await screen.findByRole('button', { name: 'Đang tải ảnh…' });
+
+  await user.click(screen.getByRole('button', { name: 'Hủy' }));
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  release();
+
+  // give a (wrongly) continuing Save every chance to send the PATCH
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  expect(getLastUpdateDressBody()).toBeNull();
+});
+
+test('once the dress request is sent, Cancel / Escape cannot dismiss the dialog — it closes on the answer', async () => {
+  seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let patchSent = false;
+  server.use(
+    http.patch('/api/v1/dresses/:id', async () => {
+      patchSent = true;
+      await gate;
+      return undefined; // fall through to the default (stateful) handler
+    }),
+  );
+  const user = userEvent.setup();
+  renderDetail('/dresses/d1');
+  await user.click(await screen.findByRole('button', { name: 'Sửa' }));
+
+  await user.upload(
+    await screen.findByLabelText('Chọn ảnh để tải lên'),
+    new File([new Uint8Array(716)], 'new.jpg', { type: 'image/jpeg' }),
+  );
+  await user.click(screen.getByRole('button', { name: 'Lưu' }));
+  await waitFor(() => expect(patchSent).toBe(true));
+
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Hủy' })).toBeDisabled());
+  await user.keyboard('{Escape}');
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+  release();
+  expect(await screen.findByText('Đã cập nhật váy')).toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(getLastUpdateDressBody()?.photoUrls).toEqual([photoPublicUrl(716)]);
+});
+
 test('a photo that fails to upload keeps the dialog open and the dress unsaved; the next Save uploads only it', async () => {
   seedDresses([makeDress({ id: 'd1', code: 'DR-001' })]);
   let refused = false;
