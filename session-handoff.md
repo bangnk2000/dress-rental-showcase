@@ -1,7 +1,10 @@
 # Session Handoff
 
-## 2026-09-25 (33) — photo upload to R2 + Cloudflare Images (`catalog/dress-photo-upload` = pass, branch `feat/dress-photo-upload` → PR)
+## 2026-09-25 (33) — photo upload to R2 + Cloudflare Images (`catalog/dress-photo-upload` = pass, branch `feat/dress-photo-upload` → PR #15 → master)
 
+- Merged 2026-09-26 (`50893c2`). Codex review left one P2, fixed in `effb24d`: `.github/scripts/ci-scope.sh`
+  now also runs the web job when `packages/image-url/` changes (web is its planned second
+  consumer) — keep those matchers in sync when a shared package gains a consumer.
 - Done: owner asked to replace the web mock with real BE data managed from the CMS. Two specs
   approved after 3 Q&A rounds: [catalog/public-listing.md](docs/design/catalog/public-listing.md)
   (FR-CAT-09 — NOT built yet) and [catalog/dress-photo-upload.md](docs/design/catalog/dress-photo-upload.md)

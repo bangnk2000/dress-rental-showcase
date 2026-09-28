@@ -33,7 +33,7 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 
 ## Current state (re-sync at every session end — see Session rules)
 
-**As of 2026-09-25 · `feature_list.json` is 36/36 `pass` (`catalog/dress-photo-upload` on branch `feat/dress-photo-upload` → PR);
+**As of 2026-09-26 · `feature_list.json` is 36/36 `pass`, all on master (`catalog/dress-photo-upload` merged by PR #15, `50893c2`; not deployed);
 `apps/web` still has its public pages on MOCK catalogue data — next: `catalog/public-listing` (spec approved), then `web:public-catalog-live`.**
 This section stays a MAP, not a description — each row's detail lives in the doc it points at.
 
@@ -44,7 +44,7 @@ This section stays a MAP, not a description — each row's detail lives in the d
 | `apps/qr-admin` | Independent Vite/React app for owner QR URLs (own client, own tokens, own gates). | `apps/qr-admin/AGENTS.md` + `docs/design/qr-admin.md` |
 | `apps/web` | Public, anonymous Next.js 16 site (:3001): Home, `/bo-suu-tap`, `/bo-suu-tap/[slug]`, `/lien-he` (all ● SSG) built from `apps/web/design/prototype/`, localized 404, robots/sitemap, vi-only next-intl, third generated client, `/api/v1` rewrite. No session. Dress data is an in-process MOCK (`src/api/mock/`) — the BE has NO anonymous endpoints yet; replacing it is a BE slice first. | `apps/web/AGENTS.md` + `docs/design/public-web.md` + `docs/design/web/public-pages.md` |
 | Wire contract | ONE rule: returned `Result` Err → outcome body `{ status, ...payload }` (422/403); thrown → envelope `{ error: { … } }`. **401 = a guard rejected the access token, nothing else.** | [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md) — catalog §3, UI states §4 |
-| Invariant proof | `pnpm --filter be test:e2e` (98 tests) provokes the real EXCLUDE/UNIQUE/CHECK constraints — three concurrent races (booking overlap on create AND on edit, double deposit) and raw INSERT/UPDATEs that bypass the app. CI has a postgres service. | `apps/be/test/` + `apps/be/AGENTS.md` §Invariant-proof suite |
+| Invariant proof | `pnpm --filter be test:e2e` (108 tests) provokes the real EXCLUDE/UNIQUE/CHECK constraints — three concurrent races (booking overlap on create AND on edit, double deposit) and raw INSERT/UPDATEs that bypass the app. CI has a postgres service. | `apps/be/test/` + `apps/be/AGENTS.md` §Invariant-proof suite |
 | `docs/spec` | Seven vendored `init-*` sets: five synced 2026-08-09 from upstream `815fa0f`; `init-nextjs` (new) + `init-monorepo-contract` synced 2026-09-24 from the upstream working tree (not yet committed upstream). | `docs/spec/README.md` |
 | Open by choice | `Idempotency-Key` unimplemented (DB constraint stops double-submit); cross-context table-read adapters kept. | `apps/fe/AGENTS.md` #8, `apps/be/AGENTS.md` #4 |
 | Not in root gates | Playwright (`pnpm --filter fe e2e`, vi happy path) — needs browsers + a live DB, but it is NOT manual any more: it starts the BE and the built FE itself and runs as the CI `e2e` job. | `apps/fe/AGENTS.md` #5, `.github/workflows/ci.yml` |
