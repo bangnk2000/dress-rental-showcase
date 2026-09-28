@@ -6,7 +6,7 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md`; t
 - 2026-09-29 (35) — owner ask "triển khai catalog/public-listing": = pass (39/39). DressListing
   aggregate + migration, listing commands, first anonymous API `/public/dresses[/:slug]`
   (whitelist, throttled), CMS `/website`. be 263 unit, e2e 145/145, fe 167, Playwright 1/1.
-  Branch `feat/public-listing` (`9f368ee`, `73df752`), not merged, not deployed.
+  PR #18 (1 Codex P1 fixed `555bac6`, APPROVE, CI green) → master. Not deployed.
 - 2026-09-29 (34) — owner ask "upload ảnh khi submit form, tối ưu upload/đọc R2":
   `catalog/photo-upload-on-submit` = pass (37/37): photos reach R2 only on Save, one batch
   signing request, dress saved only if every PUT succeeded, no read-back of fresh uploads, detail

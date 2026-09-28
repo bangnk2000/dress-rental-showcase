@@ -1,6 +1,6 @@
 # Session Handoff
 
-## 2026-09-29 (35) — public listings + first anonymous API (`catalog/public-listing` = pass, branch `feat/public-listing`, NOT merged)
+## 2026-09-29 (35) — public listings + first anonymous API (`catalog/public-listing` = pass, PR #18 → master)
 
 - Done: owner ask "triển khai feature catalog/public-listing" against the spec approved 2026-09-25.
   BE `9f368ee` (DressListing aggregate, migration `1755500000000_dress_listings`, 6 listing
@@ -9,7 +9,9 @@
   CMS `73df752` (`features/listings` at `/website`, dress detail "Thuộc mẫu"). Evidence in the
   ledger: be unit 263, be e2e 145/145 (+35), fe 167 (+28), full init.sh green, Playwright 1/1.
   Twelve open choices resolved conservatively → [public-listing.md §As-built](docs/design/catalog/public-listing.md).
-- Next: open the PR (`pr-codex-review`) → merge; then `web:public-catalog-live` (swap
+- PR #18: Codex round 0 → C1 P1 (publish vs a concurrent detach of the last active dress) fixed in
+  `555bac6` (conditional publish UPDATE + e2e race) → round 1 APPROVE → CI green → merged. e2e 146.
+- Next: `web:public-catalog-live` (swap
   `apps/web/src/api/mock/public-catalog.ts` for the generated `catalog` client — public ops are
   tagged `catalog`; ISR 300 s; `next/image` loader over `@dress-rental/image-url`; delete the mock).
   The web DTO differs from the mock: `occasions[]` (no `occasionLabel`), `rentalPrice` (per 2-day
