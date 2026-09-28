@@ -246,3 +246,5 @@ Code: BE `create-photo-upload-url/*` (DTO mảng, service kiểm hết rồi m�
 còn upload), `api/use-photo-uploader.ts` (uploader theo lô, không bao giờ reject — kết quả từng
 file), `features/dresses/components/dress-form-dialog.tsx` (bước upload trong `onSubmit`),
 `lib/photo-url.ts` (`large` = 1280). CORS bucket không đổi (vẫn chỉ PUT).
+
+As-built 2026-09-29: PR #16 → master `a1881f0` (Codex round 0 C1 — dismissal blocked while the dress request is in flight — fixed in `f94f458`). Not yet run against the real dev bucket in a browser.
