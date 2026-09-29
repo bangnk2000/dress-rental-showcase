@@ -14,7 +14,7 @@ import {
 import { MAX_PHOTOS } from '@/components/media/photo-upload-rules';
 
 import { LISTING_SLUG_MAX_LENGTH, LISTING_SLUG_PATTERN } from '../lib/slugify';
-import { OCCASIONS, type Occasion } from '../lib/occasions';
+import { STYLES, type Style } from '../lib/styles';
 
 const spec = z.string().trim().max(120, 'form.errors.specTooLong');
 
@@ -32,15 +32,15 @@ export const listingFormSchema = z.object({
     .refine((slug) => slug === '' || LISTING_SLUG_PATTERN.test(slug), 'form.errors.slugInvalid'),
   tagline: z.string().trim().max(160, 'form.errors.taglineTooLong'),
   description: z.string().trim().max(2000, 'form.errors.descriptionTooLong'),
-  occasions: z
-    .array(z.custom<Occasion>((value) => OCCASIONS.includes(value as Occasion)))
-    .min(1, 'form.errors.occasionsRequired'),
+  styles: z
+    .array(z.custom<Style>((value) => STYLES.includes(value as Style)))
+    .min(1, 'form.errors.stylesRequired'),
   retailPrice: z.string().trim().regex(/^[0-9]*$/, 'form.errors.amountInvalid'),
   material: spec,
   silhouette: spec,
   length: spec,
   color: spec,
-  occasionsText: spec,
+  stylesText: spec,
   /** Same rules as the dress form: stored URLs + chosen files that Save uploads first. */
   photos: z
     .array(z.custom<PhotoItem>())
@@ -57,13 +57,13 @@ export const listingFormDefaults: ListingFormValues = {
   slug: '',
   tagline: '',
   description: '',
-  occasions: [],
+  styles: [],
   retailPrice: '',
   material: '',
   silhouette: '',
   length: '',
   color: '',
-  occasionsText: '',
+  stylesText: '',
   photos: [],
   isHot: false,
 };

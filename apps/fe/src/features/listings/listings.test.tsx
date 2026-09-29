@@ -74,14 +74,14 @@ test('list: loading skeleton first, then the empty state offers Tạo mẫu', as
   expect(createLinks[0]).toHaveAttribute('href', '/website/new');
 });
 
-test('list: rows show occasions, available sizes and the three badges; a click opens the edit page', async () => {
+test('list: rows show styles, available sizes and the three badges; a click opens the edit page', async () => {
   seedDresses([
     makeDress({ id: 'd1', code: 'DR-001', sizeLabel: 'M' }),
     makeDress({ id: 'd2', code: 'DR-002', sizeLabel: 'S' }),
     makeDress({ id: 'd3', code: 'DR-003', status: 'retired' }),
   ]);
   seedListings([
-    makeListing({ id: 'l1', name: 'Mẫu nháp', occasions: ['gala', 'birthday'] }),
+    makeListing({ id: 'l1', name: 'Mẫu nháp', styles: ['short', 'silk'] }),
     makeListing({
       id: 'l2',
       name: 'Mẫu đang đăng',
@@ -102,7 +102,7 @@ test('list: rows show occasions, available sizes and the three badges; a click o
 
   const draftRow = (await screen.findByRole('link', { name: 'Mẫu nháp' })).closest('tr')!;
   expect(within(draftRow).getByText('Nháp')).toBeInTheDocument();
-  expect(within(draftRow).getByText('Gala & Red Carpet, Birthday & Prom')).toBeInTheDocument();
+  expect(within(draftRow).getByText('Váy ngắn, Váy lụa')).toBeInTheDocument();
   const liveRow = screen.getByRole('link', { name: 'Mẫu đang đăng' }).closest('tr')!;
   expect(within(liveRow).getByText('Đã đăng')).toBeInTheDocument();
   expect(within(liveRow).getByText('2 size còn')).toBeInTheDocument();
@@ -122,8 +122,8 @@ test('create: the slug follows the name (Vietnamese stripped), then the listing 
 
   await user.type(await screen.findByLabelText('Tên mẫu'), 'Đầm dạ hội Ánh Trăng');
   expect(screen.getByLabelText('Đường link (slug)')).toHaveValue('dam-da-hoi-anh-trang');
-  await user.click(screen.getByRole('button', { name: 'Gala & Red Carpet' }));
-  await user.click(screen.getByRole('button', { name: 'Chụp Ảnh Kỷ Yếu' }));
+  await user.click(screen.getByRole('button', { name: 'Váy ngắn' }));
+  await user.click(screen.getByRole('button', { name: 'Váy hai dây, cúp ngực' }));
   await user.type(screen.getByLabelText('Giá bán tham khảo (VND)'), '3500000');
   await user.type(screen.getByLabelText('Chất liệu'), 'Lụa');
   await user.click(screen.getByRole('switch', { name: 'Hot' }));
@@ -137,9 +137,9 @@ test('create: the slug follows the name (Vietnamese stripped), then the listing 
       slug: 'dam-da-hoi-anh-trang',
       tagline: '',
       description: '',
-      occasions: ['gala', 'yearbook'],
+      styles: ['short', 'strappy-strapless'],
       retailPrice: 3_500_000,
-      specs: { material: 'Lụa', silhouette: null, length: null, color: null, occasionsText: null },
+      specs: { material: 'Lụa', silhouette: null, length: null, color: null, stylesText: null },
       photoUrls: [],
       isHot: true,
     },
@@ -148,7 +148,7 @@ test('create: the slug follows the name (Vietnamese stripped), then the listing 
   expect(await screen.findByRole('heading', { name: 'Size & váy' })).toBeInTheDocument();
 });
 
-test('create: a slug typed by hand stops following the name; no occasion blocks Save', async () => {
+test('create: a slug typed by hand stops following the name; no style blocks Save', async () => {
   const user = userEvent.setup();
   renderAt('/website/new');
 
@@ -158,7 +158,7 @@ test('create: a slug typed by hand stops following the name; no occasion blocks 
   expect(slug).toHaveValue('vay-rieng');
 
   await user.click(screen.getByRole('button', { name: 'Tạo mẫu' }));
-  expect(await screen.findByText('Chọn ít nhất một dịp')).toBeInTheDocument();
+  expect(await screen.findByText('Chọn ít nhất một loại')).toBeInTheDocument();
   expect(getListingRequests().create).toHaveLength(0);
 });
 
@@ -174,7 +174,7 @@ test('create: a chosen photo uploads only on Save, then rides in the create body
   expect(getPhotoUploadUrlRequests()).toHaveLength(0);
 
   await user.type(screen.getByLabelText('Tên mẫu'), 'Váy ảnh');
-  await user.click(screen.getByRole('button', { name: 'Gala & Red Carpet' }));
+  await user.click(screen.getByRole('button', { name: 'Váy ngắn' }));
   await user.click(screen.getByRole('button', { name: 'Tạo mẫu' }));
 
   await waitFor(() => expect(getListingRequests().create).toHaveLength(1));
@@ -188,7 +188,7 @@ test('create: rejected_listing_slug_taken lands under the slug field with the sl
   renderAt('/website/new');
 
   await user.type(await screen.findByLabelText('Tên mẫu'), 'Váy đỏ');
-  await user.click(screen.getByRole('button', { name: 'Gala & Red Carpet' }));
+  await user.click(screen.getByRole('button', { name: 'Váy ngắn' }));
   await user.click(screen.getByRole('button', { name: 'Tạo mẫu' }));
 
   expect(

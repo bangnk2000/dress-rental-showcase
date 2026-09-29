@@ -86,7 +86,7 @@ function ListingsTable() {
             <span className="sr-only">{t('list.columns.cover')}</span>
           </TableHead>
           <TableHead>{t('list.columns.name')}</TableHead>
-          <TableHead>{t('list.columns.occasions')}</TableHead>
+          <TableHead>{t('list.columns.styles')}</TableHead>
           <TableHead>{t('list.columns.sizes')}</TableHead>
           <TableHead>{t('list.columns.status')}</TableHead>
         </TableRow>
@@ -114,7 +114,7 @@ function ListingsTable() {
               ) : null}
             </TableCell>
             <TableCell className="text-sm text-muted-foreground">
-              {listing.occasions.map((occasion) => t(`occasions.${occasion}`)).join(', ')}
+              {listing.styles.map((style) => t(`styles.${style}`)).join(', ')}
             </TableCell>
             <TableCell className="tabular-nums">
               {t('list.activeSizes', { count: listing.activeSizeCount })}

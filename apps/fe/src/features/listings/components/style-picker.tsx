@@ -4,27 +4,27 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-import { OCCASIONS, type Occasion } from '../lib/occasions';
+import { STYLES, type Style } from '../lib/styles';
 
-interface OccasionPickerProps extends Omit<ComponentProps<'div'>, 'onChange'> {
-  value: Occasion[];
-  onChange: (value: Occasion[]) => void;
+interface StylePickerProps extends Omit<ComponentProps<'div'>, 'onChange'> {
+  value: Style[];
+  onChange: (value: Style[]) => void;
 }
 
 /**
- * The occasions as toggle buttons (R4: a fixed set, several per listing, ≥ 1). A tap adds, another
+ * The styles as toggle buttons (R4: a fixed set, several per listing, ≥ 1). A tap adds, another
  * tap removes; the order sent follows the fixed set, not the order of taps.
  */
-export function OccasionPicker({ value, onChange, className, ...rest }: OccasionPickerProps) {
+export function StylePicker({ value, onChange, className, ...rest }: StylePickerProps) {
   const { t } = useTranslation('listings');
 
   return (
     <div role="group" className={cn('flex flex-wrap gap-2', className)} {...rest}>
-      {OCCASIONS.map((occasion) => {
-        const selected = value.includes(occasion);
+      {STYLES.map((style) => {
+        const selected = value.includes(style);
         return (
           <Button
-            key={occasion}
+            key={style}
             type="button"
             variant={selected ? 'default' : 'outline'}
             aria-pressed={selected}
@@ -32,12 +32,12 @@ export function OccasionPicker({ value, onChange, className, ...rest }: Occasion
             onClick={() =>
               onChange(
                 selected
-                  ? value.filter((item) => item !== occasion)
-                  : OCCASIONS.filter((item) => item === occasion || value.includes(item)),
+                  ? value.filter((item) => item !== style)
+                  : STYLES.filter((item) => item === style || value.includes(item)),
               )
             }
           >
-            {t(`occasions.${occasion}`)}
+            {t(`styles.${style}`)}
           </Button>
         );
       })}

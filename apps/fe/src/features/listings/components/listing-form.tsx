@@ -47,7 +47,7 @@ import {
   type ListingFormValues,
 } from '../schemas/listing-form.schema';
 import { ListingFormMessage } from './listing-form-message';
-import { OccasionPicker } from './occasion-picker';
+import { StylePicker } from './style-picker';
 
 function toFormValues(listing: ListingDto): ListingFormValues {
   return {
@@ -55,13 +55,13 @@ function toFormValues(listing: ListingDto): ListingFormValues {
     slug: listing.slug,
     tagline: listing.tagline,
     description: listing.description,
-    occasions: [...listing.occasions],
+    styles: [...listing.styles],
     retailPrice: listing.retailPrice === null ? '' : String(listing.retailPrice),
     material: listing.specs.material ?? '',
     silhouette: listing.specs.silhouette ?? '',
     length: listing.specs.length ?? '',
     color: listing.specs.color ?? '',
-    occasionsText: listing.specs.occasionsText ?? '',
+    stylesText: listing.specs.stylesText ?? '',
     photos: toPhotoItems(listing.photoUrls),
     isHot: listing.isHot,
   };
@@ -75,7 +75,7 @@ function toSpecs(values: ListingFormValues): ListingSpecsRequestDto {
     silhouette: cell(values.silhouette),
     length: cell(values.length),
     color: cell(values.color),
-    occasionsText: cell(values.occasionsText),
+    stylesText: cell(values.stylesText),
   };
 }
 
@@ -86,7 +86,7 @@ function toCreateRequest(values: ListingFormValues, photoUrls: string[]): Create
     ...(values.slug ? { slug: values.slug } : {}),
     tagline: values.tagline,
     description: values.description,
-    occasions: values.occasions,
+    styles: values.styles,
     retailPrice: values.retailPrice ? Number(values.retailPrice) : null,
     specs: toSpecs(values),
     photoUrls,
@@ -109,7 +109,7 @@ function toUpdateRequest(
     ...(slugChanged && listing.firstPublishedAt === null ? { slug: values.slug } : {}),
     tagline: values.tagline,
     description: values.description,
-    occasions: values.occasions,
+    styles: values.styles,
     retailPrice: values.retailPrice ? Number(values.retailPrice) : null,
     specs: toSpecs(values),
     photoUrls,
@@ -132,7 +132,7 @@ export function ListingForm({ listing }: ListingFormProps) {
   const navigate = useNavigate();
   const refreshListings = useRefreshListings();
   const uploadPhotos = usePhotoUploader();
-  const occasionsLabelId = useId();
+  const stylesLabelId = useId();
   const photosLabelId = useId();
   const [uploadProgress, setUploadProgress] = useState<Record<string, number> | null>(null);
   const uploadAbort = useRef<AbortController | null>(null);
@@ -335,15 +335,15 @@ export function ListingForm({ listing }: ListingFormProps) {
         />
         <FormField
           control={form.control}
-          name="occasions"
+          name="styles"
           render={({ field }) => (
             <FormItem>
-              <FormLabel id={occasionsLabelId}>{t('form.fields.occasions')}</FormLabel>
+              <FormLabel id={stylesLabelId}>{t('form.fields.styles')}</FormLabel>
               <FormControl>
-                <OccasionPicker
+                <StylePicker
                   value={field.value}
                   onChange={field.onChange}
-                  aria-labelledby={occasionsLabelId}
+                  aria-labelledby={stylesLabelId}
                 />
               </FormControl>
               <ListingFormMessage />
@@ -370,7 +370,7 @@ export function ListingForm({ listing }: ListingFormProps) {
         />
         <fieldset className="grid gap-4 rounded-lg border p-3 sm:grid-cols-2">
           <legend className="px-1 text-sm font-medium">{t('form.fields.specs.title')}</legend>
-          {(['material', 'silhouette', 'length', 'color', 'occasionsText'] as const).map(
+          {(['material', 'silhouette', 'length', 'color', 'stylesText'] as const).map(
             (name) => (
               <FormField
                 key={name}

@@ -10,7 +10,7 @@
     "columns": {
       "cover": "Ảnh bìa",
       "name": "Tên mẫu",
-      "occasions": "Dịp",
+      "styles": "Loại",
       "sizes": "Size còn",
       "status": "Trạng thái"
     }
@@ -20,13 +20,13 @@
     "published": "Đã đăng",
     "hidden": "Ẩn (hết váy)"
   },
-  "occasions": {
-    "gala": "Gala & Red Carpet",
-    "birthday": "Birthday & Prom",
-    "ao-dai": "Dạo Phố & Lễ Tết",
-    "tea-party": "Tea Party & Picnic",
-    "wedding-guest": "Wedding Guest",
-    "yearbook": "Chụp Ảnh Kỷ Yếu"
+  "styles": {
+    "short": "Váy ngắn",
+    "silk": "Váy lụa",
+    "ao-dai": "Áo dài",
+    "off-shoulder": "Váy trễ vai",
+    "sleeved": "Váy che tay",
+    "strappy-strapless": "Váy hai dây, cúp ngực"
   },
   "form": {
     "newTitle": "Tạo mẫu",
@@ -37,7 +37,7 @@
       "slug": "Đường link (slug)",
       "tagline": "Câu giới thiệu ngắn",
       "description": "Mô tả",
-      "occasions": "Dịp (chọn một hoặc nhiều)",
+      "styles": "Loại (chọn một hoặc nhiều)",
       "retailPrice": "Giá bán tham khảo (VND)",
       "photos": "Ảnh",
       "isHot": "Hot",
@@ -47,7 +47,7 @@
         "silhouette": "Dáng",
         "length": "Độ dài",
         "color": "Màu",
-        "occasionsText": "Dịp phù hợp (chữ hiển thị)"
+        "stylesText": "Loại (chữ hiển thị)"
       }
     },
     "slugHint": "Link trên web: /bo-suu-tap/<slug>. Tự điền từ tên, sửa được cho tới khi đăng lần đầu.",
@@ -68,7 +68,7 @@
       "slugInvalid": "Slug chỉ gồm chữ thường không dấu, số và dấu gạch nối, tối đa 80 ký tự",
       "taglineTooLong": "Câu giới thiệu tối đa 160 ký tự",
       "descriptionTooLong": "Mô tả tối đa 2000 ký tự",
-      "occasionsRequired": "Chọn ít nhất một dịp",
+      "stylesRequired": "Chọn ít nhất một loại",
       "amountInvalid": "Số tiền phải là số nguyên không âm",
       "specTooLong": "Tối đa 120 ký tự",
       "photoUrlInvalid": "Mỗi ảnh phải là một liên kết http(s) hợp lệ",
