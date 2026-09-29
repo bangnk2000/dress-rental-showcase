@@ -25,7 +25,7 @@ const detailRowSchema = publicSummaryRowSchema.extend({
   silhouette: z.string().nullable(),
   length: z.string().nullable(),
   color: z.string().nullable(),
-  occasions_text: z.string().nullable(),
+  styles_text: z.string().nullable(),
 });
 
 const sizeRowSchema = z.object({ label: z.string(), available: z.boolean() });
@@ -45,9 +45,9 @@ export class GetPublicDressQueryHandler
     const row = await this.pool.maybeOne(sql.type(detailRowSchema)`
       SELECT
         l.id AS listing_id,
-        l.slug, l.name, l.tagline, l.occasions, l.is_hot, l.first_published_at,
+        l.slug, l.name, l.tagline, l.styles, l.is_hot, l.first_published_at,
         l.retail_price, l.photo_urls, l.description,
-        l.material, l.silhouette, l.length, l.color, l.occasions_text,
+        l.material, l.silhouette, l.length, l.color, l.styles_text,
         min(d.rental_price)::int AS rental_price
       FROM dress_listings l
       JOIN dress_listing_items i ON i.listing_id = l.id
@@ -80,7 +80,7 @@ export class GetPublicDressQueryHandler
         silhouette: row.silhouette,
         length: row.length,
         color: row.color,
-        occasions: row.occasions_text,
+        styles: row.styles_text,
       }),
     });
   }

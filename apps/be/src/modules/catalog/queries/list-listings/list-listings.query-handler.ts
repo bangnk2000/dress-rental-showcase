@@ -4,7 +4,7 @@ import { DatabasePool, sql } from 'slonik';
 import { z } from 'zod';
 import { DB_POOL } from '../../../../libs/db/db.di-tokens';
 import { toDate } from '../../../../libs/utils/date';
-import { Occasion } from '../../domain/occasion.value-object';
+import { Style } from '../../domain/style.value-object';
 import { ListingListItemDto, ListingListResponseDto } from '../../dtos/listing.response.dto';
 import { ListListingsQuery } from './list-listings.query';
 
@@ -14,7 +14,7 @@ const rowSchema = z.object({
   id: z.string(),
   slug: z.string(),
   name: z.string(),
-  occasions: z.array(z.string()),
+  styles: z.array(z.string()),
   is_hot: z.boolean(),
   cover_url: z.string().nullable(),
   published_at: timestamp.nullable(),
@@ -37,7 +37,7 @@ export class ListListingsQueryHandler
   async execute(): Promise<ListingListResponseDto> {
     const rows = await this.pool.any(sql.type(rowSchema)`
       SELECT
-        l.id, l.slug, l.name, l.occasions, l.is_hot,
+        l.id, l.slug, l.name, l.styles, l.is_hot,
         l.photo_urls[1] AS cover_url,
         l.published_at, l.first_published_at, l.updated_at,
         count(d.id)::int AS dress_count,
@@ -57,7 +57,7 @@ export class ListListingsQueryHandler
           id: row.id,
           slug: row.slug,
           name: row.name,
-          occasions: row.occasions as Occasion[],
+          styles: row.styles as Style[],
           isHot: row.is_hot,
           coverUrl: row.cover_url,
           publishedAt: isoOrNull(row.published_at),

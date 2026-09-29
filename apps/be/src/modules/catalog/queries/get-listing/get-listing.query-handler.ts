@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { DB_POOL } from '../../../../libs/db/db.di-tokens';
 import { toDate } from '../../../../libs/utils/date';
 import { dressListingSchema } from '../../database/dress-listing.persistence.model';
-import { Occasion } from '../../domain/occasion.value-object';
+import { Style } from '../../domain/style.value-object';
 import { ListingDressDto, ListingDto } from '../../dtos/listing.response.dto';
 import { GetListingQuery } from './get-listing.query';
 
@@ -42,14 +42,14 @@ export class GetListingQueryHandler implements IQueryHandler<GetListingQuery, Li
       name: row.name,
       tagline: row.tagline,
       description: row.description,
-      occasions: row.occasions as Occasion[],
+      styles: row.styles as Style[],
       retailPrice: row.retail_price,
       specs: {
         material: row.material,
         silhouette: row.silhouette,
         length: row.length,
         color: row.color,
-        occasionsText: row.occasions_text,
+        stylesText: row.styles_text,
       },
       photoUrls: [...row.photo_urls],
       isHot: row.is_hot,

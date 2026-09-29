@@ -31,10 +31,10 @@ export interface ListingSpecsRequestDto {
      */
   color?: string | null;
   /**
-     * Free text shown as the "occasions" spec cell on the web (not the occasion codes)
+     * Free text shown as the "styles" spec cell on the web (not the style codes)
      * @minLength 1
      * @maxLength 120
      * @nullable
      */
-  occasionsText?: string | null;
+  stylesText?: string | null;
 }

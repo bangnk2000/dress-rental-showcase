@@ -11,13 +11,13 @@ import { ListingSlugConflictError } from '../../application/ports/listing-write-
 import { DressListingEntity } from '../../domain/dress-listing.entity';
 import { ListingSlugTakenError } from '../../domain/dress-listing.errors';
 import { ListingSlug } from '../../domain/listing-slug.value-object';
-import { Occasions } from '../../domain/occasion.value-object';
+import { Styles } from '../../domain/style.value-object';
 import { CreateListingCommand } from './create-listing.command';
 
 export type CreateListingResult = Result<AggregateID, ListingSlugTakenError>;
 
 /**
- * CreateListing (spec §2): a new DRAFT listing. Slug format / occasions / price are VOs (throw →
+ * CreateListing (spec §2): a new DRAFT listing. Slug format / styles / price are VOs (throw →
  * 400); a taken slug is the only business rejection, from the pre-check OR the UNIQUE race.
  */
 @CommandHandler(CreateListingCommand)
@@ -41,7 +41,7 @@ export class CreateListingService
         name: command.name.trim(),
         tagline: command.tagline,
         description: command.description,
-        occasions: Occasions.create(command.occasions),
+        styles: Styles.create(command.styles),
         retailPrice: command.retailPrice === null ? null : Money.create(command.retailPrice),
         specs: { ...command.specs },
         photoUrls: [...command.photoUrls],

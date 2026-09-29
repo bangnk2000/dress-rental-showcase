@@ -16,7 +16,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { LISTING_SLUG_PATTERN } from '../../domain/listing-slug.value-object';
-import { OCCASIONS, Occasion } from '../../domain/occasion.value-object';
+import { STYLES, Style } from '../../domain/style.value-object';
 import { ListingSpecsRequestDto } from '../../dtos/listing-specs.request.dto';
 
 export class CreateListingRequestDto {
@@ -48,13 +48,13 @@ export class CreateListingRequestDto {
   @Length(0, 2000)
   readonly description?: string;
 
-  @ApiProperty({ enum: OCCASIONS, isArray: true, example: ['gala', 'birthday'] })
+  @ApiProperty({ enum: STYLES, isArray: true, example: ['short', 'silk'] })
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(OCCASIONS.length)
+  @ArrayMaxSize(STYLES.length)
   @ArrayUnique()
-  @IsIn(OCCASIONS, { each: true })
-  readonly occasions!: Occasion[];
+  @IsIn(STYLES, { each: true })
+  readonly styles!: Style[];
 
   @ApiPropertyOptional({
     type: Number,

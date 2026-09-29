@@ -15,5 +15,5 @@ export interface ListingSpecsDto {
   /** @nullable */
   color: string | null;
   /** @nullable */
-  occasionsText: string | null;
+  stylesText: string | null;
 }

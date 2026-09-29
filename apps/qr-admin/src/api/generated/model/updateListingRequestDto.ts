@@ -5,7 +5,7 @@
  * OpenAPI spec version: 0
  */
 import type { ListingSpecsRequestDto } from './listingSpecsRequestDto';
-import type { UpdateListingRequestDtoOccasionsItem } from './updateListingRequestDtoOccasionsItem';
+import type { UpdateListingRequestDtoStylesItem } from './updateListingRequestDtoStylesItem';
 
 export interface UpdateListingRequestDto {
   /**
@@ -32,7 +32,7 @@ export interface UpdateListingRequestDto {
      */
   description?: string;
   /** @minItems 1 */
-  occasions?: UpdateListingRequestDtoOccasionsItem[];
+  styles?: UpdateListingRequestDtoStylesItem[];
   /**
      * VND; null clears it
      * @minimum 0

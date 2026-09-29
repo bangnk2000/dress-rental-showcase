@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { toDate } from '../../../libs/utils/date';
 import { listingBadge } from '../domain/listing-badge';
-import { Occasion } from '../domain/occasion.value-object';
+import { Style } from '../domain/style.value-object';
 import { PublicDressSummaryDto, PublicImageDto } from '../dtos/public-dress.response.dto';
 
 /** What a dress WITHOUT a size is called on the web (spec §6.H). */
@@ -18,7 +18,7 @@ export const publicSummaryRowSchema = z.object({
   slug: z.string(),
   name: z.string(),
   tagline: z.string(),
-  occasions: z.array(z.string()),
+  styles: z.array(z.string()),
   is_hot: z.boolean(),
   first_published_at: timestamp.nullable(),
   retail_price: z.number().int().nullable(),
@@ -47,7 +47,7 @@ export function toPublicSummary(
     slug: row.slug,
     name: row.name,
     tagline: row.tagline,
-    occasions: row.occasions as Occasion[],
+    styles: row.styles as Style[],
     badge: listingBadge(
       {
         isHot: row.is_hot,

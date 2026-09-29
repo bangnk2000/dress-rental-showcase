@@ -4,13 +4,13 @@
  * dress-rental API
  * OpenAPI spec version: 0
  */
-import type { ListPublicDressesHttpControllerListOccasion } from './listPublicDressesHttpControllerListOccasion';
+import type { ListPublicDressesHttpControllerListStyle } from './listPublicDressesHttpControllerListStyle';
 
 export type ListPublicDressesHttpControllerListParams = {
 /**
- * Only listings that include this occasion
+ * Only listings that include this style
  */
-occasion?: ListPublicDressesHttpControllerListOccasion;
+style?: ListPublicDressesHttpControllerListStyle;
 /**
  * Omit for every visible listing
  * @minimum 1

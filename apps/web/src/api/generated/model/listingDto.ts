@@ -5,7 +5,7 @@
  * OpenAPI spec version: 0
  */
 import type { ListingDressDto } from './listingDressDto';
-import type { ListingDtoOccasionsItem } from './listingDtoOccasionsItem';
+import type { ListingDtoStylesItem } from './listingDtoStylesItem';
 import type { ListingSpecsDto } from './listingSpecsDto';
 
 export interface ListingDto {
@@ -14,7 +14,7 @@ export interface ListingDto {
   name: string;
   tagline: string;
   description: string;
-  occasions: ListingDtoOccasionsItem[];
+  styles: ListingDtoStylesItem[];
   /**
      * Reference retail price in VND
      * @nullable

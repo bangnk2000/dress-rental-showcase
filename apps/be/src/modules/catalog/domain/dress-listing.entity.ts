@@ -71,7 +71,7 @@ export class DressListingEntity extends AggregateRoot<DressListingProps> {
     this.props.name = content.name;
     this.props.tagline = content.tagline;
     this.props.description = content.description;
-    this.props.occasions = content.occasions;
+    this.props.styles = content.styles;
     this.props.retailPrice = content.retailPrice;
     this.props.specs = { ...content.specs };
     this.props.photoUrls = [...content.photoUrls];
@@ -125,7 +125,7 @@ export class DressListingEntity extends AggregateRoot<DressListingProps> {
   public validate(): void {
     this.guardAgainstEmpty(this.props.name, 'name');
     this.guardAgainstEmpty(this.props.slug, 'slug');
-    this.guardAgainstEmpty(this.props.occasions, 'occasions');
+    this.guardAgainstEmpty(this.props.styles, 'styles');
     if (this.props.photoUrls.length > LISTING_MAX_PHOTOS) {
       throw new ArgumentInvalidException(`A listing holds at most ${LISTING_MAX_PHOTOS} photos`);
     }

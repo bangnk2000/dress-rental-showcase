@@ -1,6 +1,6 @@
 import { Money } from '../../../libs/ddd/money.value-object';
 import { ListingSlug } from './listing-slug.value-object';
-import { Occasions } from './occasion.value-object';
+import { Styles } from './style.value-object';
 
 /** Free-text spec cells shown on the web detail page; each ≤ 120 chars, null = not filled. */
 export interface ListingSpecs {
@@ -8,7 +8,7 @@ export interface ListingSpecs {
   silhouette: string | null;
   length: string | null;
   color: string | null;
-  occasionsText: string | null;
+  stylesText: string | null;
 }
 
 /** The editable CONTENT of a listing — what Create sets and Update may change. */
@@ -16,7 +16,7 @@ export interface ListingContent {
   name: string;
   tagline: string;
   description: string;
-  occasions: Occasions;
+  styles: Styles;
   /** Market price of a new one, for comparison only. NOT purchasePrice (owner-only cost). */
   retailPrice: Money | null;
   specs: ListingSpecs;

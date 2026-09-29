@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { OCCASIONS, Occasion } from '../domain/occasion.value-object';
+import { STYLES, Style } from '../domain/style.value-object';
 
 /** CMS read models of a DressListing (staff-only; the web gets the whitelisted public DTOs). */
 
@@ -17,7 +17,7 @@ export class ListingSpecsDto {
   readonly color!: string | null;
 
   @ApiProperty({ type: String, nullable: true })
-  readonly occasionsText!: string | null;
+  readonly stylesText!: string | null;
 }
 
 /** One attached dress — enough to draw the "Size & váy" table and the price-mismatch warning. */
@@ -57,8 +57,8 @@ export class ListingDto {
   @ApiProperty()
   readonly description!: string;
 
-  @ApiProperty({ enum: OCCASIONS, isArray: true })
-  readonly occasions!: Occasion[];
+  @ApiProperty({ enum: STYLES, isArray: true })
+  readonly styles!: Style[];
 
   @ApiProperty({ type: Number, nullable: true, description: 'Reference retail price in VND' })
   readonly retailPrice!: number | null;
@@ -102,8 +102,8 @@ export class ListingListItemDto {
   @ApiProperty()
   readonly name!: string;
 
-  @ApiProperty({ enum: OCCASIONS, isArray: true })
-  readonly occasions!: Occasion[];
+  @ApiProperty({ enum: STYLES, isArray: true })
+  readonly styles!: Style[];
 
   @ApiProperty()
   readonly isHot!: boolean;

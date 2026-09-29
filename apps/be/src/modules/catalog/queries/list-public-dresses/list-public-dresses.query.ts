@@ -1,14 +1,14 @@
 import { QueryBase } from '../../../../libs/ddd/query.base';
-import { Occasion } from '../../domain/occasion.value-object';
+import { Style } from '../../domain/style.value-object';
 
 export class ListPublicDressesQuery extends QueryBase {
-  readonly occasion?: Occasion;
+  readonly style?: Style;
   /** undefined = every visible listing (the web builds list, home and "related" from one call). */
   readonly limit?: number;
 
-  constructor(props: { occasion?: Occasion; limit?: number }) {
+  constructor(props: { style?: Style; limit?: number }) {
     super();
-    this.occasion = props.occasion;
+    this.style = props.style;
     this.limit = props.limit;
   }
 }

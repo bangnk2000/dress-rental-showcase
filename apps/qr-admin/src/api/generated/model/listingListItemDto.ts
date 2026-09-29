@@ -4,13 +4,13 @@
  * dress-rental API
  * OpenAPI spec version: 0
  */
-import type { ListingListItemDtoOccasionsItem } from './listingListItemDtoOccasionsItem';
+import type { ListingListItemDtoStylesItem } from './listingListItemDtoStylesItem';
 
 export interface ListingListItemDto {
   id: string;
   slug: string;
   name: string;
-  occasions: ListingListItemDtoOccasionsItem[];
+  styles: ListingListItemDtoStylesItem[];
   isHot: boolean;
   /**
      * First photo URL, null when none

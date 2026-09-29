@@ -42,7 +42,7 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
   async function listing(
     slug: string,
     options: {
-      occasions?: string[];
+      styles?: string[];
       dressIds?: string[];
       publish?: boolean;
       isHot?: boolean;
@@ -56,7 +56,7 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
         slug,
         tagline: `Tagline ${slug}`,
         description: `Mô tả ${slug}`,
-        occasions: options.occasions ?? ['gala'],
+        styles: options.styles ?? ['short'],
         photoUrls: PHOTOS,
         isHot: options.isHot ?? false,
         ...options.extra,
@@ -126,19 +126,19 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
       expect((await anon('/dam-an')).status).toBe(404);
     });
 
-    it('?occasion= keeps every listing that CONTAINS the occasion; an unknown one is 400', async () => {
-      await listing('mau-nhieu-dip', { occasions: ['gala', 'birthday', 'tea-party'] });
-      await listing('mau-ao-dai', { occasions: ['ao-dai'] });
-      await listing('mau-sinh-nhat', { occasions: ['birthday'] });
+    it('?style= keeps every listing that CONTAINS the style; an unknown one is 400', async () => {
+      await listing('mau-nhieu-dip', { styles: ['short', 'silk', 'off-shoulder'] });
+      await listing('mau-ao-dai', { styles: ['ao-dai'] });
+      await listing('mau-sinh-nhat', { styles: ['silk'] });
 
-      expect(slugs((await anon('?occasion=birthday')).body).sort()).toEqual([
+      expect(slugs((await anon('?style=silk')).body).sort()).toEqual([
         'mau-nhieu-dip',
         'mau-sinh-nhat',
       ]);
-      expect(slugs((await anon('?occasion=tea-party')).body)).toEqual(['mau-nhieu-dip']);
-      expect(slugs((await anon('?occasion=ao-dai')).body)).toEqual(['mau-ao-dai']);
-      expect(slugs((await anon('?occasion=yearbook')).body)).toEqual([]);
-      expect((await anon('?occasion=prom')).status).toBe(400);
+      expect(slugs((await anon('?style=off-shoulder')).body)).toEqual(['mau-nhieu-dip']);
+      expect(slugs((await anon('?style=ao-dai')).body)).toEqual(['mau-ao-dai']);
+      expect(slugs((await anon('?style=strappy-strapless')).body)).toEqual([]);
+      expect((await anon('?style=prom')).status).toBe(400);
       expect(slugs((await anon('?limit=2')).body)).toHaveLength(2);
     });
 
@@ -169,11 +169,11 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
       const xl = await seedSizedDress('WL-XL', 'XL', 1_600_000);
       await context.db.query("UPDATE dresses SET notes = 'SECRET-NOTE', purchase_price = 777 WHERE id = $1", [m]);
       const id = await listing('dam-whitelist', {
-        occasions: ['gala', 'wedding-guest'],
+        styles: ['short', 'sleeved'],
         dressIds: [m, s, free, xl],
         extra: {
           retailPrice: 4_500_000,
-          specs: { material: 'Lụa', silhouette: 'Chữ A', color: 'Đỏ', occasionsText: 'Dạ tiệc' },
+          specs: { material: 'Lụa', silhouette: 'Chữ A', color: 'Đỏ', stylesText: 'Dạ tiệc' },
         },
       });
 
@@ -181,14 +181,14 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
       expect(list.status).toBe(200);
       const [summary] = list.body as Record<string, unknown>[];
       expect(Object.keys(summary!).sort()).toEqual(
-        ['badge', 'cover', 'name', 'occasions', 'rentalPrice', 'retailPrice', 'slug', 'tagline'].sort(),
+        ['badge', 'cover', 'name', 'styles', 'rentalPrice', 'retailPrice', 'slug', 'tagline'].sort(),
       );
       expect(Object.keys(summary!.cover as object).sort()).toEqual(['alt', 'src']);
       expect(summary).toEqual({
         slug: 'dam-whitelist',
         name: 'Mẫu dam-whitelist',
         tagline: 'Tagline dam-whitelist',
-        occasions: ['gala', 'wedding-guest'],
+        styles: ['short', 'sleeved'],
         badge: 'new',
         rentalPrice: 1_500_000, // min over ACTIVE dresses (the retired 1.2M is ignored)
         retailPrice: 4_500_000,
@@ -205,7 +205,7 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
           'description',
           'images',
           'name',
-          'occasions',
+          'styles',
           'rentalPrice',
           'retailPrice',
           'sizes',
@@ -215,14 +215,14 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
         ].sort(),
       );
       expect(Object.keys(body.specs as object).sort()).toEqual(
-        ['color', 'length', 'material', 'occasions', 'silhouette'].sort(),
+        ['color', 'length', 'material', 'styles', 'silhouette'].sort(),
       );
       expect(body.specs).toEqual({
         material: 'Lụa',
         silhouette: 'Chữ A',
         length: null,
         color: 'Đỏ',
-        occasions: 'Dạ tiệc',
+        styles: 'Dạ tiệc',
       });
       expect(body.images).toEqual([
         { src: PHOTOS[0], alt: 'Mẫu dam-whitelist' },

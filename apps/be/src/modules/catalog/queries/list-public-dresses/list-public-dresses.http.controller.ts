@@ -26,11 +26,11 @@ export class ListPublicDressesHttpController {
       'Public catalogue: published listings with ≥ 1 active dress, hot first then newest (anonymous)',
   })
   @ApiOkResponse({ type: [PublicDressSummaryDto] })
-  @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Unknown occasion / bad limit' })
+  @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Unknown style / bad limit' })
   @ApiResponse({ status: 429, type: ApiErrorResponseDto, description: 'Rate limit exceeded' })
   async list(@Query() dto: ListPublicDressesRequestDto): Promise<PublicDressSummaryDto[]> {
     return this.queryBus.execute(
-      new ListPublicDressesQuery({ occasion: dto.occasion, limit: dto.limit }),
+      new ListPublicDressesQuery({ style: dto.style, limit: dto.limit }),
     );
   }
 }

@@ -17,7 +17,7 @@ import {
   ListingSlugTakenError,
 } from '../domain/dress-listing.errors';
 import { ListingSlug } from '../domain/listing-slug.value-object';
-import { Occasions } from '../domain/occasion.value-object';
+import { Styles } from '../domain/style.value-object';
 import { CreateListingCommand } from './create-listing/create-listing.command';
 import { CreateListingService } from './create-listing/create-listing.service';
 import { DeleteListingCommand } from './delete-listing/delete-listing.command';
@@ -39,7 +39,7 @@ const NO_SPECS = {
   silhouette: null,
   length: null,
   color: null,
-  occasionsText: null,
+  stylesText: null,
 };
 
 function makeListing(state: 'draft' | 'published' | 'hidden' = 'draft'): DressListingEntity {
@@ -49,7 +49,7 @@ function makeListing(state: 'draft' | 'published' | 'hidden' = 'draft'): DressLi
       name: 'Đầm Ánh Trăng',
       tagline: '',
       description: '',
-      occasions: Occasions.create(['gala']),
+      styles: Styles.create(['short']),
       retailPrice: null,
       specs: NO_SPECS,
       photoUrls: ['https://img.test/1.jpg'],
@@ -88,7 +88,7 @@ const createCommand = (slug?: string) =>
     slug,
     tagline: '',
     description: '',
-    occasions: ['gala', 'birthday'],
+    styles: ['short', 'silk'],
     retailPrice: null,
     specs: NO_SPECS,
     photoUrls: [],

@@ -5,7 +5,7 @@ export interface ListingSpecsInput {
   silhouette: string | null;
   length: string | null;
   color: string | null;
-  occasionsText: string | null;
+  stylesText: string | null;
 }
 
 export class CreateListingCommand extends Command {
@@ -14,7 +14,7 @@ export class CreateListingCommand extends Command {
   readonly slug?: string;
   readonly tagline: string;
   readonly description: string;
-  readonly occasions: string[];
+  readonly styles: string[];
   readonly retailPrice: number | null;
   readonly specs: ListingSpecsInput;
   readonly photoUrls: string[];
@@ -26,7 +26,7 @@ export class CreateListingCommand extends Command {
     this.slug = props.slug;
     this.tagline = props.tagline;
     this.description = props.description;
-    this.occasions = props.occasions;
+    this.styles = props.styles;
     this.retailPrice = props.retailPrice;
     this.specs = props.specs;
     this.photoUrls = props.photoUrls;

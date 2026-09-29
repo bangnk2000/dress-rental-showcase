@@ -18,20 +18,20 @@ export class ListPublicDressesQueryHandler
   constructor(@Inject(DB_POOL) private readonly pool: DatabasePool) {}
 
   async execute(query: ListPublicDressesQuery): Promise<PublicDressSummaryDto[]> {
-    const occasion = query.occasion
-      ? sql.fragment`AND ${query.occasion} = ANY(l.occasions)`
+    const style = query.style
+      ? sql.fragment`AND ${query.style} = ANY(l.styles)`
       : sql.fragment``;
     const limit = query.limit ? sql.fragment`LIMIT ${query.limit}` : sql.fragment``;
 
     const rows = await this.pool.any(sql.type(publicSummaryRowSchema)`
       SELECT
-        l.slug, l.name, l.tagline, l.occasions, l.is_hot, l.first_published_at,
+        l.slug, l.name, l.tagline, l.styles, l.is_hot, l.first_published_at,
         l.retail_price, l.photo_urls,
         min(d.rental_price)::int AS rental_price
       FROM dress_listings l
       JOIN dress_listing_items i ON i.listing_id = l.id
       JOIN dresses d ON d.id = i.dress_id AND d.status = 'active'
-      WHERE l.published_at IS NOT NULL ${occasion}
+      WHERE l.published_at IS NOT NULL ${style}
       GROUP BY l.id
       ORDER BY l.is_hot DESC, l.first_published_at DESC, l.slug ASC
       ${limit}

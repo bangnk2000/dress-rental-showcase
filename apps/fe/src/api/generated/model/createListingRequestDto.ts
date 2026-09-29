@@ -4,7 +4,7 @@
  * dress-rental API
  * OpenAPI spec version: 0
  */
-import type { CreateListingRequestDtoOccasionsItem } from './createListingRequestDtoOccasionsItem';
+import type { CreateListingRequestDtoStylesItem } from './createListingRequestDtoStylesItem';
 import type { ListingSpecsRequestDto } from './listingSpecsRequestDto';
 
 export interface CreateListingRequestDto {
@@ -32,7 +32,7 @@ export interface CreateListingRequestDto {
      */
   description?: string;
   /** @minItems 1 */
-  occasions: CreateListingRequestDtoOccasionsItem[];
+  styles: CreateListingRequestDtoStylesItem[];
   /**
      * Market price of a new one (VND), for comparison only — NOT the purchase price
      * @minimum 0

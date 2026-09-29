@@ -25,7 +25,7 @@ describe('public listings — CMS commands (real Postgres)', () => {
   const createListing = (body: Record<string, unknown> = {}, token?: string) =>
     context.request('/api/v1/listings', {
       method: 'POST',
-      body: { name: 'Đầm Ánh Trăng', occasions: ['gala'], photoUrls: [PHOTO], ...body },
+      body: { name: 'Đầm Ánh Trăng', styles: ['short'], photoUrls: [PHOTO], ...body },
       token: token ?? context.token,
     });
 
@@ -131,13 +131,13 @@ describe('public listings — CMS commands (real Postgres)', () => {
       idOf(await createListing({ slug: 'dam-x' }));
       await expect(
         context.db.query(
-          "INSERT INTO dress_listings (id, slug, name, occasions) VALUES (gen_random_uuid(), 'dam-x', 'x', '{gala}')",
+          "INSERT INTO dress_listings (id, slug, name, styles) VALUES (gen_random_uuid(), 'dam-x', 'x', '{short}')",
         ),
       ).rejects.toThrow(/duplicate key|unique/i);
       for (const bad of ['Dam-X', 'dam--x', '-dam', 'dam x', 'a'.repeat(81)]) {
         await expect(
           context.db.query(
-            "INSERT INTO dress_listings (id, slug, name, occasions) VALUES (gen_random_uuid(), $1, 'x', '{gala}')",
+            "INSERT INTO dress_listings (id, slug, name, styles) VALUES (gen_random_uuid(), $1, 'x', '{short}')",
             [bad],
           ),
         ).rejects.toThrow(/check constraint/i);
@@ -224,22 +224,22 @@ describe('public listings — CMS commands (real Postgres)', () => {
     });
   });
 
-  describe('R4 occasions', () => {
+  describe('R4 styles', () => {
     it.each([
       ['none', []],
-      ['unknown', ['gala', 'prom']],
-      ['repeated', ['gala', 'gala']],
-    ])('%s occasions → 400 envelope', async (_label, occasions) => {
-      const response = await createListing({ occasions });
+      ['unknown', ['short', 'prom']],
+      ['repeated', ['short', 'short']],
+    ])('%s styles → 400 envelope', async (_label, styles) => {
+      const response = await createListing({ styles });
       expect(response.status).toBe(400);
     });
 
-    it('raw INSERTs with garbage occasions hit the CHECK', async () => {
-      for (const occasions of ['{}', '{gala,prom}', '{NULL}']) {
+    it('raw INSERTs with garbage styles hit the CHECK', async () => {
+      for (const styles of ['{}', '{short,prom}', '{NULL}']) {
         await expect(
           context.db.query(
-            `INSERT INTO dress_listings (id, slug, name, occasions) VALUES (gen_random_uuid(), 'dam-rac', 'x', $1)`,
-            [occasions],
+            `INSERT INTO dress_listings (id, slug, name, styles) VALUES (gen_random_uuid(), 'dam-rac', 'x', $1)`,
+            [styles],
           ),
         ).rejects.toThrow(/check constraint/i);
       }

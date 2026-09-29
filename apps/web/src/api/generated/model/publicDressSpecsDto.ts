@@ -15,8 +15,8 @@ export interface PublicDressSpecsDto {
   /** @nullable */
   color: string | null;
   /**
-     * Free-text occasions cell
+     * Free-text styles cell
      * @nullable
      */
-  occasions: string | null;
+  styles: string | null;
 }

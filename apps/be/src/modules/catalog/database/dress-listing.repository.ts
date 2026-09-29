@@ -78,13 +78,13 @@ export class DressListingRepository implements DressListingRepositoryPort {
     await this.translate(() =>
       this.pool.query(sql.unsafe`
         INSERT INTO dress_listings (
-          id, slug, name, tagline, description, occasions, retail_price,
-          material, silhouette, length, color, occasions_text, photo_urls, is_hot,
+          id, slug, name, tagline, description, styles, retail_price,
+          material, silhouette, length, color, styles_text, photo_urls, is_hot,
           published_at, first_published_at, created_at, updated_at
         ) VALUES (
           ${r.id}, ${r.slug}, ${r.name}, ${r.tagline}, ${r.description},
-          ${sql.array(r.occasions, 'text')}, ${r.retail_price},
-          ${r.material}, ${r.silhouette}, ${r.length}, ${r.color}, ${r.occasions_text},
+          ${sql.array(r.styles, 'text')}, ${r.retail_price},
+          ${r.material}, ${r.silhouette}, ${r.length}, ${r.color}, ${r.styles_text},
           ${sql.array(r.photo_urls, 'text')}, ${r.is_hot},
           NULL, NULL, ${iso(r.created_at)}, ${iso(r.updated_at)}
         )
@@ -111,13 +111,13 @@ export class DressListingRepository implements DressListingRepositoryPort {
           name = ${r.name},
           tagline = ${r.tagline},
           description = ${r.description},
-          occasions = ${sql.array(r.occasions, 'text')},
+          styles = ${sql.array(r.styles, 'text')},
           retail_price = ${r.retail_price},
           material = ${r.material},
           silhouette = ${r.silhouette},
           length = ${r.length},
           color = ${r.color},
-          occasions_text = ${r.occasions_text},
+          styles_text = ${r.styles_text},
           photo_urls = ${sql.array(r.photo_urls, 'text')},
           is_hot = ${r.is_hot},
           updated_at = ${iso(r.updated_at)}
