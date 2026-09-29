@@ -1,5 +1,20 @@
 # Session Handoff
 
+## 2026-09-30 (36) — "Dịp" → "Loại" (`catalog/listing-styles` = pass, branch `feat/listing-styles`)
+
+- Done: a mẫu is now classified by style — codes `short`, `silk`, `ao-dai`, `off-shoulder`,
+  `sleeved`, `strappy-strapless`, Vietnamese labels only in `apps/fe/public/locales/*/listings.json`
+  and `apps/web/messages/vi/catalog.json`. Renamed end to end (`occasions` → `styles`,
+  `?occasion=` → `?style=`), migration `1755600000000_listing_styles`. Design:
+  [public-listing.md §Amendment 2026-09-30](docs/design/catalog/public-listing.md).
+- Next: commit + PR (Codex review), then `web:public-catalog-live` — the web DTO now carries
+  `styles[]` (no label; translate `catalog.filter.<code>`).
+- Watch out:
+  - Deploy MUST migrate before the new API starts (column renamed → old API breaks, new API on an
+    unmigrated DB breaks). Old non-`ao-dai` listings become `silk` — staff re-tag in /website.
+  - Also in this branch: owner changed `shop.mapsUrl` to the `maps.app.goo.gl` share link;
+    `contact.test.tsx` now asserts `shop.mapsUrl` instead of a hard-coded host.
+
 ## 2026-09-29 (35) — public listings + first anonymous API (`catalog/public-listing` = pass, PR #18 → master)
 
 - Done: owner ask "triển khai feature catalog/public-listing" against the spec approved 2026-09-25.
