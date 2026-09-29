@@ -1,13 +1,15 @@
 # Session Handoff
 
-## 2026-09-30 (36) — "Dịp" → "Loại" (`catalog/listing-styles` = pass, branch `feat/listing-styles`)
+## 2026-09-30 (36) — "Dịp" → "Loại" (`catalog/listing-styles` = pass, PR #19 → master)
 
 - Done: a mẫu is now classified by style — codes `short`, `silk`, `ao-dai`, `off-shoulder`,
   `sleeved`, `strappy-strapless`, Vietnamese labels only in `apps/fe/public/locales/*/listings.json`
   and `apps/web/messages/vi/catalog.json`. Renamed end to end (`occasions` → `styles`,
   `?occasion=` → `?style=`), migration `1755600000000_listing_styles`. Design:
   [public-listing.md §Amendment 2026-09-30](docs/design/catalog/public-listing.md).
-- Next: commit + PR (Codex review), then `web:public-catalog-live` — the web DTO now carries
+- PR #19: Codex round 0 → C1 (migration untested on legacy rows) + C2 (docs still said occasion),
+  both P2, fixed in `554c810` / `0497a5a` → round 1 APPROVE → CI green → merged. be e2e 148.
+- Next: `web:public-catalog-live` — the web DTO now carries
   `styles[]` (no label; translate `catalog.filter.<code>`).
 - Watch out:
   - Deploy MUST migrate before the new API starts (column renamed → old API breaks, new API on an

@@ -5,8 +5,8 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md`; t
 
 - 2026-09-30 (36) — owner ask "đổi 'dịp' thành 'loại'": `catalog/listing-styles` = pass (40/40).
   Six style codes (short, silk, ao-dai, off-shoulder, sleeved, strappy-strapless), field renamed
-  DB → API → 3 clients, migration `1755600000000_listing_styles`. be e2e 146/146, fe 167. Branch
-  `feat/listing-styles`, not yet merged. Not deployed.
+  DB → API → 3 clients, migration `1755600000000_listing_styles`. be e2e 148/148, fe 167.
+  PR #19 (2 Codex P2 fixed, round 1 APPROVE, CI green) → master. Not deployed.
 - 2026-09-29 (35) — owner ask "triển khai catalog/public-listing": = pass (39/39). DressListing
   aggregate + migration, listing commands, first anonymous API `/public/dresses[/:slug]`
   (whitelist, throttled), CMS `/website`. be 263 unit, e2e 145/145, fe 167, Playwright 1/1.
