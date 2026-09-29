@@ -21,20 +21,19 @@ describe('FeaturedCollection (FR-WEB-01)', () => {
     expect(screen.getByRole('link', { name: /Xem tất cả/ })).toHaveAttribute('href', '/bo-suu-tap');
   });
 
-  test('an occasion chip filters the grid and is the only pressed chip', async () => {
+  test('a style chip filters the grid and is the only pressed chip', async () => {
     renderWithProviders(<FeaturedCollection dresses={await listPublicDresses({ limit: 8 })} />);
 
-    const chips = within(screen.getByRole('group', { name: 'Lọc theo dịp' }));
+    const chips = within(screen.getByRole('group', { name: 'Lọc theo loại' }));
     expect(chips.getByRole('button', { name: 'Tất Cả Thiết Kế' })).toHaveAttribute('aria-pressed', 'true');
 
-    fireEvent.click(chips.getByRole('button', { name: 'Tiệc Sinh Nhật' }));
-    expect(chips.getByRole('button', { name: 'Tiệc Sinh Nhật' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(chips.getByRole('button', { name: 'Váy ngắn' }));
+    expect(chips.getByRole('button', { name: 'Váy ngắn' })).toHaveAttribute('aria-pressed', 'true');
     expect(chips.getByRole('button', { name: 'Tất Cả Thiết Kế' })).toHaveAttribute('aria-pressed', 'false');
     const names = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
     expect(names).toEqual(['Váy Sinh Nhật / Prom', 'Váy Nơ Lưng Mini']);
 
-    // "Áo Dài Nàng Thơ" also covers the yearbook áo dài
-    fireEvent.click(chips.getByRole('button', { name: 'Áo Dài Nàng Thơ' }));
+    fireEvent.click(chips.getByRole('button', { name: 'Áo dài' }));
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       'Áo Dài Cách Tân',
       'Áo Dài Lụa Hoạ Tiết',

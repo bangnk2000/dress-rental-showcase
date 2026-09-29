@@ -1,19 +1,22 @@
-import type { PublicDressSummary, PublicOccasion } from '@/api/mock/public-catalog';
+import type { PublicDressSummary, PublicStyle } from '@/api/mock/public-catalog';
 
-// Chip → occasions it covers. "Áo Dài Nàng Thơ" also shows the yearbook áo dài.
-export const occasionFilters = {
+// Chip → styles it covers: one chip per style, plus "all".
+export const styleFilters = {
   all: null,
-  gala: ['gala'],
-  birthday: ['birthday'],
-  'ao-dai': ['ao-dai', 'yearbook'],
-} as const satisfies Record<string, readonly PublicOccasion[] | null>;
+  short: ['short'],
+  silk: ['silk'],
+  'ao-dai': ['ao-dai'],
+  'off-shoulder': ['off-shoulder'],
+  sleeved: ['sleeved'],
+  'strappy-strapless': ['strappy-strapless'],
+} as const satisfies Record<string, readonly PublicStyle[] | null>;
 
-export type OccasionFilter = keyof typeof occasionFilters;
-export const occasionFilterKeys = Object.keys(occasionFilters) as OccasionFilter[];
+export type StyleFilter = keyof typeof styleFilters;
+export const styleFilterKeys = Object.keys(styleFilters) as StyleFilter[];
 
-export function filterDresses<T extends PublicDressSummary>(dresses: T[], filter: OccasionFilter): T[] {
-  const occasions: readonly PublicOccasion[] | null = occasionFilters[filter];
-  return occasions === null ? dresses : dresses.filter((d) => occasions.includes(d.occasion));
+export function filterDresses<T extends PublicDressSummary>(dresses: T[], filter: StyleFilter): T[] {
+  const styles: readonly PublicStyle[] | null = styleFilters[filter];
+  return styles === null ? dresses : dresses.filter((d) => styles.includes(d.style));
 }
 
 /** Home shows 4 / 6 / 8 cards at mobile / md / xl — never a half-empty last row (responsive.md §4). */

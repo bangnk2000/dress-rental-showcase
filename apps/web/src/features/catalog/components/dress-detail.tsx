@@ -12,7 +12,7 @@ import { DressGallery } from './dress-gallery';
 import { OpenFromMdDetails } from './open-from-md-details';
 import { SaveDressButton } from './save-dress-button';
 
-const specKeys = ['material', 'silhouette', 'length', 'color', 'occasions'] as const satisfies readonly (keyof PublicDressSpecs)[];
+const specKeys = ['material', 'silhouette', 'length', 'color', 'styles'] as const satisfies readonly (keyof PublicDressSpecs)[];
 
 /**
  * Product detail (design/responsive.md §4 Product). No booking: sizes are information, the
@@ -74,7 +74,7 @@ export function DressDetail({ dress }: { dress: PublicDressDetail }) {
         />
 
         <div className="px-margin-mobile pt-space-md md:sticky md:top-24 md:col-span-4 md:self-start md:px-0 md:pt-0 xl:top-28 xl:col-span-5 xl:col-start-8">
-          <p className="text-label-sm uppercase tracking-widest text-secondary">{dress.occasionLabel}</p>
+          <p className="text-label-sm uppercase tracking-widest text-secondary">{dress.styleLabel}</p>
           <h1 className="mt-1 font-display text-headline-lg-mobile text-primary md:text-headline-md xl:text-headline-lg">
             {dress.name}
           </h1>

@@ -39,7 +39,7 @@ export function DressCard({ dress, className }: { dress: PublicDressSummary; cla
       </div>
       <div className="flex flex-1 flex-col justify-between p-3 md:p-space-md">
         <div>
-          <p className="mb-0.5 text-label-sm uppercase text-outline">{dress.occasionLabel}</p>
+          <p className="mb-0.5 text-label-sm uppercase text-outline">{dress.styleLabel}</p>
           <h3 className="line-clamp-1 text-body-md font-semibold text-on-surface">
             <Link
               href={`/bo-suu-tap/${dress.slug}`}

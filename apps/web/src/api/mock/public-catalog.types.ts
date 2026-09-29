@@ -2,7 +2,7 @@
 // are safe to publish: no purchase price, no customers, no calendar. When the BE ships the real
 // endpoints these types are replaced by the generated ones and this folder is deleted.
 
-export type PublicOccasion = 'gala' | 'birthday' | 'ao-dai' | 'tea-party' | 'wedding-guest' | 'yearbook';
+export type PublicStyle = 'short' | 'silk' | 'ao-dai' | 'off-shoulder' | 'sleeved' | 'strappy-strapless';
 export type PublicDressBadge = 'available' | 'new' | 'hot';
 
 export interface PublicImage {
@@ -14,9 +14,9 @@ export interface PublicDressSummary {
   slug: string;
   name: string;
   tagline: string;
-  occasion: PublicOccasion;
-  /** Display label of the occasion as the shop writes it on the card ("Gala & Red Carpet"). */
-  occasionLabel: string;
+  style: PublicStyle;
+  /** Display label of the style as the shop writes it on the card ("Váy ngắn"). */
+  styleLabel: string;
   badge: PublicDressBadge;
   rentalPricePerDay: number;
   retailPrice: number;
@@ -33,7 +33,7 @@ export interface PublicDressSpecs {
   silhouette: string;
   length: string;
   color: string;
-  occasions: string;
+  styles: string;
 }
 
 export interface PublicDressDetail extends PublicDressSummary {

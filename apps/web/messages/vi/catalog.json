@@ -14,12 +14,15 @@
     "viewAll": "Xem tất cả"
   },
   "filter": {
-    "label": "Lọc theo dịp",
+    "label": "Lọc theo loại",
     "all": "Tất Cả Thiết Kế",
-    "gala": "Dạ Hội & Gala",
-    "birthday": "Tiệc Sinh Nhật",
-    "ao-dai": "Áo Dài Nàng Thơ",
-    "empty": "Chưa có mẫu nào cho dịp này — nhắn Zalo để Atelier Demo gợi ý nàng nhé."
+    "short": "Váy ngắn",
+    "silk": "Váy lụa",
+    "ao-dai": "Áo dài",
+    "off-shoulder": "Váy trễ vai",
+    "sleeved": "Váy che tay",
+    "strappy-strapless": "Váy hai dây, cúp ngực",
+    "empty": "Chưa có mẫu nào thuộc loại này — nhắn Zalo để Atelier Demo gợi ý nàng nhé."
   },
   "badge": {
     "available": "Có sẵn",
@@ -52,7 +55,7 @@
       "silhouette": "Dáng",
       "length": "Độ dài",
       "color": "Màu",
-      "occasions": "Dịp"
+      "styles": "Loại"
     },
     "howTitle": "Thuê váy thế nào?",
     "how": {
