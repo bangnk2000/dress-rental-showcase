@@ -10,12 +10,12 @@ export type * from './public-catalog.types';
 // so swapping to `pnpm contract` output later touches only this file. `cache` dedupes the calls
 // generateMetadata and the page make during one render.
 
-const toSummary = ({ slug, name, tagline, occasion, occasionLabel, badge, rentalPricePerDay, retailPrice, cover }: PublicDressDetail): PublicDressSummary => ({
+const toSummary = ({ slug, name, tagline, style, styleLabel, badge, rentalPricePerDay, retailPrice, cover }: PublicDressDetail): PublicDressSummary => ({
   slug,
   name,
   tagline,
-  occasion,
-  occasionLabel,
+  style,
+  styleLabel,
   badge,
   rentalPricePerDay,
   retailPrice,
@@ -31,10 +31,10 @@ export const getPublicDress = cache(async (slug: string): Promise<PublicDressDet
   return mockDresses.find((d) => d.slug === slug) ?? null;
 });
 
-/** Same occasion first, then the rest of the catalogue — never the dress itself. */
+/** Same style first, then the rest of the catalogue — never the dress itself. */
 export const listRelatedDresses = cache(async (slug: string, limit = 4): Promise<PublicDressSummary[]> => {
   const self = mockDresses.find((d) => d.slug === slug);
   const others = mockDresses.filter((d) => d.slug !== slug);
-  const ranked = self ? [...others.filter((d) => d.occasion === self.occasion), ...others.filter((d) => d.occasion !== self.occasion)] : others;
+  const ranked = self ? [...others.filter((d) => d.style === self.style), ...others.filter((d) => d.style !== self.style)] : others;
   return ranked.slice(0, limit).map(toSummary);
 });

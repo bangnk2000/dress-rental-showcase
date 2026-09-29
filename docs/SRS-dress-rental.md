@@ -79,8 +79,8 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   `rejected_dress_code_taken`. Mã váy từ đây cho phép `_`. (b) Kích cỡ trên form **chọn bằng nút**
   XS / S / M / L / XL (chạm lại để bỏ); API vẫn giữ `sizeLabel` text tự do ≤ 20 ký tự — giá trị cũ
   (CSV) ngoài 5 cỡ hiện thành nút thứ sáu đang chọn khi sửa, không bị xoá ngầm.
-- **FR-CAT-09** Mẫu công khai (website): nhân viên tạo "mẫu" (tên, slug, tagline, mô tả, ≥ 1 dịp
-  trong 6 dịp cố định, giá bán tham khảo, thông số, ảnh, cờ Hot) và gắn váy vào (một váy thuộc
+- **FR-CAT-09** Mẫu công khai (website): nhân viên tạo "mẫu" (tên, slug, tagline, mô tả, ≥ 1 loại
+  trong 6 loại cố định (váy ngắn, váy lụa, áo dài, váy trễ vai, váy che tay, váy hai dây/cúp ngực — đổi từ "dịp" 2026-09-30), giá bán tham khảo, thông số, ảnh, cờ Hot) và gắn váy vào (một váy thuộc
   nhiều mẫu). Size/giá/còn-hết trên web **suy ra** từ váy `active` đang gắn (giá "X / 2 ngày",
   không xét lịch). Đăng/ẩn hai chiều; slug khoá sau lần đăng đầu; staff chỉ xoá mẫu chưa từng
   đăng, owner xoá mọi mẫu. API ẩn danh `GET /public/dresses[/:slug]` chỉ trả trường công khai.
@@ -156,8 +156,8 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 
 ### web (website công khai, `apps/web`)
 - **FR-WEB-01** Trang chủ công khai: hero, thông tin tiệm (địa chỉ, hotline/Zalo, giờ mở cửa,
-  mạng xã hội), bộ sưu tập nổi bật lọc theo dịp, đặc quyền, lời mời thử váy qua Zalo.
-- **FR-WEB-02** Bộ sưu tập (`/bo-suu-tap`): mọi váy công khai, lọc theo dịp; mỗi thẻ dẫn tới chi tiết.
+  mạng xã hội), bộ sưu tập nổi bật lọc theo loại, đặc quyền, lời mời thử váy qua Zalo.
+- **FR-WEB-02** Bộ sưu tập (`/bo-suu-tap`): mọi váy công khai, lọc theo loại; mỗi thẻ dẫn tới chi tiết.
 - **FR-WEB-03** Chi tiết váy (`/bo-suu-tap/<slug>`): ảnh, giá thuê "X / 2 ngày" (chốt 2026-09-25 —
   giá một lượt, không phải giá/ngày), giá bán tham khảo, size
   còn/hết (thông tin, KHÔNG đặt lịch), chi tiết thiết kế, cách thuê, liên hệ Zalo/gọi, váy gợi ý.

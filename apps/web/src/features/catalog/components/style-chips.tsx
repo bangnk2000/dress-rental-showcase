@@ -4,16 +4,16 @@ import { useTranslations } from 'next-intl';
 
 import { cn } from '@/lib/utils';
 
-import { occasionFilterKeys, type OccasionFilter } from '../lib/filters';
+import { styleFilterKeys, type StyleFilter } from '../lib/filters';
 
 /** mobile: horizontal scroll with an edge fade · md: wrap (design/responsive.md §4 + §6). */
-export function OccasionChips({
+export function StyleChips({
   value,
   onChange,
   className,
 }: {
-  value: OccasionFilter;
-  onChange: (next: OccasionFilter) => void;
+  value: StyleFilter;
+  onChange: (next: StyleFilter) => void;
   className?: string;
 }) {
   const t = useTranslations('catalog.filter');
@@ -24,7 +24,7 @@ export function OccasionChips({
         aria-label={t('label')}
         className="flex snap-x snap-proximity gap-2 overflow-x-auto px-margin-mobile scrollbar-none md:flex-wrap md:overflow-visible md:px-0"
       >
-        {occasionFilterKeys.map((key) => {
+        {styleFilterKeys.map((key) => {
           const active = key === value;
           return (
             <button

@@ -35,7 +35,7 @@ export class CreateListingHttpController {
   @ApiResponse({
     status: 400,
     type: ApiErrorResponseDto,
-    description: 'Invalid body: slug format, 0 / unknown / repeated occasions, negative price',
+    description: 'Invalid body: slug format, 0 / unknown / repeated styles, negative price',
   })
   async create(@Body() body: CreateListingRequestDto): Promise<IdResponse> {
     const result: CreateListingResult = await this.commandBus.execute(
@@ -44,14 +44,14 @@ export class CreateListingHttpController {
         slug: body.slug,
         tagline: body.tagline ?? '',
         description: body.description ?? '',
-        occasions: body.occasions,
+        styles: body.styles,
         retailPrice: body.retailPrice ?? null,
         specs: {
           material: body.specs?.material ?? null,
           silhouette: body.specs?.silhouette ?? null,
           length: body.specs?.length ?? null,
           color: body.specs?.color ?? null,
-          occasionsText: body.specs?.occasionsText ?? null,
+          stylesText: body.specs?.stylesText ?? null,
         },
         photoUrls: body.photoUrls ?? [],
         isHot: body.isHot ?? false,

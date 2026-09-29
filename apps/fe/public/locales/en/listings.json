@@ -10,7 +10,7 @@
     "columns": {
       "cover": "Cover",
       "name": "Listing",
-      "occasions": "Occasions",
+      "styles": "Styles",
       "sizes": "Available sizes",
       "status": "Status"
     }
@@ -20,13 +20,13 @@
     "published": "Published",
     "hidden": "Hidden (no dresses)"
   },
-  "occasions": {
-    "gala": "Gala & Red Carpet",
-    "birthday": "Birthday & Prom",
-    "ao-dai": "Dạo Phố & Lễ Tết",
-    "tea-party": "Tea Party & Picnic",
-    "wedding-guest": "Wedding Guest",
-    "yearbook": "Chụp Ảnh Kỷ Yếu"
+  "styles": {
+    "short": "Short dress",
+    "silk": "Silk dress",
+    "ao-dai": "Áo dài",
+    "off-shoulder": "Off-shoulder dress",
+    "sleeved": "Sleeved dress",
+    "strappy-strapless": "Strappy / strapless dress"
   },
   "form": {
     "newTitle": "New listing",
@@ -37,7 +37,7 @@
       "slug": "Link (slug)",
       "tagline": "Tagline",
       "description": "Description",
-      "occasions": "Occasions (one or more)",
+      "styles": "Styles (one or more)",
       "retailPrice": "Reference retail price (VND)",
       "photos": "Photos",
       "isHot": "Hot",
@@ -47,7 +47,7 @@
         "silhouette": "Silhouette",
         "length": "Length",
         "color": "Color",
-        "occasionsText": "Suitable for (display text)"
+        "stylesText": "Style (display text)"
       }
     },
     "slugHint": "Web link: /bo-suu-tap/<slug>. Filled from the name; editable until the first publish.",
@@ -68,7 +68,7 @@
       "slugInvalid": "Lowercase letters without accents, digits and dashes only, at most 80 characters",
       "taglineTooLong": "At most 160 characters",
       "descriptionTooLong": "At most 2000 characters",
-      "occasionsRequired": "Pick at least one occasion",
+      "stylesRequired": "Pick at least one style",
       "amountInvalid": "The amount must be a non-negative whole number",
       "specTooLong": "At most 120 characters",
       "photoUrlInvalid": "Every photo must be a valid http(s) link",

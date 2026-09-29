@@ -3,7 +3,7 @@ import { Money } from '../../../libs/ddd/money.value-object';
 import { toDate } from '../../../libs/utils/date';
 import { DressListingEntity } from '../domain/dress-listing.entity';
 import { ListingSlug } from '../domain/listing-slug.value-object';
-import { Occasions } from '../domain/occasion.value-object';
+import { Styles } from '../domain/style.value-object';
 import { DressListingModel } from './dress-listing.persistence.model';
 
 /** Row ⇄ aggregate. The CMS/public DTOs are projected by the query handlers, not here. */
@@ -19,14 +19,14 @@ export class DressListingMapper {
         name: record.name,
         tagline: record.tagline,
         description: record.description,
-        occasions: Occasions.create(record.occasions),
+        styles: Styles.create(record.styles),
         retailPrice: record.retail_price === null ? null : Money.create(record.retail_price),
         specs: {
           material: record.material,
           silhouette: record.silhouette,
           length: record.length,
           color: record.color,
-          occasionsText: record.occasions_text,
+          stylesText: record.styles_text,
         },
         photoUrls: [...record.photo_urls],
         isHot: record.is_hot,
@@ -46,13 +46,13 @@ export class DressListingMapper {
       name: props.name,
       tagline: props.tagline,
       description: props.description,
-      occasions: props.occasions.values,
+      styles: props.styles.values,
       retail_price: props.retailPrice?.amount ?? null,
       material: props.specs.material,
       silhouette: props.specs.silhouette,
       length: props.specs.length,
       color: props.specs.color,
-      occasions_text: props.specs.occasionsText,
+      styles_text: props.specs.stylesText,
       photo_urls: [...props.photoUrls],
       is_hot: props.isHot,
       published_at: props.publishedAt,

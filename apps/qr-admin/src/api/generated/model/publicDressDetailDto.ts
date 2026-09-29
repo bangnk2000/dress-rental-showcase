@@ -5,7 +5,7 @@
  * OpenAPI spec version: 0
  */
 import type { PublicDressDetailDtoBadge } from './publicDressDetailDtoBadge';
-import type { PublicDressDetailDtoOccasionsItem } from './publicDressDetailDtoOccasionsItem';
+import type { PublicDressDetailDtoStylesItem } from './publicDressDetailDtoStylesItem';
 import type { PublicDressSpecsDto } from './publicDressSpecsDto';
 import type { PublicImageDto } from './publicImageDto';
 import type { PublicSizeDto } from './publicSizeDto';
@@ -14,7 +14,7 @@ export interface PublicDressDetailDto {
   slug: string;
   name: string;
   tagline: string;
-  occasions: PublicDressDetailDtoOccasionsItem[];
+  styles: PublicDressDetailDtoStylesItem[];
   /** hot > new (first published ≤ 30 days) > available */
   badge: PublicDressDetailDtoBadge;
   /** VND for ONE rental of 2 days (the web writes "X / 2 ngày") — min over the active dresses */

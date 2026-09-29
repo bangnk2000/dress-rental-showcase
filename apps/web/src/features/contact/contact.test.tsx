@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
+import { shop } from '@/lib/shop';
 import { renderWithProviders } from '@/test/render';
 
 import { ContactPage } from './index';
@@ -15,7 +16,7 @@ describe('ContactPage (FR-WEB-04)', () => {
     renderWithProviders(<ContactPage />);
     expect(screen.getByRole('link', { name: /Gọi ngay/ })).toHaveAttribute('href', 'tel:0901000000');
     const maps = screen.getByRole('link', { name: /Mở Google Maps/ });
-    expect(maps).toHaveAttribute('href', expect.stringContaining('maps.google.com'));
+    expect(maps).toHaveAttribute('href', shop.mapsUrl);
     expect(maps).toHaveAttribute('target', '_blank');
     for (const name of ['Facebook', 'Instagram', 'TikTok', 'Zalo']) {
       expect(screen.getByRole('link', { name: new RegExp(name) })).toHaveAttribute('rel', 'noopener noreferrer');

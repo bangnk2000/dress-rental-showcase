@@ -7,14 +7,14 @@ export class UpdateListingCommand extends Command {
   readonly slug?: string;
   readonly tagline?: string;
   readonly description?: string;
-  readonly occasions?: string[];
+  readonly styles?: string[];
   readonly retailPrice?: number | null;
   readonly specs?: {
     material?: string | null;
     silhouette?: string | null;
     length?: string | null;
     color?: string | null;
-    occasionsText?: string | null;
+    stylesText?: string | null;
   };
   readonly photoUrls?: string[];
   readonly isHot?: boolean;
@@ -26,7 +26,7 @@ export class UpdateListingCommand extends Command {
     this.slug = props.slug;
     this.tagline = props.tagline;
     this.description = props.description;
-    this.occasions = props.occasions;
+    this.styles = props.styles;
     this.retailPrice = props.retailPrice;
     this.specs = props.specs;
     this.photoUrls = props.photoUrls;

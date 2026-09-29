@@ -438,7 +438,7 @@
             }
           },
           "400": {
-            "description": "Invalid body: slug format, 0 / unknown / repeated occasions, negative price",
+            "description": "Invalid body: slug format, 0 / unknown / repeated styles, negative price",
             "content": {
               "application/json": {
                 "schema": {
@@ -814,19 +814,19 @@
         "operationId": "ListPublicDressesHttpController_list",
         "parameters": [
           {
-            "name": "occasion",
+            "name": "style",
             "required": false,
             "in": "query",
-            "description": "Only listings that include this occasion",
+            "description": "Only listings that include this style",
             "schema": {
               "type": "string",
               "enum": [
-                "gala",
-                "birthday",
+                "short",
+                "silk",
                 "ao-dai",
-                "tea-party",
-                "wedding-guest",
-                "yearbook"
+                "off-shoulder",
+                "sleeved",
+                "strappy-strapless"
               ]
             }
           },
@@ -857,7 +857,7 @@
             }
           },
           "400": {
-            "description": "Unknown occasion / bad limit",
+            "description": "Unknown style / bad limit",
             "content": {
               "application/json": {
                 "schema": {
@@ -2880,13 +2880,13 @@
             "maxLength": 120,
             "example": "Đỏ rượu"
           },
-          "occasionsText": {
+          "stylesText": {
             "type": "string",
             "nullable": true,
             "minLength": 1,
             "maxLength": 120,
             "example": "Dạ tiệc, sinh nhật",
-            "description": "Free text shown as the \"occasions\" spec cell on the web (not the occasion codes)"
+            "description": "Free text shown as the \"styles\" spec cell on the web (not the style codes)"
           }
         }
       },
@@ -2919,24 +2919,24 @@
             "maxLength": 2000,
             "description": "≤ 2000 chars; default \"\""
           },
-          "occasions": {
+          "styles": {
             "type": "array",
             "uniqueItems": true,
             "minItems": 1,
             "items": {
               "type": "string",
               "enum": [
-                "gala",
-                "birthday",
+                "short",
+                "silk",
                 "ao-dai",
-                "tea-party",
-                "wedding-guest",
-                "yearbook"
+                "off-shoulder",
+                "sleeved",
+                "strappy-strapless"
               ]
             },
             "example": [
-              "gala",
-              "birthday"
+              "short",
+              "silk"
             ]
           },
           "retailPrice": {
@@ -2968,7 +2968,7 @@
         },
         "required": [
           "name",
-          "occasions"
+          "styles"
         ]
       },
       "CreateListingOutcomeDto": {
@@ -3002,17 +3002,17 @@
           "name": {
             "type": "string"
           },
-          "occasions": {
+          "styles": {
             "type": "array",
             "items": {
               "type": "string",
               "enum": [
-                "gala",
-                "birthday",
+                "short",
+                "silk",
                 "ao-dai",
-                "tea-party",
-                "wedding-guest",
-                "yearbook"
+                "off-shoulder",
+                "sleeved",
+                "strappy-strapless"
               ]
             }
           },
@@ -3056,7 +3056,7 @@
           "id",
           "slug",
           "name",
-          "occasions",
+          "styles",
           "isHot",
           "coverUrl",
           "publishedAt",
@@ -3110,19 +3110,19 @@
             "maxLength": 2000,
             "description": "≤ 2000 chars"
           },
-          "occasions": {
+          "styles": {
             "type": "array",
             "uniqueItems": true,
             "minItems": 1,
             "items": {
               "type": "string",
               "enum": [
-                "gala",
-                "birthday",
+                "short",
+                "silk",
                 "ao-dai",
-                "tea-party",
-                "wedding-guest",
-                "yearbook"
+                "off-shoulder",
+                "sleeved",
+                "strappy-strapless"
               ]
             }
           },
@@ -3305,7 +3305,7 @@
             "type": "string",
             "nullable": true
           },
-          "occasionsText": {
+          "stylesText": {
             "type": "string",
             "nullable": true
           }
@@ -3315,7 +3315,7 @@
           "silhouette",
           "length",
           "color",
-          "occasionsText"
+          "stylesText"
         ]
       },
       "ListingDressDto": {
@@ -3382,17 +3382,17 @@
           "description": {
             "type": "string"
           },
-          "occasions": {
+          "styles": {
             "type": "array",
             "items": {
               "type": "string",
               "enum": [
-                "gala",
-                "birthday",
+                "short",
+                "silk",
                 "ao-dai",
-                "tea-party",
-                "wedding-guest",
-                "yearbook"
+                "off-shoulder",
+                "sleeved",
+                "strappy-strapless"
               ]
             }
           },
@@ -3445,7 +3445,7 @@
           "name",
           "tagline",
           "description",
-          "occasions",
+          "styles",
           "retailPrice",
           "specs",
           "photoUrls",
@@ -3489,17 +3489,17 @@
             "type": "string",
             "example": "Lấp lánh như ánh trăng"
           },
-          "occasions": {
+          "styles": {
             "type": "array",
             "items": {
               "type": "string",
               "enum": [
-                "gala",
-                "birthday",
+                "short",
+                "silk",
                 "ao-dai",
-                "tea-party",
-                "wedding-guest",
-                "yearbook"
+                "off-shoulder",
+                "sleeved",
+                "strappy-strapless"
               ]
             }
           },
@@ -3530,7 +3530,7 @@
           "slug",
           "name",
           "tagline",
-          "occasions",
+          "styles",
           "badge",
           "rentalPrice",
           "retailPrice",
@@ -3574,10 +3574,10 @@
             "type": "string",
             "nullable": true
           },
-          "occasions": {
+          "styles": {
             "type": "string",
             "nullable": true,
-            "description": "Free-text occasions cell"
+            "description": "Free-text styles cell"
           }
         },
         "required": [
@@ -3585,7 +3585,7 @@
           "silhouette",
           "length",
           "color",
-          "occasions"
+          "styles"
         ]
       },
       "PublicDressDetailDto": {
@@ -3603,17 +3603,17 @@
             "type": "string",
             "example": "Lấp lánh như ánh trăng"
           },
-          "occasions": {
+          "styles": {
             "type": "array",
             "items": {
               "type": "string",
               "enum": [
-                "gala",
-                "birthday",
+                "short",
+                "silk",
                 "ao-dai",
-                "tea-party",
-                "wedding-guest",
-                "yearbook"
+                "off-shoulder",
+                "sleeved",
+                "strappy-strapless"
               ]
             }
           },
@@ -3663,7 +3663,7 @@
           "slug",
           "name",
           "tagline",
-          "occasions",
+          "styles",
           "badge",
           "rentalPrice",
           "retailPrice",

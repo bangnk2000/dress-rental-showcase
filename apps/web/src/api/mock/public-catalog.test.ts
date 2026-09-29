@@ -27,11 +27,11 @@ describe('mock public catalogue', () => {
     expect(await getPublicDress('khong-ton-tai')).toBeNull();
   });
 
-  test('related: same occasion first, never the dress itself, capped', async () => {
+  test('related: same style first, never the dress itself, capped', async () => {
     const related = await listRelatedDresses('dam-da-hoi-long-lay');
     expect(related).toHaveLength(4);
     expect(related.map((d) => d.slug)).not.toContain('dam-da-hoi-long-lay');
-    expect(related[0]).toMatchObject({ slug: 'dam-tulle-hong-phan', occasion: 'gala' });
+    expect(related[0]).toMatchObject({ slug: 'dam-tulle-hong-phan', style: 'strappy-strapless' });
     expect(await listRelatedDresses('dam-da-hoi-long-lay', 2)).toHaveLength(2);
   });
 });

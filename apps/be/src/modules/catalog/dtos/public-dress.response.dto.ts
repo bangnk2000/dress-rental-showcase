@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { LISTING_BADGES, ListingBadge } from '../domain/listing-badge';
-import { OCCASIONS, Occasion } from '../domain/occasion.value-object';
+import { STYLES, Style } from '../domain/style.value-object';
 
 /**
  * ANONYMOUS read models (docs/design/catalog/public-listing.md §Contract, R6). A WHITELIST: no
@@ -27,8 +27,8 @@ export class PublicDressSummaryDto {
   @ApiProperty({ example: 'Lấp lánh như ánh trăng' })
   readonly tagline!: string;
 
-  @ApiProperty({ enum: OCCASIONS, isArray: true })
-  readonly occasions!: Occasion[];
+  @ApiProperty({ enum: STYLES, isArray: true })
+  readonly styles!: Style[];
 
   @ApiProperty({ enum: LISTING_BADGES, description: 'hot > new (first published ≤ 30 days) > available' })
   readonly badge!: ListingBadge;
@@ -67,8 +67,8 @@ export class PublicDressSpecsDto {
   @ApiProperty({ type: String, nullable: true })
   readonly color!: string | null;
 
-  @ApiProperty({ type: String, nullable: true, description: 'Free-text occasions cell' })
-  readonly occasions!: string | null;
+  @ApiProperty({ type: String, nullable: true, description: 'Free-text styles cell' })
+  readonly styles!: string | null;
 }
 
 export class PublicDressDetailDto extends PublicDressSummaryDto {

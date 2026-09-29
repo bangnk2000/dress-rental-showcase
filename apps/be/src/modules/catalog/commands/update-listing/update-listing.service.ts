@@ -20,7 +20,7 @@ import {
   ListingSlugTakenError,
 } from '../../domain/dress-listing.errors';
 import { ListingSlug } from '../../domain/listing-slug.value-object';
-import { Occasions } from '../../domain/occasion.value-object';
+import { Styles } from '../../domain/style.value-object';
 import { UpdateListingCommand } from './update-listing.command';
 
 export type UpdateListingResult = Result<
@@ -69,8 +69,8 @@ export class UpdateListingService
         name: command.name === undefined ? props.name : command.name.trim(),
         tagline: command.tagline ?? props.tagline,
         description: command.description ?? props.description,
-        occasions:
-          command.occasions === undefined ? props.occasions : Occasions.create(command.occasions),
+        styles:
+          command.styles === undefined ? props.styles : Styles.create(command.styles),
         retailPrice:
           command.retailPrice === undefined
             ? props.retailPrice
@@ -82,8 +82,8 @@ export class UpdateListingService
           silhouette: specs.silhouette === undefined ? props.specs.silhouette : specs.silhouette,
           length: specs.length === undefined ? props.specs.length : specs.length,
           color: specs.color === undefined ? props.specs.color : specs.color,
-          occasionsText:
-            specs.occasionsText === undefined ? props.specs.occasionsText : specs.occasionsText,
+          stylesText:
+            specs.stylesText === undefined ? props.specs.stylesText : specs.stylesText,
         },
         photoUrls: command.photoUrls ?? props.photoUrls,
         isHot: command.isHot ?? props.isHot,

@@ -7,7 +7,7 @@ import {
 } from './dress-listing.errors';
 import { ListingContent } from './dress-listing.types';
 import { ListingSlug } from './listing-slug.value-object';
-import { Occasions } from './occasion.value-object';
+import { Styles } from './style.value-object';
 
 const T0 = new Date('2026-09-01T00:00:00Z');
 const T1 = new Date('2026-09-02T00:00:00Z');
@@ -18,9 +18,9 @@ function content(overrides: Partial<ListingContent> = {}): ListingContent {
     name: 'Đầm Ánh Trăng',
     tagline: '',
     description: '',
-    occasions: Occasions.create(['gala']),
+    styles: Styles.create(['short']),
     retailPrice: null,
-    specs: { material: null, silhouette: null, length: null, color: null, occasionsText: null },
+    specs: { material: null, silhouette: null, length: null, color: null, stylesText: null },
     photoUrls: ['https://img.test/1.jpg'],
     isHot: false,
     ...overrides,

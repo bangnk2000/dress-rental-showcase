@@ -5,7 +5,7 @@ export const shop = {
   phoneDisplay: '0901 000 000',
   handle: '@atelierdemo',
   zaloUrl: 'https://zalo.me/0901000000',
-  mapsUrl: 'https://maps.google.com/?q=56+Mai+Dich+Cau+Giay+Ha+Noi',
+  mapsUrl: 'https://maps.app.goo.gl/example',
   timeZone: 'Asia/Ho_Chi_Minh',
   social: [
     { key: 'facebook', href: 'https://facebook.com/atelierdemo' },

@@ -34,10 +34,10 @@ export class ListingSpecsRequestDto {
     type: String,
     nullable: true,
     example: 'Dạ tiệc, sinh nhật',
-    description: 'Free text shown as the "occasions" spec cell on the web (not the occasion codes)',
+    description: 'Free text shown as the "styles" spec cell on the web (not the style codes)',
   })
   @IsOptional()
   @IsString()
   @Length(1, 120)
-  readonly occasionsText?: string | null;
+  readonly stylesText?: string | null;
 }

@@ -7,9 +7,9 @@ import { useState } from 'react';
 import type { PublicDressSummary } from '@/api/mock/public-catalog';
 import { Link } from '@/i18n/navigation';
 
-import { featuredVisibility, filterDresses, type OccasionFilter } from '../lib/filters';
+import { featuredVisibility, filterDresses, type StyleFilter } from '../lib/filters';
 import { DressCard } from './dress-card';
-import { OccasionChips } from './occasion-chips';
+import { StyleChips } from './style-chips';
 
 function DressGrid({ dresses, visibility }: { dresses: PublicDressSummary[]; visibility: (i: number) => string }) {
   const t = useTranslations('catalog.filter');
@@ -31,7 +31,7 @@ function DressGrid({ dresses, visibility }: { dresses: PublicDressSummary[]; vis
  */
 export function FeaturedCollection({ dresses }: { dresses: PublicDressSummary[] }) {
   const t = useTranslations('catalog.featured');
-  const [filter, setFilter] = useState<OccasionFilter>('all');
+  const [filter, setFilter] = useState<StyleFilter>('all');
   return (
     <section
       id="bo-suu-tap"
@@ -53,7 +53,7 @@ export function FeaturedCollection({ dresses }: { dresses: PublicDressSummary[] 
             {t('viewAll')} <ChevronRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
         </div>
-        <OccasionChips value={filter} onChange={setFilter} className="order-1 xl:order-2 xl:ml-auto" />
+        <StyleChips value={filter} onChange={setFilter} className="order-1 xl:order-2 xl:ml-auto" />
       </div>
       <DressGrid dresses={filterDresses(dresses, filter)} visibility={featuredVisibility} />
     </section>
@@ -62,10 +62,10 @@ export function FeaturedCollection({ dresses }: { dresses: PublicDressSummary[] 
 
 /** /bo-suu-tap: every dress, chips under the page title, no hidden cards. */
 export function CatalogBrowser({ dresses }: { dresses: PublicDressSummary[] }) {
-  const [filter, setFilter] = useState<OccasionFilter>('all');
+  const [filter, setFilter] = useState<StyleFilter>('all');
   return (
     <div className="flex flex-col gap-space-md">
-      <OccasionChips value={filter} onChange={setFilter} />
+      <StyleChips value={filter} onChange={setFilter} />
       <DressGrid dresses={filterDresses(dresses, filter)} visibility={() => 'flex'} />
     </div>
   );

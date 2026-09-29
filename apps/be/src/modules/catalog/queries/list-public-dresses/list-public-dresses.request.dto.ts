@@ -1,13 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
-import { OCCASIONS, Occasion } from '../../domain/occasion.value-object';
+import { STYLES, Style } from '../../domain/style.value-object';
 
 export class ListPublicDressesRequestDto {
-  @ApiPropertyOptional({ enum: OCCASIONS, description: 'Only listings that include this occasion' })
+  @ApiPropertyOptional({ enum: STYLES, description: 'Only listings that include this style' })
   @IsOptional()
-  @IsIn(OCCASIONS)
-  readonly occasion?: Occasion;
+  @IsIn(STYLES)
+  readonly style?: Style;
 
   @ApiPropertyOptional({ minimum: 1, maximum: 500, description: 'Omit for every visible listing' })
   @IsOptional()

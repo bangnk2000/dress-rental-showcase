@@ -16,7 +16,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { LISTING_SLUG_PATTERN } from '../../domain/listing-slug.value-object';
-import { OCCASIONS, Occasion } from '../../domain/occasion.value-object';
+import { STYLES, Style } from '../../domain/style.value-object';
 import { ListingSpecsRequestDto } from '../../dtos/listing-specs.request.dto';
 
 /**
@@ -53,14 +53,14 @@ export class UpdateListingRequestDto {
   @Length(0, 2000)
   readonly description?: string;
 
-  @ApiPropertyOptional({ enum: OCCASIONS, isArray: true })
+  @ApiPropertyOptional({ enum: STYLES, isArray: true })
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(OCCASIONS.length)
+  @ArrayMaxSize(STYLES.length)
   @ArrayUnique()
-  @IsIn(OCCASIONS, { each: true })
-  readonly occasions?: Occasion[];
+  @IsIn(STYLES, { each: true })
+  readonly styles?: Style[];
 
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'VND; null clears it' })
   @IsOptional()
