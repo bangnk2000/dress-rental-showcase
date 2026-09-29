@@ -12,7 +12,7 @@
 | Liên quan | [dress-photo-upload.md](./dress-photo-upload.md) (ảnh R2 + Cloudflare Images — làm TRƯỚC; form mẫu dùng lại ô ảnh của nó) · [web/public-pages.md](../web/public-pages.md) §4 (change request nháp này thay thế) · [public-web.md](../public-web.md) §4 |
 
 > Vì sao là design-tier: aggregate mới + invariant mới (slug duy nhất và khoá sau khi đăng, mẫu đã
-> đăng phải có ảnh, dịp thuộc tập cố định) + state transition (nháp ↔ đã đăng) + quyền có điều kiện
+> đăng phải có ảnh, loại thuộc tập cố định) + state transition (nháp ↔ đã đăng) + quyền có điều kiện
 > (xoá) + **API ẩn danh đầu tiên** của BE (cross-context contract với `apps/web`, bề mặt rò rỉ mới).
 
 ### Vì sao có aggregate riêng, không thêm cột vào `dresses`
@@ -27,7 +27,7 @@ chủ tiệm chốt). Size, giá, "còn/hết" trên web đều **suy ra** từ 
 
 | Term | Meaning | Notes |
 | --- | --- | --- |
-| Mẫu công khai (`listing`) | Nội dung một mẫu váy trên website: tên, slug, tagline, mô tả, các dịp, giá bán tham khảo, thông số, ảnh, cờ Hot, trạng thái đăng | bảng `dress_listings` |
+| Mẫu công khai (`listing`) | Nội dung một mẫu váy trên website: tên, slug, tagline, mô tả, các loại, giá bán tham khảo, thông số, ảnh, cờ Hot, trạng thái đăng | bảng `dress_listings` |
 | Váy thuộc mẫu | Cặp (mẫu, váy) trong `dress_listing_items`. Một váy thuộc **0..n** mẫu | chủ tiệm chốt 2026-09-25 |
 | Đã đăng (`published`) | `published_at IS NOT NULL`. Chỉ mẫu đã đăng **và có ≥ 1 váy `active`** mới hiện trên web | nháp ↔ đã đăng, đổi được hai chiều |
 | Đã từng đăng | `first_published_at IS NOT NULL` — không bao giờ quay về NULL | khoá slug (R2) |
@@ -50,19 +50,19 @@ Use cases (MỘT feature — màn CMS "Website" cần đủ bộ):
     DeleteListing      DELETE /listings/:id                — owner: luôn được; staff: chỉ mẫu CHƯA TỪNG đăng (§6.M)
   Reads (nhân viên):   GET /listings · GET /listings/:id
   Reads (ẨN DANH, @Public()):
-    GET /public/dresses?occasion=&limit=     → PublicDressSummary[]
+    GET /public/dresses?style=&limit=     → PublicDressSummary[]
     GET /public/dresses/:slug                → PublicDressDetail | 404 envelope
 
 Business input (Create; Update = mọi field tuỳ chọn):
   name (1–120) · slug? (bỏ trống → BE sinh từ name: bỏ dấu tiếng Việt, đ→d, a-z0-9 nối '-') ·
-  tagline (≤ 160) · description (≤ 2000) · occasions (1..6 mã, không trùng) ·
-  retailPrice (≥ 0, VND, nullable) · specs { material, silhouette, length, color, occasionsText }
+  tagline (≤ 160) · description (≤ 2000) · styles (1..6 mã, không trùng) ·
+  retailPrice (≥ 0, VND, nullable) · specs { material, silhouette, length, color, stylesText }
   (mỗi ô ≤ 120, nullable) · photoUrls (0..10 url, ảnh đầu = bìa) · isHot (bool)
 
 Business flow:
   CreateListing
     1. Guard listing:manage                                 → 403 envelope (guard)
-    2. VO: slug sai định dạng / dịp lạ / 0 dịp / giá âm     → 400 envelope
+    2. VO: slug sai định dạng / loại lạ / 0 loại / giá âm     → 400 envelope
     3. Pre-check slug trùng                                 → rejected_listing_slug_taken { slug }
     4. INSERT (nháp); UNIQUE(slug) bắn khi thua race        → rejected_listing_slug_taken { slug } (CÙNG outcome)
   UpdateListing
@@ -96,7 +96,7 @@ Domain rules / invariants:
   R1 slug duy nhất, định dạng ^[a-z0-9]+(-[a-z0-9]+)*$, ≤ 80 ký tự.
   R2 slug KHÔNG đổi được sau lần đăng đầu tiên (chủ tiệm chốt — link đã chia sẻ không được 404).
   R3 Mẫu đang đăng luôn có ≥ 1 ảnh.
-  R4 Mẫu có ≥ 1 dịp, mọi dịp thuộc tập cố định.
+  R4 Mẫu có ≥ 1 loại, mọi loại thuộc tập cố định.
   R5 Web CHỈ thấy mẫu published_at IS NOT NULL VÀ có ≥ 1 váy active. Váy bị retire sau khi đăng →
      mẫu tự biến mất khỏi web khi hết váy active (không phải lỗi, không tự unpublish).
   R6 DTO công khai là WHITELIST: không `id` nội bộ, không `code`, `notes`, `depositAmount`,
@@ -133,7 +133,7 @@ outcome — web chỉ cần phân biệt "có" và "không".
 | R1 slug duy nhất | `ListingSlug` VO + pre-check | `UNIQUE (slug)` + `CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$')` | `rejected_listing_slug_taken` | e2e: API 422, 2 create song song → 1 thắng, INSERT thẳng bị chặn |
 | R2 slug khoá | entity | UPDATE `… WHERE first_published_at IS NULL` (điều kiện nằm trong câu ghi) | `rejected_listing_slug_locked` | e2e: đổi sau publish → 422; publish ∥ đổi slug → không bao giờ vừa đăng vừa đổi |
 | R3 đăng ⇒ có ảnh | entity | `CHECK (published_at IS NULL OR cardinality(photo_urls) >= 1)` | `rejected_listing_photo_required` / `not_publishable` | e2e: API + UPDATE thẳng bị CHECK |
-| R4 dịp hợp lệ | `Occasion` VO | `CHECK (cardinality(occasions) >= 1 AND occasions <@ ARRAY['gala',…]::text[])` | 400 envelope | e2e: INSERT rác bị CHECK |
+| R4 loại hợp lệ | `Style` VO | `CHECK dress_listings_styles_check (cardinality(styles) >= 1 AND styles <@ ARRAY['short',…]::text[])` | 400 envelope | e2e: INSERT rác bị CHECK; migration e2e trên dữ liệu cũ |
 | Cặp (mẫu, váy) không trùng | set trong entity | `PRIMARY KEY (listing_id, dress_id)`, FK → listings `ON DELETE CASCADE`, FK → dresses `ON DELETE RESTRICT` | — | e2e: INSERT trùng bị PK |
 | R8 staff xoá | service theo `actorRole` | DELETE `… WHERE first_published_at IS NULL` cho staff | 403 outcome | e2e: staff 403 + DB còn mẫu; owner 204 |
 | Giá bán ≥ 0 | `Money` VO | `CHECK (retail_price >= 0)` | 400 envelope | unit VO |
@@ -142,20 +142,20 @@ outcome — web chỉ cần phân biệt "có" và "không".
 ### Contract (draft)
 
 ```text
-PublicDressSummary { slug, name, tagline, occasions: Occasion[], badge: 'available'|'new'|'hot',
+PublicDressSummary { slug, name, tagline, styles: Style[], badge: 'available'|'new'|'hot',
                      rentalPrice /* VND — web ghi "/ 2 ngày" */, retailPrice: number|null,
                      cover: { src, alt } }
 PublicDressDetail  = Summary + { description, images: { src, alt }[], sizes: { label, available }[],
-                     specs: { material, silhouette, length, color, occasions } /* string|null từng ô */ }
+                     specs: { material, silhouette, length, color, styles } /* string|null từng ô */ }
 ```
 
-Khác mock: `occasion` → `occasions[]`; bỏ `occasionLabel` (web dịch từ mã — nhãn giữ như mock);
+Khác mock: `style` → `styles[]`; bỏ `styleLabel` (web dịch từ mã, `catalog.filter.<code>`);
 `rentalPricePerDay` → `rentalPrice` (giá một lượt 2 ngày, không phải giá/ngày); `retailPrice`
 nullable. `src` là URL gốc (R2 hoặc link cũ) — việc tối ưu ảnh làm ở phía hiển thị
 ([dress-photo-upload.md](./dress-photo-upload.md) §Phân phối ảnh). `alt` do BE sinh: `"<name>"` cho
 bìa, `"<name> — ảnh <n>"` cho ảnh sau. Thứ tự list: **Hot trước**, rồi `first_published_at` mới
-nhất. `?occasion=` lọc mẫu có chứa dịp đó. Header `Cache-Control: public, max-age=60`. Váy liên
-quan: web tự tính từ list (cùng ít nhất một dịp trước) — không thêm endpoint. Size: XS, S, M, L,
+nhất. `?style=` lọc mẫu có chứa loại đó. Header `Cache-Control: public, max-age=60`. Váy liên
+quan: web tự tính từ list (cùng ít nhất một loại trước) — không thêm endpoint. Size: XS, S, M, L,
 XL, rồi size tự do theo abc, "Freesize" cuối.
 
 `ListingDto` (CMS) = mọi field của mẫu + `publishedAt`, `firstPublishedAt`, `dresses: { id, code,
@@ -170,14 +170,14 @@ name, sizeLabel, rentalPrice, status }[]` (một call đủ vẽ màn sửa). `D
 | --- | --- | --- |
 | loading | query list | skeleton bảng |
 | empty | 0 mẫu | "Chưa có mẫu nào trên website" + nút **Tạo mẫu** |
-| list | ≥ 1 | ảnh bìa, tên, các dịp, số size còn, badge **Nháp / Đã đăng / Ẩn (hết váy)**; bấm → sửa |
+| list | ≥ 1 | ảnh bìa, tên, các loại, số size còn, badge **Nháp / Đã đăng / Ẩn (hết váy)**; bấm → sửa |
 | error | 5xx / mạng | RouteBoundary retry |
 
 ### `/website/new` và `/website/:id` — form mẫu
 
 | State | Condition | Display / action |
 | --- | --- | --- |
-| idle | — | tên (slug tự điền, sửa được khi chưa từng đăng), tagline, mô tả, **dịp (chọn nhiều, ≥ 1)**, giá bán, 5 ô thông số, **ô ảnh dùng chung** (upload R2 / thêm link / sắp xếp / bìa = ảnh đầu), công tắc Hot |
+| idle | — | tên (slug tự điền, sửa được khi chưa từng đăng), tagline, mô tả, **loại (chọn nhiều, ≥ 1)**, giá bán, 5 ô thông số, **ô ảnh dùng chung** (upload R2 / thêm link / sắp xếp / bìa = ảnh đầu), công tắc Hot |
 | slug khoá | `firstPublishedAt` ≠ null | ô slug chỉ đọc + chú thích "Đã đăng — không đổi được link" |
 | gắn váy | section "Size & váy" | picker tìm váy theo mã/tên; nút **"Gắn cả nhóm mã"** thêm `<code>` + mọi `<code>_n`; bảng size với trạng thái active/retired |
 | lệch giá | các váy gắn vào khác `rentalPrice` | cảnh báo vàng "Các size đang khác giá — web hiện giá thấp nhất" (không chặn) |
@@ -197,7 +197,7 @@ name, sizeLabel, rentalPrice, status }[]` (một call đủ vẽ màn sửa). `D
 
 ### Web (`apps/web`) — entry `web:public-catalog-live`, không nằm trong feature này
 
-Chip lọc: mẫu khớp khi `occasions` giao với tập của chip. 404 slug → trang 404 tiếng Việt đã có.
+Chip lọc: mẫu khớp khi `styles` giao với tập của chip. 404 slug → trang 404 tiếng Việt đã có.
 BE sập lúc revalidate → ISR giữ bản cũ.
 
 ## 4. FE data needs
@@ -216,8 +216,8 @@ BE sập lúc revalidate → ISR giữ bản cũ.
 | R1 slug | e2e: 422, race 2 create, INSERT thẳng; unit slugify (dấu tiếng Việt, đ→d) | vitest: lỗi dưới ô slug |
 | R2 slug khoá | e2e: đổi sau publish → 422; unpublish rồi đổi vẫn 422 | vitest: ô chỉ đọc |
 | R3 ảnh | e2e: xoá hết ảnh mẫu đang đăng → 422; UPDATE thẳng bị CHECK | vitest |
-| R4 dịp | e2e: 0 dịp / dịp lạ → 400; INSERT rác bị CHECK | vitest: chọn nhiều |
-| R5 hiển thị | e2e: nháp → 404 public; đăng → 200; retire váy cuối → 404; không token → 200; `?occasion=` lọc đúng mẫu nhiều dịp | — |
+| R4 loại | e2e: 0 loại / loại lạ → 400; INSERT rác bị CHECK | vitest: chọn nhiều |
+| R5 hiển thị | e2e: nháp → 404 public; đăng → 200; retire váy cuối → 404; không token → 200; `?style=` lọc đúng mẫu nhiều loại | — |
 | R6 whitelist | e2e: so ĐÚNG tập key Summary/Detail | — |
 | R7 nhân bản | e2e: váy thuộc 2 mẫu → bản sao thuộc cả 2, size mới hiện ở public detail | — |
 | R8 xoá | e2e: staff xoá mẫu đã đăng → 403 + mẫu còn; staff xoá nháp → 204; owner xoá mẫu đang đăng → 204 | vitest: cảnh báo owner, disabled staff |
@@ -234,7 +234,7 @@ BE sập lúc revalidate → ISR giữ bản cũ.
 | A | Giá thuê hiển thị | **"X / 2 ngày"**; các size **cùng giá** (không "từ X") |
 | B | Size còn/hết | **Chỉ xét váy `active`**, không xét lịch |
 | C | Badge | `new` = đăng ≤ 30 ngày, `hot` = bật tay, còn lại `available` |
-| D | Dịp | **Tập 6 mã cố định**; một mẫu **nhiều dịp**; nhãn **giữ như mock** (tạm thời) |
+| D | Dịp → Loại (2026-09-30) | **Tập 6 mã cố định**; một mẫu **nhiều loại**; nhãn tiếng Việt chỉ trong file dịch (§Amendment 2026-09-30) |
 | E | Ai quản lý mẫu | **Mọi nhân viên** (kể cả đăng/ẩn) |
 | F | Ảnh | Upload thẳng từ CMS lên R2 + Cloudflare Images → [dress-photo-upload.md](./dress-photo-upload.md) |
 | G | Một váy thuộc mấy mẫu | **Nhiều mẫu** |
@@ -300,7 +300,7 @@ API, three clients); existing listings need not keep meaning.
 
 - Set: `short`, `silk`, `ao-dai`, `off-shoulder`, `sleeved`, `strappy-strapless` — labels
   "Váy ngắn", "Váy lụa", "Áo dài", "Váy trễ vai", "Váy che tay", "Váy hai dây, cúp ngực".
-- Rename everywhere the sections above say `occasion`: column `occasions` → `styles`,
+- Renamed (the sections above are updated to match): column `occasions` → `styles`,
   `occasions_text` → `styles_text`; `Occasion(s)` VO → `Style(s)` (`style.value-object.ts`);
   request/response field `occasions` → `styles`, `specs.occasionsText` → `specs.stylesText`,
   public `specs.occasions` → `specs.styles`; query `?occasion=` → `?style=`.

@@ -201,8 +201,8 @@ UNIQUE thành `CollectionConflictError`, service đọc lại sổ rồi trả �
 - Catalogue ẩn danh `GET /public/dresses` · `GET /public/dresses/:slug` (FR-WEB-05, 2026-09-29, spec
   [catalog/public-listing.md](../design/catalog/public-listing.md)): query, không có từ chối nghiệp
   vụ. Slug chưa đăng / hết váy `active` → **404 envelope** `GENERIC.NOT_FOUND` (web chỉ cần "có /
-  không"); `?occasion=` lạ → 400 `GENERIC.VALIDATION`; vượt rate limit → **429 envelope**
-  `GENERIC.HTTP` (chỉ `/public/*`, key theo IP client). Slug sai định dạng / dịp lạ / 0 dịp / giá
+  không"); `?style=` lạ → 400 `GENERIC.VALIDATION`; vượt rate limit → **429 envelope**
+  `GENERIC.HTTP` (chỉ `/public/*`, key theo IP client). Slug sai định dạng / loại lạ / 0 loại / giá
   âm trên các lệnh CMS `listing:*` là **input invalid** → 400 envelope, KHÔNG phải outcome.
 
 ## 4. UI state matrix (FE + qr-admin)
