@@ -496,6 +496,21 @@
         "catalog/public-listing",
         "catalog/listing-styles"
       ]
+    },
+    {
+      "id": "infra/web-standalone",
+      "title": "apps/web builds a standalone server (the deploy unit for the 2 GB VPS) + the production bind rule",
+      "status": "pass",
+      "testedAt": "2026-09-30",
+      "acceptance": [
+        "W1 `pnpm --filter web build` emits .next/standalone/apps/web/server.js that serves the site with no pnpm install beside it",
+        "W2 behind a reverse proxy (Host example.com + X-Forwarded-Proto https) every locale-rewritten page answers 200, not 307/500",
+        "W3 web gates unchanged: check, lint, arch, test"
+      ],
+      "evidence": "2026-09-30: next.config.ts output 'standalone' + outputFileTracingRoot = monorepo root + poweredByHeader false; apps/web/.env.example documents NEXT_PUBLIC_IMAGE_BASE_URL (build-time inlined). W1: SITE_URL=https://example.com NEXT_PUBLIC_IMAGE_BASE_URL=https://img.example.com API_URL=http://127.0.0.1:3000 pnpm --filter web build → route table unchanged (3 slugs prerendered from the dev BE), standalone 43 MB, `node server.js` rss ~102 MB; robots.txt carries Sitemap https://example.com/sitemap.xml. W2: found that binding HOSTNAME=127.0.0.1 (standalone AND plain `next start --hostname 127.0.0.1`) makes the next-intl rewrite / → /vi target http(s)://localhost:<port>, which Next proxies as an external origin → 307 to the same URL, and 500 EPROTO once X-Forwarded-Proto: https is sent; HOSTNAME=localhost (or 0.0.0.0) → 200 65 KB for /bo-suu-tap/<slug> under plain, Host example.com, +X-Forwarded-Proto https, +X-Forwarded-Host. Rule recorded in docs/design/public-web.md §1 Hosting and apps/web/AGENTS.md. Note: the standalone dir also copies a local apps/web/.env — the deploy must drop it. W3: web check 0, lint 0, arch 7/7, vitest 33/33.",
+      "dependencies": [
+        "web:public-catalog-live"
+      ]
     }
   ]
 }

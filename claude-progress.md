@@ -3,6 +3,10 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-30 (39) — owner ask "lên kế hoạch triển khai web + tính năng mới bên CMS", web on the apex
+  `example.com`: `infra/web-standalone` = pass (43/43). `output: 'standalone'` (43 MB, ~100 MB rss),
+  bind rule HOSTNAME=localhost (127.0.0.1 → 307 loop / 500 behind https proxy). web gates green.
+  PR #22. Deploy runbook §11 + scripts written outside the repo (`~/deploy-dress/tencent/`). Not deployed.
 - 2026-09-30 (38) — owner ask "tool tạo hàng loạt mẫu trên website từ váy mã VAY":
   `be:listings-from-dresses` = pass (42/42). CLI, one draft listing per code group, styles from
   name keywords (fallback silk), re-run safe. be unit 288; dev DB 95 created, re-run 0. PR #21 (Codex round 2 APPROVE). Not run on prod.

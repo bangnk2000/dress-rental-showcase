@@ -15,7 +15,7 @@ process. It MUST NOT import another app's source (root invariant 4).
 | Command | What |
 | --- | --- |
 | `pnpm --filter web dev` | Next dev server on **:3001** (`/api/v1/*` rewritten to `API_URL`, default :3000) |
-| `pnpm --filter web build` / `start` | production build (its route table is the rendering truth) / serve on :3001 |
+| `pnpm --filter web build` / `start` | production build (its route table is the rendering truth; also emits `.next/standalone`, the deploy unit) / serve on :3001. Production runs `HOSTNAME=localhost node server.js` from the standalone dir — never bind `127.0.0.1` (`docs/design/public-web.md` §1 Hosting) |
 | `pnpm --filter web check` / `lint` / `arch` / `test` | `next typegen && tsc`, eslint (boundaries v7), `scripts/check-architecture.sh` (7 checks), vitest |
 | `pnpm --filter web generate:api` | Orval: `packages/contract/openapi.json` → `src/api/generated/` |
 | `pnpm contract` (root) | after ANY BE API change: re-emit the spec and regenerate ALL clients |

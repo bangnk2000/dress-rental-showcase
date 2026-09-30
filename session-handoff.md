@@ -1,5 +1,34 @@
 # Session Handoff
 
+## 2026-09-30 (39) — web deploy unit (`infra/web-standalone` = pass, PR #22) + release plan
+
+- Done: owner ask "lên kế hoạch các bước triển khai web và tính năng mới bên cms"; owner chose the
+  APEX `example.com` for `apps/web` (the site currently there gets replaced at the DNS switch).
+  Repo: `next.config.ts` `output: 'standalone'` + `outputFileTracingRoot` (monorepo root) +
+  `poweredByHeader: false`; `.env.example` documents `NEXT_PUBLIC_IMAGE_BASE_URL`.
+- Found: binding `HOSTNAME=127.0.0.1` (standalone AND `next start --hostname 127.0.0.1`) makes the
+  next-intl rewrite `/` → `/vi` target `localhost:<port>` → Next proxies it as external → 307 to the
+  same URL, 500 EPROTO behind `X-Forwarded-Proto: https`. `HOSTNAME=localhost` → 200 everywhere.
+  Recorded in `docs/design/public-web.md` §1 Hosting + `apps/web/AGENTS.md`.
+- Out of repo (`~/deploy-dress/tencent/`, backup `tencent.bak-20260930`): RUNBOOK §11 (Cloudflare
+  M1–M6 for the prod photo bucket, wave 1 BE+CMS, listings data, wave 2 web, rollback);
+  new `media-setup.sh` (photo token stored as `MEDIA_R2_*` — `R2_*` in the secrets file is the
+  BACKUP token), `webbuild.sh` (build in WSL through an ssh tunnel to the prod API, pm2 `dress-web`),
+  `serve-remote.sh` web vhost with `/api/` closed (the Next rewrite would reach the BE from loopback
+  = throttler-exempt). nginx config checked with `nginx -t` in a container; nothing run on the VPS.
+- Next: the release lane FIRST — readiness pack `docs/releases/<release-id>/` (init-release; the
+  versioned record of readiness, waves, rollback — the runbook stays the machine-specific
+  executor). Then owner does Cloudflare M1–M6 → RUNBOOK §11.2 wave 1 → §11.3 listings tool
+  (`--dry-run` first, fix dress names before) → §11.4 wave 2 + DNS apex + `tls.sh example.com`,
+  recording each step in the pack's rollout record.
+- Watch out:
+  - `next build` copies a local `apps/web/.env` into `.next/standalone/apps/web/` — `webbuild.sh`
+    deletes it; any other deploy path must too.
+  - `API_URL`, `SITE_URL`, `NEXT_PUBLIC_IMAGE_BASE_URL` are frozen at build (rewrite target, sitemap,
+    image loader) — changing any = rebuild.
+  - Wave-1 rollback is code-only: the two listings migrations only CREATE tables, so `2ca3e8b` runs
+    on the migrated DB (`DEPLOY_REF=2ca3e8b` in `sync.sh`/`febuild.sh`).
+
 ## 2026-09-30 (38) — bulk listings tool (`be:listings-from-dresses` = pass, PR #21 → master)
 
 - Done: `pnpm --filter be listings:from-dresses [--prefix VAY] [--dry-run]` — one DRAFT listing per

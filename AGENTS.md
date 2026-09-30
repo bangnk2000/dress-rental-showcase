@@ -33,7 +33,7 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 
 ## Current state (re-sync at every session end — see Session rules)
 
-**As of 2026-09-30 · `feature_list.json` is 42/42 `pass`; latest `be:listings-from-dresses` (CLI `pnpm --filter be listings:from-dresses` — one DRAFT website listing per `VAY*` code group, re-run safe; PR #21, Codex round 2 APPROVE) — next: the release lane (listings migrations + web process + nginx on the VPS; nothing since photo upload deployed), then run the tool there with `--dry-run` first.**
+**As of 2026-09-30 · `feature_list.json` is 43/43 `pass`; latest `infra/web-standalone` (`apps/web` builds `.next/standalone` = the VPS deploy unit; production binds `HOSTNAME=localhost`, never `127.0.0.1`; PR #22) — next: the release lane (owner chose the apex `example.com` for the web) — FIRST the versioned readiness pack `docs/releases/<release-id>/` (readiness, rollout waves, rollback: wave 1 BE+CMS with the listings migrations + R2 photo bucket, listings data, wave 2 web), THEN execute it with the machine-specific out-of-repo runbook `~/deploy-dress/tencent/RUNBOOK.md` §11; nothing since photo upload is deployed yet.**
 This section stays a MAP, not a description — each row's detail lives in the doc it points at.
 
 | Area | State | Detail lives in |
