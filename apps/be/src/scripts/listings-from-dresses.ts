@@ -5,8 +5,9 @@
  *   pnpm --filter be listings:from-dresses [--prefix VAY] [--dry-run]
  *
  * Needs the real DB (.env). The planner (`modules/catalog/import/listings-from-dresses.ts`) decides
- * name, slug, styles and photos; each plan is dispatched through CreateListingService +
- * SetListingDressesService, so the slug/style/photo rules apply exactly as over HTTP. Never
+ * name, slug, styles and photos; `applyListingPlan` writes each one through CreateListingService +
+ * SetListingDressesService (a failed attach deletes the fresh draft), so the slug/style/photo
+ * rules apply exactly as over HTTP. Never
  * publishes — staff review and publish in /website. A group with any dress already in a listing
  * is SKIPPED, so re-running after new dresses arrive only adds the new groups (idempotent).
  * Exit 0 = everything created/skipped; 1 = some groups failed.
@@ -21,12 +22,18 @@ import { AppModule } from '../app.module';
 import { DB_POOL } from '../libs/db/db.di-tokens';
 import { CreateListingCommand } from '../modules/catalog/commands/create-listing/create-listing.command';
 import { CreateListingService } from '../modules/catalog/commands/create-listing/create-listing.service';
+import { DeleteListingCommand } from '../modules/catalog/commands/delete-listing/delete-listing.command';
+import { DeleteListingService } from '../modules/catalog/commands/delete-listing/delete-listing.service';
 import { SetListingDressesCommand } from '../modules/catalog/commands/set-listing-dresses/set-listing-dresses.command';
 import { SetListingDressesService } from '../modules/catalog/commands/set-listing-dresses/set-listing-dresses.service';
 import {
   ListingPlan,
   planListingsFromDresses,
 } from '../modules/catalog/import/listings-from-dresses';
+import {
+  ListingPlanWriter,
+  applyListingPlan,
+} from '../modules/catalog/import/apply-listing-plan';
 import { listingRefsByDress } from '../modules/catalog/queries/dress-listing-refs';
 
 /* eslint-disable no-console */
@@ -117,16 +124,11 @@ async function main(): Promise<void> {
 
   const createListing = app.get(CreateListingService);
   const setListingDresses = app.get(SetListingDressesService);
-  const failures: string[] = [];
-  let created = 0;
-
-  for (const plan of plans) {
-    if (dryRun) {
-      console.log(`  + ${describe(plan)}`);
-      continue;
-    }
-    try {
-      const createdResult = await createListing.execute(
+  const deleteListing = app.get(DeleteListingService);
+  const writer: ListingPlanWriter = {
+    listedDressIds: async (dressIds) => new Set((await listingRefsByDress(pool, dressIds)).keys()),
+    create: (plan) =>
+      createListing.execute(
         new CreateListingCommand({
           name: plan.name,
           slug: plan.slug,
@@ -138,27 +140,33 @@ async function main(): Promise<void> {
           photoUrls: plan.photoUrls,
           isHot: false,
         }),
-      );
-      if (createdResult.isErr()) {
-        failures.push(`${plan.baseCode}: ${createdResult.unwrapErr().message}`);
-        continue;
-      }
-      const listingId = createdResult.unwrap();
-      const attached = await setListingDresses.execute(
-        new SetListingDressesCommand({ listingId, dressIds: plan.dressIds }),
-      );
-      if (attached.isErr()) {
-        // The draft exists but holds no dress — name it so staff can attach or delete it.
-        failures.push(
-          `${plan.baseCode}: mẫu ${listingId} đã tạo nhưng chưa gắn váy — ${attached.unwrapErr().message}`,
-        );
-        continue;
-      }
+      ),
+    attach: (listingId, dressIds) =>
+      setListingDresses.execute(new SetListingDressesCommand({ listingId, dressIds })),
+    // Staff rules on purpose: a staff delete refuses anything ever published (R8), so the
+    // compensation can only ever remove the draft this run just made.
+    discard: (listingId) =>
+      deleteListing.execute(new DeleteListingCommand({ listingId, actorRole: 'staff' })),
+  };
+
+  const failures: string[] = [];
+  let created = 0;
+  let lateSkipped = 0;
+
+  for (const plan of plans) {
+    if (dryRun) {
+      console.log(`  + ${describe(plan)}`);
+      continue;
+    }
+    const outcome = await applyListingPlan(plan, writer);
+    if (outcome.kind === 'created') {
       created += 1;
       console.log(`  + ${describe(plan)}`);
-    } catch (error) {
-      // VO validation (e.g. a name the entity refuses) throws — report and continue.
-      failures.push(`${plan.baseCode}: ${(error as Error).message}`);
+    } else if (outcome.kind === 'skipped') {
+      lateSkipped += 1;
+      console.log(`  = ${plan.baseCode} (${plan.codes.join(', ')}) bỏ qua: ${outcome.reason}`);
+    } else {
+      failures.push(`${plan.baseCode}: ${outcome.message}`);
     }
   }
   await app.close();
@@ -166,7 +174,7 @@ async function main(): Promise<void> {
   const defaulted = plans.filter((plan) => plan.stylesDefaulted).length;
   console.log(
     `${dryRun ? 'would create' : 'created'}=${dryRun ? plans.length : created}` +
-      ` skipped=${skipped.length} failed=${failures.length}` +
+      ` skipped=${skipped.length + lateSkipped} failed=${failures.length}` +
       (defaulted > 0 ? ` · ${defaulted} mẫu loại mặc định "silk" (đánh dấu *) — sửa trong /website` : ''),
   );
   for (const failure of failures) console.error(`  ! ${failure}`);
