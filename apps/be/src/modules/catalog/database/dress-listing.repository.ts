@@ -223,6 +223,17 @@ export class DressListingRepository implements DressListingRepositoryPort {
     return result.rowCount;
   }
 
+  async deleteIfUntouched(listingId: AggregateID): Promise<number> {
+    const result = await this.pool.query(sql.unsafe`
+      DELETE FROM dress_listings l
+      WHERE l.id = ${listingId}
+        AND l.first_published_at IS NULL
+        AND l.updated_at = l.created_at
+        AND NOT EXISTS (SELECT 1 FROM dress_listing_items i WHERE i.listing_id = l.id)
+    `);
+    return result.rowCount;
+  }
+
   private async exists(id: AggregateID): Promise<boolean> {
     const { exists } = await this.pool.one(
       sql.type(existsSchema)`

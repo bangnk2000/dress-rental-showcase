@@ -485,6 +485,17 @@
         "catalog/listing-styles",
         "web:public-pages"
       ]
+    },
+    {
+      "id": "be:listings-from-dresses",
+      "title": "CLI tool: bulk-create DRAFT website listings from the catalog, one per dress code group (default prefix VAY)",
+      "status": "pass",
+      "testedAt": "2026-09-30",
+      "evidence": "2026-09-30, owner ask \"tool tạo hàng loạt mẫu trên website dựa vào các váy mã VAY\". Owner decisions: CLI script (not a CMS button), drafts only (never publishes), styles from name keywords (có tay/choàng→sleeved, 2|hai dây/cúp ngực/yếm→strappy-strapless, trễ|lệch vai→off-shoulder, lụa→silk, ngắn→short, áo dài→ao-dai), no keyword → silk (flagged *). Pure planner src/modules/catalog/import/listings-from-dresses.ts (group by DressCode.baseOf, base first then copies numerically; name = capitalized dress name; slug = slugify(name) → + base code → base code, de-duplicated against dress_listings AND within the run; photos = union, max 10; group skipped when any dress is already in a listing (re-run safe) or none is active) + script src/scripts/listings-from-dresses.ts (exact-char prefix via left(), dispatches CreateListingService + SetListingDressesService, --prefix/--dry-run, exit 1 on failures) + package script listings:from-dresses. No API/contract change. Proof: be build 0, lint 0, arch 0 violations, be unit 280/280 (+8 planner spec); dev DB (138 VAY dresses, 98 groups): --dry-run lists 95 plans + 3 skipped (already listed), real run created=95 skipped=3 failed=0 (all drafts; VAY63 group = 6 dresses attached; set-vay-kami styles {silk}), re-run created=0 skipped=98; unknown arg → exit 2. Write path apply-listing-plan.ts (membership re-read right before each create; a failed attach is compensated by the new port method DressListingRepositoryPort.deleteIfUntouched — ONE DELETE guarded by never-published + no item + updated_at = created_at, else the draft is kept and reported). be unit 288/288 (+7 apply-listing-plan spec); runtime proof on dev Postgres: untouched → 1 deleted, attached → 0, attached-then-detached → 0, edited → 0. PR #21: Codex round 0 → C1 P2 (stale membership read) PARTIAL: re-check fixed 32ea57e, transaction rebutted (multi-membership legal, §6.G) → accepted P3; C2 P2 (orphan draft on failed attach) fixed 32ea57e → round 1 objected P1 (staff delete could remove a touched draft) → fixed fb38643 → round 2 APPROVE. Not run on production: the VPS has no listings migration yet (release lane).",
+      "dependencies": [
+        "catalog/public-listing",
+        "catalog/listing-styles"
+      ]
     }
   ]
 }

@@ -1,0 +1,186 @@
+/**
+ * Bulk-create website listings (mẫu) from the catalog — one DRAFT listing per dress code group
+ * (`VAY02` + `VAY02_1` + `VAY02_2` → one listing with three sizes):
+ *
+ *   pnpm --filter be listings:from-dresses [--prefix VAY] [--dry-run]
+ *
+ * Needs the real DB (.env). The planner (`modules/catalog/import/listings-from-dresses.ts`) decides
+ * name, slug, styles and photos; `applyListingPlan` writes each one through CreateListingService +
+ * SetListingDressesService (a failed attach deletes the fresh draft unless someone touched it),
+ * so the slug/style/photo rules apply exactly as over HTTP. Never publishes — staff review and
+ * publish in /website. A group with any dress already in a listing
+ * is SKIPPED, so re-running after new dresses arrive only adds the new groups (idempotent).
+ * Exit 0 = everything created/skipped; 1 = some groups failed.
+ */
+// Quiet the per-command domain-event logging; an exported LOG_LEVEL still wins.
+process.env.LOG_LEVEL ??= 'warn';
+
+import { NestFactory } from '@nestjs/core';
+import { DatabasePool, sql } from 'slonik';
+import { z } from 'zod';
+import { AppModule } from '../app.module';
+import { DB_POOL } from '../libs/db/db.di-tokens';
+import {
+  DRESS_LISTING_REPOSITORY,
+  DressListingRepositoryPort,
+} from '../modules/catalog/application/ports/dress-listing.repository.port';
+import { CreateListingCommand } from '../modules/catalog/commands/create-listing/create-listing.command';
+import { CreateListingService } from '../modules/catalog/commands/create-listing/create-listing.service';
+import { SetListingDressesCommand } from '../modules/catalog/commands/set-listing-dresses/set-listing-dresses.command';
+import { SetListingDressesService } from '../modules/catalog/commands/set-listing-dresses/set-listing-dresses.service';
+import {
+  ListingPlan,
+  planListingsFromDresses,
+} from '../modules/catalog/import/listings-from-dresses';
+import {
+  ListingPlanWriter,
+  applyListingPlan,
+} from '../modules/catalog/import/apply-listing-plan';
+import { listingRefsByDress } from '../modules/catalog/queries/dress-listing-refs';
+
+/* eslint-disable no-console */
+
+const dressRowSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  status: z.enum(['active', 'retired']),
+  photo_urls: z.array(z.string()),
+});
+const slugRowSchema = z.object({ slug: z.string() });
+
+function parseArgs(argv: string[]): { prefix: string; dryRun: boolean } {
+  let prefix = 'VAY';
+  let dryRun = false;
+  const args = [...argv];
+  for (let arg = args.shift(); arg !== undefined; arg = args.shift()) {
+    if (arg === '--dry-run') dryRun = true;
+    else if (arg === '--prefix') prefix = args.shift() ?? '';
+    else if (arg.startsWith('--prefix=')) prefix = arg.slice('--prefix='.length);
+    else {
+      console.error(`Unknown argument '${arg}'`);
+      console.error('Usage: pnpm --filter be listings:from-dresses [--prefix VAY] [--dry-run]');
+      process.exit(2);
+    }
+  }
+  prefix = prefix.trim().toUpperCase(); // dress codes are stored uppercase (DressCode VO)
+  if (!prefix) {
+    console.error('--prefix must not be empty');
+    process.exit(2);
+  }
+  return { prefix, dryRun };
+}
+
+function describe(plan: ListingPlan): string {
+  const styles = plan.styles.join(',') + (plan.stylesDefaulted ? '*' : '');
+  return (
+    `${plan.baseCode} (${plan.codes.join(', ')}) → "${plan.name}" /${plan.slug}` +
+    ` [${styles}] ${plan.photoUrls.length} ảnh`
+  );
+}
+
+async function main(): Promise<void> {
+  const { prefix, dryRun } = parseArgs(process.argv.slice(2));
+
+  const app = await NestFactory.createApplicationContext(AppModule, {
+    logger: false,
+    abortOnError: false,
+  });
+  const pool = app.get<DatabasePool>(DB_POOL);
+
+  // Exact-character prefix (no LIKE: `_` is the duplicate separator, not a wildcard).
+  const dresses = await pool.any(sql.type(dressRowSchema)`
+    SELECT id, code, name, status, photo_urls FROM dresses
+    WHERE left(code, ${prefix.length}) = ${prefix}
+    ORDER BY code ASC
+  `);
+  const refs = await listingRefsByDress(
+    pool,
+    dresses.map((row) => row.id),
+  );
+  const takenSlugs = new Set(
+    (await pool.any(sql.type(slugRowSchema)`SELECT slug FROM dress_listings`)).map(
+      (row) => row.slug,
+    ),
+  );
+
+  const { plans, skipped } = planListingsFromDresses(
+    dresses.map((row) => ({
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      status: row.status,
+      photoUrls: row.photo_urls,
+      listingNames: (refs.get(row.id) ?? []).map((ref) => ref.name),
+    })),
+    takenSlugs,
+  );
+
+  console.log(
+    `${dresses.length} váy mã ${prefix}* → ${plans.length + skipped.length} nhóm` +
+      (dryRun ? ' (DRY RUN — không ghi gì)' : ''),
+  );
+  for (const group of skipped) {
+    console.log(`  = ${group.baseCode} (${group.codes.join(', ')}) bỏ qua: ${group.reason}`);
+  }
+
+  const createListing = app.get(CreateListingService);
+  const setListingDresses = app.get(SetListingDressesService);
+  const listingRepo = app.get<DressListingRepositoryPort>(DRESS_LISTING_REPOSITORY);
+  const writer: ListingPlanWriter = {
+    listedDressIds: async (dressIds) => new Set((await listingRefsByDress(pool, dressIds)).keys()),
+    create: (plan) =>
+      createListing.execute(
+        new CreateListingCommand({
+          name: plan.name,
+          slug: plan.slug,
+          tagline: '',
+          description: '',
+          styles: plan.styles,
+          retailPrice: null,
+          specs: { material: null, silhouette: null, length: null, color: null, stylesText: null },
+          photoUrls: plan.photoUrls,
+          isHot: false,
+        }),
+      ),
+    attach: (listingId, dressIds) =>
+      setListingDresses.execute(new SetListingDressesCommand({ listingId, dressIds })),
+    discardIfUntouched: async (listingId) => (await listingRepo.deleteIfUntouched(listingId)) > 0,
+  };
+
+  const failures: string[] = [];
+  let created = 0;
+  let lateSkipped = 0;
+
+  for (const plan of plans) {
+    if (dryRun) {
+      console.log(`  + ${describe(plan)}`);
+      continue;
+    }
+    const outcome = await applyListingPlan(plan, writer);
+    if (outcome.kind === 'created') {
+      created += 1;
+      console.log(`  + ${describe(plan)}`);
+    } else if (outcome.kind === 'skipped') {
+      lateSkipped += 1;
+      console.log(`  = ${plan.baseCode} (${plan.codes.join(', ')}) bỏ qua: ${outcome.reason}`);
+    } else {
+      failures.push(`${plan.baseCode}: ${outcome.message}`);
+    }
+  }
+  await app.close();
+
+  const defaulted = plans.filter((plan) => plan.stylesDefaulted).length;
+  console.log(
+    `${dryRun ? 'would create' : 'created'}=${dryRun ? plans.length : created}` +
+      ` skipped=${skipped.length + lateSkipped} failed=${failures.length}` +
+      (defaulted > 0 ? ` · ${defaulted} mẫu loại mặc định "silk" (đánh dấu *) — sửa trong /website` : ''),
+  );
+  for (const failure of failures) console.error(`  ! ${failure}`);
+  process.exit(failures.length > 0 ? 1 : 0);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

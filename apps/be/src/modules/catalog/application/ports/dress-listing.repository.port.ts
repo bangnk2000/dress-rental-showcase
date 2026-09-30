@@ -54,4 +54,12 @@ export interface DressListingRepositoryPort {
    * `AND first_published_at IS NULL` to the DELETE (R8 for staff). Returns the deleted row count.
    */
   delete(listingId: AggregateID, options: { onlyIfNeverPublished: boolean }): Promise<number>;
+
+  /**
+   * Deletes the listing ONLY while nobody has touched it since `insert` — never published, no
+   * attached dress, `updated_at = created_at` (insert writes both equal; every other write bumps
+   * updated_at). The condition lives IN the DELETE. Returns the deleted row count: 0 = touched
+   * (or gone) → keep it. The bulk tool's compensation for a failed attach (listings:from-dresses).
+   */
+  deleteIfUntouched(listingId: AggregateID): Promise<number>;
 }
