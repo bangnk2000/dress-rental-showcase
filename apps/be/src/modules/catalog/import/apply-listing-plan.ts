@@ -4,7 +4,8 @@
  *
  * Create and attach are two commands (two transactions), so a failed attach is compensated: the
  * fresh draft is discarded, otherwise the next run would not see the group as listed and would
- * create a second draft under a fallback slug.
+ * create a second draft under a fallback slug. The discard never removes staff work: a draft
+ * someone edited, attached to or published in between is kept and reported instead.
  */
 import { Result } from 'oxide.ts';
 import { ListingPlan } from './listings-from-dresses';
@@ -14,8 +15,11 @@ export interface ListingPlanWriter {
   listedDressIds(dressIds: string[]): Promise<ReadonlySet<string>>;
   create(plan: ListingPlan): Promise<Result<string, Error>>;
   attach(listingId: string, dressIds: string[]): Promise<Result<unknown, Error>>;
-  /** Deletes a never-published draft (the one `create` just made). */
-  discard(listingId: string): Promise<Result<unknown, Error>>;
+  /**
+   * Deletes the draft `create` just made ONLY if nobody touched it since (never published, no
+   * dress, no edit) — decided inside the DELETE. false = someone did: keep their work.
+   */
+  discardIfUntouched(listingId: string): Promise<boolean>;
 }
 
 export type ApplyListingPlanOutcome =
@@ -58,18 +62,13 @@ export async function applyListingPlan(
   }
   if (attachError === null) return { kind: 'created', listingId };
 
-  let discardError: string | null;
+  let message: string;
   try {
-    const discarded = await writer.discard(listingId);
-    discardError = discarded.isErr() ? discarded.unwrapErr().message : null;
+    message = (await writer.discardIfUntouched(listingId))
+      ? `gắn váy thất bại, đã xoá nháp vừa tạo — ${attachError}`
+      : `gắn váy thất bại; nháp ${listingId} đã có người sửa nên được GIỮ LẠI (xử lý tay trong /website) — ${attachError}`;
   } catch (error) {
-    discardError = messageOf(error);
+    message = `gắn váy thất bại VÀ không xoá được nháp ${listingId} (xử lý tay trong /website) — ${attachError}; ${messageOf(error)}`;
   }
-  return {
-    kind: 'failed',
-    message:
-      discardError === null
-        ? `gắn váy thất bại, đã xoá nháp vừa tạo — ${attachError}`
-        : `gắn váy thất bại VÀ không xoá được nháp ${listingId} (xoá tay trong /website) — ${attachError}; ${discardError}`,
-  };
+  return { kind: 'failed', message };
 }

@@ -6,9 +6,9 @@
  *
  * Needs the real DB (.env). The planner (`modules/catalog/import/listings-from-dresses.ts`) decides
  * name, slug, styles and photos; `applyListingPlan` writes each one through CreateListingService +
- * SetListingDressesService (a failed attach deletes the fresh draft), so the slug/style/photo
- * rules apply exactly as over HTTP. Never
- * publishes — staff review and publish in /website. A group with any dress already in a listing
+ * SetListingDressesService (a failed attach deletes the fresh draft unless someone touched it),
+ * so the slug/style/photo rules apply exactly as over HTTP. Never publishes — staff review and
+ * publish in /website. A group with any dress already in a listing
  * is SKIPPED, so re-running after new dresses arrive only adds the new groups (idempotent).
  * Exit 0 = everything created/skipped; 1 = some groups failed.
  */
@@ -20,10 +20,12 @@ import { DatabasePool, sql } from 'slonik';
 import { z } from 'zod';
 import { AppModule } from '../app.module';
 import { DB_POOL } from '../libs/db/db.di-tokens';
+import {
+  DRESS_LISTING_REPOSITORY,
+  DressListingRepositoryPort,
+} from '../modules/catalog/application/ports/dress-listing.repository.port';
 import { CreateListingCommand } from '../modules/catalog/commands/create-listing/create-listing.command';
 import { CreateListingService } from '../modules/catalog/commands/create-listing/create-listing.service';
-import { DeleteListingCommand } from '../modules/catalog/commands/delete-listing/delete-listing.command';
-import { DeleteListingService } from '../modules/catalog/commands/delete-listing/delete-listing.service';
 import { SetListingDressesCommand } from '../modules/catalog/commands/set-listing-dresses/set-listing-dresses.command';
 import { SetListingDressesService } from '../modules/catalog/commands/set-listing-dresses/set-listing-dresses.service';
 import {
@@ -124,7 +126,7 @@ async function main(): Promise<void> {
 
   const createListing = app.get(CreateListingService);
   const setListingDresses = app.get(SetListingDressesService);
-  const deleteListing = app.get(DeleteListingService);
+  const listingRepo = app.get<DressListingRepositoryPort>(DRESS_LISTING_REPOSITORY);
   const writer: ListingPlanWriter = {
     listedDressIds: async (dressIds) => new Set((await listingRefsByDress(pool, dressIds)).keys()),
     create: (plan) =>
@@ -143,10 +145,7 @@ async function main(): Promise<void> {
       ),
     attach: (listingId, dressIds) =>
       setListingDresses.execute(new SetListingDressesCommand({ listingId, dressIds })),
-    // Staff rules on purpose: a staff delete refuses anything ever published (R8), so the
-    // compensation can only ever remove the draft this run just made.
-    discard: (listingId) =>
-      deleteListing.execute(new DeleteListingCommand({ listingId, actorRole: 'staff' })),
+    discardIfUntouched: async (listingId) => (await listingRepo.deleteIfUntouched(listingId)) > 0,
   };
 
   const failures: string[] = [];
