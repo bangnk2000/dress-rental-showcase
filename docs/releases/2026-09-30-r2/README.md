@@ -11,7 +11,7 @@ remain `_open_` until bangnk writes the notes — nobody else, including any age
 > machine-specific runbook outside the repo (`~/deploy-dress/tencent/RUNBOOK.md` §11). The lane's
 > order is readiness → go/no-go → rollout; this time it ran rollout → readiness. So
 > [record.md](./record.md) records what happened instead of waiting to be filled, and every
-> unchecked item below is an **accepted-after-the-fact** risk that bangnk still has to own
+> unchecked item below is a **post-deployment risk requiring after-the-fact acceptance** — NOT yet accepted — that bangnk still has to own
 > explicitly. That inversion is itself a finding (release-plan.md R9).
 
 Target: the Tencent VPS behind Cloudflare — staff CMS `https://cms.example.com`, public site
