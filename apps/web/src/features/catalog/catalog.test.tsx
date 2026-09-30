@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest';
 import { fixtureDresses, fixtureSummaries } from '@/test/fixtures/public-dresses';
 import { renderWithProviders } from '@/test/render';
 
-import { DressDetail, FeaturedCollection, RelatedDresses, relatedDresses } from './index';
+import { DressActionBar, DressDetail, FeaturedCollection, RelatedDresses, relatedDresses } from './index';
 
 const longLay = fixtureDresses[0]!;
 
@@ -74,6 +74,17 @@ describe('DressDetail (FR-WEB-03)', () => {
     expect(mobile?.closest('details')).not.toBeNull();
     expect(desktop?.closest('details')).toBeNull();
     expect(desktop?.closest('.md\\:block')).not.toBeNull();
+  });
+
+  test('the price is per rental on the page and in the mobile action bar', () => {
+    const { unmount } = renderWithProviders(<DressDetail dress={longLay} />);
+    expect(screen.getByText('/lượt')).toBeInTheDocument();
+    expect(screen.queryByText(/\/ngày/)).not.toBeInTheDocument();
+    unmount();
+
+    renderWithProviders(<DressActionBar dress={longLay} />);
+    expect(screen.getByText('/lượt')).toBeInTheDocument();
+    expect(screen.queryByText(/\/ngày/)).not.toBeInTheDocument();
   });
 
   test('the description keeps the line breaks staff typed', () => {
