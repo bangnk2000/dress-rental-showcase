@@ -83,7 +83,7 @@ export function DressDetail({ dress }: { dress: PublicDressDetail }) {
           <h1 className="mt-1 font-display text-headline-lg-mobile text-primary md:text-headline-md xl:text-headline-lg">
             {dress.name}
           </h1>
-          <p className="mt-2 text-body-md text-on-surface-variant md:text-body-lg">{dress.description}</p>
+          <p className="mt-2 whitespace-pre-line text-body-md text-on-surface-variant md:text-body-lg">{dress.description}</p>
 
           <div className="mt-space-md flex items-baseline gap-2 border-y border-surface-container-highest py-space-sm">
             <span className="font-display text-headline-sm text-primary md:text-headline-md">
