@@ -3,6 +3,9 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-30 (40) — owner "triển khai đi" / "chạy thật luôn" / "làm luôn": release `2026-09-30-r2`
+  DEPLOYED to Tencent (`a4d32cb`: R2 photos, listings, public site example.com); listings tool on prod
+  → 100 drafts. Readiness pack written after the rollout (says so). Ledger unchanged at 43/43.
 - 2026-09-30 (39) — owner ask "lên kế hoạch triển khai web + tính năng mới bên CMS", web on the apex
   `example.com`: `infra/web-standalone` = pass (43/43). `output: 'standalone'` (43 MB, ~100 MB rss),
   bind rule HOSTNAME=localhost (127.0.0.1 → 307 loop / 500 behind https proxy). web gates green.
