@@ -1,5 +1,23 @@
 # Session Handoff
 
+## 2026-09-30 (38) — bulk listings tool (`be:listings-from-dresses` = pass)
+
+- Done: `pnpm --filter be listings:from-dresses [--prefix VAY] [--dry-run]` — one DRAFT listing per
+  dress code group (`VAY02` + `VAY02_1` + `VAY02_2` = one mẫu, three sizes), dispatched through
+  `CreateListingService` + `SetListingDressesService`. Planner (pure, unit-tested):
+  `apps/be/src/modules/catalog/import/listings-from-dresses.ts`. No API/contract change.
+- Owner decisions: CLI, never publishes, styles from name keywords, no keyword → `silk` (marked `*`).
+- Dev DB: 95 drafts created, 3 groups skipped (already listed); re-run creates 0.
+- Next: the release lane (listings migrations + web process on the VPS), THEN run the tool there
+  with `--dry-run` first (`node dist/scripts/listings-from-dresses.js` from `apps/be`).
+- Watch out:
+  - A group is skipped if ANY of its dresses already belongs to a listing — that is what makes
+    re-runs safe; a copy attached by hand to another mẫu also blocks its group.
+  - On the dev data 10 groups get the `silk` fallback and VAY87 is literally named "Chưa có mã" —
+    fix dress names before the production run; most dresses have no photo, so drafts cannot be
+    published until staff add one in /website.
+  - The dev DB now holds 95 extra draft listings from the proof run.
+
 ## 2026-09-30 (37) — web on live data (`web:public-catalog-live` = pass, PR #20 → master)
 
 - Done: `apps/web` reads `GET /public/dresses[/:slug]` through `src/api/public-catalog.ts`
