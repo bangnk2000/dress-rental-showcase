@@ -16,9 +16,11 @@
   BACKUP token), `webbuild.sh` (build in WSL through an ssh tunnel to the prod API, pm2 `dress-web`),
   `serve-remote.sh` web vhost with `/api/` closed (the Next rewrite would reach the BE from loopback
   = throttler-exempt). nginx config checked with `nginx -t` in a container; nothing run on the VPS.
-- Next: owner does Cloudflare M1–M6 → RUNBOOK §11.2 wave 1 → §11.3 listings tool (`--dry-run` first,
-  fix dress names before) → §11.4 wave 2 + DNS apex + `tls.sh example.com`. Then a release pack
-  under `docs/releases/` if wanted.
+- Next: the release lane FIRST — readiness pack `docs/releases/<release-id>/` (init-release; the
+  versioned record of readiness, waves, rollback — the runbook stays the machine-specific
+  executor). Then owner does Cloudflare M1–M6 → RUNBOOK §11.2 wave 1 → §11.3 listings tool
+  (`--dry-run` first, fix dress names before) → §11.4 wave 2 + DNS apex + `tls.sh example.com`,
+  recording each step in the pack's rollout record.
 - Watch out:
   - `next build` copies a local `apps/web/.env` into `.next/standalone/apps/web/` — `webbuild.sh`
     deletes it; any other deploy path must too.
