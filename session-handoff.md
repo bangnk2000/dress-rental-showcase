@@ -1,13 +1,14 @@
 # Session Handoff
 
-## 2026-09-30 (37) — web on live data (`web:public-catalog-live` = pass, not yet committed)
+## 2026-09-30 (37) — web on live data (`web:public-catalog-live` = pass, PR #20 → master)
 
 - Done: `apps/web` reads `GET /public/dresses[/:slug]` through `src/api/public-catalog.ts`
   (ISR 300 s, tag `public-dresses`), mock deleted (kept as a test fixture), related from the list,
   `next/image` custom loader over `@dress-rental/image-url`. As-built:
   [public-pages.md §5](docs/design/web/public-pages.md). web vitest 33, builds with and without a BE,
   runtime proof on `next start` against the dev BE (evidence in the ledger).
-- Next: commit + PR (`pr-codex-review`); then the release lane — the web process + nginx do not
+- PR #20: Codex round 0 → C1 P1 ("/ngày" beside a 2-day price) REBUTTED as the owner decision → accepted, APPROVE → CI green → merged.
+- Next: the release lane — the web process + nginx do not
   exist on the Tencent VPS yet, and listings/styles migrations are undeployed.
 - Watch out:
   - New env `NEXT_PUBLIC_IMAGE_BASE_URL` is inlined at BUILD — set it before `pnpm --filter web build`.

@@ -33,7 +33,7 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 
 ## Current state (re-sync at every session end — see Session rules)
 
-**As of 2026-09-30 · `feature_list.json` is 41/41 `pass`; `web:public-catalog-live` (web reads `/public/dresses`, ISR 300 s) is done in the working tree but NOT yet committed — next: commit + Codex PR, then the release lane (web process + nginx on the VPS; nothing since photo upload deployed).**
+**As of 2026-09-30 · `feature_list.json` is 41/41 `pass`; `web:public-catalog-live` (web reads `/public/dresses`, ISR 300 s) merged by PR #20 (Codex round 1 APPROVE — the one finding, "/ngày" vs a 2-day price, is an owner decision; CI green) — next: the release lane (web process + nginx on the VPS; nothing since photo upload deployed).**
 This section stays a MAP, not a description — each row's detail lives in the doc it points at.
 
 | Area | State | Detail lives in |
