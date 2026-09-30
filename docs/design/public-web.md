@@ -28,7 +28,7 @@ trong [SRS-dress-rental.md](../SRS-dress-rental.md) §1.
 | Contract | `packages/contract/openapi.json` (N1) | Một contract, sinh client thứ ba bằng `pnpm contract` |
 | Gọi API | Server: `API_URL` trực tiếp. Browser: rewrite `/api/v1/*` → BE (N2) | Paths trong contract đã mang `/api/v1` |
 | Cổng dev | `3001` (N4) | BE giữ `3000`, fe `5173`, qr-admin `5174` |
-| Hosting | Một process Node riêng (`next start`) (N5) | Chưa triển khai; release lane phải liệt kê process + route reverse-proxy |
+| Hosting | Một process Node riêng (N5): `output: 'standalone'` → `node .next/standalone/apps/web/server.js` (build ở máy khác, ship thư mục đó + `.next/static` + `public`) | VPS 2 GB không build/`pnpm install` được. **Bind `HOSTNAME=localhost`, KHÔNG `127.0.0.1`**: Next coi origin nội bộ là `localhost`, lệch với host bind thì rewrite của middleware next-intl (`/` → `/vi`) bị proxy ra ngoài → 307 lặp, và 500 sau reverse proxy gửi `X-Forwarded-Proto: https` (đo 2026-09-30, `next start` cũng bị). `API_URL` bị chốt vào rewrite `/api/v1` lúc BUILD |
 
 ## 2. Public / authenticated split + rendering
 
