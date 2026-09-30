@@ -76,6 +76,14 @@ describe('DressDetail (FR-WEB-03)', () => {
     expect(desktop?.closest('.md\\:block')).not.toBeNull();
   });
 
+  test('the description keeps the line breaks staff typed', () => {
+    renderWithProviders(<DressDetail dress={{ ...longLay, description: 'Giá thuê theo lượt.\nGiá phát sinh: 20k/ngày.' }} />);
+
+    const description = screen.getByText(/Giá thuê theo lượt\./);
+    expect(description.textContent).toBe('Giá thuê theo lượt.\nGiá phát sinh: 20k/ngày.');
+    expect(description).toHaveClass('whitespace-pre-line');
+  });
+
   test('a thumbnail selects its photo and moves the counter', () => {
     const dress = longLay;
     renderWithProviders(<DressDetail dress={dress} />);
