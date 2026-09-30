@@ -25,9 +25,13 @@ There is no monitoring (release-plan R1), so the triggers are observations, not 
    `build.sh`, or blank the `R2_*` lines in `apps/be/.env` and `pm2 restart dress-api --update-env`.
    Verify: `verify-external.sh` → `photo upload: OFF`; Save with a photo answers 503
    `PHOTO.STORAGE_UNAVAILABLE`, everything else works. Already-uploaded photos keep rendering.
-3. **CMS + API back to `2ca3e8b`, schema kept** (API ~1–2 min down):
-   `git switch --detach 2ca3e8b` → `DEPLOY_REF=2ca3e8b sync.sh` → `build.sh` →
-   `DEPLOY_REF=2ca3e8b febuild.sh` → `serve.sh` → `verify-external.sh` → `git switch master`.
+3. **CMS, then API, back to `2ca3e8b`, schema kept** (API ~1–2 min down). CMS FIRST: `febuild.sh`
+   builds in WSL and only swaps `apps/fe/dist`, so it runs while the new API is still up — and
+   new API + old CMS is the clean combination (release-plan §3). The reverse window is NOT clean: the new
+   CMS dress detail reads `dress.listings.length`, which an old API response does not carry.
+   `git switch --detach 2ca3e8b` → `DEPLOY_REF=2ca3e8b febuild.sh` (verify: staff pages load, no
+   `/website` link) → `DEPLOY_REF=2ca3e8b sync.sh` → `build.sh` → `serve.sh` → `verify-external.sh` →
+   `git switch master`. Staff with the PWA open reload once after the CMS swap.
    Safe on the migrated DB: both new migrations only ADD tables (`dress_listings`,
    `dress_listing_items`); `2ca3e8b` never reads them; node-pg-migrate on the old code sees 12 applied /
    10 files, the first 10 match, nothing to run. Verify: staff pages green, `.deployed` = `2ca3e8b`.

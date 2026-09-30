@@ -1,7 +1,10 @@
 # Release 2026-09-30-r2 — R2 photos, public listings and the public website
 
-Produced by the [`init-release`](../../spec/init-release/README.md) lane on 2026-09-30, from a ledger
-that was 43/43 `pass`. The lane prepares and verifies; it never deploys.
+**Post-deployment retrospective — an exception to the release lane, not evidence that it ran.**
+Produced with the [`init-release`](../../spec/init-release/README.md) templates on 2026-09-30, from a
+ledger that was 43/43 `pass`, after the rollout it describes. init-release requires every unchecked item
+to carry an explicit accepted-risk note BEFORE step 1; here R1–R11 were not accepted beforehand and
+remain `_open_` until bangnk writes the notes — nobody else, including any agent, can accept them.
 
 > **Written AFTER the rollout, not before it.** The plan in this pack was executed on 2026-09-30
 > between 16:00 and 16:35 (+07) on the owner's direct instruction ("triển khai đi"), from the
