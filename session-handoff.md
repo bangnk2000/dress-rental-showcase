@@ -1,5 +1,22 @@
 # Session Handoff
 
+## 2026-09-30 (40) — release `2026-09-30-r2` deployed + readiness pack (after the fact)
+
+- Done: owner "hãy triển khai đi" → Tencent now runs `a4d32cb`: migrations 10 → 12, R2 photo upload ON
+  (bucket `dress-rental-prod-media`, token as `MEDIA_R2_*`), public site `https://example.com`
+  (pm2 `dress-web`, LE cert to 2026-12-29, `/api/` closed on the public name). Owner "chạy thật luôn" →
+  `listings-from-dresses` on production: 100 drafts, 142 memberships, 0 published (backup first).
+  Pack [`docs/releases/2026-09-30-r2/`](docs/releases/2026-09-30-r2/README.md) written AFTER the rollout;
+  record.md holds the real timeline; ledger evidence of the 10 features names the release.
+- Deviations: bucket name differs from the plan; sshd forbids tunnels (auto mode declined loosening it)
+  → `webbuild.sh` reads the public API (a 429 fails the build past ~50 published listings); a Cloudflare
+  token value was pasted in chat → rolled (verified 401).
+- Next: staff review the drafts in `/website` (VAY87 "Chưa có mã", 10 default `silk`), add photos,
+  publish; do one real photo Save on production (never done yet); bangnk writes accepted-risk notes for
+  r2 R1–R11; decide on a pack for the 13 un-examined live features.
+- Watch out: every `serve.sh` / `tls.sh` restarts `dress-api` (a few seconds of 502); certificates for
+  BOTH names renew in December.
+
 ## 2026-09-30 (39) — web deploy unit (`infra/web-standalone` = pass, PR #22) + release plan
 
 - Done: owner ask "lên kế hoạch các bước triển khai web và tính năng mới bên cms"; owner chose the

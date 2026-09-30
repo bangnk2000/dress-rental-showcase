@@ -33,7 +33,7 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 
 ## Current state (re-sync at every session end — see Session rules)
 
-**As of 2026-09-30 · `feature_list.json` is 43/43 `pass`; latest `infra/web-standalone` (`apps/web` builds `.next/standalone` = the VPS deploy unit; production binds `HOSTNAME=localhost`, never `127.0.0.1`; PR #22) — next: the release lane (owner chose the apex `example.com` for the web) — FIRST the versioned readiness pack `docs/releases/<release-id>/` (readiness, rollout waves, rollback: wave 1 BE+CMS with the listings migrations + R2 photo bucket, listings data, wave 2 web), THEN execute it with the machine-specific out-of-repo runbook `~/deploy-dress/tencent/RUNBOOK.md` §11; nothing since photo upload is deployed yet.**
+**As of 2026-09-30 · `feature_list.json` is 43/43 `pass`; latest `infra/web-standalone` (PR #22). DEPLOYED 2026-09-30 as release [`2026-09-30-r2`](docs/releases/2026-09-30-r2/README.md) (`a4d32cb` on Tencent): R2 photo upload (bucket `dress-rental-prod-media` → `img.example.com`), listings + `/website`, and the public site on `https://example.com` (pm2 `dress-web`); `listings:from-dresses` ran on production → 100 DRAFT listings, 0 published — next: staff review/publish in `/website`, bangnk owns R1–R11 of the r2 release plan, and the 13 live-but-never-examined features (r2 README) still have no readiness pack.**
 This section stays a MAP, not a description — each row's detail lives in the doc it points at.
 
 | Area | State | Detail lives in |
@@ -47,7 +47,7 @@ This section stays a MAP, not a description — each row's detail lives in the d
 | `docs/spec` | Seven vendored `init-*` sets: five synced 2026-08-09 from upstream `815fa0f`; `init-nextjs` (new) + `init-monorepo-contract` synced 2026-09-24 from the upstream working tree (not yet committed upstream). | `docs/spec/README.md` |
 | Open by choice | `Idempotency-Key` unimplemented (DB constraint stops double-submit); cross-context table-read adapters kept. | `apps/fe/AGENTS.md` #8, `apps/be/AGENTS.md` #4 |
 | Not in root gates | Playwright (`pnpm --filter fe e2e`, vi happy path) — needs browsers + a live DB, but it is NOT manual any more: it starts the BE and the built FE itself and runs as the CI `e2e` job. | `apps/fe/AGENTS.md` #5, `.github/workflows/ci.yml` |
-| Release lane | First release prepared 2026-08-10 (`2026-08-10-r1`, the 20 features that existed at that pass — the four UI features and `payments/record-collection` after it are listed as NOT covered): readiness per feature, plan, rollback, seeded record. **Nothing is deployed** — it stops at go/no-go, and 7 prerequisites (PM2, Nginx same-origin, TLS, backup, secrets, catalog CSV, QR Admin origin) do not exist yet. | [`docs/releases/2026-08-10-r1/README.md`](docs/releases/2026-08-10-r1/README.md) |
+| Release lane | `2026-08-10-r1` (20 features; prepared, stopped at go/no-go) and `2026-09-30-r2` (10 features, PRs #12–#22) — r2 was written AFTER its rollout and says so: it records what ran, R1–R11 await bangnk's accepted-risk notes, and 13 features went live via un-packed deploys (release debt). Execution itself lives in the out-of-repo runbook `~/deploy-dress/tencent/RUNBOOK.md` §11. | [`docs/releases/2026-09-30-r2/README.md`](docs/releases/2026-09-30-r2/README.md) |
 
 Next-session candidates are in `session-handoff.md` (latest entry) — do not re-derive them here.
 
