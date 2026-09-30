@@ -33,7 +33,7 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 
 ## Current state (re-sync at every session end — see Session rules)
 
-**As of 2026-09-30 · `feature_list.json` is 42/42 `pass`; latest `be:listings-from-dresses` (CLI `pnpm --filter be listings:from-dresses` — one DRAFT website listing per `VAY*` code group, re-run safe; PR pending) — next: the release lane (listings migrations + web process + nginx on the VPS; nothing since photo upload deployed), then run the tool there with `--dry-run` first.**
+**As of 2026-09-30 · `feature_list.json` is 42/42 `pass`; latest `be:listings-from-dresses` (CLI `pnpm --filter be listings:from-dresses` — one DRAFT website listing per `VAY*` code group, re-run safe; PR #21, Codex round 2 APPROVE) — next: the release lane (listings migrations + web process + nginx on the VPS; nothing since photo upload deployed), then run the tool there with `--dry-run` first.**
 This section stays a MAP, not a description — each row's detail lives in the doc it points at.
 
 | Area | State | Detail lives in |

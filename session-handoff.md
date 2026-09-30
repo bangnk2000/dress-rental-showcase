@@ -1,6 +1,6 @@
 # Session Handoff
 
-## 2026-09-30 (38) — bulk listings tool (`be:listings-from-dresses` = pass)
+## 2026-09-30 (38) — bulk listings tool (`be:listings-from-dresses` = pass, PR #21 → master)
 
 - Done: `pnpm --filter be listings:from-dresses [--prefix VAY] [--dry-run]` — one DRAFT listing per
   dress code group (`VAY02` + `VAY02_1` + `VAY02_2` = one mẫu, three sizes), dispatched through
@@ -8,6 +8,7 @@
   `apps/be/src/modules/catalog/import/listings-from-dresses.ts`. No API/contract change.
 - Owner decisions: CLI, never publishes, styles from name keywords, no keyword → `silk` (marked `*`).
 - Dev DB: 95 drafts created, 3 groups skipped (already listed); re-run creates 0.
+- PR #21: Codex round 0 → C1 (stale membership read) partly fixed (re-check before each create), transaction rebutted and accepted; C2 (orphan draft on failed attach) → fixed, objected once (staff delete could remove a touched draft) → `deleteIfUntouched` (one guarded DELETE) → round 2 APPROVE.
 - Next: the release lane (listings migrations + web process on the VPS), THEN run the tool there
   with `--dry-run` first (`node dist/scripts/listings-from-dresses.js` from `apps/be`).
 - Watch out:

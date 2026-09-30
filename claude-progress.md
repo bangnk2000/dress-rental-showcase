@@ -5,7 +5,7 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md`; t
 
 - 2026-09-30 (38) — owner ask "tool tạo hàng loạt mẫu trên website từ váy mã VAY":
   `be:listings-from-dresses` = pass (42/42). CLI, one draft listing per code group, styles from
-  name keywords (fallback silk), re-run safe. be unit 280; dev DB 95 created, re-run 0. Not run on prod.
+  name keywords (fallback silk), re-run safe. be unit 288; dev DB 95 created, re-run 0. PR #21 (Codex round 2 APPROVE). Not run on prod.
 - 2026-09-30 (37) — owner ask "bắt đầu làm web:public-catalog-live": = pass (41/41). Web reads the
   live public catalogue (ISR 300 s), mock deleted, Cloudflare Images loader. web vitest 33,
   build with/without BE, runtime proof on next start. PR #20 (Codex APPROVE after 1 rebuttal, CI green) → master. Not deployed.
