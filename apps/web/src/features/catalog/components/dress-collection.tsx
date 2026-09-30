@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import type { PublicDressSummary } from '@/api/mock/public-catalog';
+import type { PublicDressSummary } from '@/api/public-catalog';
 import { Link } from '@/i18n/navigation';
 
 import { featuredVisibility, filterDresses, type StyleFilter } from '../lib/filters';
@@ -26,8 +26,9 @@ function DressGrid({ dresses, visibility }: { dresses: PublicDressSummary[]; vis
 }
 
 /**
- * Home "Bộ Sưu Tập Nổi Bật": chips scroll above the header on mobile, wrap on md, and join the
- * header row on xl. The server hands over 8 dresses; filtering is client-side on that list.
+ * Home "Bộ Sưu Tập Nổi Bật": chips are ONE horizontally scrolling row at every width (never wrap),
+ * above the header below xl and filling the header row on xl. The server hands over 8 dresses;
+ * filtering is client-side on that list.
  */
 export function FeaturedCollection({ dresses }: { dresses: PublicDressSummary[] }) {
   const t = useTranslations('catalog.featured');
@@ -42,7 +43,7 @@ export function FeaturedCollection({ dresses }: { dresses: PublicDressSummary[] 
         <div className="order-2 flex items-end justify-between gap-3 xl:contents">
           <div className="xl:order-1">
             <p className="text-label-sm uppercase tracking-widest text-secondary xl:text-label-lg">{t('eyebrow')}</p>
-            <h2 id="featured" className="font-display text-headline-sm text-primary md:text-headline-md">
+            <h2 id="featured" className="font-display text-headline-sm text-primary md:text-headline-md xl:whitespace-nowrap">
               {t('title')}
             </h2>
           </div>
@@ -53,7 +54,7 @@ export function FeaturedCollection({ dresses }: { dresses: PublicDressSummary[] 
             {t('viewAll')} <ChevronRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
         </div>
-        <StyleChips value={filter} onChange={setFilter} className="order-1 xl:order-2 xl:ml-auto" />
+        <StyleChips value={filter} onChange={setFilter} scroll className="order-1 xl:order-2 xl:ml-auto xl:flex-1" />
       </div>
       <DressGrid dresses={filterDresses(dresses, filter)} visibility={featuredVisibility} />
     </section>

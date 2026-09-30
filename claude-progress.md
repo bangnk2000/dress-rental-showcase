@@ -3,6 +3,9 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-09-30 (37) — owner ask "bắt đầu làm web:public-catalog-live": = pass (41/41). Web reads the
+  live public catalogue (ISR 300 s), mock deleted, Cloudflare Images loader. web vitest 33,
+  build with/without BE, runtime proof on next start. PR #20 (Codex APPROVE after 1 rebuttal, CI green) → master. Not deployed.
 - 2026-09-30 (36) — owner ask "đổi 'dịp' thành 'loại'": `catalog/listing-styles` = pass (40/40).
   Six style codes (short, silk, ao-dai, off-shoulder, sleeved, strappy-strapless), field renamed
   DB → API → 3 clients, migration `1755600000000_listing_styles`. be e2e 148/148, fe 167.

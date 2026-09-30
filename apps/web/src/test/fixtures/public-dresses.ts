@@ -1,7 +1,7 @@
-import type { PublicDressDetail } from './public-catalog.types';
+import type { PublicDressDetail, PublicDressSummary } from '@/api/public-catalog';
 
-// Mock catalogue — copy from the approved prototype (apps/web/design/prototype/build.mjs). Photos
-// are the Stitch export, self-hosted under public/images (never hot-linked).
+// Test fixture shaped like GET /public/dresses[/:slug] — the former mock catalogue (copy from the
+// approved prototype, apps/web/design/prototype/build.mjs). The site reads the BE; only tests read this.
 const shopImages = [
   { src: '/images/hero.jpg', alt: 'Đầm trưng bày tại Atelier Demo' },
   { src: '/images/store.png', alt: 'Không gian thử đồ tại 12 Phố Mẫu' },
@@ -17,10 +17,9 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     tagline: 'Tùng xoè ren đính kết hạt cườm thủ công',
     description:
       'Tùng xoè ren đính kết hạt cườm thủ công, dáng corset tôn eo — dành cho những đêm gala và tiệc cưới nàng muốn là tâm điểm.',
-    style: 'strappy-strapless',
-    styleLabel: 'Váy hai dây, cúp ngực',
+    styles: ['strappy-strapless'],
     badge: 'available',
-    rentalPricePerDay: 350_000,
+    rentalPrice: 350_000,
     retailPrice: 2_800_000,
     cover: { src: '/images/dresses/d1.jpg', alt: 'Đầm Dạ Hội Lộng Lẫy — toàn thân' },
     sizes: S('S,M'),
@@ -37,10 +36,9 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     name: 'Đầm Tiệc Trà Nàng Thơ',
     tagline: 'Lụa tơ sống xếp nếp vai bồng dịu dàng',
     description: 'Lụa tơ sống xếp nếp, vai bồng nhẹ nhàng — hợp những buổi tiệc trà, picnic cuối tuần.',
-    style: 'off-shoulder',
-    styleLabel: 'Váy trễ vai',
+    styles: ['off-shoulder'],
     badge: 'new',
-    rentalPricePerDay: 220_000,
+    rentalPrice: 220_000,
     retailPrice: 1_600_000,
     cover: { src: '/images/dresses/d2.jpg', alt: 'Đầm Tiệc Trà Nàng Thơ' },
     sizes: S('XS,S,M,L'),
@@ -57,10 +55,9 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     name: 'Váy Sinh Nhật / Prom',
     tagline: 'Dáng corset siết eo nơ lưng kiêu kỳ',
     description: 'Dáng corset siết eo, nơ lưng bản lớn kiêu kỳ — nổi bật trong đêm sinh nhật và prom.',
-    style: 'short',
-    styleLabel: 'Váy ngắn',
+    styles: ['short'],
     badge: 'hot',
-    rentalPricePerDay: 180_000,
+    rentalPrice: 180_000,
     retailPrice: 1_250_000,
     cover: { src: '/images/dresses/d3.jpg', alt: 'Váy Sinh Nhật / Prom' },
     sizes: S('S,M,L'),
@@ -77,10 +74,9 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     name: 'Áo Dài Cách Tân',
     tagline: 'Tơ tằm cao cấp đính ngọc trai thanh lịch',
     description: 'Tơ tằm cao cấp đính ngọc trai, tà ngắn cách tân — thanh lịch cho dạo phố và lễ Tết.',
-    style: 'ao-dai',
-    styleLabel: 'Áo dài',
+    styles: ['ao-dai'],
     badge: 'available',
-    rentalPricePerDay: 150_000,
+    rentalPrice: 150_000,
     retailPrice: 950_000,
     cover: { src: '/images/dresses/d4.jpg', alt: 'Áo Dài Cách Tân' },
     sizes: S('XS,S,M'),
@@ -97,10 +93,9 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     name: 'Đầm Lụa Champagne',
     tagline: 'Cổ vuông, tùng suông thanh lịch',
     description: 'Lụa champagne cổ vuông, tùng suông rủ mềm — thanh lịch cho khách mời đám cưới.',
-    style: 'silk',
-    styleLabel: 'Váy lụa',
+    styles: ['silk'],
     badge: 'available',
-    rentalPricePerDay: 200_000,
+    rentalPrice: 200_000,
     retailPrice: 1_400_000,
     cover: { src: '/images/dresses/d2.jpg', alt: 'Đầm Lụa Champagne' },
     sizes: S('S,M,L'),
@@ -117,10 +112,9 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     name: 'Đầm Tulle Hồng Phấn',
     tagline: 'Tầng tulle nhẹ bẫng, đính sequin',
     description: 'Nhiều tầng tulle nhẹ bẫng đính sequin lấp lánh — dành cho đêm gala.',
-    style: 'strappy-strapless',
-    styleLabel: 'Váy hai dây, cúp ngực',
+    styles: ['strappy-strapless'],
     badge: 'new',
-    rentalPricePerDay: 320_000,
+    rentalPrice: 320_000,
     retailPrice: 2_400_000,
     cover: { src: '/images/dresses/d1.jpg', alt: 'Đầm Tulle Hồng Phấn' },
     sizes: S('XS,S'),
@@ -137,10 +131,9 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     name: 'Áo Dài Lụa Hoạ Tiết',
     tagline: 'Lụa vẽ tay hoa nhí, tà dài',
     description: 'Lụa vẽ tay hoa nhí, tà dài truyền thống — nhẹ nhàng cho ngày chụp kỷ yếu.',
-    style: 'ao-dai',
-    styleLabel: 'Áo dài',
+    styles: ['ao-dai'],
     badge: 'available',
-    rentalPricePerDay: 160_000,
+    rentalPrice: 160_000,
     retailPrice: 1_100_000,
     cover: { src: '/images/dresses/d4.jpg', alt: 'Áo Dài Lụa Hoạ Tiết' },
     sizes: S('S,M,L'),
@@ -157,10 +150,9 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     name: 'Váy Nơ Lưng Mini',
     tagline: 'Corset nơ bản lớn, chân váy xoè',
     description: 'Corset nơ bản lớn sau lưng, chân váy xoè ngắn — trẻ trung cho tiệc sinh nhật.',
-    style: 'short',
-    styleLabel: 'Váy ngắn',
+    styles: ['short'],
     badge: 'hot',
-    rentalPricePerDay: 190_000,
+    rentalPrice: 190_000,
     retailPrice: 1_300_000,
     cover: { src: '/images/dresses/d3.jpg', alt: 'Váy Nơ Lưng Mini' },
     sizes: S('M,L'),
@@ -174,4 +166,18 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
   },
 ];
 
-export const mockDresses: PublicDressDetail[] = dresses.map((d) => ({ ...d, images: [d.cover, ...shopImages] }));
+export const fixtureDresses: PublicDressDetail[] = dresses.map((d) => ({ ...d, images: [d.cover, ...shopImages] }));
+
+/** What the list endpoint returns for the same dresses (no detail-only fields). */
+export const fixtureSummaries: PublicDressSummary[] = fixtureDresses.map(
+  ({ slug, name, tagline, styles, badge, rentalPrice, retailPrice, cover }) => ({
+    slug,
+    name,
+    tagline,
+    styles,
+    badge,
+    rentalPrice,
+    retailPrice,
+    cover,
+  }),
+);

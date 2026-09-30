@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useRef, useState, type ReactNode } from 'react';
 
-import type { PublicImage } from '@/api/mock/public-catalog';
+import type { PublicImage } from '@/api/public-catalog';
 import { cn } from '@/lib/utils';
 
 /**

@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 
-import type { PublicDressSummary } from '@/api/mock/public-catalog';
+import type { PublicDressSummary } from '@/api/public-catalog';
 import { Link } from '@/i18n/navigation';
 import { formatVnd, formatVndCompact } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -39,7 +39,7 @@ export function DressCard({ dress, className }: { dress: PublicDressSummary; cla
       </div>
       <div className="flex flex-1 flex-col justify-between p-3 md:p-space-md">
         <div>
-          <p className="mb-0.5 text-label-sm uppercase text-outline">{dress.styleLabel}</p>
+          <p className="mb-0.5 text-label-sm uppercase text-outline">{dress.styles.map((s) => t(`filter.${s}`)).join(', ')}</p>
           <h3 className="line-clamp-1 text-body-md font-semibold text-on-surface">
             <Link
               href={`/bo-suu-tap/${dress.slug}`}
@@ -52,10 +52,12 @@ export function DressCard({ dress, className }: { dress: PublicDressSummary; cla
         </div>
         <div className="flex items-baseline justify-between border-t border-surface-container pt-2">
           <p className="whitespace-nowrap">
-            <span className="text-label-lg tracking-normal text-primary">{formatVnd(dress.rentalPricePerDay)}</span>
+            <span className="text-label-lg tracking-normal text-primary">{formatVnd(dress.rentalPrice)}</span>
             <span className="text-label-sm tracking-normal text-outline"> {tc('perDay')}</span>
           </p>
-          <span className="text-label-sm text-outline-variant line-through">{formatVndCompact(dress.retailPrice)}</span>
+          {dress.retailPrice !== null && (
+            <span className="text-label-sm text-outline-variant line-through">{formatVndCompact(dress.retailPrice)}</span>
+          )}
         </div>
       </div>
     </li>

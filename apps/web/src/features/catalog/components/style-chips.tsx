@@ -6,23 +6,31 @@ import { cn } from '@/lib/utils';
 
 import { styleFilterKeys, type StyleFilter } from '../lib/filters';
 
-/** mobile: horizontal scroll with an edge fade · md: wrap (design/responsive.md §4 + §6). */
+/**
+ * mobile: horizontal scroll with an edge fade · md: wrap (design/responsive.md §4 + §6).
+ * `scroll` keeps ONE scrolling row at every width (home header row, where wrapping breaks the layout).
+ */
 export function StyleChips({
   value,
   onChange,
   className,
+  scroll = false,
 }: {
   value: StyleFilter;
   onChange: (next: StyleFilter) => void;
   className?: string;
+  scroll?: boolean;
 }) {
   const t = useTranslations('catalog.filter');
   return (
-    <div className={cn('relative -mx-margin-mobile md:mx-0', className)}>
+    <div className={cn('relative -mx-margin-mobile md:mx-0', scroll && 'min-w-0', className)}>
       <div
         role="group"
         aria-label={t('label')}
-        className="flex snap-x snap-proximity gap-2 overflow-x-auto px-margin-mobile scrollbar-none md:flex-wrap md:overflow-visible md:px-0"
+        className={cn(
+          'flex snap-x snap-proximity gap-2 overflow-x-auto px-margin-mobile scrollbar-none md:px-0',
+          !scroll && 'md:flex-wrap md:overflow-visible',
+        )}
       >
         {styleFilterKeys.map((key) => {
           const active = key === value;
@@ -44,7 +52,7 @@ export function StyleChips({
           );
         })}
       </div>
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-surface md:hidden" />
+      <div className={cn('pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-surface', !scroll && 'md:hidden')} />
     </div>
   );
 }

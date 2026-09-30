@@ -1,6 +1,6 @@
 # web/public-pages — Trang chủ, Bộ sưu tập, Chi tiết váy, Liên hệ (mock data)
 
-> Status: **as-built 2026-09-25 (mock data)** · SRS: FR-WEB-01..04 · Tier: **design** (trang
+> Status: **as-built 2026-09-25 (mock data) · live BE data 2026-09-30 (§5)** · SRS: FR-WEB-01..04 · Tier: **design** (trang
 > công khai/SEO mới — [init-nextjs 14 §1](../../spec/init-nextjs/14-design-first.md)) · Visual:
 > [`apps/web/design/responsive.md`](../../../apps/web/design/responsive.md) + `prototype/` ·
 > Ledger: `web:public-pages`
@@ -61,3 +61,30 @@ PublicDressDetail  = Summary + { description, images[], sizes: { label, availabl
 
 Mở: slug sinh từ `code`/`name`? `badge`/`style` lưu ở đâu (catalog chưa có)? ảnh công khai?
 — trả lời khi làm BE slice.
+
+## 5. As-built 2026-09-30 — dữ liệu thật (`web:public-catalog-live`)
+
+Mock bị xoá; trang đọc `GET /public/dresses[/:slug]` qua client sinh ra (spec
+[catalog/public-listing.md](../catalog/public-listing.md) §3–§4).
+
+| Segment | Rendering | Cache owner |
+| --- | --- | --- |
+| `/`, `/bo-suu-tap`, `sitemap.xml` | ISR `revalidate = 300` | Next Data Cache, tag `public-dresses` |
+| `/bo-suu-tap/[slug]` | ISR 300 s; slug có lúc build được prerender, slug đăng SAU build render ở request đầu rồi cache (`dynamicParams` mặc định = true) | như trên |
+
+- **Cửa duy nhất**: `apps/web/src/api/public-catalog.ts` (`server-only`): `force-cache` +
+  `revalidate: 300` + tag; 404 chi tiết → `null` → trang 404 tiếng Việt; lỗi khác ném ra (lúc
+  revalidate: Next giữ bản cũ).
+- **Build không có BE** (CI): BE *không kết nối được* trong `next build` → prerender danh mục rỗng
+  + warning, lần revalidate đầu (≤ 5 phút sau khi có traffic) lấp dữ liệu. BE trả lỗi HTTP vẫn làm
+  build đỏ. Deploy thật nên build khi API đang chạy.
+- **Liên quan** tính từ danh sách đã cache (cùng ít nhất một loại trước, rồi phần còn lại), không
+  thêm endpoint. Chip lọc: mẫu khớp khi `styles` chứa loại của chip.
+- **DTO khác mock**: nhãn loại = `catalog.filter.<code>` nối bằng dấu phẩy; giá "X /ngày"
+  (`common.price.perDay` — chủ tiệm chốt 2026-09-30, dù DTO ghi `rentalPrice` là giá một lần thuê 2 ngày); `retailPrice` null → ẩn giá gạch; ô thông số null không render, cả 5
+  null → ẩn mục "Chi tiết thiết kế".
+- **Ảnh**: `next/image` custom loader `src/lib/image-loader.ts` → `@dress-rental/image-url`
+  (ảnh R2 dưới `NEXT_PUBLIC_IMAGE_BASE_URL` → biến thể Cloudflare Images; host khác và
+  `/images/*` giữ nguyên). Độ rộng cố định: `deviceSizes [640, 828, 1200]`, `imageSizes [160, 320]`.
+- Chưa làm: `revalidateTag('public-dresses')` khi CMS đăng/ẩn mẫu (cần route secret giữa BE và
+  web) — hiện web chậm tối đa ~5 phút so với CMS.

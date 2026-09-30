@@ -2,3 +2,4 @@
 export { CatalogBrowser, FeaturedCollection } from './components/dress-collection';
 export { DressActionBar, DressDetail } from './components/dress-detail';
 export { RelatedDresses } from './components/related-dresses';
+export { relatedDresses } from './lib/related';

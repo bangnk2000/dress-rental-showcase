@@ -1,15 +1,17 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-import { listPublicDresses } from '@/api/mock/public-catalog';
+import { listPublicDresses } from '@/api/public-catalog';
 import { BottomTabBar } from '@/components/site/bottom-tab-bar';
 import { SiteFooter } from '@/components/site/site-footer';
 import { FeaturedCollection } from '@/features/catalog';
 import { HomeHero, HomePerks, HomePromo, StoreInfo } from '@/features/home';
 import { resolveLocale } from '@/i18n/locale';
 
-// FR-WEB-01 — ● SSG; dresses come from the mock catalogue at build time
-// (docs/design/web/public-pages.md §2).
+// FR-WEB-01 — ISR: rendered once, re-read from GET /public/dresses at most every 5 min
+// (docs/design/web/public-pages.md §2). A literal, not CATALOG_REVALIDATE: Next reads it statically.
+export const revalidate = 300;
+
 export async function generateMetadata({ params }: PageProps<'/[locale]'>): Promise<Metadata> {
   const locale = resolveLocale((await params).locale);
   const t = await getTranslations({ locale, namespace: 'home' });

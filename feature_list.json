@@ -100,14 +100,18 @@
       "title": "Owner creates, lists, previews and downloads direct-URL QR SVGs (FR-QR-01..05)",
       "status": "pass",
       "evidence": "2026-08-04: `modules/qr` ships immutable `QrLinkEntity`/`TargetUrl`, Slonik `qr_links` repository + FK migration/index, owner-only qr:create/list/read policies and POST/GET list/GET detail/GET authenticated SVG endpoints. Target URL allows absolute http(s) only, forbids credentials/relative/data/javascript and caps 2048; `qrcode` SVG adapter receives only persisted target URL and never fetches it. Contract emitted then both Orval clients regenerated. Standalone qr-admin now has owner sign-in, Vietnamese create validation, TanStack history query/invalidation, selected blob preview and SVG download; it imports no apps/fe source. BE build/lint/arch/test = 70 Jest tests, QR-admin check/lint/test/build green; no live Postgres/browser proof run in this environment.",
-      "dependencies": ["infra/qr-admin-bootstrap"]
+      "dependencies": [
+        "infra/qr-admin-bootstrap"
+      ]
     },
     {
       "id": "qr/styled-svg-rendering",
       "title": "Render QR SVG in the shop's pink-red style with a decorative thank-you frame (FR-QR-06)",
       "status": "pass",
       "evidence": "2026-08-06: QR-library output now uses high error correction, red-pink modules and a white quiet zone. The adapter nests that untouched QR inside a fixed pale-pink rounded frame with five hearts and the Vietnamese thank-you caption, all outside the QR area. Verified focused Jest renderer test plus BE lint, build and architecture gate.",
-      "dependencies": ["qr/create-url-code"]
+      "dependencies": [
+        "qr/create-url-code"
+      ]
     },
     {
       "id": "infra/outcome-model",
@@ -137,7 +141,9 @@
         "AC3: catalog UNIQUE (code), rental_items UNIQUE (rental_id, dress_id) and the status CHECKs each have a proof test",
         "AC4: pnpm --filter be test:e2e exists and runs the suite against a fresh compose/CI Postgres; CI has a postgres service and runs it"
       ],
-      "dependencies": ["infra/outcome-model"]
+      "dependencies": [
+        "infra/outcome-model"
+      ]
     },
     {
       "id": "rentals/settle-late-fee",
@@ -151,7 +157,9 @@
         "AC3: charging LESS than suggested is refused for staff with the named 403 outcome forbidden + reason late_fee_waiver_requires_owner (payload carries suggested + submitted), and accepted for owner",
         "AC4: the return dialog shows days late and the suggested amount BEFORE submit, pre-filled and editable, with a fallback when the quote call fails"
       ],
-      "dependencies": ["infra/outcome-model"]
+      "dependencies": [
+        "infra/outcome-model"
+      ]
     },
     {
       "id": "infra/e2e-ci",
@@ -165,7 +173,9 @@
         "AC3: a developer who already runs the stack by hand keeps the documented flow — E2E_BASE_URL means 'I own the servers', and nothing is started for them",
         "AC4: a failed CI run leaves a downloadable Playwright report/trace"
       ],
-      "dependencies": ["infra/e2e-playwright"]
+      "dependencies": [
+        "infra/e2e-playwright"
+      ]
     },
     {
       "id": "rentals/settlement-clarity",
@@ -179,7 +189,9 @@
         "AC3: a live block shows deposit, fees deducted and the resulting refund, and says so when the typed refund differs",
         "AC4: every amount field reads its own digits back with thousand separators, associated with the input for assistive tech"
       ],
-      "dependencies": ["rentals/settle-late-fee"]
+      "dependencies": [
+        "rentals/settle-late-fee"
+      ]
     },
     {
       "id": "rentals/dress-availability-in-picker",
@@ -193,7 +205,9 @@
         "AC3: a rejection marks exactly the dresses the server named, each with the reason for that code",
         "AC4: a rejection is cleared as soon as the dates or the selection change"
       ],
-      "dependencies": ["infra/outcome-model"]
+      "dependencies": [
+        "infra/outcome-model"
+      ]
     },
     {
       "id": "catalog/dress-thumbnails",
@@ -206,7 +220,9 @@
         "AC2: a broken photo link renders the placeholder, never a broken image",
         "AC3: the thumbnail adds nothing for a screen reader, since the dress code is already text next to it"
       ],
-      "dependencies": ["catalog/manage-dress"]
+      "dependencies": [
+        "catalog/manage-dress"
+      ]
     },
     {
       "id": "fe:board-and-confirm-ergonomics",
@@ -222,7 +238,10 @@
         "AC5: repeated board actions are distinguishable by accessible name",
         "AC6: cancelling a rental and retiring a dress confirm through the app's own dialog, in Vietnamese, with a confirm button that states the action"
       ],
-      "dependencies": ["rentals/today-board", "rentals/cancel-rental"]
+      "dependencies": [
+        "rentals/today-board",
+        "rentals/cancel-rental"
+      ]
     },
     {
       "id": "payments/record-collection",
@@ -237,7 +256,11 @@
         "AC4: calling the action with nothing to record is refused as a business outcome, not a 500",
         "AC5: the return dialog computes the refund from the deposit ACTUALLY collected, and says so when no deposit was ever recorded"
       ],
-      "dependencies": ["payments/list-payments", "rentals/return-rental", "rentals/list-rentals"]
+      "dependencies": [
+        "payments/list-payments",
+        "rentals/return-rental",
+        "rentals/list-rentals"
+      ]
     },
     {
       "id": "rentals/pickup-before-return",
@@ -375,7 +398,9 @@
         "D1 R2 URLs rendered through /cdn-cgi/image variants in the CMS; foreign links untouched"
       ],
       "evidence": "2026-09-25: design-tier, spec docs/design/catalog/dress-photo-upload.md approved by the owner after 3 Q&A rounds (as-built §8). Spike on bucket dress-rental-dev-media (no repo change): R1 proved AT STORAGE — signed 1000/sent 5000 → 403 SignatureDoesNotMatch, wrong Content-Type → 403, expired URL → 403 ExpiredRequest; R6 CORS evil origin → 403; D1 cdn-cgi/image width=320 on img-dev.example.com: 5.6 MB PNG → 10.7 KB AVIF; cache-control only persists when signed+sent (→ signableHeaders incl. cache-control, CORS AllowedHeaders needs Cache-Control). BE: POST /photos/upload-urls (policy photo:upload, all staff), PhotoUploadSignerPort + R2 adapter (only @aws-sdk importer — depcruise rule aws-sdk-only-in-r2-adapter, R2) + disabled adapter (R3: 503 PHOTO.STORAGE_UNAVAILABLE, openapi:emit offline). FE: packages/image-url (8 tests), src/api/use-photo-uploader.ts (XHR PUT, no bearer), components/media/PhotoListField in the dress form (R4 max 10, R5 no delete call), thumbnails via /cdn-cgi/image 160/640 (D1). Gates: pnpm check 0, lint 0, test 0 (be 207, fe 131, image-url 8, qr-admin 17, web 27), be test:e2e 108/108 (+10 photo-upload-url.e2e-spec: 201 shape + signed headers, staff 201, 401, 400 UNSUPPORTED_TYPE, 400 TOO_LARGE ×2 + maxBytes, MAX → 201, validation, 503 with /dresses still 200), fe/qr-admin/web build 0; arch + contract:check red ONLY on generated-client freshness (uncommitted regen) as expected. Runtime proof on the REAL dev bucket (temporary Playwright spec against BE :3000 + vite :5173, not committed): owner login → Thêm váy → 2 PNGs (1200×900, 900×1200) → 2 presign 201 → 2 browser PUTs 200 straight to r2.cloudflarestorage.com (R1/R6 — the first attempt was blocked by a bucket CORS policy lacking Cache-Control, fixed by the owner) → no error tiles → Save → detail shows both photos IN CHOSEN ORDER as /cdn-cgi/image/width=640 variants, naturalWidth 640 (D1); variant GET 200 image/avif 2,517 B (cf-resized present) vs original 200 image/png 125,046 B with cache-control public, max-age=31536000, immutable. Left behind on purpose: the test dresses PHOTO-* in the dev DB and their objects in the dev bucket (R5 — nothing deletes R2 objects).",
-      "dependencies": ["catalog/manage-dress"]
+      "dependencies": [
+        "catalog/manage-dress"
+      ]
     },
     {
       "id": "catalog/photo-upload-on-submit",
@@ -390,7 +415,9 @@
         "S5 a just-uploaded photo keeps its local preview (no read-back); detail tiles use the 160 variant, the link opens the 1280 variant, never the original"
       ],
       "evidence": "2026-09-29: owner ask + 3 decisions recorded in docs/design/catalog/dress-photo-upload.md §9 (batch signing, stop on partial failure, 1280 link). BE: POST /photos/upload-urls now {files: 1..10} → {uploads[]} same order, all files validated before any signing (S4); be unit 208 (+batch order/keys, index-named failures), be test:e2e photo-upload-url 13/13 (batch 201, index-named 400, empty/>10/old-shape → GENERIC.VALIDATION, 503). pnpm contract regenerated fe/qr-admin/web clients. FE: components/media/photo-items.ts (PhotoItem, uploadLocalPhotos), PhotoListField no longer uploads, api/use-photo-uploader.ts batch uploader, dress-form-dialog uploads in onSubmit; fe vitest 137/137 incl. photo-list-field (S1 no request on choose, S2 one signing request + order, S3 re-sign only failed, S4 server-named index, S5 blob preview kept) and dresses.test (close dialog → no request S1, failed PUT → dress unsaved S3, gif blocks Save S4, detail 160/1280 S5). fe check/lint 0, qr-admin + web check 0, be lint/arch 0. fe arch red ONLY on generated-client freshness before commit (expected). be test:e2e: 6 failures in rentals-overlap/rental-update are PRE-EXISTING — identical on clean master (local env), unrelated. Not yet proven on the real dev bucket in a browser. PR #16: Codex review round 0 → 1 P1 (C1: Cancel/Esc during the in-flight dress POST/PATCH still saved the dress) FIXED in f94f458 (dismissal refused while the dress request is in flight; 2 tests: close during upload → no PATCH, close after PATCH sent → blocked) → round 1 APPROVE; fe vitest 139/139; CI all green (be, fe, qr-admin, web, contract, e2e Playwright); merged a1881f0 (2026-09-29). Close-of-session init.sh on master: contract/check/lint/arch/test green, be test:e2e 104/110 (the same 6 pre-existing local rentals buffer failures), fe/qr-admin/web build 0. (Fixed separately: infra/e2e-buffer-pin.)",
-      "dependencies": ["catalog/dress-photo-upload"]
+      "dependencies": [
+        "catalog/dress-photo-upload"
+      ]
     },
     {
       "id": "infra/e2e-buffer-pin",
@@ -402,7 +429,9 @@
         "B2 CI behaviour is unchanged (it has no .env and already used 2)"
       ],
       "evidence": "2026-09-29: root cause — test/e2e-database-url.ts calls loadEnvFile(), which loads apps/be/.env into the jest process, so startE2eApp's `process.env.CLEANING_BUFFER_DAYS ?? '2'` inherited this machine's 1-day buffer while the specs compute dates with 2. Before (master a1881f0): `pnpm --filter be test:e2e` 104/110 locally — rentals-overlap BR-1 (inside-buffer booking 201 instead of 422) and rental-update AC1, AC2×2, AC3, AC6 (dates one day short); CI green. Change: apps/be/test/e2e-app.ts pins CLEANING_BUFFER_DAYS: '2' (a spec needing another buffer passes options.env; no spec overrides it today). After: `pnpm --filter be test:e2e` 110/110, 13/13 suites (B1); `pnpm --filter be lint` 0. No production code changed; the CI workflow already sets '2' (B2).",
-      "dependencies": ["infra/invariant-proof-e2e"]
+      "dependencies": [
+        "infra/invariant-proof-e2e"
+      ]
     },
     {
       "id": "catalog/public-listing",
@@ -424,7 +453,10 @@
         "FE CMS /website list + form per the UI state matrix; dress detail shows its listings"
       ],
       "evidence": "2026-09-29: design-tier, spec docs/design/catalog/public-listing.md approved 2026-09-25 (as-built note added, 12 open choices recorded). BE 9f368ee: migration 1755500000000_dress_listings (dress_listings UNIQUE slug + CHECK format/len, CHECK occasions subset of 6, CHECK retail_price >= 0, CHECK photos <= 10, CHECK dress_listings_published_has_photo; dress_listing_items PK (listing_id, dress_id), FK CASCADE/RESTRICT), DressListing aggregate + ListingSlug/Occasion VOs + badge, 6 commands (policy listing:manage) with race conversions in SQL, GET /listings[/:id], DressResponseDto.listings, duplicate-dress copies memberships, @Public() GET /public/dresses[/:slug] (explicit column whitelist, Cache-Control public max-age=60, @nestjs/throttler on the public controllers only, trust proxy loopback), ADR 0001 §3/§4 rows. Proof: be unit 263/263 (slugify diacritics + đ→d R1, VOs R4, badge 30-day boundary B, service outcomes); be test:e2e 145/145 (+35): listings.e2e-spec R1 (422, 2 concurrent creates → 1 wins, raw INSERT dup/bad format blocked), R2 (change after publish 422, after unpublish still 422, 6-round publish ∥ slug-change race never both), R3 (API 422 + raw UPDATE blocked by CHECK), R4 (0/unknown occasions 400, raw INSERT blocked), PK dup pair, P (missing ['photo','active_dress'] precise, publish twice keeps first_published_at), R8 (staff published 403 + row kept, staff draft 204, owner published 204); public-catalog.e2e-spec R5 (draft 404, publish 200, retire last active → 404, no token 200, ?occasion= on a multi-occasion listing), R6 (exact key sets Summary/Detail + leak scan), R7 (dress in 2 listings → copy in both, new size in public detail), Cache-Control, badge; public-rate-limit.e2e-spec T (429 on /public/* while a staff route stays 200, XFF keying, loopback exemption). pnpm contract regenerated fe/qr-admin/web clients (committed with the BE). FE 73df752: features/listings (/website list with Nháp/Đã đăng/Ẩn (hết váy), /website/new + /website/:id form, slug auto-fill + lock, occasion multi-select, PhotoListField uploaded on Save, Size & váy section with group attach + price-mismatch warning, publish/unpublish + Xem trên web via VITE_WEB_ORIGIN, owner warning / staff disabled delete + 403 toast, every outcome branch), dress detail 'Thuộc mẫu' row, Website menu; fe vitest 167/167 (+28: listings.test 24, slugify 2, dresses 2) (FE). Full init.sh on 73df752: contract:check, check, lint, arch, test, be test:e2e 145/145, fe/qr-admin/web build — all green. pnpm --filter fe e2e (Playwright happy path) 1/1 — after migrating the dev DB (first run failed: /dresses 500 because list-dresses now reads dress_listings and the dev DB lacked the migration → any deploy MUST migrate before starting the new API). Not done: a real-browser run of /website against the dev R2 bucket; web still on mock (web:public-catalog-live). Not deployed. PR #18: Codex round 0 → 1 P1 (C1: publish checked the active dress outside its write — a concurrent detach could publish a listing with none) FIXED in 555bac6 (publish UPDATE carries AND EXISTS active dress; 0 rows → not_publishable [active_dress]; unit + e2e race publish ∥ detach ×6) → round 1 APPROVE; be unit 264/264, be test:e2e 146/146; CI all green (be, fe, qr-admin, web, contract, e2e Playwright).",
-      "dependencies": ["catalog/dress-photo-upload", "catalog/photo-upload-on-submit"]
+      "dependencies": [
+        "catalog/dress-photo-upload",
+        "catalog/photo-upload-on-submit"
+      ]
     },
     {
       "id": "catalog/listing-styles",
@@ -438,7 +470,21 @@
         "S4 CMS and web say \"Loại\" with the Vietnamese labels; web has one filter chip per style"
       ],
       "evidence": "2026-09-30: owner ask + 3 decisions (English slug codes, rename the field end to end, old data need not keep meaning) recorded in docs/design/catalog/public-listing.md §Amendment 2026-09-30. BE: migration 1755600000000_listing_styles (rename columns, rewrite rows, CHECK dress_listings_styles_check), Style(s) VO, DTOs/queries/commands renamed; pnpm contract regenerated fe/qr-admin/web clients (S2). Proof: pnpm check 0, pnpm lint 0 errors, be unit 264/264, be test:e2e 146/146 incl. listings R4 raw INSERT '{short,prom}' blocked by the new CHECK and public-catalog ?style= filter/400 (S1, S2); migrate:down + migrate on the dev DB both succeed (S3); fe vitest 167/167 (listings labels Váy ngắn/Váy lụa/Váy hai dây, cúp ngực, 'Chọn ít nhất một loại') (S4); web vitest 27/27 — style-chip filter test green (S4); also rides along: owner changed shop.mapsUrl to the maps.app.goo.gl share link, contact.test now asserts shop.mapsUrl; fe/qr-admin/web build 0. arch red only on generated-client freshness before commit (expected). PR #19: Codex round 0 → 2 P2 (C1: no test of the migration on legacy rows; C2: design/ADR/SRS still said occasion) FIXED in 554c810 (listing-styles-migration.e2e-spec replays both real migrations in a scratch schema: up mapping + dedup + new CHECK, down + old CHECK) and 0497a5a (docs) → round 1 APPROVE; be test:e2e 148/148; CI all green (be, contract, e2e, fe, qr-admin, web). Not deployed — the deploy MUST run the migration before starting the new API.",
-      "dependencies": ["catalog/public-listing"]
+      "dependencies": [
+        "catalog/public-listing"
+      ]
+    },
+    {
+      "id": "web:public-catalog-live",
+      "title": "Public site reads the live catalogue (GET /public/dresses[/:slug]) instead of the in-process mock — ISR 300 s, Cloudflare Images loader",
+      "status": "pass",
+      "testedAt": "2026-09-30",
+      "evidence": "2026-09-30: src/api/mock deleted (data kept as src/test/fixtures/public-dresses.ts, reshaped to the live DTO); src/api/public-catalog.ts (server-only) wraps the generated catalog client with force-cache + revalidate 300 + tag public-dresses, detail 404 → null → localized 404, unreachable BE during next build → empty catalogue + warning (CI has no BE); /, /bo-suu-tap, [slug], sitemap export revalidate = 300, [slug] keeps generateStaticParams with dynamicParams on; related computed from the list (features/catalog relatedDresses); cards/detail: style labels from catalog.filter.<code>, price suffix \"/ngày\" (owner, 2026-09-30), null retailPrice hidden, null spec rows hidden; next/image custom loader src/lib/image-loader.ts over @dress-rental/image-url (NEXT_PUBLIC_IMAGE_BASE_URL), fixed deviceSizes [640,828,1200] + imageSizes [160,320]; unused mock photos public/images/dresses removed. Proof: web check 0, lint 0, arch 7/7, vitest 33/33 (+6: public-catalog door incl. 404/500/build-offline, loader, multi-style chip, null retail/specs, related); build with BE unreachable exit 0 (route table ● /vi, /vi/bo-suu-tap, [slug], sitemap — Revalidate 5m); build against the dev BE exit 0 prerendering /vi/bo-suu-tap/proof-mot; next start :3101 with SQL-seeded listings: / 200 (name, \"Váy lụa, Váy ngắn\", price suffix), /bo-suu-tap 200 (R2-less cover passes through unchanged), /bo-suu-tap/proof-mot 200 (spec + description), a listing published AFTER the build /bo-suu-tap/proof-hai 200, unknown slug 404 localized, sitemap lists the slug; proof rows deleted afterwards. Not done: revalidateTag on CMS publish (web lags CMS ≤ ~5 min). Not deployed.",
+      "dependencies": [
+        "catalog/public-listing",
+        "catalog/listing-styles",
+        "web:public-pages"
+      ]
     }
   ]
 }
