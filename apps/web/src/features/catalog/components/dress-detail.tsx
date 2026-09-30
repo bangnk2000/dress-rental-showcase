@@ -89,7 +89,7 @@ export function DressDetail({ dress }: { dress: PublicDressDetail }) {
             <span className="font-display text-headline-sm text-primary md:text-headline-md">
               {formatVnd(dress.rentalPrice)}
             </span>
-            <span className="text-body-sm text-outline">{tp('perDay')}</span>
+            <span className="text-body-sm text-outline">{tp('perRental')}</span>
             {dress.retailPrice !== null && (
               <span className="ml-auto text-body-sm text-outline-variant line-through">{formatVnd(dress.retailPrice)}</span>
             )}
@@ -190,7 +190,7 @@ export function DressActionBar({ dress }: { dress: PublicDressDetail }) {
       <div className="flex items-center gap-space-sm px-margin-mobile py-space-sm">
         <div className="mr-auto leading-tight">
           <p className="font-display text-title-md text-primary">{formatVnd(dress.rentalPrice)}</p>
-          <p className="text-label-sm text-outline">{tp('perDay')}</p>
+          <p className="text-label-sm text-outline">{tp('perRental')}</p>
         </div>
         <a
           href={`tel:${shop.phone}`}

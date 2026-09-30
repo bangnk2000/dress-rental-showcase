@@ -53,7 +53,7 @@ export function DressCard({ dress, className }: { dress: PublicDressSummary; cla
         <div className="flex items-baseline justify-between border-t border-surface-container pt-2">
           <p className="whitespace-nowrap">
             <span className="text-label-lg tracking-normal text-primary">{formatVnd(dress.rentalPrice)}</span>
-            <span className="text-label-sm tracking-normal text-outline"> {tc('perDay')}</span>
+            <span className="text-label-sm tracking-normal text-outline"> {tc('perRental')}</span>
           </p>
           {dress.retailPrice !== null && (
             <span className="text-label-sm text-outline-variant line-through">{formatVndCompact(dress.retailPrice)}</span>

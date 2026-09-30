@@ -4,12 +4,12 @@ import { describe, expect, test } from 'vitest';
 import { fixtureDresses, fixtureSummaries } from '@/test/fixtures/public-dresses';
 import { renderWithProviders } from '@/test/render';
 
-import { DressDetail, FeaturedCollection, RelatedDresses, relatedDresses } from './index';
+import { DressActionBar, DressDetail, FeaturedCollection, RelatedDresses, relatedDresses } from './index';
 
 const longLay = fixtureDresses[0]!;
 
 describe('FeaturedCollection (FR-WEB-01)', () => {
-  test('every card links to its product page and shows the day price', () => {
+  test('every card links to its product page and shows the price per rental', () => {
     const dresses = fixtureSummaries.slice(0, 8);
     renderWithProviders(<FeaturedCollection dresses={dresses} />);
 
@@ -76,6 +76,17 @@ describe('DressDetail (FR-WEB-03)', () => {
     expect(desktop?.closest('.md\\:block')).not.toBeNull();
   });
 
+  test('the price is per rental on the page and in the mobile action bar', () => {
+    const { unmount } = renderWithProviders(<DressDetail dress={longLay} />);
+    expect(screen.getByText('/lượt')).toBeInTheDocument();
+    expect(screen.queryByText(/\/ngày/)).not.toBeInTheDocument();
+    unmount();
+
+    renderWithProviders(<DressActionBar dress={longLay} />);
+    expect(screen.getByText('/lượt')).toBeInTheDocument();
+    expect(screen.queryByText(/\/ngày/)).not.toBeInTheDocument();
+  });
+
   test('the description keeps the line breaks staff typed', () => {
     renderWithProviders(<DressDetail dress={{ ...longLay, description: 'Giá thuê theo lượt.\nGiá phát sinh: 20k/ngày.' }} />);
 
@@ -106,11 +117,11 @@ describe('DressDetail (FR-WEB-03)', () => {
 describe('live DTO shape (web:public-catalog-live)', () => {
   const multi = { ...fixtureSummaries[4]!, slug: 'lua-ngan', name: 'Lụa Ngắn', styles: ['silk', 'short'] as const, retailPrice: null };
 
-  test('a card names every style from the catalogue, shows the price per day, and hides a missing retail price', () => {
+  test('a card names every style from the catalogue, shows the price per rental, and hides a missing retail price', () => {
     renderWithProviders(<FeaturedCollection dresses={[{ ...multi, styles: [...multi.styles] }]} />);
     const card = within(screen.getByRole('listitem'));
     expect(card.getByText('Váy lụa, Váy ngắn')).toBeInTheDocument();
-    expect(card.getByText('/ngày')).toBeInTheDocument();
+    expect(card.getByText('/lượt')).toBeInTheDocument();
     expect(card.queryByText(/k$/)).not.toBeInTheDocument();
   });
 

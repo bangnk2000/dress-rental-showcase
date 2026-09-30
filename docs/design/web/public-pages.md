@@ -80,8 +80,8 @@ Mock bị xoá; trang đọc `GET /public/dresses[/:slug]` qua client sinh ra (s
   build đỏ. Deploy thật nên build khi API đang chạy.
 - **Liên quan** tính từ danh sách đã cache (cùng ít nhất một loại trước, rồi phần còn lại), không
   thêm endpoint. Chip lọc: mẫu khớp khi `styles` chứa loại của chip.
-- **DTO khác mock**: nhãn loại = `catalog.filter.<code>` nối bằng dấu phẩy; giá "X /ngày"
-  (`common.price.perDay` — chủ tiệm chốt 2026-09-30, dù DTO ghi `rentalPrice` là giá một lần thuê 2 ngày); `retailPrice` null → ẩn giá gạch; ô thông số null không render, cả 5
+- **DTO khác mock**: nhãn loại = `catalog.filter.<code>` nối bằng dấu phẩy; giá "X /lượt"
+  (`common.price.perRental` — `rentalPrice` là giá một lượt thuê; "/ngày" chủ tiệm chốt sáng 2026-09-30, đổi sang "/lượt" tối cùng ngày); `retailPrice` null → ẩn giá gạch; ô thông số null không render, cả 5
   null → ẩn mục "Chi tiết thiết kế".
 - **Ảnh**: `next/image` custom loader `src/lib/image-loader.ts` → `@dress-rental/image-url`
   (ảnh R2 dưới `NEXT_PUBLIC_IMAGE_BASE_URL` → biến thể Cloudflare Images; host khác và
