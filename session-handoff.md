@@ -1,5 +1,24 @@
 # Session Handoff
 
+## 2026-09-30 (37) — web on live data (`web:public-catalog-live` = pass, not yet committed)
+
+- Done: `apps/web` reads `GET /public/dresses[/:slug]` through `src/api/public-catalog.ts`
+  (ISR 300 s, tag `public-dresses`), mock deleted (kept as a test fixture), related from the list,
+  `next/image` custom loader over `@dress-rental/image-url`. As-built:
+  [public-pages.md §5](docs/design/web/public-pages.md). web vitest 33, builds with and without a BE,
+  runtime proof on `next start` against the dev BE (evidence in the ledger).
+- Next: commit + PR (`pr-codex-review`); then the release lane — the web process + nginx do not
+  exist on the Tencent VPS yet, and listings/styles migrations are undeployed.
+- Watch out:
+  - New env `NEXT_PUBLIC_IMAGE_BASE_URL` is inlined at BUILD — set it before `pnpm --filter web build`.
+    `apps/web/.env.example` is deleted in the working tree (owner renamed it to `.env copy.example`,
+    left untouched) — the new var still needs a line there.
+  - Build with the API running on deploy: an unreachable BE at build → empty pages until the
+    first revalidation.
+  - No `revalidateTag` hook from the CMS yet: publish/hide shows on the web within ~5 min.
+  - Dev owner login (`apps/be/.env` SEED_OWNER_PASSWORD) is rejected by the dev DB; proof rows were
+    seeded by SQL. Don't source `apps/be/.env` into a web build (its NODE_ENV breaks `next build`).
+
 ## 2026-09-30 (36) — "Dịp" → "Loại" (`catalog/listing-styles` = pass, PR #19 → master)
 
 - Done: a mẫu is now classified by style — codes `short`, `silk`, `ao-dai`, `off-shoulder`,
