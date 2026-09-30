@@ -1,7 +1,7 @@
 import { ChevronLeft, MessageCircle, Phone, Ruler, Shirt, Sparkles, Truck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import type { PublicDressDetail, PublicDressSpecs } from '@/api/mock/public-catalog';
+import type { PublicDressDetail, PublicDressSpecs } from '@/api/public-catalog';
 import { Link } from '@/i18n/navigation';
 import { formatVnd } from '@/lib/format';
 import { shop } from '@/lib/shop';
@@ -22,6 +22,11 @@ export function DressDetail({ dress }: { dress: PublicDressDetail }) {
   const t = useTranslations('catalog');
   const tn = useTranslations('common.nav');
   const tp = useTranslations('common.price');
+  // The CMS may leave any spec cell empty — only filled rows render.
+  const specs = specKeys.flatMap((key) => {
+    const value = dress.specs[key];
+    return value ? [[key, value] as const] : [];
+  });
 
   return (
     <>
@@ -74,7 +79,7 @@ export function DressDetail({ dress }: { dress: PublicDressDetail }) {
         />
 
         <div className="px-margin-mobile pt-space-md md:sticky md:top-24 md:col-span-4 md:self-start md:px-0 md:pt-0 xl:top-28 xl:col-span-5 xl:col-start-8">
-          <p className="text-label-sm uppercase tracking-widest text-secondary">{dress.styleLabel}</p>
+          <p className="text-label-sm uppercase tracking-widest text-secondary">{dress.styles.map((s) => t(`filter.${s}`)).join(', ')}</p>
           <h1 className="mt-1 font-display text-headline-lg-mobile text-primary md:text-headline-md xl:text-headline-lg">
             {dress.name}
           </h1>
@@ -82,10 +87,12 @@ export function DressDetail({ dress }: { dress: PublicDressDetail }) {
 
           <div className="mt-space-md flex items-baseline gap-2 border-y border-surface-container-highest py-space-sm">
             <span className="font-display text-headline-sm text-primary md:text-headline-md">
-              {formatVnd(dress.rentalPricePerDay)}
+              {formatVnd(dress.rentalPrice)}
             </span>
             <span className="text-body-sm text-outline">{tp('perDay')}</span>
-            <span className="ml-auto text-body-sm text-outline-variant line-through">{formatVnd(dress.retailPrice)}</span>
+            {dress.retailPrice !== null && (
+              <span className="ml-auto text-body-sm text-outline-variant line-through">{formatVnd(dress.retailPrice)}</span>
+            )}
           </div>
 
           <div className="mt-space-md">
@@ -148,16 +155,18 @@ export function DressDetail({ dress }: { dress: PublicDressDetail }) {
           </ul>
 
           <div className="mt-space-md divide-y divide-surface-container-highest border-y border-surface-container-highest">
-            <OpenFromMdDetails summary={t('detail.specsTitle')}>
-              <dl className="space-y-1.5 pb-space-md text-body-sm">
-                {specKeys.map((key) => (
-                  <div key={key} className="flex gap-space-md">
-                    <dt className="w-20 shrink-0 text-outline">{t(`detail.specs.${key}`)}</dt>
-                    <dd className="text-on-surface">{dress.specs[key]}</dd>
-                  </div>
-                ))}
-              </dl>
-            </OpenFromMdDetails>
+            {specs.length > 0 && (
+              <OpenFromMdDetails summary={t('detail.specsTitle')}>
+                <dl className="space-y-1.5 pb-space-md text-body-sm">
+                  {specs.map(([key, value]) => (
+                    <div key={key} className="flex gap-space-md">
+                      <dt className="w-20 shrink-0 text-outline">{t(`detail.specs.${key}`)}</dt>
+                      <dd className="text-on-surface">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </OpenFromMdDetails>
+            )}
             <OpenFromMdDetails summary={t('detail.howTitle')}>
               <ol className="list-decimal space-y-1.5 pb-space-md pl-5 text-body-sm text-on-surface-variant">
                 <li>{t('detail.how.step1')}</li>
@@ -180,7 +189,7 @@ export function DressActionBar({ dress }: { dress: PublicDressDetail }) {
     <div className="pb-safe fixed inset-x-0 bottom-0 z-50 bg-surface/85 shadow-ambient backdrop-blur-lg md:hidden">
       <div className="flex items-center gap-space-sm px-margin-mobile py-space-sm">
         <div className="mr-auto leading-tight">
-          <p className="font-display text-title-md text-primary">{formatVnd(dress.rentalPricePerDay)}</p>
+          <p className="font-display text-title-md text-primary">{formatVnd(dress.rentalPrice)}</p>
           <p className="text-label-sm text-outline">{tp('perDay')}</p>
         </div>
         <a

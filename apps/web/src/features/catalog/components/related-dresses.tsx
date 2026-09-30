@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import type { PublicDressSummary } from '@/api/mock/public-catalog';
+import type { PublicDressSummary } from '@/api/public-catalog';
 import { Link } from '@/i18n/navigation';
 
 import { relatedVisibility } from '../lib/filters';

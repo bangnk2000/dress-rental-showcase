@@ -20,7 +20,8 @@ process. It MUST NOT import another app's source (root invariant 4).
 | `pnpm --filter web generate:api` | Orval: `packages/contract/openapi.json` → `src/api/generated/` |
 | `pnpm contract` (root) | after ANY BE API change: re-emit the spec and regenerate ALL clients |
 
-Env (server-only, `.env.example`): `API_URL`, `SITE_URL`. No `NEXT_PUBLIC_*` yet.
+Env (`.env.example`): server-only `API_URL`, `SITE_URL`; public `NEXT_PUBLIC_IMAGE_BASE_URL`
+(R2 photo origin, inlined at BUILD time — unset = photos served as stored, no resizing).
 
 ## Rules
 
@@ -33,11 +34,17 @@ Env (server-only, `.env.example`): `API_URL`, `SITE_URL`. No `NEXT_PUBLIC_*` yet
   for a public cached surface). Orval runs with `includeHttpResponseReturnType: false`, so
   generated functions resolve to the DTO.
 - `src/api/errors.ts` (`mapApiError`) is the only reader of wire error shapes (ADR 0001).
-- **`src/api/mock/` is TEMPORARY** (FR-WEB-01..04, `docs/design/web/public-pages.md`): the public
-  catalogue has no BE endpoint yet, so `public-catalog.ts` serves in-process mock DTOs with the
-  signatures a generated client will have. Pages call it; features take DTOs as props and import
-  only its types. When the anonymous endpoints ship: BE slice → `pnpm contract` → swap this one
-  import for the generated functions → delete the folder. Never grow it into a second BE.
+- **`src/api/public-catalog.ts` is the catalogue door** (`server-only`): the generated
+  `GET /public/dresses[/:slug]` functions with `force-cache` + `revalidate: 300` + tag
+  `public-dresses` (Next Data Cache, ISR). Pages call it; features take the DTOs as props and import
+  only its type aliases. Detail 404 → `null` → `notFound()`. An UNREACHABLE BE during `next build`
+  (CI has none) prerenders an empty catalogue instead of failing; at runtime a failed revalidation
+  keeps the last good page. Related dresses are computed from the list (`features/catalog`
+  `relatedDresses`), never a new endpoint.
+- **`src/lib/image-loader.ts` is the only `next/image` loader** (`images.loader: 'custom'`): R2
+  photos under `NEXT_PUBLIC_IMAGE_BASE_URL` → Cloudflare Images variants via
+  `@dress-rental/image-url`; other hosts and `/images/*` pass through. Widths come only from the
+  fixed `deviceSizes`/`imageSizes` in `next.config.ts` — add a width there, never ad hoc.
 - Site shell (header, nav, bottom tab bar, footer, open badge) is kernel: `src/components/site/`;
   shop facts (phone, Zalo, maps, hours) are config in `src/lib/shop.ts`, copy in `common.shop`.
 - Every user-facing string goes through next-intl (`messages/vi/<namespace>.json`, aggregated in
@@ -67,8 +74,9 @@ Env (server-only, `.env.example`): `API_URL`, `SITE_URL`. No `NEXT_PUBLIC_*` yet
 4. **No plop generator, no MSW, no Playwright yet** — slices are hand-copied (`features/<name>/
    index.ts` + `components/` + colocated `*.test.tsx`); `src/test/render.tsx` `renderWithProviders`
    wraps the real vi catalogue, and `src/test/setup.ts` stubs `@/i18n/navigation` (plain anchor) and
-   `next/image` (plain img). MSW arrives with the first slice that reads HTTP (today's data is the
-   in-process mock). GAP still open: a Playwright spec for the RSC/SEO half (09).
+   `next/image` (plain img). Still no MSW: HTTP is read only by RSC pages, so feature tests pass
+   DTO fixtures (`src/test/fixtures/`) and `src/api/public-catalog.test.ts` mocks the generated
+   functions. GAP still open: a Playwright spec for the RSC/SEO half (09).
 5. **`src/proxy.ts` is not a boundaries element** — v7 element patterns match folders; the proxy
    imports only `src/i18n`. Classify it via `boundaries/files` if it ever grows.
 6. **`global-error.tsx` copy is inline** — it replaces the root layout, so no intl provider exists
@@ -78,8 +86,8 @@ Env (server-only, `.env.example`): `API_URL`, `SITE_URL`. No `NEXT_PUBLIC_*` yet
 
 1. Trace it to an FR-WEB-id (add one to the SRS first); a new public/SEO surface is design-tier →
    slice design doc (14 §2, incl. §1a rendering & caching) approved before code.
-2. Needs data? The BE has no anonymous endpoints yet (`docs/design/public-web.md` §4) — BE slice
-   first → `pnpm contract` → this app.
+2. Needs data? Only `GET /public/dresses[/:slug]` is anonymous today — anything else is a BE slice
+   first → `pnpm contract` → this app, read through a door like `src/api/public-catalog.ts`.
 3. Slice under `src/features/<name>/` + a thin segment under `src/app/[locale]/(public)/`; one
    namespace `messages/vi/<name>.json` + one line in `messages/vi.ts`; add it to `sitemap.ts`.
 4. Claim the entry in root `feature_list.json`; done = check/lint/arch/test/build green + the

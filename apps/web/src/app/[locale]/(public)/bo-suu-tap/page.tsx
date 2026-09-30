@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-import { listPublicDresses } from '@/api/mock/public-catalog';
+import { listPublicDresses } from '@/api/public-catalog';
 import { BottomTabBar } from '@/components/site/bottom-tab-bar';
 import { SiteFooter } from '@/components/site/site-footer';
 import { CatalogBrowser } from '@/features/catalog';
 import { resolveLocale } from '@/i18n/locale';
 
-// FR-WEB-02 — ● SSG from the mock catalogue.
+// FR-WEB-02 — ISR over GET /public/dresses (docs/design/web/public-pages.md §2).
+export const revalidate = 300;
+
 export async function generateMetadata({ params }: PageProps<'/[locale]/bo-suu-tap'>): Promise<Metadata> {
   const locale = resolveLocale((await params).locale);
   const t = await getTranslations({ locale, namespace: 'catalog' });

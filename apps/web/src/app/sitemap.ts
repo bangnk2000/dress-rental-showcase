@@ -1,8 +1,11 @@
 import type { MetadataRoute } from 'next';
 
-import { listPublicDresses } from '@/api/mock/public-catalog';
+import { listPublicDresses } from '@/api/public-catalog';
 
 const siteUrl = process.env.SITE_URL ?? 'http://localhost:3001';
+
+// Lists every published dress, so it refreshes with the catalogue.
+export const revalidate = 300;
 
 // One entry per PUBLIC page; a feature that adds an indexable segment adds its line here.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

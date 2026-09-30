@@ -1,4 +1,4 @@
-import type { PublicDressSummary, PublicStyle } from '@/api/mock/public-catalog';
+import type { PublicDressSummary, PublicStyle } from '@/api/public-catalog';
 
 // Chip → styles it covers: one chip per style, plus "all".
 export const styleFilters = {
@@ -16,7 +16,7 @@ export const styleFilterKeys = Object.keys(styleFilters) as StyleFilter[];
 
 export function filterDresses<T extends PublicDressSummary>(dresses: T[], filter: StyleFilter): T[] {
   const styles: readonly PublicStyle[] | null = styleFilters[filter];
-  return styles === null ? dresses : dresses.filter((d) => styles.includes(d.style));
+  return styles === null ? dresses : dresses.filter((d) => d.styles.some((s) => styles.includes(s)));
 }
 
 /** Home shows 4 / 6 / 8 cards at mobile / md / xl — never a half-empty last row (responsive.md §4). */
