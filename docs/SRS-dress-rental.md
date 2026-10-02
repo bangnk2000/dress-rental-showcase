@@ -165,6 +165,10 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   kênh mạng xã hội, đặc quyền.
 - **FR-WEB-05** Web đọc catalogue thật từ `GET /public/dresses[/:slug]` (FR-CAT-09) thay mock,
   ISR 5 phút, ảnh qua Cloudflare Images (FR-CAT-11); xoá `apps/web/src/api/mock/`.
+- **FR-WEB-06**: Khách tìm mẫu công khai trên `/bo-suu-tap`
+  theo tên và mô tả ngắn, hỗ trợ tiếng Việt không dấu, debounce 300 ms khi gõ,
+  kết hợp bộ lọc loại; từ khóa/bộ lọc
+  có thể chia sẻ qua URL. Thiết kế: [web/search-dresses.md](./design/web/search-dresses.md).
 - Dữ liệu váy hiện là **mock** trong `apps/web` (BE chưa có endpoint ẩn danh) — thiết kế + BE change
   request nháp: [design/web/public-pages.md](./design/web/public-pages.md).
 
@@ -222,6 +226,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-CAT-10, 11 | `catalog/dress-photo-upload` | [catalog/dress-photo-upload.md](./design/catalog/dress-photo-upload.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
 | FR-CAT-09 | `catalog/public-listing` | [catalog/public-listing.md](./design/catalog/public-listing.md) (spec `approved`) | not-started |
 | FR-WEB-05 | `web:public-catalog-live` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Thứ tự làm, [web/public-pages.md](./design/web/public-pages.md) §4 | not-started |
+| FR-WEB-06 | `web:search-dresses` | [web/search-dresses.md](./design/web/search-dresses.md) (as-built 2026-10-02) | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

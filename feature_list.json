@@ -511,6 +511,40 @@
       "dependencies": [
         "web:public-catalog-live"
       ]
+    },
+    {
+      "id": "web:search-dresses",
+      "title": "Public collection search by name and tagline with Vietnamese accent folding",
+      "description": "FR-WEB-06; design-tier: docs/design/web/search-dresses.md approved by owner 2026-10-02 before code. Client search with 300 ms debounce, style chips and shareable URL; no API change.",
+      "status": "pass",
+      "acceptance": [
+        {
+          "id": "AC1",
+          "text": "Name/tagline search ignores case and Vietnamese accents; whitespace and literal special characters work."
+        },
+        {
+          "id": "AC2",
+          "text": "Search combines with style; clear preserves style and reset restores catalogue."
+        },
+        {
+          "id": "AC3",
+          "text": "URL supports sharing/reload/Back/Forward without per-keystroke API calls."
+        },
+        {
+          "id": "AC4",
+          "text": "Accessible count, no-match and empty-catalogue states work on mobile and desktop."
+        },
+        {
+          "id": "AC5",
+          "text": "Collection keeps ISR/canonical; generated clients remain unchanged."
+        },
+        {
+          "id": "AC6",
+          "text": "Input updates immediately; results/count/URL update after 300 ms idle. Enter, clear/reset, style changes and navigation apply immediately and cancel pending debounce; unmount cancels timers."
+        }
+      ],
+      "testedAt": "2026-10-02",
+      "evidence": "2026-10-02: design approved explicitly by owner before code (docs/design/web/search-dresses.md). AC1: pnpm --filter web test, 44/44 tests (11 new search tests), proves name/tagline accent folding incl. Đ, uppercase, multi-term matching, whitespace/literal special characters and input order/privacy. AC2/3/4/6: same RTL suite proves combined styles, immediate Enter/clear/reset/style, live count, no-match vs empty catalogue, URL restore/unknown style, preserved unrelated params/hash/history state, 300 ms after LAST keystroke, pending-timer cancellation on navigation/unmount, no fetch on search. AC2/3/4/5/6 runtime: production next start --hostname localhost --port 3001 with fixture API (8 summaries), temporary Chromium smoke script /tmp/dress-search-runtime.cjs PASS: actual Back/Forward, reload, pending timer canceled, keyboard Enter/clear focus, no horizontal overflow at 390/768/1440px, canonical /bo-suu-tap, server HTML remains full catalogue, card opens detail; no API or search-query RSC requests (Next Link prefetch excluded), no browser errors. AC5: API_URL=http://127.0.0.1:4300 pnpm --filter web exec next build --webpack exit 0, collection route remains prerendered with 5m revalidation. Root pnpm contract:check, check, lint, arch, test, fe build, qr-admin build all exit 0; generated layers unchanged. Environment deviations: default web build blocked by Google Fonts network and Turbopack internal port; webpack build with network permission used, repo build config unchanged. bash init.sh ran baseline, all earlier runnable gates passed; BE invariant e2e explicitly skipped WARN because compose Postgres unavailable. No BE/API change. Not deployed."
     }
   ]
 }

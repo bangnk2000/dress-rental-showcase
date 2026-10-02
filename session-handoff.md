@@ -1,5 +1,32 @@
 # Session Handoff
 
+## 2026-10-02 (42) — public search implemented (`web:search-dresses` = pass)
+
+- Done: owner approved draft with debounce; search by public name/tagline with Vietnamese accent
+  folding, 300 ms debounce, combined style chips, shareable q/style URL, clear/reset/Enter.
+  Ledger now 44/44 pass; design as-built: [web/search-dresses.md](docs/design/web/search-dresses.md).
+- Proof: web Vitest 44/44; root contract/check/lint/arch/test and FE/QR builds green;
+  webpack production build keeps collection ISR 5m; Chromium production smoke with 8 fixture
+  summaries covers real Back/Forward/reload, timer cancellation, 390/768/1440px, canonical/detail.
+- Next: review/ship public search through release lane when requested. Existing r2 accepted-risk
+  notes and production listing review below remain pending; this feature is not deployed.
+- Watch out: default Turbopack build is blocked by sandbox internal port; webpack build with
+  network permission passed. init.sh baseline skipped invariant e2e (no compose Postgres);
+  no BE/API change. URL filtering applies after hydration; original server HTML is full catalogue.
+  Runtime fixture API/browser files are temporary /tmp artifacts, not production services.
+
+## 2026-10-02 (41) — public search design draft
+
+- Done: inspected public collection and summary DTO; prepared FR-WEB-06 and
+  [web/search-dresses.md](docs/design/web/search-dresses.md), `web:search-dresses` = todo.
+- Update: owner requires debounce; draft and AC6 specify 300 ms, immediate input, timer cancellation
+  on clear/reset/style/navigation/unmount; Enter applies immediately.
+- Next: owner confirms search scope and approves concrete draft before implementation.
+- Watch out: list DTO has name/tagline, no long description or dress code. Proposed client
+  filtering preserves ISR; URL is restored after hydration. No application code changed;
+  baseline init.sh and implementation/runtime gates deferred until design approval.
+  Existing release follow-up work below remains pending.
+
 ## 2026-09-30 (40) — release `2026-09-30-r2` deployed + readiness pack (after the fact)
 
 - Done: owner "hãy triển khai đi" → Tencent now runs `a4d32cb`: migrations 10 → 12, R2 photo upload ON

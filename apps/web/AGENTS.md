@@ -62,6 +62,14 @@ Env (`.env.example`): server-only `API_URL`, `SITE_URL`; public `NEXT_PUBLIC_IMA
 - Every new public segment states its rendering mode + cache owner in its design doc, and the
   `pnpm --filter web build` route table must show it.
 
+## Public collection search
+
+`CatalogBrowser` (`features/catalog`) filters public `name`/`tagline` and intersects style chips.
+`useCatalogSearch` owns input vs applied query, debounce 300 ms, native URL `q`/`style`,
+Back/Forward restore and timer cleanup. Enter/clear/reset/style apply immediately; typing replaces
+history, style/reset push. Page does not read server searchParams: ISR 300 s stays intact;
+URL is restored after hydration. Design + evidence: `docs/design/web/search-dresses.md` (FR-WEB-06).
+
 ## Deviations from the stack spec (deliberate, keep consistent)
 
 1. **No session (model 0)** — no Auth.js, no `(app)` group, no cookie forwarding, no
