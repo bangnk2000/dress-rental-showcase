@@ -164,3 +164,20 @@ Mechanical follow-up, không có URL contract/interaction pattern mới. Ledger 
 Proof: web test 44/44 (cập nhật assertions short/ao-dai/all), check/lint/arch xanh;
 Chromium click-through trên dev server đang chạy xác nhận short/ao-dai/all + reload.
 Generated layers không đổi; chưa deploy.
+
+### Follow-up as-built 2026-10-03 — PR #26 P2, same-route Next Link
+
+PR review reproduced stale input/results after the header's Bộ sưu tập Next Link removes q.
+The initial hook only observed mount/popstate. `CatalogUrlSync` now subscribes to App Router
+`useSearchParams` through the kernel navigation door, under Suspense with a null fallback.
+Catalogue markup remains outside that boundary, preserving ISR 300 s and full server HTML.
+External URL changes restore filters and cancel timers; notifications of our own history writes
+are ignored so they cannot erase newer drafts. Native history passes null user data: Next
+copies its internal history state itself, whereas passing __NA had bypassed URL synchronization.
+
+This corrects approved AC3/AC6, not a new URL contract. Ledger `web:catalog-router-sync`.
+Proof: web Vitest 46/46, check/lint/arch green; two retained Playwright tests pass on dev
+and production with actual Next Link, including pending debounce cancellation. Web webpack
+build still shows collection revalidation 5m. The CI web job runs those tests after build.
+Run locally: `E2E_BASE_URL=http://localhost:3001 pnpm --filter web e2e`; without the override,
+Playwright starts the built web itself. Browser installation is required; no DB/seed required.

@@ -9,6 +9,7 @@ vi.mock('@/i18n/navigation', () => ({
   Link: ({ href, ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) =>
     createElement('a', { href, ...props }),
   usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
 // …and no image loader: next/image renders a plain <img> (drop the Next-only props).

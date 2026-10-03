@@ -1,5 +1,17 @@
 # Session Handoff
 
+## 2026-10-03 (44) — PR #26 P2 router URL synchronization fixed
+
+- Done: `web:catalog-router-sync` pass, ledger 46/46. Header Next Link now restores
+  query/style and cancels pending debounce. Router subscription sits under Suspense;
+  native history no longer passes private Next state; own notifications preserve newer drafts.
+- Proof: web 46/46 unit tests, check/lint/arch green; two retained Playwright regressions
+  pass on dev and production; webpack build preserves collection ISR 5m. CI web runs e2e.
+- Next: inspect CI/review on PR #26 after this fix is pushed; release/deploy only when requested.
+- Watch out: local dev server was restarted after pnpm relinked dependencies; production smoke
+  used a separate port. Web e2e needs installed Chromium but no backend/database/seed.
+  Generated layers unchanged, no BE changes; not deployed.
+
 ## 2026-10-03 (43) — featured CTA preserves filter (`web:featured-filter-link` = pass)
 
 - Done: owner screenshot request → FeaturedCollection CTA “Xem thêm”; selected style goes

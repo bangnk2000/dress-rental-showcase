@@ -2,13 +2,14 @@
 
 import { ChevronRight, Search, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useRef, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 
 import type { PublicDressSummary } from '@/api/public-catalog';
 import { Link } from '@/i18n/navigation';
 
 import { useCatalogSearch } from '../hooks/use-catalog-search';
 import { featuredVisibility, filterDresses, searchDresses, type StyleFilter } from '../lib/filters';
+import { CatalogUrlSync } from './catalog-url-sync';
 import { DressCard } from './dress-card';
 import { StyleChips } from './style-chips';
 
@@ -71,6 +72,9 @@ export function CatalogBrowser({ dresses }: { dresses: PublicDressSummary[] }) {
   const filtered = Boolean(search.draftQuery || search.query || search.style !== 'all');
   return (
     <div className="flex flex-col gap-space-md">
+      <Suspense fallback={null}>
+        <CatalogUrlSync onChange={search.syncFromRouter} />
+      </Suspense>
       <form role="search" onSubmit={(event) => { event.preventDefault(); search.submit(); }}>
         <label htmlFor="catalog-search" className="mb-2 block text-label-lg text-on-surface">{t('label')}</label>
         <div className="flex items-center gap-2 rounded-full bg-surface-container-high px-4 focus-within:ring-2 focus-within:ring-primary">

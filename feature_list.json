@@ -553,6 +553,17 @@
       "status": "pass",
       "testedAt": "2026-10-03",
       "evidence": "2026-10-03: pnpm --filter web test 44/44; strengthened existing FeaturedCollection assertions for Xem thêm URLs (short, ao-dai, all). Existing search tests cover URL hydration. web check/lint/arch all exit 0, arch 7/7 and generated layers unchanged. Chromium read-only smoke on existing localhost:3001 dev server: click Xem thêm after short/ao-dai restores pressed chip on collection, reload retains short; all links to /bo-suu-tap without style and restores all chip. No BE/contract/rendering/build-config changes; scoped web gates used for this mechanical change. Not deployed."
+    },
+    {
+      "id": "web:catalog-router-sync",
+      "title": "Restore collection filters on same-route Next Link navigation",
+      "description": "FR-WEB-06; bugfix for PR #26 P2 discussion_r4174218661. Implements existing approved URL-state/AC3/AC6 behavior: router URL changes restore filters and cancel pending debounce, without passing Next private history state.",
+      "status": "pass",
+      "testedAt": "2026-10-03",
+      "evidence": "2026-10-03: web Vitest 46/46, check/lint/arch exit 0 (7/7 arch). Added same-route query-change and delayed own-history-notification unit regressions; test provider supports rerender. Playwright 2/2 passed against both dev :3001 and production :3301: actual header Next Link clears q/style and pending debounce cannot rewrite the URL after navigation. Web webpack production build exit 0, collection route stays prerendered with revalidate 5m. Added web Playwright dependency/config/e2e script and tests to CI web job, requiring Chromium but no BE/DB/seed. useSearchParams is exposed through kernel navigation and isolated under Suspense; full catalogue server markup remains available. Native history uses null user data so Next copies internal state and updates its subscribers. Generated layers unchanged; no BE/API changes; not deployed.",
+      "dependencies": [
+        "web:search-dresses"
+      ]
     }
   ]
 }

@@ -66,7 +66,7 @@ describe('CatalogBrowser (AC2–4, AC6)', () => {
     expect(new URLSearchParams(window.location.search).get('q')).toBe('AO DAI');
     expect(new URLSearchParams(window.location.search).get('utm')).toBe('test');
     expect(window.location.hash).toBe('#collection');
-    expect(window.history.state).toEqual({ preserved: true });
+    expect(window.history.state).toBeNull();
     expect(network).not.toHaveBeenCalled();
   });
 
@@ -126,6 +126,33 @@ describe('CatalogBrowser (AC2–4, AC6)', () => {
     advance(400);
     expect(names()).toHaveLength(2);
     expect(new URLSearchParams(window.location.search).get('q')).toBe('ao dai');
+  });
+
+  test('same-route router query changes restore filters without popstate and cancel pending debounce', () => {
+    const { rerender } = renderWithProviders(<CatalogBrowser dresses={fixtureSummaries} />);
+    type('ao dai');
+    advance(300);
+    expect(names()).toHaveLength(2);
+    type('stale pending');
+    window.history.replaceState(null, '', '/bo-suu-tap');
+    rerender(<CatalogBrowser dresses={fixtureSummaries} />);
+    expect(input()).toHaveValue('');
+    expect(names()).toHaveLength(fixtureSummaries.length);
+    advance(400);
+    expect(window.location.search).toBe('');
+    expect(input()).toHaveValue('');
+  });
+
+  test('a delayed notification of our own history write keeps a newer draft and timer', () => {
+    const { rerender } = renderWithProviders(<CatalogBrowser dresses={fixtureSummaries} />);
+    type('ao dai');
+    advance(300);
+    type('mini');
+    rerender(<CatalogBrowser dresses={fixtureSummaries} />);
+    expect(input()).toHaveValue('mini');
+    advance(300);
+    expect(names()).toEqual(['Váy Nơ Lưng Mini']);
+    expect(new URLSearchParams(window.location.search).get('q')).toBe('mini');
   });
 
   test('no-match and empty catalogue have distinct messages and a live count', () => {

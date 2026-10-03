@@ -17,6 +17,7 @@ process. It MUST NOT import another app's source (root invariant 4).
 | `pnpm --filter web dev` | Next dev server on **:3001** (`/api/v1/*` rewritten to `API_URL`, default :3000) |
 | `pnpm --filter web build` / `start` | production build (its route table is the rendering truth; also emits `.next/standalone`, the deploy unit) / serve on :3001. Production runs `HOSTNAME=localhost node server.js` from the standalone dir — never bind `127.0.0.1` (`docs/design/public-web.md` §1 Hosting) |
 | `pnpm --filter web check` / `lint` / `arch` / `test` | `next typegen && tsc`, eslint (boundaries v7), `scripts/check-architecture.sh` (7 checks), vitest |
+| `pnpm --filter web e2e` | Chromium URL/navigation regression tests; starts the built web, or targets `E2E_BASE_URL`; CI web job runs after build; no DB/seed required |
 | `pnpm --filter web generate:api` | Orval: `packages/contract/openapi.json` → `src/api/generated/` |
 | `pnpm contract` (root) | after ANY BE API change: re-emit the spec and regenerate ALL clients |
 
@@ -66,7 +67,10 @@ Env (`.env.example`): server-only `API_URL`, `SITE_URL`; public `NEXT_PUBLIC_IMA
 
 `CatalogBrowser` (`features/catalog`) filters public `name`/`tagline` and intersects style chips.
 `useCatalogSearch` owns input vs applied query, debounce 300 ms, native URL `q`/`style`,
-Back/Forward restore and timer cleanup. Enter/clear/reset/style apply immediately; typing replaces
+Back/Forward and same-route Next Link restore, plus timer cleanup. `CatalogUrlSync` subscribes
+to App Router through the kernel navigation door under Suspense; history passes null user data
+so Next maintains its internal state. Own-write notifications preserve newer drafts.
+Enter/clear/reset/style apply immediately; typing replaces
 history, style/reset push. Page does not read server searchParams: ISR 300 s stays intact;
 URL is restored after hydration. Design + evidence: `docs/design/web/search-dresses.md` (FR-WEB-06).
 
@@ -79,12 +83,13 @@ URL is restored after hydration. Design + evidence: `docs/design/web/search-dres
 3. **No shadcn components, no `components.json` yet** — nothing renders UI worth a primitive;
    `lib/utils.ts` `cn()` is ready. Fonts ARE loaded (`next/font/google`, Playfair Display +
    Plus Jakarta Sans, `vietnamese` subset), so `next build` needs network to Google Fonts.
-4. **No plop generator, no MSW, no Playwright yet** — slices are hand-copied (`features/<name>/
+4. **No plop generator, no MSW; focused Playwright URL/navigation coverage** — slices are hand-copied (`features/<name>/
    index.ts` + `components/` + colocated `*.test.tsx`); `src/test/render.tsx` `renderWithProviders`
    wraps the real vi catalogue, and `src/test/setup.ts` stubs `@/i18n/navigation` (plain anchor) and
    `next/image` (plain img). Still no MSW: HTTP is read only by RSC pages, so feature tests pass
    DTO fixtures (`src/test/fixtures/`) and `src/api/public-catalog.test.ts` mocks the generated
-   functions. GAP still open: a Playwright spec for the RSC/SEO half (09).
+   functions. `e2e/catalog-navigation.spec.ts` proves actual Next Link restoration/timer cancellation; CI web
+   runs it against the production build. GAP still open: broader RSC/SEO browser coverage (09).
 5. **`src/proxy.ts` is not a boundaries element** — v7 element patterns match folders; the proxy
    imports only `src/i18n`. Classify it via `boundaries/files` if it ever grows.
 6. **`global-error.tsx` copy is inline** — it replaces the root layout, so no intl provider exists
@@ -100,3 +105,13 @@ URL is restored after hydration. Design + evidence: `docs/design/web/search-dres
    namespace `messages/vi/<name>.json` + one line in `messages/vi.ts`; add it to `sitemap.ts`.
 4. Claim the entry in root `feature_list.json`; done = check/lint/arch/test/build green + the
    build route table + runtime proof on `pnpm --filter web start`.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

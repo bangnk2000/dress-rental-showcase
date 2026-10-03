@@ -215,3 +215,11 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md`; t
   Clean-state review: SRS/design/ledger/handoff/root Current state synced, generated/spec
   layers unchanged. Scoped web checks; no backend/full rebuild needed for this link/copy change.
   No deploy.
+
+- 2026-10-03 (44) — Owner asks fix/push PR #26 P2. `web:catalog-router-sync` pass, 46/46
+  ledger. Added router query observer under Suspense; history null user data lets Next
+  preserve internal state and publish URL updates. External navigation cancels timers;
+  own notifications retain newer drafts. Web unit 46/46, check/lint/arch green; Playwright
+  2/2 on dev and production, webpack build ISR 5m. CI web now runs URL regression tests.
+  Clean-state review: design/handoff/ledger/root map updated, generated layers unchanged.
+  Scoped web evidence recorded; backend invariant tests unaffected and not rerun. No deploy.

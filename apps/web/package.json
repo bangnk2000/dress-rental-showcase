@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "arch": "bash scripts/check-architecture.sh",
     "test": "vitest run",
-    "generate:api": "orval --config ./orval.config.ts"
+    "generate:api": "orval --config ./orval.config.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@dress-rental/image-url": "workspace:*",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@next/eslint-plugin-next": "^16.3.6",
+    "@playwright/test": "^1.62.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
