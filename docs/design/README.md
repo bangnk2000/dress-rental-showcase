@@ -22,6 +22,9 @@ design của nó ở [qr-admin.md](./qr-admin.md). SRS phase QR: [../SRS-qr-url.
 Website công khai (Next.js) ở `apps/web/` — bootstrap brief + contract gaps (BE chưa có endpoint
 ẩn danh) ở [public-web.md](./public-web.md). Chưa có slice nào.
 
+Tìm mẫu trên Bộ sưu tập public (FR-WEB-06): [web/search-dresses.md](./web/search-dresses.md)
+— as-built 2026-10-02, tên + tagline, debounce 300 ms, URL q/style, ISR 5 phút.
+
 Yêu cầu sản phẩm: [../SRS-dress-rental.md](../SRS-dress-rental.md) (FR/BR/NFR + bảng truy vết).
 
 ## Spec use-case (capability có rejection — lane B2.1)

@@ -30,3 +30,14 @@ export function featuredVisibility(index: number): string {
 export function relatedVisibility(index: number): string {
   return index < 3 ? 'flex' : 'flex md:hidden xl:flex';
 }
+
+/** Search public copy only; each whitespace-separated term must match either field. */
+export function searchDresses<T extends PublicDressSummary>(dresses: T[], query: string): T[] {
+  const normalize = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').replace(/[đĐ]/g, 'd').toLowerCase();
+  const terms = normalize(query).trim().split(/\s+/).filter(Boolean);
+  if (!terms.length) return dresses;
+  return dresses.filter((dress) => {
+    const fields = [normalize(dress.name), normalize(dress.tagline)];
+    return terms.every((term) => fields.some((field) => field.includes(term)));
+  });
+}

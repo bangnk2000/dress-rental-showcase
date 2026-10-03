@@ -184,3 +184,42 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md`; t
 - 2026-07-30 — Repo created from `init-monorepo-contract` spec (knowledge-system). Skeleton:
   pnpm workspace, `packages/contract/`, CI drift gates, root harness artifacts, four prompt
   sets copied to `docs/spec/`. Apps pending bootstrap.
+
+- 2026-10-02 (41) — Public search request: FR-WEB-06 proposed, design draft
+  `docs/design/web/search-dresses.md`, ledger `web:search-dresses` = todo. Verified
+  current collection loads all summaries; name/tagline are available for local filtering.
+  Await scope/design approval per root design gate; no app/API/generated changes.
+  Clean-state review: docs/ledger only; init.sh, tests/build/runtime deferred until approval;
+  no pass claim, no as-built stamp, no commit/deployment.
+
+- 2026-10-02 — Search design follow-up: owner requires debounce. Added proposed 300 ms
+  delay for grid/count/URL and AC6 timer proof; immediate Enter/clear/reset/style/navigation
+  cancel pending work. Design remains draft; documentation changes only, diff check passed.
+
+- 2026-10-02 (42) — Owner approved public search design before implementation.
+  `web:search-dresses` = pass, 44/44 ledger. Public name/tagline search supports accent folding,
+  debounce 300 ms, chip intersection and q/style URL; immediate Enter/clear/reset/chip and
+  navigation/unmount cancel stale timers. web tests 44/44; root contract/check/lint/arch/test,
+  FE/QR builds green. webpack web production build and Chromium smoke (8 fixture summaries)
+  pass: real history/reload, keyboard, mobile/tablet/desktop, cached HTML/canonical/detail.
+  Environment: Turbopack internal port restricted; webpack fallback used without config change;
+  baseline init.sh explicitly skipped invariant e2e without compose DB. Not deployed.
+  Clean-state checklist reviewed: ledger/evidence/design/SRS/handoff updated, generated layers
+  unchanged, vendored specs untouched. Baseline init.sh full success and DB invariant gate remain
+  environment-limited as recorded; webpack production build supplies web validation.
+
+- 2026-10-03 (43) — Owner asks “Xem thêm” and filter continuity. Mechanical follow-up
+  `web:featured-filter-link` pass, 45/45 ledger: featured CTA passes selected style to existing
+  collection URL contract; all omits style. Web tests 44/44, check/lint/arch green; Chromium
+  actual navigation short/ao-dai/all + reload pass on existing :3001 dev server (left running).
+  Clean-state review: SRS/design/ledger/handoff/root Current state synced, generated/spec
+  layers unchanged. Scoped web checks; no backend/full rebuild needed for this link/copy change.
+  No deploy.
+
+- 2026-10-03 (44) — Owner asks fix/push PR #26 P2. `web:catalog-router-sync` pass, 46/46
+  ledger. Added router query observer under Suspense; history null user data lets Next
+  preserve internal state and publish URL updates. External navigation cancels timers;
+  own notifications retain newer drafts. Web unit 46/46, check/lint/arch green; Playwright
+  2/2 on dev and production, webpack build ISR 5m. CI web now runs URL regression tests.
+  Clean-state review: design/handoff/ledger/root map updated, generated layers unchanged.
+  Scoped web evidence recorded; backend invariant tests unaffected and not rerun. No deploy.

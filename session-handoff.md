@@ -1,5 +1,54 @@
 # Session Handoff
 
+## 2026-10-03 (44) — PR #26 P2 router URL synchronization fixed
+
+- Done: `web:catalog-router-sync` pass, ledger 46/46. Header Next Link now restores
+  query/style and cancels pending debounce. Router subscription sits under Suspense;
+  native history no longer passes private Next state; own notifications preserve newer drafts.
+- Proof: web 46/46 unit tests, check/lint/arch green; two retained Playwright regressions
+  pass on dev and production; webpack build preserves collection ISR 5m. CI web runs e2e.
+- Next: inspect CI/review on PR #26 after this fix is pushed; release/deploy only when requested.
+- Watch out: local dev server was restarted after pnpm relinked dependencies; production smoke
+  used a separate port. Web e2e needs installed Chromium but no backend/database/seed.
+  Generated layers unchanged, no BE changes; not deployed.
+
+## 2026-10-03 (43) — featured CTA preserves filter (`web:featured-filter-link` = pass)
+
+- Done: owner screenshot request → FeaturedCollection CTA “Xem thêm”; selected style goes
+  to `/bo-suu-tap?style=<code>`, all goes to `/bo-suu-tap`. Ledger 45/45 pass.
+- Proof: web test 44/44, check/lint/arch green, no generated drift; real Chromium click-through
+  on existing dev server :3001 confirms short/ao-dai/all and reload restoration.
+- Next: release/ship web follow-ups when requested; r2 release debt remains below.
+- Watch out: existing user dev server on :3001 was reused read-only and left running.
+  No BE/API/cache change; scoped verification for mechanical follow-up; not deployed.
+
+## 2026-10-02 (42) — public search implemented (`web:search-dresses` = pass)
+
+- Done: owner approved draft with debounce; search by public name/tagline with Vietnamese accent
+  folding, 300 ms debounce, combined style chips, shareable q/style URL, clear/reset/Enter.
+  Ledger now 44/44 pass; design as-built: [web/search-dresses.md](docs/design/web/search-dresses.md).
+- Proof: web Vitest 44/44; root contract/check/lint/arch/test and FE/QR builds green;
+  webpack production build keeps collection ISR 5m; Chromium production smoke with 8 fixture
+  summaries covers real Back/Forward/reload, timer cancellation, 390/768/1440px, canonical/detail.
+- Next: review/ship public search through release lane when requested. Existing r2 accepted-risk
+  notes and production listing review below remain pending; this feature is not deployed.
+- Watch out: default Turbopack build is blocked by sandbox internal port; webpack build with
+  network permission passed. init.sh baseline skipped invariant e2e (no compose Postgres);
+  no BE/API change. URL filtering applies after hydration; original server HTML is full catalogue.
+  Runtime fixture API/browser files are temporary /tmp artifacts, not production services.
+
+## 2026-10-02 (41) — public search design draft
+
+- Done: inspected public collection and summary DTO; prepared FR-WEB-06 and
+  [web/search-dresses.md](docs/design/web/search-dresses.md), `web:search-dresses` = todo.
+- Update: owner requires debounce; draft and AC6 specify 300 ms, immediate input, timer cancellation
+  on clear/reset/style/navigation/unmount; Enter applies immediately.
+- Next: owner confirms search scope and approves concrete draft before implementation.
+- Watch out: list DTO has name/tagline, no long description or dress code. Proposed client
+  filtering preserves ISR; URL is restored after hydration. No application code changed;
+  baseline init.sh and implementation/runtime gates deferred until design approval.
+  Existing release follow-up work below remains pending.
+
 ## 2026-09-30 (40) — release `2026-09-30-r2` deployed + readiness pack (after the fact)
 
 - Done: owner "hãy triển khai đi" → Tencent now runs `a4d32cb`: migrations 10 → 12, R2 photo upload ON

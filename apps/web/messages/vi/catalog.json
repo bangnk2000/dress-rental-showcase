@@ -11,7 +11,7 @@
   "featured": {
     "eyebrow": "Curated pieces",
     "title": "Bộ Sưu Tập Nổi Bật",
-    "viewAll": "Xem tất cả"
+    "viewAll": "Xem thêm"
   },
   "filter": {
     "label": "Lọc theo loại",
@@ -68,5 +68,14 @@
     "eyebrow": "Gợi ý cho nàng",
     "title": "Có Thể Nàng Cũng Thích",
     "viewAll": "Xem tất cả"
+  },
+  "search": {
+    "label": "Tìm mẫu váy",
+    "placeholder": "Tìm theo tên mẫu hoặc mô tả ngắn…",
+    "clear": "Xóa từ khóa",
+    "count": "Tìm thấy {count} mẫu",
+    "empty": "Không tìm thấy mẫu phù hợp. Thử từ khóa khác nhé.",
+    "reset": "Bỏ bộ lọc",
+    "catalogEmpty": "Bộ sưu tập đang được cập nhật. Nhắn Zalo để được gợi ý nhé."
   }
 }

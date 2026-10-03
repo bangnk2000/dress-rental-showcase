@@ -124,6 +124,15 @@ jobs:
       - run: pnpm --filter web test
       # `next build` also type checks, and its route table is the rendering truth.
       - run: pnpm --filter web build
+      # URL/navigation regressions run against this production build; no BE/DB required.
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+      - run: pnpm --filter web e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: web-playwright-results
+          path: apps/web/test-results
+          retention-days: 7
 
   e2e:
     # The browser proof (infra/e2e-ci): the vi-locale happy path in a real Chromium against the

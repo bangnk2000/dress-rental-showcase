@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import messages from '../../messages/vi';
 
@@ -11,9 +11,11 @@ import messages from '../../messages/vi';
  * (`src/test/fixtures/`) and `src/api/public-catalog.test.ts` mocks the generated client.
  */
 export function renderWithProviders(ui: ReactElement) {
-  return render(
-    <NextIntlClientProvider locale="vi" messages={messages} timeZone="Asia/Ho_Chi_Minh">
-      {ui}
-    </NextIntlClientProvider>,
-  );
+  return render(ui, {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <NextIntlClientProvider locale="vi" messages={messages} timeZone="Asia/Ho_Chi_Minh">
+        {children}
+      </NextIntlClientProvider>
+    ),
+  });
 }

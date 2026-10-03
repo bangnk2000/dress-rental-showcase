@@ -1,13 +1,15 @@
 'use client';
 
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Search, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 
 import type { PublicDressSummary } from '@/api/public-catalog';
 import { Link } from '@/i18n/navigation';
 
-import { featuredVisibility, filterDresses, type StyleFilter } from '../lib/filters';
+import { useCatalogSearch } from '../hooks/use-catalog-search';
+import { featuredVisibility, filterDresses, searchDresses, type StyleFilter } from '../lib/filters';
+import { CatalogUrlSync } from './catalog-url-sync';
 import { DressCard } from './dress-card';
 import { StyleChips } from './style-chips';
 
@@ -48,7 +50,7 @@ export function FeaturedCollection({ dresses }: { dresses: PublicDressSummary[] 
             </h2>
           </div>
           <Link
-            href="/bo-suu-tap"
+            href={filter === 'all' ? '/bo-suu-tap' : `/bo-suu-tap?style=${filter}`}
             className="hit relative flex shrink-0 items-center gap-0.5 text-label-sm text-primary underline decoration-tertiary-fixed underline-offset-4 xl:order-3 xl:text-label-lg"
           >
             {t('viewAll')} <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -61,13 +63,63 @@ export function FeaturedCollection({ dresses }: { dresses: PublicDressSummary[] 
   );
 }
 
-/** /bo-suu-tap: every dress, chips under the page title, no hidden cards. */
+/** /bo-suu-tap: search the full public catalogue, with shareable filters. */
 export function CatalogBrowser({ dresses }: { dresses: PublicDressSummary[] }) {
-  const [filter, setFilter] = useState<StyleFilter>('all');
+  const t = useTranslations('catalog.search');
+  const search = useCatalogSearch();
+  const input = useRef<HTMLInputElement>(null);
+  const results = searchDresses(filterDresses(dresses, search.style), search.query);
+  const filtered = Boolean(search.draftQuery || search.query || search.style !== 'all');
   return (
     <div className="flex flex-col gap-space-md">
-      <StyleChips value={filter} onChange={setFilter} />
-      <DressGrid dresses={filterDresses(dresses, filter)} visibility={() => 'flex'} />
+      <Suspense fallback={null}>
+        <CatalogUrlSync onChange={search.syncFromRouter} />
+      </Suspense>
+      <form role="search" onSubmit={(event) => { event.preventDefault(); search.submit(); }}>
+        <label htmlFor="catalog-search" className="mb-2 block text-label-lg text-on-surface">{t('label')}</label>
+        <div className="flex items-center gap-2 rounded-full bg-surface-container-high px-4 focus-within:ring-2 focus-within:ring-primary">
+          <Search className="h-5 w-5 shrink-0 text-on-surface-variant" aria-hidden />
+          <input
+            ref={input}
+            id="catalog-search"
+            type="search"
+            value={search.draftQuery}
+            onChange={(event) => search.changeQuery(event.target.value)}
+            placeholder={t('placeholder')}
+            className="hit min-w-0 flex-1 bg-transparent py-3 text-body-md text-on-surface outline-none"
+          />
+          {search.draftQuery && (
+            <button
+              type="button"
+              aria-label={t('clear')}
+              onClick={() => { search.clear(); input.current?.focus(); }}
+              className="hit relative shrink-0 rounded-full p-3 text-on-surface-variant hover:bg-secondary-container/50"
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
+          )}
+        </div>
+      </form>
+      <StyleChips value={search.style} onChange={search.changeStyle} />
+      <div className="flex items-center justify-between gap-2">
+        <p role="status" className="text-body-md text-on-surface-variant">{t('count', { count: results.length })}</p>
+        {filtered && (
+          <button
+            type="button"
+            onClick={() => { search.reset(); input.current?.focus(); }}
+            className="hit relative shrink-0 rounded-full px-4 py-2 text-label-sm text-primary underline underline-offset-4"
+          >
+            {t('reset')}
+          </button>
+        )}
+      </div>
+      {results.length ? (
+        <DressGrid dresses={results} visibility={() => 'flex'} />
+      ) : (
+        <p className="rounded-md bg-surface-container-low p-space-md text-body-md text-on-surface">
+          {t(dresses.length ? 'empty' : 'catalogEmpty')}
+        </p>
+      )}
     </div>
   );
 }
