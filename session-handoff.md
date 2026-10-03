@@ -1,5 +1,15 @@
 # Session Handoff
 
+## 2026-10-03 (43) — featured CTA preserves filter (`web:featured-filter-link` = pass)
+
+- Done: owner screenshot request → FeaturedCollection CTA “Xem thêm”; selected style goes
+  to `/bo-suu-tap?style=<code>`, all goes to `/bo-suu-tap`. Ledger 45/45 pass.
+- Proof: web test 44/44, check/lint/arch green, no generated drift; real Chromium click-through
+  on existing dev server :3001 confirms short/ao-dai/all and reload restoration.
+- Next: release/ship web follow-ups when requested; r2 release debt remains below.
+- Watch out: existing user dev server on :3001 was reused read-only and left running.
+  No BE/API/cache change; scoped verification for mechanical follow-up; not deployed.
+
 ## 2026-10-02 (42) — public search implemented (`web:search-dresses` = pass)
 
 - Done: owner approved draft with debounce; search by public name/tagline with Vietnamese accent

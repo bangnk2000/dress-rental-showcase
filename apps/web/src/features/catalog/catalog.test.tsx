@@ -20,7 +20,7 @@ describe('FeaturedCollection (FR-WEB-01)', () => {
     expect(first.getByText('350.000đ')).toBeInTheDocument();
     expect(first.getByText('2.800k')).toBeInTheDocument();
     expect(first.getByText('Có sẵn')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Xem tất cả/ })).toHaveAttribute('href', '/bo-suu-tap');
+    expect(screen.getByRole('link', { name: /Xem thêm/ })).toHaveAttribute('href', '/bo-suu-tap');
   });
 
   test('a style chip filters the grid and is the only pressed chip', () => {
@@ -31,6 +31,7 @@ describe('FeaturedCollection (FR-WEB-01)', () => {
 
     fireEvent.click(chips.getByRole('button', { name: 'Váy ngắn' }));
     expect(chips.getByRole('button', { name: 'Váy ngắn' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('link', { name: /Xem thêm/ })).toHaveAttribute('href', '/bo-suu-tap?style=short');
     expect(chips.getByRole('button', { name: 'Tất Cả Thiết Kế' })).toHaveAttribute('aria-pressed', 'false');
     const names = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
     expect(names).toEqual(['Váy Sinh Nhật / Prom', 'Váy Nơ Lưng Mini']);
@@ -40,6 +41,10 @@ describe('FeaturedCollection (FR-WEB-01)', () => {
       'Áo Dài Cách Tân',
       'Áo Dài Lụa Hoạ Tiết',
     ]);
+    expect(screen.getByRole('link', { name: /Xem thêm/ })).toHaveAttribute('href', '/bo-suu-tap?style=ao-dai');
+
+    fireEvent.click(chips.getByRole('button', { name: 'Tất Cả Thiết Kế' }));
+    expect(screen.getByRole('link', { name: /Xem thêm/ })).toHaveAttribute('href', '/bo-suu-tap');
   });
 
   test('the heart toggles in place without leaving the card', () => {

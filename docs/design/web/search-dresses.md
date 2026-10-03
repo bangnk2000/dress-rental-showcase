@@ -154,3 +154,13 @@ isNewFeature: false
 - `bash init.sh` baseline chạy tới web build; các gate trước đó xanh; invariant e2e có
   WARN skip vì không có compose PostgreSQL. Không có BE thay đổi trong slice này.
   Runtime dùng API fixture, chưa kiểm tra hoặc deploy trên production.
+
+### Follow-up as-built 2026-10-03 — Featured → collection
+
+Chủ tiệm yêu cầu đổi CTA của Bộ Sưu Tập Nổi Bật thành “Xem thêm” và giữ loại đã chọn.
+FeaturedCollection truyền `style` qua link `/bo-suu-tap?style=<code>`; `all` dẫn
+`/bo-suu-tap` không tham số. Trang Bộ sưu tập dùng URL restoration hiện có, kể cả reload.
+Mechanical follow-up, không có URL contract/interaction pattern mới. Ledger `web:featured-filter-link`.
+Proof: web test 44/44 (cập nhật assertions short/ao-dai/all), check/lint/arch xanh;
+Chromium click-through trên dev server đang chạy xác nhận short/ao-dai/all + reload.
+Generated layers không đổi; chưa deploy.

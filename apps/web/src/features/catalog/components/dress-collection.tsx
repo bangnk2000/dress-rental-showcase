@@ -49,7 +49,7 @@ export function FeaturedCollection({ dresses }: { dresses: PublicDressSummary[] 
             </h2>
           </div>
           <Link
-            href="/bo-suu-tap"
+            href={filter === 'all' ? '/bo-suu-tap' : `/bo-suu-tap?style=${filter}`}
             className="hit relative flex shrink-0 items-center gap-0.5 text-label-sm text-primary underline decoration-tertiary-fixed underline-offset-4 xl:order-3 xl:text-label-lg"
           >
             {t('viewAll')} <ChevronRight className="h-3.5 w-3.5" aria-hidden />

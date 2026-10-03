@@ -545,6 +545,14 @@
       ],
       "testedAt": "2026-10-02",
       "evidence": "2026-10-02: design approved explicitly by owner before code (docs/design/web/search-dresses.md). AC1: pnpm --filter web test, 44/44 tests (11 new search tests), proves name/tagline accent folding incl. Đ, uppercase, multi-term matching, whitespace/literal special characters and input order/privacy. AC2/3/4/6: same RTL suite proves combined styles, immediate Enter/clear/reset/style, live count, no-match vs empty catalogue, URL restore/unknown style, preserved unrelated params/hash/history state, 300 ms after LAST keystroke, pending-timer cancellation on navigation/unmount, no fetch on search. AC2/3/4/5/6 runtime: production next start --hostname localhost --port 3001 with fixture API (8 summaries), temporary Chromium smoke script /tmp/dress-search-runtime.cjs PASS: actual Back/Forward, reload, pending timer canceled, keyboard Enter/clear focus, no horizontal overflow at 390/768/1440px, canonical /bo-suu-tap, server HTML remains full catalogue, card opens detail; no API or search-query RSC requests (Next Link prefetch excluded), no browser errors. AC5: API_URL=http://127.0.0.1:4300 pnpm --filter web exec next build --webpack exit 0, collection route remains prerendered with 5m revalidation. Root pnpm contract:check, check, lint, arch, test, fe build, qr-admin build all exit 0; generated layers unchanged. Environment deviations: default web build blocked by Google Fonts network and Turbopack internal port; webpack build with network permission used, repo build config unchanged. bash init.sh ran baseline, all earlier runnable gates passed; BE invariant e2e explicitly skipped WARN because compose Postgres unavailable. No BE/API change. Not deployed."
+    },
+    {
+      "id": "web:featured-filter-link",
+      "title": "Featured collection: Xem thêm carries the selected style to the full catalogue",
+      "description": "FR-WEB-01/06; mechanical follow-up using the existing style URL contract in docs/design/web/search-dresses.md. Owner requested Xem thêm copy and retaining the selected filter; no new interaction/API contract.",
+      "status": "pass",
+      "testedAt": "2026-10-03",
+      "evidence": "2026-10-03: pnpm --filter web test 44/44; strengthened existing FeaturedCollection assertions for Xem thêm URLs (short, ao-dai, all). Existing search tests cover URL hydration. web check/lint/arch all exit 0, arch 7/7 and generated layers unchanged. Chromium read-only smoke on existing localhost:3001 dev server: click Xem thêm after short/ao-dai restores pressed chip on collection, reload retains short; all links to /bo-suu-tap without style and restores all chip. No BE/contract/rendering/build-config changes; scoped web gates used for this mechanical change. Not deployed."
     }
   ]
 }
