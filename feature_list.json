@@ -575,6 +575,17 @@
       "dependencies": [
         "web:public-catalog-live"
       ]
+    },
+    {
+      "id": "web:static-images",
+      "title": "Smaller site static images, resized by Cloudflare in prod",
+      "description": "Owner ask 2026-10-15 (should logo/hero/store go to R2? → no, keep in repo; do both: compress + Cloudflare resize). Standard tier: assets + image loader branch behind a new build-time public env; no new segment/data/rendering.",
+      "status": "pass",
+      "testedAt": "2026-10-15",
+      "evidence": "2026-10-15: before — live /images served full size through Cloudflare (store.png 448 KB on every page footer, logo.jpg 64 KB at 48 px, hero.jpg 128 KB). Probe https://example.com/cdn-cgi/image/width=320,…/images/store.png → 200 cf-resized ok, 21 KB AVIF (same zone as img.example.com). Re-encoded with sharp (mozjpeg q82, EXIF stripped, visually checked): store.png→store.jpg 56 KB 509x512 (no alpha), logo.jpg 3.6 KB 256x256, hero.jpg 84 KB kept 1376x768 (og:image size). image-loader.ts: NEXT_PUBLIC_STATIC_IMAGE_BASE_URL set → /images/* become variants on that origin; unset (dev/CI) → unchanged ?w= passthrough. +2 loader tests; web vitest 51/51, check/lint/arch exit 0. Clean production build with the prod envs: route table unchanged; standalone :3301 — every <img> on / and /lien-he is https://example.com/cdn-cgi/image/width=…/images/{hero,logo,store}.jpg, 0 store.png, og:image still plain https://example.com/images/hero.jpg. webbuild.sh (out of repo) passes NEXT_PUBLIC_STATIC_IMAGE_BASE_URL=https://$WEB_DOMAIN. Not deployed.",
+      "dependencies": [
+        "web:open-graph"
+      ]
     }
   ]
 }

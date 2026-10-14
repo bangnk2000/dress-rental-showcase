@@ -1,5 +1,19 @@
 # Session Handoff
 
+## 2026-10-15 (46) — static images smaller + Cloudflare-resized (`web:static-images` = pass)
+
+- Done: earlier the same session `web:open-graph` was merged (PR #27) and DEPLOYED (web 1472e07).
+  Then owner asked about putting logo/hero/store on R2 → kept in repo; compressed sources
+  (640 → 144 KB, store.png → store.jpg) and the loader resizes `/images/*` via
+  `NEXT_PUBLIC_STATIC_IMAGE_BASE_URL` (prod only). Ledger 48/48.
+- Proof: web vitest 51/51, check/lint/arch green; clean prod build → all `<img>` are
+  `example.com/cdn-cgi/image/…` variants, og:image unchanged.
+- Next: PR review → merge → `webbuild.sh` (already passes the new env) → check live `/` images.
+  Still pending from (45): Sharing Debugger "Scrape Again" on `/`.
+- Watch out: a standalone smoke server left running shows as `next-server`, not `node server.js`,
+  and its ISR writes into the NEXT build's dir if the path is reused — kill by pid/port before
+  rebuilding. Not deployed.
+
 ## 2026-10-15 (45) — Threads link preview: Open Graph on every page (`web:open-graph` = pass)
 
 - Done: owner report — example.com shared on Threads had no thumbnail until the Sharing Debugger

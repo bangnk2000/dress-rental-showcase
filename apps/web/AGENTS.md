@@ -22,7 +22,9 @@ process. It MUST NOT import another app's source (root invariant 4).
 | `pnpm contract` (root) | after ANY BE API change: re-emit the spec and regenerate ALL clients |
 
 Env (`.env.example`): server-only `API_URL`, `SITE_URL`; public `NEXT_PUBLIC_IMAGE_BASE_URL`
-(R2 photo origin, inlined at BUILD time — unset = photos served as stored, no resizing).
+(R2 photo origin, inlined at BUILD time — unset = photos served as stored, no resizing) and
+`NEXT_PUBLIC_STATIC_IMAGE_BASE_URL` (prod site origin — `/images/*` resized by Cloudflare too;
+unset in dev/CI, where no `/cdn-cgi` exists).
 
 ## Rules
 
@@ -44,7 +46,9 @@ Env (`.env.example`): server-only `API_URL`, `SITE_URL`; public `NEXT_PUBLIC_IMA
   `relatedDresses`), never a new endpoint.
 - **`src/lib/image-loader.ts` is the only `next/image` loader** (`images.loader: 'custom'`): R2
   photos under `NEXT_PUBLIC_IMAGE_BASE_URL` → Cloudflare Images variants via
-  `@dress-rental/image-url`; other hosts and `/images/*` pass through. Widths come only from the
+  `@dress-rental/image-url`; `/images/*` likewise on `NEXT_PUBLIC_STATIC_IMAGE_BASE_URL` when set
+  (else pass through); other hosts always pass through. `og:image` (`src/lib/seo.ts`) uses the
+  plain `/images/hero.jpg` — keep it a JPEG every crawler reads. Widths come only from the
   fixed `deviceSizes`/`imageSizes` in `next.config.ts` — add a width there, never ad hoc.
 - Site shell (header, nav, bottom tab bar, footer, open badge) is kernel: `src/components/site/`;
   shop facts (phone, Zalo, maps, hours) are config in `src/lib/shop.ts`, copy in `common.shop`.

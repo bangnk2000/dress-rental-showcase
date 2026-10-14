@@ -165,7 +165,7 @@ export function ContactPage() {
         {/* store photo: 4:5 mobile · 3:2 tablet · 4:5 sticky right column desktop */}
         <figure className="relative order-2 aspect-4/5 overflow-hidden rounded-md shadow-ambient md:aspect-3/2 xl:sticky xl:top-28 xl:order-none xl:col-span-6 xl:col-start-7 xl:row-start-1 xl:aspect-4/5 xl:self-start">
           <Image
-            src="/images/store.png"
+            src="/images/store.jpg"
             alt={t('photo.alt')}
             fill
             sizes="(min-width: 1280px) 600px, 100vw"
