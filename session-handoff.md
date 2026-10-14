@@ -5,7 +5,8 @@
 - Done: earlier the same session `web:open-graph` was merged (PR #27) and DEPLOYED (web 1472e07).
   Then owner asked about putting logo/hero/store on R2 → kept in repo; compressed sources
   (640 → 144 KB, store.png → store.jpg) and the loader resizes `/images/*` via
-  `NEXT_PUBLIC_STATIC_IMAGE_BASE_URL` (prod only). Ledger 48/48.
+  `NEXT_PUBLIC_STATIC_IMAGE_BASE_URL` (prod only). Plus favicon set in `apps/web/src/app/`
+  (live `/favicon.ico` was 404). Ledger 48/48.
 - Proof: web vitest 51/51, check/lint/arch green; clean prod build → all `<img>` are
   `example.com/cdn-cgi/image/…` variants, og:image unchanged.
 - Next: PR review → merge → `webbuild.sh` (already passes the new env) → check live `/` images.

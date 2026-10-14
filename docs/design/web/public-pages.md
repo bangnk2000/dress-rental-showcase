@@ -117,3 +117,9 @@ Lỗi: chia sẻ `https://example.com/` trên Threads không có thumbnail; ch�
   `/images/*` thành biến thể `https://example.com/cdn-cgi/image/width=…/images/…` (cùng zone, đã thử
   `cf-resized: ok`). Không đặt (dev/CI, không có Cloudflare) → file gốc kèm `?w=`.
 - `og:image` vẫn là `/images/hero.jpg` trơn (JPEG, crawler nào cũng đọc) — không qua loader.
+- **Favicon** (cùng PR): live site trả 404 cho `/favicon.ico`. File quy ước của Next ở gốc
+  `apps/web/src/app/`: `favicon.ico` (PNG-in-ICO 16/32/48), `icon.png` 192, `apple-icon.png` 180 —
+  áp cho mọi route dưới `[locale]`; proxy next-intl bỏ qua path có đuôi file. Hình = chiếc váy cắt
+  từ logo gốc 1024 px (crop `247,105,530`), nét mảnh của logo biến mất ở 16–32 px nên được làm đậm
+  (nhị phân hoá → blur → ngưỡng thấp = dilate) và vẽ màu `on-primary #51212A` trên `primary #FEB3BC`
+  (DESIGN.md). Đổi logo = sinh lại cả 3 file, không sửa tay từng cỡ.
