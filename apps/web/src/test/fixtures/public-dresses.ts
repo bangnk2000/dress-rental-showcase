@@ -4,7 +4,7 @@ import type { PublicDressDetail, PublicDressSummary } from '@/api/public-catalog
 // approved prototype, apps/web/design/prototype/build.mjs). The site reads the BE; only tests read this.
 const shopImages = [
   { src: '/images/hero.jpg', alt: 'Đầm trưng bày tại Atelier Demo' },
-  { src: '/images/store.png', alt: 'Không gian thử đồ tại 12 Phố Mẫu' },
+  { src: '/images/store.jpg', alt: 'Không gian thử đồ tại 12 Phố Mẫu' },
 ];
 
 const S = (available: string, all = ['XS', 'S', 'M', 'L']) =>

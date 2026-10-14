@@ -22,7 +22,7 @@ export function SiteFooter({ desktopOnly = false }: { desktopOnly?: boolean }) {
         <div className="grid gap-4 rounded-md bg-surface-container-high/60 p-5 md:grid-cols-2 md:gap-x-space-lg md:p-space-lg xl:grid-cols-4 xl:rounded-none xl:bg-transparent xl:px-0 xl:py-space-xl">
           <div className="flex items-center gap-4 md:row-span-2 md:items-start xl:row-span-1">
             <Image
-              src="/images/store.png"
+              src="/images/store.jpg"
               alt={t('shop.storePhotoAlt')}
               width={80}
               height={80}

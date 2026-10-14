@@ -104,3 +104,22 @@ Lỗi: chia sẻ `https://example.com/` trên Threads không có thumbnail; ch�
   (cùng `@dress-rental/image-url`, 1200 nằm trong `deviceSizes`) thay vì ảnh gốc nhiều MB.
 - URL tuyệt đối dựa vào `metadataBase` = `SITE_URL` — production PHẢI đặt `SITE_URL=https://example.com`.
 - Sau deploy: Sharing Debugger "Scrape Again" một lần cho `/` để xoá cache preview cũ.
+
+## 7. As-built 2026-10-15 — ảnh tĩnh của site (`web:static-images`)
+
+`/images/*` (logo, hero, ảnh tiệm) nằm trong repo — ảnh thương hiệu đi theo commit, KHÔNG lên R2
+(R2 là ảnh nhân viên upload qua CMS). Cloudflare đã cache chúng; vấn đề là kích thước gốc.
+
+- Nén nguồn: `store.png` 448 KB → `store.jpg` 56 KB (509×512, không có alpha), `logo.jpg` 64 KB →
+  3.6 KB (256×256, hiển thị 48 px), `hero.jpg` 128 → 84 KB (giữ 1376×768 vì `og:image` khai báo kích
+  thước đó). Bỏ EXIF.
+- Loader: `NEXT_PUBLIC_STATIC_IMAGE_BASE_URL` (prod `https://example.com`, đặt bởi `webbuild.sh`) →
+  `/images/*` thành biến thể `https://example.com/cdn-cgi/image/width=…/images/…` (cùng zone, đã thử
+  `cf-resized: ok`). Không đặt (dev/CI, không có Cloudflare) → file gốc kèm `?w=`.
+- `og:image` vẫn là `/images/hero.jpg` trơn (JPEG, crawler nào cũng đọc) — không qua loader.
+- **Favicon** (cùng PR): live site trả 404 cho `/favicon.ico`. File quy ước của Next ở gốc
+  `apps/web/src/app/`: `favicon.ico` (PNG-in-ICO 16/32/48), `icon.png` 192, `apple-icon.png` 180 —
+  áp cho mọi route dưới `[locale]`; proxy next-intl bỏ qua path có đuôi file. Hình = chiếc váy cắt
+  từ logo gốc 1024 px (crop `247,105,530`), nét mảnh của logo biến mất ở 16–32 px nên được làm đậm
+  (nhị phân hoá → blur → ngưỡng thấp = dilate) và vẽ màu `on-primary #51212A` trên `primary #FEB3BC`
+  (DESIGN.md). Đổi logo = sinh lại cả 3 file, không sửa tay từng cỡ.

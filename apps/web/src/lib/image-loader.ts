@@ -7,14 +7,19 @@ import type { ImageLoaderProps } from 'next/image';
  * variants at the width Next asks for; widths come only from the fixed `deviceSizes`/`imageSizes`
  * in next.config.ts, so the variant count stays bounded (docs/design/catalog/dress-photo-upload.md §3).
  *
- * Anything else is served as-is: legacy links to other hosts (Cloudflare can only transform its own
- * zone) and the site's own `/images/*`. A same-origin path gets a `?w=` marker only so Next's
- * "loader ignores width" dev check stays quiet — the static file ignores it.
+ * The site's own `/images/*` become variants too when `NEXT_PUBLIC_STATIC_IMAGE_BASE_URL` names
+ * the public origin (prod `https://example.com` — same Cloudflare zone, Transformations on). Unset
+ * (dev, CI: no Cloudflare in front, no `/cdn-cgi`) → the file as-is, with a `?w=` marker only so
+ * Next's "loader ignores width" dev check stays quiet. Legacy links to other hosts are always
+ * served unchanged (Cloudflare can only transform its own zone).
  *
  * `NEXT_PUBLIC_*` is inlined at build, so the loader works in the browser too.
  */
 export default function imageLoader({ src, width, quality }: ImageLoaderProps): string {
   const url = imageUrl(src, { width, quality }, { base: process.env.NEXT_PUBLIC_IMAGE_BASE_URL ?? null });
-  if (url !== src) return url;
-  return src.startsWith('/') ? `${src}${src.includes('?') ? '&' : '?'}w=${width}` : src;
+  if (url !== src || !src.startsWith('/')) return url;
+
+  const site = process.env.NEXT_PUBLIC_STATIC_IMAGE_BASE_URL?.trim().replace(/\/+$/, '');
+  if (site) return imageUrl(`${site}${src}`, { width, quality }, { base: site });
+  return `${src}${src.includes('?') ? '&' : '?'}w=${width}`;
 }

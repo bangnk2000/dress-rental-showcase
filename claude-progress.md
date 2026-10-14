@@ -3,6 +3,10 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-10-15 (46) — owner "làm cả 2" (compress + Cloudflare-resize the site's own images, not R2):
+  `web:static-images` = pass (48/48). Sources 640 → 144 KB; loader env `NEXT_PUBLIC_STATIC_IMAGE_BASE_URL`.
+  (45) `web:open-graph` merged PR #27 + deployed web 1472e07. Not deployed yet.
+
 - 2026-10-15 (45) — owner "hãy làm đi" (Threads shows no thumbnail for example.com):
   `web:open-graph` = pass (47/47). og:*/twitter:* on every public page via `src/lib/seo.ts`. web gates
   green, crawler-UA smoke on the standalone build. Not deployed.
