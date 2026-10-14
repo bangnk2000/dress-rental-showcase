@@ -88,3 +88,19 @@ Mock bị xoá; trang đọc `GET /public/dresses[/:slug]` qua client sinh ra (s
   `/images/*` giữ nguyên). Độ rộng cố định: `deviceSizes [640, 828, 1200]`, `imageSizes [160, 320]`.
 - Chưa làm: `revalidateTag('public-dresses')` khi CMS đăng/ẩn mẫu (cần route secret giữa BE và
   web) — hiện web chậm tối đa ~5 phút so với CMS.
+
+## 6. As-built 2026-10-15 — Open Graph cho link preview (`web:open-graph`)
+
+Lỗi: chia sẻ `https://example.com/` trên Threads không có thumbnail; chạy Sharing Debugger thì có
+(crawler Meta tự đoán một `<img>` khi re-scrape, cache rồi hết hạn). Nguyên nhân: chỉ
+`/bo-suu-tap/[slug]` khai báo `openGraph`; `/`, `/bo-suu-tap`, `/lien-he` và 404 không có `og:*`.
+
+- **Một helper**: `apps/web/src/lib/seo.ts` `pageOpenGraph()` trả `openGraph` + `twitter` đầy đủ
+  (`type`, `locale vi_VN`, `siteName`, `title`, `description`, `url` = canonical, `images`). Mỗi
+  trang tự gọi nó vì Next **thay thế** (không gộp) `openGraph` của layout cha; layout gọi nó làm
+  mặc định cho segment không tự khai báo (404).
+- **Ảnh**: mặc định `/images/hero.jpg` (1376×768, kèm `width`/`height` để Meta không phải tải ảnh
+  trước khi dựng preview); chi tiết váy dùng biến thể Cloudflare `width=1200` của ảnh bìa R2
+  (cùng `@dress-rental/image-url`, 1200 nằm trong `deviceSizes`) thay vì ảnh gốc nhiều MB.
+- URL tuyệt đối dựa vào `metadataBase` = `SITE_URL` — production PHẢI đặt `SITE_URL=https://example.com`.
+- Sau deploy: Sharing Debugger "Scrape Again" một lần cho `/` để xoá cache preview cũ.
