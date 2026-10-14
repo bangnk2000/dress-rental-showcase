@@ -1,5 +1,17 @@
 # Session Handoff
 
+## 2026-10-15 (47) — web-only deploys recorded (docs only)
+
+- Done: PR #27 (`web:open-graph`) deployed 03:57 as `1472e07`; PR #28 (`web:static-images` +
+  favicon) Codex-approved, CI flake fixed (`e2e/catalog-navigation.spec.ts` clock race), merged and
+  deployed 04:59 as `5d797b1`. Ledger evidence + Current state now say so. Ledger 48/48.
+- Proof: live example.com — og:* on every page, `/favicon.ico` 200, site images served as
+  Cloudflare variants; execution log in `~/deploy-dress/tencent/RUNBOOK.md` §11.6.
+- Next: owner runs Sharing Debugger "Scrape Again" on `/`; the r2 release debt (R1–R11, un-packed
+  features) is unchanged and these two web deploys add to it.
+- Watch out: a local standalone smoke needs `.next/static` + `public/` copied next to `server.js`
+  (webbuild.sh does this) or the page never hydrates and every Playwright test fails.
+
 ## 2026-10-15 (46) — static images smaller + Cloudflare-resized (`web:static-images` = pass)
 
 - Done: earlier the same session `web:open-graph` was merged (PR #27) and DEPLOYED (web 1472e07).

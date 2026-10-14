@@ -3,6 +3,9 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-10-15 (47) — owner "có" (record the deploys): docs only. Web-only deploys `1472e07` (PR #27)
+  and `5d797b1` (PR #28, after a Codex round + e2e clock-race fix) recorded in ledger + Current state.
+
 - 2026-10-15 (46) — owner "làm cả 2" (compress + Cloudflare-resize the site's own images, not R2):
   `web:static-images` = pass (48/48). Sources 640 → 144 KB; loader env `NEXT_PUBLIC_STATIC_IMAGE_BASE_URL`.
   (45) `web:open-graph` merged PR #27 + deployed web 1472e07. Not deployed yet.
