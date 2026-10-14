@@ -564,6 +564,17 @@
       "dependencies": [
         "web:search-dresses"
       ]
+    },
+    {
+      "id": "web:open-graph",
+      "title": "Open Graph / Twitter card metadata on every public page",
+      "description": "FR-WEB-01..04 SEO (public-pages T7) bugfix: owner report 2026-10-14 — sharing https://example.com/ on Threads showed no thumbnail until the Sharing Debugger re-scraped (Meta guessed an <img>). Only /bo-suu-tap/[slug] had openGraph. Standard tier: metadata only, no new segment/rendering/data.",
+      "status": "pass",
+      "testedAt": "2026-10-15",
+      "evidence": "2026-10-15: live example.com fetched as facebookexternalhit had zero og:* tags (before). Added src/lib/seo.ts pageOpenGraph() used by layout (404 fallback) + /, /bo-suu-tap, /lien-he, /bo-suu-tap/[slug] (Next replaces parent openGraph, so each page passes the full set). New seo.test.ts 3 tests; web vitest 49/49, check/lint/arch exit 0. Production build (SITE_URL=https://example.com) route table unchanged (/vi, /vi/bo-suu-tap ISR 5m, /vi/lien-he SSG). Standalone server :3301 fetched as facebookexternalhit: /, /bo-suu-tap, /lien-he, 404 each serve og:title/description/url/site_name/locale/type + og:image https://example.com/images/hero.jpg 1376x768 + twitter summary_large_image, inside <head>. Dress detail cover → Cloudflare width=1200 variant proven by unit test only (no BE at build). Generated layers unchanged; no BE/API changes; not deployed.",
+      "dependencies": [
+        "web:public-catalog-live"
+      ]
     }
   ]
 }

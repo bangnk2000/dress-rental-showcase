@@ -3,6 +3,10 @@
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
 session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
 
+- 2026-10-15 (45) — owner "hãy làm đi" (Threads shows no thumbnail for example.com):
+  `web:open-graph` = pass (47/47). og:*/twitter:* on every public page via `src/lib/seo.ts`. web gates
+  green, crawler-UA smoke on the standalone build. Not deployed.
+
 - 2026-09-30 (40) — owner "triển khai đi" / "chạy thật luôn" / "làm luôn": release `2026-09-30-r2`
   DEPLOYED to Tencent (`a4d32cb`: R2 photos, listings, public site example.com); listings tool on prod
   → 100 drafts. Readiness pack written after the rollout (says so). Ledger unchanged at 43/43.

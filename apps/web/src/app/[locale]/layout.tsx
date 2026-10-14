@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { resolveLocale } from '@/i18n/locale';
 import { routing } from '@/i18n/routing';
+import { pageOpenGraph } from '@/lib/seo';
 
 import { Providers } from '../providers';
 import '../globals.css';
@@ -33,6 +34,8 @@ export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Pr
     metadataBase: new URL(process.env.SITE_URL ?? 'http://localhost:3001'),
     title: { default: t('site.name'), template: `%s · ${t('site.name')}` },
     description: t('site.description'),
+    // Fallback for any segment without its own (404); pages pass their full set — see lib/seo.ts.
+    ...pageOpenGraph({ siteName: t('site.name'), title: t('site.name'), description: t('site.description'), path: '/' }),
   };
 }
 

@@ -6,14 +6,24 @@ import { BottomTabBar } from '@/components/site/bottom-tab-bar';
 import { SiteFooter } from '@/components/site/site-footer';
 import { CatalogBrowser } from '@/features/catalog';
 import { resolveLocale } from '@/i18n/locale';
+import { pageOpenGraph } from '@/lib/seo';
 
 // FR-WEB-02 — ISR over GET /public/dresses (docs/design/web/public-pages.md §2).
 export const revalidate = 300;
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/bo-suu-tap'>): Promise<Metadata> {
   const locale = resolveLocale((await params).locale);
-  const t = await getTranslations({ locale, namespace: 'catalog' });
-  return { title: t('meta.title'), description: t('meta.description'), alternates: { canonical: '/bo-suu-tap' } };
+  const [t, common] = await Promise.all([
+    getTranslations({ locale, namespace: 'catalog' }),
+    getTranslations({ locale, namespace: 'common' }),
+  ]);
+  const siteName = common('site.name');
+  return {
+    title: t('meta.title'),
+    description: t('meta.description'),
+    alternates: { canonical: '/bo-suu-tap' },
+    ...pageOpenGraph({ siteName, title: `${t('meta.title')} · ${siteName}`, description: t('meta.description'), path: '/bo-suu-tap' }),
+  };
 }
 
 export default async function CollectionPage({ params }: PageProps<'/[locale]/bo-suu-tap'>) {
