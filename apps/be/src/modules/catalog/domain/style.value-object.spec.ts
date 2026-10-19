@@ -2,9 +2,9 @@ import { ArgumentInvalidException } from '../../../libs/exceptions';
 import { Styles, STYLES } from './style.value-object';
 
 describe('Styles (public-listing R4)', () => {
-  it('accepts 1..6 distinct codes of the fixed set', () => {
+  it('accepts 1..7 distinct codes of the fixed set', () => {
     expect(Styles.create(['short']).values).toEqual(['short']);
-    expect(Styles.create([...STYLES]).values).toHaveLength(6);
+    expect(Styles.create([...STYLES]).values).toHaveLength(7);
   });
 
   it('refuses zero styles', () => {

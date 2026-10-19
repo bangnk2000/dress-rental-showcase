@@ -57,6 +57,7 @@ const STYLE_KEYWORDS: Record<Style, RegExp> = {
   'off-shoulder': /(trễ|lệch) vai/,
   sleeved: /có tay|choàng/,
   'strappy-strapless': /(2|hai) ?dây|cúp ngực|yếm/,
+  accessory: /phụ kiện/,
 };
 
 export function inferStyles(name: string): { styles: Style[]; defaulted: boolean } {

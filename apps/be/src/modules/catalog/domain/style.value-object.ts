@@ -2,7 +2,7 @@ import { ValueObject } from '../../../libs/ddd/value-object.base';
 import { ArgumentInvalidException } from '../../../libs/exceptions';
 
 /**
- * The fixed set of styles (spec §6.D). Same six codes as the `dress_listings.styles` CHECK
+ * The fixed set of styles (spec §6.D). Same seven codes as the `dress_listings.styles` CHECK
  * constraint (R4) — adding one is a migration plus this list, never only one of them. Labels are
  * NOT here: the CMS and the web translate the code.
  */
@@ -13,6 +13,7 @@ export const STYLES = [
   'off-shoulder',
   'sleeved',
   'strappy-strapless',
+  'accessory',
 ] as const;
 
 export type Style = (typeof STYLES)[number];
