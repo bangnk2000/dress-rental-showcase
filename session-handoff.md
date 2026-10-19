@@ -1,5 +1,12 @@
 # Session Handoff
 
+## 2026-10-19 (48) — listing style `accessory` (Phụ kiện) (`catalog:listing-style-accessory` = pass)
+
+- Done: seventh style code across DB CHECK (migration 1755700000000), `STYLES`, import keyword, FE vi/en labels, web chip + label, contract. PR #30; Codex C1 (no accessory e2e) fixed with migration up/down + `?style=accessory` tests. Ledger 49/49.
+- Proof: be jest 289, web vitest 51, be e2e on real Postgres green.
+- Next: merge, deploy (**migrate before BE restart**), then staff tag accessory listings in /website.
+- Watch out: Codex MCP is pinned to 0.153.2 and the server now rejects every model for it; reviews ran via `codex exec -s read-only` (0.162.1).
+
 ## 2026-10-15 (47) — web-only deploys recorded (docs only)
 
 - Done: PR #27 (`web:open-graph`) deployed 03:57 as `1472e07`; PR #28 (`web:static-images` +

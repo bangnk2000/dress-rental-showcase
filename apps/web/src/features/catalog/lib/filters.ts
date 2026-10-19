@@ -9,6 +9,7 @@ export const styleFilters = {
   'off-shoulder': ['off-shoulder'],
   sleeved: ['sleeved'],
   'strappy-strapless': ['strappy-strapless'],
+  accessory: ['accessory'],
 } as const satisfies Record<string, readonly PublicStyle[] | null>;
 
 export type StyleFilter = keyof typeof styleFilters;

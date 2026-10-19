@@ -26,6 +26,7 @@ describe('inferStyles', () => {
     ['Lụa be Tiin kèm choàng', ['silk', 'sleeved']],
     ['Áo dài trắng 2 tà', ['ao-dai']],
     ['Váy hai dây', ['strappy-strapless']],
+    ['Phụ kiện cài tóc', ['accessory']],
   ])('%p → %p', (name, styles) => {
     expect(inferStyles(name)).toEqual({ styles, defaulted: false });
   });

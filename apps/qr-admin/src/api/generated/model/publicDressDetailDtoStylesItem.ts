@@ -15,4 +15,5 @@ export const PublicDressDetailDtoStylesItem = {
   'off-shoulder': 'off-shoulder',
   sleeved: 'sleeved',
   'strappy-strapless': 'strappy-strapless',
+  accessory: 'accessory',
 } as const;

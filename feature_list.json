@@ -586,6 +586,17 @@
       "dependencies": [
         "web:open-graph"
       ]
+    },
+    {
+      "id": "catalog:listing-style-accessory",
+      "title": "Seventh listing style: accessory (Phụ kiện)",
+      "description": "Owner ask 2026-10-19: add a Phụ kiện type to the listing form (/website) and the public site filter. Standard tier (one more member of the fixed R4 style set; no new rule or outcome). DB CHECK widened by migration 1755700000000; STYLES, import keyword, vi/en labels, web chip, contract regenerated.",
+      "status": "pass",
+      "testedAt": "2026-10-19",
+      "evidence": "2026-10-19: pnpm contract + check green; be jest 289/289; web vitest 51/51; be test:e2e 17 suites/148 on real Postgres, then +2 tests for Codex C1 (listing-styles-migration: accessory up/down on accessory-only + mixed rows incl. CHECK refusal both ways; public-catalog: ?style=accessory returns the accessory listing). Not deployed — migrate must run before the BE serves accessory listings. PR #30.",
+      "dependencies": [
+        "web:static-images"
+      ]
     }
   ]
 }

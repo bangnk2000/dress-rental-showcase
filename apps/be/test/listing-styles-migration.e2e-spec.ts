@@ -14,6 +14,9 @@ const listings = require('../migrations/1755500000000_dress_listings.js') as Mig
 // eslint-disable-next-line @typescript-eslint/no-var-requires -- node-pg-migrate files are CommonJS JS
 const styles = require('../migrations/1755600000000_listing_styles.js') as Migration;
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires -- node-pg-migrate files are CommonJS JS
+const accessory = require('../migrations/1755700000000_listing_style_accessory.js') as Migration;
+
 const SCHEMA = 'listing_styles_migration';
 
 describe('catalog/listing-styles migration on legacy rows (real Postgres)', () => {
@@ -69,6 +72,28 @@ describe('catalog/listing-styles migration on legacy rows (real Postgres)', () =
       /dress_listings_styles_check/,
     );
     await db.query(`UPDATE dress_listings SET styles = '{strappy-strapless,sleeved}' WHERE slug = 'd-wedding'`);
+  });
+
+  it('accessory migration: up admits the code; down strips it (empty → silk) and the CHECK refuses it again', async () => {
+    await apply(accessory.up);
+    await db.query(
+      `INSERT INTO dress_listings (id, slug, name, styles) VALUES
+         (gen_random_uuid(), 'x-acc-only', 'x', '{accessory}'),
+         (gen_random_uuid(), 'x-acc-mixed', 'x', '{accessory,short}')`,
+    );
+    await expect(db.query(`UPDATE dress_listings SET styles = '{prom}' WHERE slug = 'x-acc-only'`)).rejects.toThrow(
+      /dress_listings_styles_check/,
+    );
+
+    await apply(accessory.down);
+    expect((await values('styles')).filter(([slug]) => String(slug).startsWith('x-acc'))).toEqual([
+      ['x-acc-mixed', ['short']],
+      ['x-acc-only', ['silk']],
+    ]);
+    await expect(
+      db.query(`UPDATE dress_listings SET styles = '{accessory}' WHERE slug = 'x-acc-only'`),
+    ).rejects.toThrow(/dress_listings_styles_check/);
+    await db.query(`DELETE FROM dress_listings WHERE slug LIKE 'x-acc%'`);
   });
 
   it('down: columns and the old CHECK come back; ao-dai kept, every other style → gala', async () => {

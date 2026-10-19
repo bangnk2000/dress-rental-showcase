@@ -31,7 +31,7 @@ chủ tiệm chốt). Size, giá, "còn/hết" trên web đều **suy ra** từ 
 | Váy thuộc mẫu | Cặp (mẫu, váy) trong `dress_listing_items`. Một váy thuộc **0..n** mẫu | chủ tiệm chốt 2026-09-25 |
 | Đã đăng (`published`) | `published_at IS NOT NULL`. Chỉ mẫu đã đăng **và có ≥ 1 váy `active`** mới hiện trên web | nháp ↔ đã đăng, đổi được hai chiều |
 | Đã từng đăng | `first_published_at IS NOT NULL` — không bao giờ quay về NULL | khoá slug (R2) |
-| Loại (`style`) — trước 2026-09-30 là "Dịp" (`occasion`) | Mã thuộc tập cố định: `short` (Váy ngắn), `silk` (Váy lụa), `ao-dai` (Áo dài), `off-shoulder` (Váy trễ vai), `sleeved` (Váy che tay), `strappy-strapless` (Váy hai dây, cúp ngực). Một mẫu có **≥ 1** loại | cố định + `CHECK`; nhãn do FE/web dịch — xem §Amendment 2026-09-30 |
+| Loại (`style`) — trước 2026-09-30 là "Dịp" (`occasion`) | Mã thuộc tập cố định (thêm `accessory` 2026-10-19): `short` (Váy ngắn), `silk` (Váy lụa), `ao-dai` (Áo dài), `off-shoulder` (Váy trễ vai), `sleeved` (Váy che tay), `strappy-strapless` (Váy hai dây, cúp ngực), `accessory` (Phụ kiện). Một mẫu có **≥ 1** loại | cố định + `CHECK`; nhãn do FE/web dịch — xem §Amendment 2026-09-30 |
 | Giá bán tham khảo (`retailPrice`) | Giá một chiếc mới ngoài thị trường, chỉ để khách so sánh | KHÁC `purchasePrice` (giá vốn, owner-only, KHÔNG BAO GIỜ ra web) |
 | Giá thuê hiển thị | Các size của một mẫu **cùng giá** — web ghi **"X / 2 ngày"**, X = `min(rental_price)` của váy `active` thuộc mẫu (min chỉ là lưới an toàn khi dữ liệu lệch) | chủ tiệm chốt; CMS cảnh báo khi các váy gắn vào khác giá |
 | Size còn/hết | Size = `size_label` của các váy thuộc mẫu (`NULL` → **"Freesize"**); **còn** = có ≥ 1 váy `active` size đó. KHÔNG xét lịch thuê | chủ tiệm chốt |
