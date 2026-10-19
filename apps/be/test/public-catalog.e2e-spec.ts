@@ -130,6 +130,7 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
       await listing('mau-nhieu-dip', { styles: ['short', 'silk', 'off-shoulder'] });
       await listing('mau-ao-dai', { styles: ['ao-dai'] });
       await listing('mau-sinh-nhat', { styles: ['silk'] });
+      await listing('mau-phu-kien', { styles: ['accessory'] });
 
       expect(slugs((await anon('?style=silk')).body).sort()).toEqual([
         'mau-nhieu-dip',
@@ -138,6 +139,7 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
       expect(slugs((await anon('?style=off-shoulder')).body)).toEqual(['mau-nhieu-dip']);
       expect(slugs((await anon('?style=ao-dai')).body)).toEqual(['mau-ao-dai']);
       expect(slugs((await anon('?style=strappy-strapless')).body)).toEqual([]);
+      expect(slugs((await anon('?style=accessory')).body)).toEqual(['mau-phu-kien']);
       expect((await anon('?style=prom')).status).toBe(400);
       expect(slugs((await anon('?limit=2')).body)).toHaveLength(2);
     });
