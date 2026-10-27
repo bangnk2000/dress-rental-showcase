@@ -18,6 +18,7 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     description:
       'Tùng xoè ren đính kết hạt cườm thủ công, dáng corset tôn eo — dành cho những đêm gala và tiệc cưới nàng muốn là tâm điểm.',
     styles: ['strappy-strapless'],
+    codes: ['VAY01'],
     badge: 'available',
     rentalPrice: 350_000,
     retailPrice: 2_800_000,
@@ -37,6 +38,7 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     tagline: 'Lụa tơ sống xếp nếp vai bồng dịu dàng',
     description: 'Lụa tơ sống xếp nếp, vai bồng nhẹ nhàng — hợp những buổi tiệc trà, picnic cuối tuần.',
     styles: ['off-shoulder'],
+    codes: ['VAY02'],
     badge: 'new',
     rentalPrice: 220_000,
     retailPrice: 1_600_000,
@@ -56,6 +58,7 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     tagline: 'Dáng corset siết eo nơ lưng kiêu kỳ',
     description: 'Dáng corset siết eo, nơ lưng bản lớn kiêu kỳ — nổi bật trong đêm sinh nhật và prom.',
     styles: ['short'],
+    codes: ['VAY03'],
     badge: 'hot',
     rentalPrice: 180_000,
     retailPrice: 1_250_000,
@@ -75,6 +78,7 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     tagline: 'Tơ tằm cao cấp đính ngọc trai thanh lịch',
     description: 'Tơ tằm cao cấp đính ngọc trai, tà ngắn cách tân — thanh lịch cho dạo phố và lễ Tết.',
     styles: ['ao-dai'],
+    codes: ['VAY04'],
     badge: 'available',
     rentalPrice: 150_000,
     retailPrice: 950_000,
@@ -94,6 +98,7 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     tagline: 'Cổ vuông, tùng suông thanh lịch',
     description: 'Lụa champagne cổ vuông, tùng suông rủ mềm — thanh lịch cho khách mời đám cưới.',
     styles: ['silk'],
+    codes: ['VAY05'],
     badge: 'available',
     rentalPrice: 200_000,
     retailPrice: 1_400_000,
@@ -113,6 +118,7 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     tagline: 'Tầng tulle nhẹ bẫng, đính sequin',
     description: 'Nhiều tầng tulle nhẹ bẫng đính sequin lấp lánh — dành cho đêm gala.',
     styles: ['strappy-strapless'],
+    codes: ['VAY06'],
     badge: 'new',
     rentalPrice: 320_000,
     retailPrice: 2_400_000,
@@ -132,6 +138,7 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     tagline: 'Lụa vẽ tay hoa nhí, tà dài',
     description: 'Lụa vẽ tay hoa nhí, tà dài truyền thống — nhẹ nhàng cho ngày chụp kỷ yếu.',
     styles: ['ao-dai'],
+    codes: ['VAY07'],
     badge: 'available',
     rentalPrice: 160_000,
     retailPrice: 1_100_000,
@@ -151,6 +158,7 @@ const dresses: Omit<PublicDressDetail, 'images'>[] = [
     tagline: 'Corset nơ bản lớn, chân váy xoè',
     description: 'Corset nơ bản lớn sau lưng, chân váy xoè ngắn — trẻ trung cho tiệc sinh nhật.',
     styles: ['short'],
+    codes: ['VAY08'],
     badge: 'hot',
     rentalPrice: 190_000,
     retailPrice: 1_300_000,
@@ -170,11 +178,12 @@ export const fixtureDresses: PublicDressDetail[] = dresses.map((d) => ({ ...d, i
 
 /** What the list endpoint returns for the same dresses (no detail-only fields). */
 export const fixtureSummaries: PublicDressSummary[] = fixtureDresses.map(
-  ({ slug, name, tagline, styles, badge, rentalPrice, retailPrice, cover }) => ({
+  ({ slug, name, tagline, styles, codes, badge, rentalPrice, retailPrice, cover }) => ({
     slug,
     name,
     tagline,
     styles,
+    codes,
     badge,
     rentalPrice,
     retailPrice,

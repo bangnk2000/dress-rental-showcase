@@ -31,10 +31,12 @@
     "hot": "Hot Trend"
   },
   "card": {
-    "save": "Lưu {name}"
+    "save": "Lưu {name}",
+    "code": "Mã {codes}"
   },
   "detail": {
     "breadcrumbLabel": "Vị trí",
+    "code": "Mã váy: {codes}",
     "gallery": "Ảnh sản phẩm",
     "thumbnails": "Chọn ảnh",
     "showImage": "Xem ảnh {index}",

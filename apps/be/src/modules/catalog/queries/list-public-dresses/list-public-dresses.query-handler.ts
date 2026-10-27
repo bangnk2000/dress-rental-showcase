@@ -9,7 +9,8 @@ import { ListPublicDressesQuery } from './list-public-dresses.query';
 /**
  * Anonymous catalogue list (R5): published listings with ≥ 1 ACTIVE dress — the inner joins drop
  * a listing whose dresses were all retired, without unpublishing it. Hot first, then the most
- * recently first-published. R6: explicit column whitelist, nothing from `dresses` but the price.
+ * recently first-published. R6: explicit column whitelist, nothing from `dresses` but the price
+ * and the codes (only their bases reach the DTO).
  */
 @QueryHandler(ListPublicDressesQuery)
 export class ListPublicDressesQueryHandler
@@ -27,7 +28,8 @@ export class ListPublicDressesQueryHandler
       SELECT
         l.slug, l.name, l.tagline, l.styles, l.is_hot, l.first_published_at,
         l.retail_price, l.photo_urls,
-        min(d.rental_price)::int AS rental_price
+        min(d.rental_price)::int AS rental_price,
+        array_agg(d.code) AS dress_codes
       FROM dress_listings l
       JOIN dress_listing_items i ON i.listing_id = l.id
       JOIN dresses d ON d.id = i.dress_id AND d.status = 'active'

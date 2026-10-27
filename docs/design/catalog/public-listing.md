@@ -101,6 +101,8 @@ Domain rules / invariants:
      mẫu tự biến mất khỏi web khi hết váy active (không phải lỗi, không tự unpublish).
   R6 DTO công khai là WHITELIST: không `id` nội bộ, không `code`, `notes`, `depositAmount`,
      `purchasePrice`, `categoryId`, không thông tin khách/đơn/lịch.
+     Ngoại lệ (chủ tiệm chốt 2026-10-27): `codes` = mã GỐC của váy active (bỏ hậu tố `_n`), xem
+     §Amendment 2026-10-27; mã `_n` đầy đủ vẫn không công khai.
   R7 Nhân bản váy (FR-CAT-08) chép MỌI cặp (mẫu, váy nguồn) sang bản sao, cùng transaction →
      bản sao `_n` thành một size mới của các mẫu đó.
   R8 Staff chỉ xoá mẫu chưa đăng; owner xoá mọi mẫu.
@@ -309,3 +311,16 @@ API, three clients); existing listings need not keep meaning.
   rows: `ao-dai` stays, every other old code becomes `silk` (staff re-tag in /website). Down
   migration reverses the rename (non-`ao-dai` → `gala`).
 - Web (still on the mock): one filter chip per style plus "Tất cả"; mock dresses re-tagged.
+
+## Amendment (2026-10-27, branch `feat/public-listing-base-code`) — mã váy gốc trên web
+
+Owner ask: "hiện thị thêm mã váy gốc cho mẫu váy được publish" — a listing holding `VAY1`,
+`VAY1_1`, `VAY1_2` shows `VAY1` on the site, so a customer can quote it on Zalo. Standard tier
+(one read-model field; no new rule, outcome or state), but it amends R6, so recorded here.
+
+| # | Decision (as-built) |
+| --- | --- |
+| 1 | `PublicDressSummary.codes: string[]` (so also on Detail) — distinct `DressCode.baseOf` of the **active** dresses (same set as `rentalPrice`), sorted `localeCompare('en', { numeric: true })` (`VAY2` < `VAY10`). An array because staff may attach dresses of several base groups to one listing; the web joins with ", " |
+| 2 | SQL selects `array_agg(d.code)`; the suffix rule stays in ONE place (`DressCode.baseOf`, `public-dress.projection.ts` `publicBaseCodes`) — no `regexp_replace` copy |
+| 3 | Full `_n` codes never leave the BE: e2e R6 test seeds `WL`, `WL_1..3` and asserts `codes: ['WL']` and no `WL_` in either body; a second test covers two groups + a fully retired group |
+| 4 | Web: card shows "Mã VAY1" on the styles row (right); detail shows "Mã váy: VAY1" under the title. Copy in `catalog.card.code` / `catalog.detail.code`. Search does NOT match codes (not asked) |

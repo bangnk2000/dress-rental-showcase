@@ -39,7 +39,12 @@ export function DressCard({ dress, className }: { dress: PublicDressSummary; cla
       </div>
       <div className="flex flex-1 flex-col justify-between p-3 md:p-space-md">
         <div>
-          <p className="mb-0.5 text-label-sm uppercase text-outline">{dress.styles.map((s) => t(`filter.${s}`)).join(', ')}</p>
+          <p className="mb-0.5 flex justify-between gap-2 text-label-sm uppercase text-outline">
+            <span className="truncate">{dress.styles.map((s) => t(`filter.${s}`)).join(', ')}</span>
+            {dress.codes.length > 0 && (
+              <span className="shrink-0 tracking-normal">{t('card.code', { codes: dress.codes.join(', ') })}</span>
+            )}
+          </p>
           <h3 className="line-clamp-1 text-body-md font-semibold text-on-surface">
             <Link
               href={`/bo-suu-tap/${dress.slug}`}

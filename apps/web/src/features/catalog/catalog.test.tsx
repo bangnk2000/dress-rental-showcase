@@ -20,6 +20,7 @@ describe('FeaturedCollection (FR-WEB-01)', () => {
     expect(first.getByText('350.000đ')).toBeInTheDocument();
     expect(first.getByText('2.800k')).toBeInTheDocument();
     expect(first.getByText('Có sẵn')).toBeInTheDocument();
+    expect(first.getByText('Mã VAY01')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Xem thêm/ })).toHaveAttribute('href', '/bo-suu-tap');
   });
 
@@ -62,6 +63,7 @@ describe('DressDetail (FR-WEB-03)', () => {
     renderWithProviders(<DressDetail dress={dress} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Đầm Dạ Hội Lộng Lẫy' })).toBeInTheDocument();
+    expect(screen.getByText('Mã váy: VAY01')).toBeInTheDocument();
     const sizes = within(screen.getByRole('list', { name: 'Size' }));
     expect(sizes.getAllByRole('listitem').map((li) => li.textContent)).toEqual(['Hết size XS', 'S', 'M', 'Hết size L']);
     expect(screen.queryByRole('button', { name: /^(XS|S|M|L)$/ })).not.toBeInTheDocument();

@@ -15,6 +15,8 @@ export interface PublicDressDetailDto {
   name: string;
   tagline: string;
   styles: PublicDressDetailDtoStylesItem[];
+  /** Base codes of the active dresses (duplicate suffix stripped: VAY1, VAY1_1 → VAY1), distinct, natural order */
+  codes: string[];
   /** hot > new (first published ≤ 30 days) > available */
   badge: PublicDressDetailDtoBadge;
   /** VND for ONE rental of 2 days (the web writes "X / 2 ngày") — min over the active dresses */

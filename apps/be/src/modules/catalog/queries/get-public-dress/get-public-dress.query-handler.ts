@@ -48,7 +48,8 @@ export class GetPublicDressQueryHandler
         l.slug, l.name, l.tagline, l.styles, l.is_hot, l.first_published_at,
         l.retail_price, l.photo_urls, l.description,
         l.material, l.silhouette, l.length, l.color, l.styles_text,
-        min(d.rental_price)::int AS rental_price
+        min(d.rental_price)::int AS rental_price,
+        array_agg(d.code) AS dress_codes
       FROM dress_listings l
       JOIN dress_listing_items i ON i.listing_id = l.id
       JOIN dresses d ON d.id = i.dress_id AND d.status = 'active'

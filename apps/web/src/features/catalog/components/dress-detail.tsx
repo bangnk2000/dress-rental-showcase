@@ -83,6 +83,9 @@ export function DressDetail({ dress }: { dress: PublicDressDetail }) {
           <h1 className="mt-1 font-display text-headline-lg-mobile text-primary md:text-headline-md xl:text-headline-lg">
             {dress.name}
           </h1>
+          {dress.codes.length > 0 && (
+            <p className="mt-1 text-body-sm text-outline">{t('detail.code', { codes: dress.codes.join(', ') })}</p>
+          )}
           <p className="mt-2 whitespace-pre-line text-body-md text-on-surface-variant md:text-body-lg">{dress.description}</p>
 
           <div className="mt-space-md flex items-baseline gap-2 border-y border-surface-container-highest py-space-sm">

@@ -4,7 +4,7 @@ import { STYLES, Style } from '../domain/style.value-object';
 
 /**
  * ANONYMOUS read models (docs/design/catalog/public-listing.md §Contract, R6). A WHITELIST: no
- * internal id, no dress code, notes, deposit, purchase price, category, nor anything about
+ * internal id, no full dress code (only the BASE codes — owner decision 2026-10-27), notes, deposit, purchase price, category, nor anything about
  * customers/rentals. Adding a field here is a public-surface decision, not a refactor — the e2e
  * suite compares the EXACT key sets.
  */
@@ -29,6 +29,14 @@ export class PublicDressSummaryDto {
 
   @ApiProperty({ enum: STYLES, isArray: true })
   readonly styles!: Style[];
+
+  @ApiProperty({
+    type: [String],
+    example: ['VAY1'],
+    description:
+      'Base codes of the active dresses (duplicate suffix stripped: VAY1, VAY1_1 → VAY1), distinct, natural order',
+  })
+  readonly codes!: string[];
 
   @ApiProperty({ enum: LISTING_BADGES, description: 'hot > new (first published ≤ 30 days) > available' })
   readonly badge!: ListingBadge;

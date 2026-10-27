@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { toDate } from '../../../libs/utils/date';
+import { DressCode } from '../domain/dress-code.value-object';
 import { listingBadge } from '../domain/listing-badge';
 import { Style } from '../domain/style.value-object';
 import { PublicDressSummaryDto, PublicImageDto } from '../dtos/public-dress.response.dto';
@@ -12,7 +13,8 @@ const timestamp = z.union([z.number(), z.string(), z.date()]);
 
 /**
  * The ONLY listing columns a public query selects (R6 — explicit whitelist, never `SELECT *`),
- * plus the aggregate rental price computed over ACTIVE dresses.
+ * plus the aggregate rental price and the codes of the ACTIVE dresses. `dress_codes` are full
+ * codes (`VAY1_2`) — only their bases ever reach the DTO (owner decision 2026-10-27, R6).
  */
 export const publicSummaryRowSchema = z.object({
   slug: z.string(),
@@ -24,6 +26,7 @@ export const publicSummaryRowSchema = z.object({
   retail_price: z.number().int().nullable(),
   photo_urls: z.array(z.string()),
   rental_price: z.number().int(),
+  dress_codes: z.array(z.string()),
 });
 
 export type PublicSummaryRow = z.infer<typeof publicSummaryRowSchema>;
@@ -55,11 +58,19 @@ export function toPublicSummary(
       },
       now,
     ),
+    codes: publicBaseCodes(row.dress_codes),
     rentalPrice: row.rental_price,
     retailPrice: row.retail_price,
     // A published listing always has ≥ 1 photo (CHECK constraint, R3).
     cover,
   });
+}
+
+/** `VAY1`, `VAY1_1`, `VAY2` → `['VAY1', 'VAY2']`: distinct bases, natural order (`VAY2` < `VAY10`). */
+export function publicBaseCodes(codes: readonly string[]): string[] {
+  return [...new Set(codes.map((code) => DressCode.baseOf(code)))].sort((a, b) =>
+    a.localeCompare(b, 'en', { numeric: true }),
+  );
 }
 
 /** XS, S, M, L, XL first; then any other label A→Z; "Freesize" last (spec §Contract). */
