@@ -3509,6 +3509,16 @@
               ]
             }
           },
+          "codes": {
+            "example": [
+              "VAY1"
+            ],
+            "description": "Base codes of the active dresses (duplicate suffix stripped: VAY1, VAY1_1 → VAY1), distinct, natural order",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "badge": {
             "enum": [
               "available",
@@ -3537,6 +3547,7 @@
           "name",
           "tagline",
           "styles",
+          "codes",
           "badge",
           "rentalPrice",
           "retailPrice",
@@ -3624,6 +3635,16 @@
               ]
             }
           },
+          "codes": {
+            "example": [
+              "VAY1"
+            ],
+            "description": "Base codes of the active dresses (duplicate suffix stripped: VAY1, VAY1_1 → VAY1), distinct, natural order",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "badge": {
             "enum": [
               "available",
@@ -3671,6 +3692,7 @@
           "name",
           "tagline",
           "styles",
+          "codes",
           "badge",
           "rentalPrice",
           "retailPrice",

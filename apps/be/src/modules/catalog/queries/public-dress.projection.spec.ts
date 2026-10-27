@@ -1,4 +1,4 @@
-import { compareSizeLabels, publicImages } from './public-dress.projection';
+import { compareSizeLabels, publicBaseCodes, publicImages } from './public-dress.projection';
 
 describe('public dress projection', () => {
   it('orders sizes XS, S, M, L, XL, then free sizes A→Z, Freesize last', () => {
@@ -13,6 +13,15 @@ describe('public dress projection', () => {
       'Size 36',
       'Size 38',
       'Freesize',
+    ]);
+  });
+
+  it('codes are the distinct bases of the dress codes in natural order', () => {
+    expect(publicBaseCodes(['VAY10', 'VAY1_2', 'VAY1', 'VAY1_1', 'VD_012', 'VAY2_10'])).toEqual([
+      'VAY1',
+      'VAY2',
+      'VAY10',
+      'VD_012',
     ]);
   });
 

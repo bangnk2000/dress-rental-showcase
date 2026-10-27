@@ -165,10 +165,11 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
 
   describe('R6 whitelist + contract shape', () => {
     it('summary and detail carry EXACTLY the contract keys — nothing internal leaks', async () => {
-      const m = await seedSizedDress('WL-M', 'M', 1_500_000);
-      const s = await seedSizedDress('WL-S', 'S', 1_200_000, true); // retired: size shown, not available, price ignored
-      const free = await seedSizedDress('WL-F', null, 1_800_000);
-      const xl = await seedSizedDress('WL-XL', 'XL', 1_600_000);
+      // One code group (FR-CAT-08 copies = sizes): only the base `WL` is public, never `WL_<n>`.
+      const m = await seedSizedDress('WL', 'M', 1_500_000);
+      const s = await seedSizedDress('WL_1', 'S', 1_200_000, true); // retired: size shown, not available, price ignored
+      const free = await seedSizedDress('WL_2', null, 1_800_000);
+      const xl = await seedSizedDress('WL_3', 'XL', 1_600_000);
       await context.db.query("UPDATE dresses SET notes = 'SECRET-NOTE', purchase_price = 777 WHERE id = $1", [m]);
       const id = await listing('dam-whitelist', {
         styles: ['short', 'sleeved'],
@@ -183,7 +184,7 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
       expect(list.status).toBe(200);
       const [summary] = list.body as Record<string, unknown>[];
       expect(Object.keys(summary!).sort()).toEqual(
-        ['badge', 'cover', 'name', 'styles', 'rentalPrice', 'retailPrice', 'slug', 'tagline'].sort(),
+        ['badge', 'codes', 'cover', 'name', 'styles', 'rentalPrice', 'retailPrice', 'slug', 'tagline'].sort(),
       );
       expect(Object.keys(summary!.cover as object).sort()).toEqual(['alt', 'src']);
       expect(summary).toEqual({
@@ -191,6 +192,7 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
         name: 'Mẫu dam-whitelist',
         tagline: 'Tagline dam-whitelist',
         styles: ['short', 'sleeved'],
+        codes: ['WL'],
         badge: 'new',
         rentalPrice: 1_500_000, // min over ACTIVE dresses (the retired 1.2M is ignored)
         retailPrice: 4_500_000,
@@ -203,6 +205,7 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
       expect(Object.keys(body).sort()).toEqual(
         [
           'badge',
+          'codes',
           'cover',
           'description',
           'images',
@@ -238,11 +241,26 @@ describe('public catalogue — anonymous reads (real Postgres)', () => {
         { label: 'Freesize', available: true },
       ]);
       expect(body.description).toBe('Mô tả dam-whitelist');
+      expect(body.codes).toEqual(['WL']);
 
       const raw = JSON.stringify([list.body, detail.body]);
-      for (const secret of [id, m, 'WL-M', 'SECRET-NOTE', '777', '3000000']) {
+      for (const secret of [id, m, 'WL_', 'SECRET-NOTE', '777', '3000000']) {
         expect(raw).not.toContain(secret);
       }
+    });
+
+    it('codes: distinct bases of the ACTIVE dresses only, natural order, across code groups', async () => {
+      const dressIds = [
+        await seedSizedDress('VAY10_1', 'M', 1_000_000),
+        await seedSizedDress('VAY2', 'S', 1_000_000),
+        await seedSizedDress('VAY2_1', 'M', 1_000_000),
+        await seedSizedDress('VAY3', 'L', 1_000_000, true), // its whole group retired → not shown
+      ];
+      await listing('dam-codes', { dressIds });
+
+      const [summary] = (await anon('')).body as { codes: string[] }[];
+      expect(summary!.codes).toEqual(['VAY2', 'VAY10']);
+      expect(((await anon('/dam-codes')).body as { codes: string[] }).codes).toEqual(['VAY2', 'VAY10']);
     });
 
     it('sends Cache-Control: public, max-age=60 on both endpoints', async () => {
