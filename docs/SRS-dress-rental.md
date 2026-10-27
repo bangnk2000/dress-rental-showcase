@@ -159,6 +159,8 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   mạng xã hội), bộ sưu tập nổi bật lọc theo loại; CTA “Xem thêm” mở Bộ sưu tập
   và giữ loại đang chọn; đặc quyền, lời mời thử váy qua Zalo.
 - **FR-WEB-02** Bộ sưu tập (`/bo-suu-tap`): mọi váy công khai, lọc theo loại; mỗi thẻ dẫn tới chi tiết.
+  Thẻ và trang chi tiết hiện **mã váy gốc** của mẫu (`VAY1` cho `VAY1`, `VAY1_1`, `VAY1_2`) — chủ
+  tiệm chốt 2026-10-27, để khách nhắn mã qua Zalo; mã `_n` đầy đủ không công khai.
 - **FR-WEB-03** Chi tiết váy (`/bo-suu-tap/<slug>`): ảnh, giá thuê "X / 2 ngày" (chốt 2026-09-25 —
   giá một lượt, không phải giá/ngày), giá bán tham khảo, size
   còn/hết (thông tin, KHÔNG đặt lịch), chi tiết thiết kế, cách thuê, liên hệ Zalo/gọi, váy gợi ý.
@@ -228,6 +230,7 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 | FR-CAT-09 | `catalog/public-listing` | [catalog/public-listing.md](./design/catalog/public-listing.md) (spec `approved`) | not-started |
 | FR-WEB-05 | `web:public-catalog-live` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Thứ tự làm, [web/public-pages.md](./design/web/public-pages.md) §4 | not-started |
 | FR-WEB-01, 06 (CTA giữ filter) | `web:featured-filter-link` | [web/search-dresses.md](./design/web/search-dresses.md) follow-up 2026-10-03 | pass |
+| FR-WEB-02, 03 (mã váy gốc) | `catalog:public-base-code` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Amendment 2026-10-27 | pass |
 | FR-WEB-06 | `web:search-dresses` | [web/search-dresses.md](./design/web/search-dresses.md) (as-built 2026-10-02) | pass |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
 
