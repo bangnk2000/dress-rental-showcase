@@ -26,6 +26,16 @@ jobs:
       - id: filter
         run: bash .github/scripts/ci-scope.sh
 
+  # Harness ledger lint (docs/spec/init-harness/02 §2.2: valid JSON, one in-progress,
+  # evidence on every pass). Node only, no install, so it runs on every push.
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node scripts/ledger.mjs check
+
   # The three drift gates, kept together in one fast job (no DB, no browser) as
   # docs/spec/init-monorepo-contract/03-ci-and-runtime.md §1 specifies. Gate 3
   # (`pnpm check`) type checks every app, so ci-scope.sh runs this job whenever

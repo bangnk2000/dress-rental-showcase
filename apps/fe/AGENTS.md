@@ -71,8 +71,12 @@ files here.
    mutation, the form owns the dress rejections. The today board at `/` is live and ACTIONABLE (`rentals/today-board` +
    `rentals/return-rental`): three sections (due-out / due-back / overdue), pickup +
    return-and-settle mutations, and it ALWAYS sends the device-local date
-   (`features/today/lib/local-date.ts`) — never rely on the server's "today". jsdom cannot
-   open the Radix Select popover — drive status filters via the URL in tests.
+   (`features/today/lib/local-date.ts`) — never rely on the server's "today"; day-stepping runs
+   in a transition, and a rental handed out during the day stays on the hand-out list, marked
+   done. jsdom cannot open the Radix Select popover — drive status filters via the URL in tests.
+   **Every rentals mutation invalidates the board AND list parameterless keys** (staleTime 60s),
+   plus the rental's detail key when it touches one rental, plus its payments key when it moves
+   money (§Screen rules).
 5. **Playwright e2e lives in `e2e/`** (`infra/e2e-playwright`, automated by `infra/e2e-ci`):
    `pnpm --filter fe e2e` runs the vi-locale happy path against the REAL stack and **starts that
    stack itself** — BE on :3000 (`pnpm --filter be build && start`, so Nest resolves `apps/be/.env`)

@@ -1,7 +1,9 @@
 # Progress Log
 
 Append-only, newest first (`docs/spec/init-harness/02-artifacts-and-templates.md` §2.4). Detail per
-session — evidence, decisions, watch-outs — lives in `session-handoff.md`; this file is the index.
+session — evidence, decisions, watch-outs — lives in `session-handoff.md` (latest 5) and
+`docs/harness/session-handoff-archive.md` (older, same `(N)` numbers); this file is the index.
+Never needed on resume — add your line at the top without reading further.
 
 - 2026-10-27 (49) — owner "hiện thị thêm mã váy gốc cho mẫu váy được publish": `catalog:public-base-code`
   = pass (50/50). Public DTO `codes` (base codes of active dresses), web card + detail. Not deployed.

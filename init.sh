@@ -10,6 +10,8 @@ command -v pnpm >/dev/null 2>&1 || { echo "FAIL: pnpm not installed"; exit 1; }
 node -e 'const [maj,min]=process.versions.node.split(".").map(Number); process.exit(maj>22||(maj===22&&min>=18)?0:1)' \
   || { echo "FAIL: Node >= 22.18 required (Orval 8 floor), found $(node -v)"; exit 1; }
 
+node scripts/ledger.mjs check
+
 HAS_BE=0; HAS_FE=0; HAS_QR_ADMIN=0; HAS_WEB=0
 [ -f apps/be/package.json ] && HAS_BE=1
 [ -f apps/fe/package.json ] && HAS_FE=1
