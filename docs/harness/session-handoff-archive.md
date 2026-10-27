@@ -1,7 +1,9 @@
 # Session Handoff — archive
 
 Older `session-handoff.md` entries, moved here VERBATIM (newest first) so the resume path stays
-small. History only — never read on resume; grep it by session number, e.g. `## .* (19) —`.
+small — only relative Markdown link targets gain a `../../` prefix, since this file sits two
+directories below the repo root. History only — never read on resume; grep it by session number,
+e.g. `## .* (19) —`.
 
 ## 2026-10-03 (44) — PR #26 P2 router URL synchronization fixed
 
@@ -29,7 +31,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
 
 - Done: owner approved draft with debounce; search by public name/tagline with Vietnamese accent
   folding, 300 ms debounce, combined style chips, shareable q/style URL, clear/reset/Enter.
-  Ledger now 44/44 pass; design as-built: [web/search-dresses.md](docs/design/web/search-dresses.md).
+  Ledger now 44/44 pass; design as-built: [web/search-dresses.md](../../docs/design/web/search-dresses.md).
 - Proof: web Vitest 44/44; root contract/check/lint/arch/test and FE/QR builds green;
   webpack production build keeps collection ISR 5m; Chromium production smoke with 8 fixture
   summaries covers real Back/Forward/reload, timer cancellation, 390/768/1440px, canonical/detail.
@@ -43,7 +45,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
 ## 2026-10-02 (41) — public search design draft
 
 - Done: inspected public collection and summary DTO; prepared FR-WEB-06 and
-  [web/search-dresses.md](docs/design/web/search-dresses.md), `web:search-dresses` = todo.
+  [web/search-dresses.md](../../docs/design/web/search-dresses.md), `web:search-dresses` = todo.
 - Update: owner requires debounce; draft and AC6 specify 300 ms, immediate input, timer cancellation
   on clear/reset/style/navigation/unmount; Enter applies immediately.
 - Next: owner confirms search scope and approves concrete draft before implementation.
@@ -58,7 +60,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
   (bucket `dress-rental-prod-media`, token as `MEDIA_R2_*`), public site `https://example.com`
   (pm2 `dress-web`, LE cert to 2026-12-29, `/api/` closed on the public name). Owner "chạy thật luôn" →
   `listings-from-dresses` on production: 100 drafts, 142 memberships, 0 published (backup first).
-  Pack [`docs/releases/2026-09-30-r2/`](docs/releases/2026-09-30-r2/README.md) written AFTER the rollout;
+  Pack [`docs/releases/2026-09-30-r2/`](../../docs/releases/2026-09-30-r2/README.md) written AFTER the rollout;
   record.md holds the real timeline; ledger evidence of the 10 features names the release.
 - Deviations: bucket name differs from the plan; sshd forbids tunnels (auto mode declined loosening it)
   → `webbuild.sh` reads the public API (a 429 fails the build past ~50 published listings); a Cloudflare
@@ -122,7 +124,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
 - Done: `apps/web` reads `GET /public/dresses[/:slug]` through `src/api/public-catalog.ts`
   (ISR 300 s, tag `public-dresses`), mock deleted (kept as a test fixture), related from the list,
   `next/image` custom loader over `@dress-rental/image-url`. As-built:
-  [public-pages.md §5](docs/design/web/public-pages.md). web vitest 33, builds with and without a BE,
+  [public-pages.md §5](../../docs/design/web/public-pages.md). web vitest 33, builds with and without a BE,
   runtime proof on `next start` against the dev BE (evidence in the ledger).
 - PR #20: Codex round 0 → C1 P1 ("/ngày" beside a 2-day price) REBUTTED as the owner decision → accepted, APPROVE → CI green → merged.
 - Next: the release lane — the web process + nginx do not
@@ -143,7 +145,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
   `sleeved`, `strappy-strapless`, Vietnamese labels only in `apps/fe/public/locales/*/listings.json`
   and `apps/web/messages/vi/catalog.json`. Renamed end to end (`occasions` → `styles`,
   `?occasion=` → `?style=`), migration `1755600000000_listing_styles`. Design:
-  [public-listing.md §Amendment 2026-09-30](docs/design/catalog/public-listing.md).
+  [public-listing.md §Amendment 2026-09-30](../../docs/design/catalog/public-listing.md).
 - PR #19: Codex round 0 → C1 (migration untested on legacy rows) + C2 (docs still said occasion),
   both P2, fixed in `554c810` / `0497a5a` → round 1 APPROVE → CI green → merged. be e2e 148.
 - Next: `web:public-catalog-live` — the web DTO now carries
@@ -162,7 +164,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
   `@Public()` `GET /public/dresses[/:slug]` + throttler, ADR 0001 rows, contract regenerated) →
   CMS `73df752` (`features/listings` at `/website`, dress detail "Thuộc mẫu"). Evidence in the
   ledger: be unit 263, be e2e 145/145 (+35), fe 167 (+28), full init.sh green, Playwright 1/1.
-  Twelve open choices resolved conservatively → [public-listing.md §As-built](docs/design/catalog/public-listing.md).
+  Twelve open choices resolved conservatively → [public-listing.md §As-built](../../docs/design/catalog/public-listing.md).
 - PR #18: Codex round 0 → C1 P1 (publish vs a concurrent detach of the last active dress) fixed in
   `555bac6` (conditional publish UPDATE + e2e race) → round 1 APPROVE → CI green → merged. e2e 146.
 - Next: `web:public-catalog-live` (swap
@@ -186,7 +188,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
 - Done: owner ask "khi submit form thì mới upload toàn bộ ảnh lên R2 và tối ưu lại luồng upload và
   đọc dữ liệu trên R2 hiện tại đang bị lặp lại nhiều quá". Three decisions (batch signing · stop,
   don't save the dress on a partial failure · detail link = 1280 variant) recorded in
-  [dress-photo-upload.md §9](docs/design/catalog/dress-photo-upload.md). BE `POST /photos/upload-urls`
+  [dress-photo-upload.md §9](../../docs/design/catalog/dress-photo-upload.md). BE `POST /photos/upload-urls`
   is now `{ files[] }` → `{ uploads[] }` (breaking, not deployed → fine) → `pnpm contract`; FE
   `PhotoListField` only edits a `PhotoItem` list, the dress form's Save uploads (`photo-items.ts`
   `uploadLocalPhotos`); ADR 0001 `PHOTO.*` rows + `apps/fe/AGENTS.md` photo rule updated.
@@ -215,8 +217,8 @@ small. History only — never read on resume; grep it by session number, e.g. `#
   now also runs the web job when `packages/image-url/` changes (web is its planned second
   consumer) — keep those matchers in sync when a shared package gains a consumer.
 - Done: owner asked to replace the web mock with real BE data managed from the CMS. Two specs
-  approved after 3 Q&A rounds: [catalog/public-listing.md](docs/design/catalog/public-listing.md)
-  (FR-CAT-09 — NOT built yet) and [catalog/dress-photo-upload.md](docs/design/catalog/dress-photo-upload.md)
+  approved after 3 Q&A rounds: [catalog/public-listing.md](../../docs/design/catalog/public-listing.md)
+  (FR-CAT-09 — NOT built yet) and [catalog/dress-photo-upload.md](../../docs/design/catalog/dress-photo-upload.md)
   (FR-CAT-10/11 — built, as-built §8). SRS gained FR-CAT-09..11 + FR-WEB-05 and traceability rows.
   Work split across subagents: R2 spike (outside the repo) ∥ BE slice → `pnpm contract` → FE
   (`packages/image-url` + `PhotoListField`). Real-bucket browser proof passed (evidence in the ledger).
@@ -243,7 +245,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
 ## 2026-09-25 (32) — public pages on mock data (`web:public-pages` = pass, branch `feat/web-public-pages` → PR → master)
 
 - Done: owner asked to break the prototype (`apps/web/design/prototype/`) into tasks and build the
-  web project on mock API data first. Design + task list: [docs/design/web/public-pages.md](docs/design/web/public-pages.md)
+  web project on mock API data first. Design + task list: [docs/design/web/public-pages.md](../../docs/design/web/public-pages.md)
   (T1 tokens/utilities/assets · T2 site shell · T3 mock API · T4 catalog · T5 home · T6 contact ·
   T7 routes/SEO · T8 tests/gates); FR-WEB-01..04 in the SRS + traceability row. Evidence in the ledger.
 - Decisions to confirm with the owner (public-pages.md §3): heart is a local toggle only; "Đang
@@ -270,7 +272,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
   vi-only next-intl, `[locale]/(public)` placeholder home (SSG), localized 404, robots/sitemap,
   third Orval client from `packages/contract/openapi.json`, `/api/v1` rewrite to the BE, dev/start
   port 3001. Wired into root scripts, `init.sh`, CI (`web` scope + job). Scope change recorded in
-  SRS §1; bootstrap brief [docs/design/public-web.md](docs/design/public-web.md); architecture
+  SRS §1; bootstrap brief [docs/design/public-web.md](../../docs/design/public-web.md); architecture
   contract `apps/web/AGENTS.md` (6 deviations).
 - Prompt fixes (upstream `knowledge-system/prompts`, working tree — NOT committed there; re-vendored
   here, provenance in `docs/spec/README.md`): init-nextjs gained §Monorepo mode (00) + Usage Flow
@@ -310,7 +312,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
 
 - Done: the owner asked for "sửa đơn và chi tiết đơn cho tài khoản chủ cửa hàng". Spec drafted
   through the feature-spec lane AND implemented in the same session
-  ([docs/design/rentals/update-rental.md](docs/design/rentals/update-rental.md), FR-RENT-12/13 in
+  ([docs/design/rentals/update-rental.md](../../docs/design/rentals/update-rental.md), FR-RENT-12/13 in
   the SRS, ADR 0001 §3/§4 rows, rentals-aggregate.md §Sửa đơn + two invariant rows).
   BE: `RentalEntity.update()` (open rentals only, never touches status, items reconciled by id,
   every item re-blocked to period + CURRENT buffer), `saveUpdated` re-reads status under the
@@ -484,17 +486,17 @@ small. History only — never read on resume; grep it by session number, e.g. `#
   `init-feature-spec` lane, each with its contract check run on the draft shape and the business
   rules held as §6 blocker questions — the lane forbids inventing them. Tracked as five `todo`
   entries in `feature_list.json` (design gate holds them there until approval):
-  1. [rentals/pickup-before-return](docs/design/rentals/pickup-before-return.md) — return only
+  1. [rentals/pickup-before-return](../../docs/design/rentals/pickup-before-return.md) — return only
      from `out`; a rental created for today is born delivered. REVERSES the as-built
      booked→returned branch; smoke.sh + Playwright happy path pivot with it, same commit.
-  2. [catalog/purchase-price](docs/design/catalog/purchase-price.md) — owner-only field, the
+  2. [catalog/purchase-price](../../docs/design/catalog/purchase-price.md) — owner-only field, the
      repo's FIRST field-level authorization (403 outcome on staff write, key OMITTED on staff
      read). Meaningless until manage-users ships — noted as ordering, not dependency.
-  3. [catalog/price-history](docs/design/catalog/price-history.md) — append-only
+  3. [catalog/price-history](../../docs/design/catalog/price-history.md) — append-only
      `dress_price_history`, same-transaction rows, backfill v1 per existing dress.
-  4. [catalog/dress-category](docs/design/catalog/dress-category.md) — second aggregate root in
+  4. [catalog/dress-category](../../docs/design/catalog/dress-category.md) — second aggregate root in
      catalog, UNIQUE lower(name), FK RESTRICT delete with `rejected_category_in_use`.
-  5. [identity/manage-users](docs/design/identity/manage-users.md) — owner creates/locks/resets
+  5. [identity/manage-users](../../docs/design/identity/manage-users.md) — owner creates/locks/resets
      staff accounts, login moves to username/password (FIRST breaking change on /auth/login);
      the feature that makes every owner-only rule real.
 - Blockers the owner must answer (full tables in each spec §6): backdated creates auto-out?;
@@ -592,7 +594,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
 - Done: the gap three features and the readiness pass all pointed at — **money coming IN was never
   recorded** — is closed as one design-tier feature through the spec-before-code lane. Ledger is
   25/25 `pass`.
-- The lane worked as designed: [record-collection.md](docs/design/payments/record-collection.md) was
+- The lane worked as designed: [record-collection.md](../../docs/design/payments/record-collection.md) was
   written FIRST with the business rules as **blocker questions**, and the shop owner answered four
   (§6): (1) a **standalone action, usable any time** — not folded into create or pickup, because
   some customers transfer the deposit days early; (2) amounts **pre-filled** (Σ catalog deposit,
@@ -648,7 +650,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
   (already wired to `aria-describedby`). **Watch out:** pre-filling `deposit − fees` encodes a
   deduction convention taken from `smoke.sh` and the Playwright happy path, NOT an owner decision
   like the late-fee rules — recorded as an open question in
-  [payments-aggregate.md](docs/design/payments-aggregate.md) and in the commit.
+  [payments-aggregate.md](../../docs/design/payments-aggregate.md) and in the commit.
 - `rentals/dress-availability-in-picker` (`03bf04e`, FE-only): every chosen dress now checks itself
   against the form's dates (`Còn trống` / `Vướng lịch` + the `blockedUntilDate` the staff cannot
   deduce), and a rejection marks exactly the dresses the server named — `dressIds` was designed for
@@ -737,7 +739,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
 ## 2026-08-10 (20) — `rentals/settle-late-fee` = pass (first capability through the spec-before-code lane)
 
 - Done (the point of the exercise): the `init-feature-spec` lane was used for real. The spec
-  ([docs/design/rentals/settle-late-fee.md](docs/design/rentals/settle-late-fee.md)) was written
+  ([docs/design/rentals/settle-late-fee.md](../../docs/design/rentals/settle-late-fee.md)) was written
   FIRST at status `draft` with the fee formula and waiver authority left as **blocker questions** —
   the lane forbids inventing business rules — and the contract check on the draft shape found 2
   blockers, 2 major, 2 minor. The shop owner answered (§6): **200.000₫/ngày/váy flat**, no grace, no
@@ -752,7 +754,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
   `rejected_return_not_allowed` rather than a fee complaint.
 - Done (contract + FE): the repo's **first 403 outcome** — `{ status: 'forbidden', reason:
   'late_fee_waiver_requires_owner', suggestedLateFee, submittedLateFee }` — plus
-  `rejected_waiver_note_required` (422), both added to [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md)
+  `rejected_waiver_note_required` (422), both added to [ADR 0001](../../docs/adr/0001-outcome-model-at-the-http-boundary.md)
   §3–§4 before implementation. The return dialog reads the quote, states it in an `aria-live`
   banner, pre-fills the field, disables submit until the number is known, and keeps both waiver
   rejections in place instead of closing.
@@ -770,7 +772,7 @@ small. History only — never read on resume; grep it by session number, e.g. `#
 
 ## 2026-08-09 (19) — `infra/outcome-model` + `infra/invariant-proof-e2e` = pass (both MUST gaps closed)
 
-- Done (design gate first, per the process): [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md)
+- Done (design gate first, per the process): [ADR 0001](../../docs/adr/0001-outcome-model-at-the-http-boundary.md)
   approved before any code — decision, full outcome catalog (§3), UI state matrix (§4), rejected
   alternatives. `docs/SRS-dress-rental.md` (FR-AUTH-02, FR-RENT-02, BR-1) and the rentals / catalog /
   identity / qr-admin design docs were re-synced in the SAME change, and `docs/design/README.md`

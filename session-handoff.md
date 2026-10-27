@@ -3,7 +3,8 @@
 Newest first. On resume read ONLY the first entry. Close: prepend one entry (Done / Proof / Next /
 Watch out, ≤ ~8 lines — detail belongs in the ledger evidence or the design doc), then keep at most
 5 entries here: move the oldest, verbatim, to the top of
-[`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md) (history only).
+[`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md) (history only),
+prefixing its relative link targets with `../../`.
 
 ## 2026-10-27 (49) — base dress code on public listings (`catalog:public-base-code` = pass)
 

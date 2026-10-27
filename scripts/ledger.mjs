@@ -17,17 +17,29 @@ try {
   console.error(`FAIL: feature_list.json is not valid JSON — ${e.message}`);
   process.exit(1);
 }
-const features = ledger.features ?? [];
+if (!Array.isArray(ledger?.features) || ledger.features.length === 0) {
+  console.error('FAIL: feature_list.json has no non-empty "features" array');
+  process.exit(1);
+}
+const features = ledger.features;
+// docs/spec/init-harness/02-artifacts-and-templates.md §2.2
+const STATUSES = ['todo', 'in-progress', 'pass', 'fail', 'blocked'];
 
 if (cmd === 'check') {
   const problems = [];
   const seen = new Set();
   for (const f of features) {
-    if (!f.id) problems.push('an entry has no id');
-    else if (seen.has(f.id)) problems.push(`duplicate id ${f.id}`);
+    if (typeof f?.id !== 'string' || !f.id) {
+      problems.push('an entry has no string id');
+      continue;
+    }
+    if (seen.has(f.id)) problems.push(`duplicate id ${f.id}`);
     seen.add(f.id);
-    if (f.status === 'pass' && !String(f.evidence ?? '').trim()) problems.push(`${f.id}: pass without evidence`);
-    for (const dep of f.dependencies ?? []) if (!features.some((g) => g.id === dep)) problems.push(`${f.id}: unknown dependency ${dep}`);
+    if (!STATUSES.includes(f.status)) problems.push(`${f.id}: unknown status ${JSON.stringify(f.status)}`);
+    if (f.status === 'pass' && (typeof f.evidence !== 'string' || !f.evidence.trim()))
+      problems.push(`${f.id}: pass without string evidence`);
+    if (f.dependencies !== undefined && !Array.isArray(f.dependencies)) problems.push(`${f.id}: dependencies is not an array`);
+    for (const dep of Array.isArray(f.dependencies) ? f.dependencies : []) if (!features.some((g) => g.id === dep)) problems.push(`${f.id}: unknown dependency ${dep}`);
   }
   const inProgress = features.filter((f) => f.status === 'in-progress');
   if (inProgress.length > 1) problems.push(`${inProgress.length} entries in-progress: ${inProgress.map((f) => f.id).join(', ')}`);
