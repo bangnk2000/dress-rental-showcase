@@ -31,25 +31,39 @@ This file is the ONE harness in this repo — never create harness artifacts
 contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 `apps/fe/AGENTS.md`, `apps/qr-admin/AGENTS.md`, `apps/web/AGENTS.md`.
 
-## Current state (re-sync at every session end — see Session rules)
+## Current state (a MAP — each row's detail lives in the doc it points at)
 
-**As of 2026-10-27 · `feature_list.json` is 50/50 `pass`; latest `catalog:public-base-code` (public DTO `codes` = base dress codes, shown on web card + detail; not deployed — BE before web); previous `catalog:listing-style-accessory` (7th style, PR #30, not deployed); previous `web:static-images` (compressed `/images/*`, Cloudflare-resized in prod, favicon, [as-built](docs/design/web/public-pages.md) §7, PR #28). Public web re-DEPLOYED web-only 2026-10-15 — bundle `5d797b1` on Tencent (API unchanged, still the r2 build). DEPLOYED 2026-09-30 as release [`2026-09-30-r2`](docs/releases/2026-09-30-r2/README.md) (`a4d32cb` on Tencent): R2 photo upload (bucket `dress-rental-prod-media` → `img.example.com`), listings + `/website`, and the public site on `https://example.com` (pm2 `dress-web`); `listings:from-dresses` ran on production → 100 DRAFT listings, 0 published — next: staff review/publish in `/website`, bangnk owns R1–R11 of the r2 release plan, and the 13 live-but-never-examined features (r2 README) still have no readiness pack.**
-This section stays a MAP, not a description — each row's detail lives in the doc it points at.
+- **Ledger:** `node scripts/ledger.mjs summary` (counts, in-progress, latest entries) — never open
+  the whole `feature_list.json`; `show <id>` prints one entry.
+- **Production (as of 2026-10-27):** API/CMS = release [`2026-09-30-r2`](docs/releases/2026-09-30-r2/README.md)
+  `a4d32cb`; web re-deployed web-only `5d797b1` (2026-10-15). On master, NOT deployed: PR #30
+  `catalog:listing-style-accessory` (migrate before BE restart) and PR #31 `catalog:public-base-code`
+  (BE before web). Execution log: out-of-repo `~/deploy-dress/tencent/RUNBOOK.md` §11.
+- **Next / watch-outs:** first entry of `session-handoff.md` — do not re-derive them here.
 
-| Area | State | Detail lives in |
+| Area | State (one line; shape, not history) | Detail lives in |
 | --- | --- | --- |
-| `apps/be` | 5 contexts: identity (JWT + ABAC), catalog (incl. duplicate-dress `<code>_<n>` numbering), rentals (Core; rental-level discount; `GET /rentals/:id` detail + **owner-only** `PATCH /rentals/:id` edit that re-blocks every item, reconciles dresses by id and re-reads status under the row lock), payments (read slice + its own aggregate/command for money collected), qr (owner-only). Catalog signs browser→R2 photo PUTs in one batch per Save (`POST /photos/upload-urls` `{ files[] }` → `{ uploads[] }`; `@aws-sdk/*` only in the R2 adapter; no R2 env → that endpoint alone 503). Catalog also owns the `DressListing` aggregate (public "mẫu": slug locked once published, publish needs photo + active dress; duplicate copies memberships) and the ONLY anonymous endpoints, `@Public()` `GET /public/dresses[/:slug]` (column whitelist — base dress codes only, never `_n` —, throttled per IP, loopback exempt). Offline `openapi:emit`. | `apps/be/AGENTS.md` + `docs/design/<ctx>-aggregate.md` + `docs/design/rentals/update-rental.md` + `docs/design/catalog/dress-photo-upload.md` + `docs/design/catalog/public-listing.md` |
-| `apps/fe` | Staff SPA: today board (actionable, device-local date, day-stepping in a transition; a rental handed out during the day stays on the hand-out list, marked done), dresses + detail with photos (chosen photos wait as local previews and reach R2 only on the dress form's Save — one signing request, then the dress is saved only if every PUT succeeded; `PhotoListField` edits a `PhotoItem` list, `src/api/use-photo-uploader.ts` uploads; every photo renders through Cloudflare Images variants built ONLY by `src/lib/photo-url.ts` over `packages/image-url`; size = XS…XL buttons; `Nhân bản` duplicates as `<code>_<n>`), new-rental form that checks each chosen dress against the dates and takes a rental-level discount, `/rentals` list (customer name → `/rentals/:id` detail: notes, dresses with agreed prices, expected fee, the shared money dialog, cancel, and `Sửa đơn` for the owner → `/rentals/:id/edit`, the SAME `RentalForm` as `/rentals/new`) with cancel + a money dialog on EVERY row (ledger, totals, and the collect form while the rental is open). Rentals mutations MUST invalidate the board AND list parameterless keys (staleTime 60s) — plus the rental's detail key when they touch one rental — and any mutation that moves money also the rental's payments key. `/website` (`features/listings`, all staff) manages public listings: form + "Size & váy" attach section, publish/hide, owner-vs-staff delete; dress detail shows "Thuộc mẫu". | `apps/fe/AGENTS.md` (incl. §Screen rules) + `docs/design/` + `docs/design/catalog/dress-photo-upload.md` §9 |
-| `apps/qr-admin` | Independent Vite/React app for owner QR URLs (own client, own tokens, own gates). | `apps/qr-admin/AGENTS.md` + `docs/design/qr-admin.md` |
-| `apps/web` | Public, anonymous Next.js 16 site (:3001): Home (featured “Xem thêm” carries selected style to collection), `/bo-suu-tap` (name/tagline search without accents, debounce 300 ms, combined style chips, q/style URL synchronized with same-route Next Link navigation), `/bo-suu-tap/[slug]` (ISR 5 min), `/lien-he` (● SSG) built from `apps/web/design/prototype/`, localized 404, robots/sitemap, Open Graph/Twitter card on every page (`src/lib/seo.ts` — Next replaces a parent's `openGraph`, so each page passes the full set), vi-only next-intl, third generated client, `/api/v1` rewrite. No session. Dress data comes from the BE: `src/api/public-catalog.ts` → generated `catalog` client, Next Data Cache `revalidate` 300 s (pages ISR; an unreachable BE at build prerenders empty). Photos via a `next/image` custom loader over `packages/image-url` (the site's own `/images/*` too, on `NEXT_PUBLIC_STATIC_IMAGE_BASE_URL` in prod). | `apps/web/AGENTS.md` + `docs/design/public-web.md` + `docs/design/web/public-pages.md` + `docs/design/web/search-dresses.md` |
-| Wire contract | ONE rule: returned `Result` Err → outcome body `{ status, ...payload }` (422/403); thrown → envelope `{ error: { … } }`. **401 = a guard rejected the access token, nothing else.** | [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md) — catalog §3, UI states §4 |
-| Invariant proof | `pnpm --filter be test:e2e` (146 tests) provokes the real EXCLUDE/UNIQUE/CHECK constraints — three concurrent races (booking overlap on create AND on edit, double deposit) and raw INSERT/UPDATEs that bypass the app. CI has a postgres service. | `apps/be/test/` + `apps/be/AGENTS.md` §Invariant-proof suite |
-| `docs/spec` | Seven vendored `init-*` sets: five synced 2026-08-09 from upstream `815fa0f`; `init-nextjs` (new) + `init-monorepo-contract` synced 2026-09-24 from the upstream working tree (not yet committed upstream). | `docs/spec/README.md` |
+| `apps/be` | NestJS hexagonal, 5 contexts: identity, catalog (dresses, photos → R2, public listings + the ONLY anonymous endpoints), rentals (Core), payments, qr. | `apps/be/AGENTS.md`, `docs/design/<ctx>-aggregate.md`, `docs/design/<ctx>/*.md` |
+| `apps/fe` | Staff SPA: today board, dresses + photos, rentals (new/list/detail/owner edit, money dialog), `/website` listings. | `apps/fe/AGENTS.md` (incl. §Screen rules), `docs/design/catalog/dress-photo-upload.md` §9 |
+| `apps/qr-admin` | Independent Vite/React app for owner QR URLs (own client, tokens, gates). | `apps/qr-admin/AGENTS.md`, `docs/design/qr-admin.md` |
+| `apps/web` | Public anonymous Next.js 16 site (:3001, `example.com`): home, `/bo-suu-tap` (+ search), `/bo-suu-tap/[slug]`, `/lien-he`; BE data via its own generated client, ISR. | `apps/web/AGENTS.md`, `docs/design/public-web.md`, `docs/design/web/*.md` |
+| Wire contract | Returned `Result` Err → outcome body `{ status, ...payload }` (422/403); thrown → envelope `{ error: { … } }`. **401 = a guard rejected the access token, nothing else.** | [ADR 0001](docs/adr/0001-outcome-model-at-the-http-boundary.md) — catalog §3, UI states §4 |
+| Invariant proof | `pnpm --filter be test:e2e` provokes the real EXCLUDE/UNIQUE/CHECK constraints (concurrent races + raw SQL bypasses). CI has a postgres service. | `apps/be/AGENTS.md` §Invariant-proof suite |
+| Not in root gates | Playwright: FE (`pnpm --filter fe e2e`, real stack, CI `e2e`); web (`pnpm --filter web e2e`, prod build, Chromium only, CI `web`). | `apps/fe/AGENTS.md` #5, `apps/web/AGENTS.md` #4 |
 | Open by choice | `Idempotency-Key` unimplemented (DB constraint stops double-submit); cross-context table-read adapters kept. | `apps/fe/AGENTS.md` #8, `apps/be/AGENTS.md` #4 |
-| Not in root gates | Playwright: FE (`pnpm --filter fe e2e`) runs the real stack in CI `e2e`; web (`pnpm --filter web e2e`) runs URL/navigation regressions against its production build in CI `web`, needs Chromium but no BE/DB/seed. | `apps/fe/AGENTS.md` #5, `apps/web/AGENTS.md` #4, `.github/workflows/ci.yml` |
-| Release lane | `2026-08-10-r1` (20 features; prepared, stopped at go/no-go) and `2026-09-30-r2` (10 features, PRs #12–#22) — r2 was written AFTER its rollout and says so: it records what ran, R1–R11 await bangnk's accepted-risk notes, and 13 features went live via un-packed deploys (release debt). Execution itself lives in the out-of-repo runbook `~/deploy-dress/tencent/RUNBOOK.md` §11. | [`docs/releases/2026-09-30-r2/README.md`](docs/releases/2026-09-30-r2/README.md) |
+| `docs/spec` | Seven vendored `init-*` sets — never edit locally. | `docs/spec/README.md` (sync provenance) |
+| Release lane | `2026-08-10-r1` (stopped at go/no-go), `2026-09-30-r2` (written after rollout; R1–R11 await bangnk; 13 live features un-packed = release debt). | [`docs/releases/2026-09-30-r2/README.md`](docs/releases/2026-09-30-r2/README.md) |
 
-Next-session candidates are in `session-handoff.md` (latest entry) — do not re-derive them here.
+## Which doc to update (keep each fact in ONE place)
+
+| When this changes … | Update | Never |
+| --- | --- | --- |
+| A ledger entry's status/evidence | `feature_list.json` (edit only that entry; then `node scripts/ledger.mjs check`) | read the whole file |
+| Session ends | prepend one `session-handoff.md` entry (rotate per its header) + one `claude-progress.md` line | rewrite old entries |
+| A behaviour/rule inside one app | that app's `AGENTS.md` or the feature's `docs/design/` doc (dated as-built note) | copy it into this file |
+| Something gets deployed | the **Production** bullet above + the release/runbook record | — |
+| An app/context is added or changes shape | its row in the table above | per-feature detail in the row |
+| A requirement (FR/BR/NFR) | `docs/SRS-*.md` in the same PR | — |
 
 ## Invariants (carry these into every session)
 
@@ -111,10 +125,10 @@ Two things to know about these gates:
 - Scaffold order for an API-touching feature: BE slice → `pnpm contract` → FE slice. The
   contract step is part of the scaffold, not optional glue.
 - End of session: update `feature_list.json` + `session-handoff.md` + `claude-progress.md`;
-  design-tier feature → add the dated as-built note to its design doc; **re-sync the Current
-  state section of this file to the repo as-committed** (a stale current-state misroutes the
-  next session — `docs/spec/init-harness/03-session-loop.md` §3.5); run
-  `clean-state-checklist.md`; no unintended diff under `packages/contract`,
-  `apps/fe/src/api/generated` or `apps/qr-admin/src/api/generated`.
+  design-tier feature → add the dated as-built note to its design doc; **re-check Current state
+  against the repo as-committed** — usually only the Production bullet moves; a table row changes
+  only when an area changes shape (`docs/spec/init-harness/03-session-loop.md` §3.5); run
+  `clean-state-checklist.md`; no unintended diff under `packages/contract` or any
+  `apps/*/src/api/generated`.
 - `pass` is the ledger's terminal state. Shipping is a separate lane: `docs/spec/init-release/`
   reads this ledger as its evidence source and writes `docs/releases/<release-id>/`.

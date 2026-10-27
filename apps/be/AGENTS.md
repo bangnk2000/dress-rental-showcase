@@ -86,7 +86,7 @@ files here.
 
 (Historical: gaps #5 "no invariant proof" and #6 "flat `GENERIC.*` rejections" were CLOSED on
 2026-08-09 by `infra/invariant-proof-e2e` and `infra/outcome-model`; the story is in
-`docs/adr/0001-outcome-model-at-the-http-boundary.md` §1 and `session-handoff.md` (19). Only LIVE
+`docs/adr/0001-outcome-model-at-the-http-boundary.md` §1 and `docs/harness/session-handoff-archive.md` (19). Only LIVE
 deviations are numbered here, so nothing below is a constraint that no longer exists.)
 
 ## Wire contract — three facts, then read [ADR 0001](../../docs/adr/0001-outcome-model-at-the-http-boundary.md)
