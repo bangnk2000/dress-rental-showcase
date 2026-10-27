@@ -17,11 +17,11 @@ describe('public dress projection', () => {
   });
 
   it('codes are the distinct bases of the dress codes in natural order', () => {
-    expect(publicBaseCodes(['VAY10', 'VAY1_2', 'VAY1', 'VAY1_1', 'VD_012', 'VAY2_10'])).toEqual([
+    expect(publicBaseCodes(['VAY10', 'VAY1_2', 'VAY1', 'VAY1_1', 'VD-012_3', 'VAY2_10'])).toEqual([
       'VAY1',
       'VAY2',
       'VAY10',
-      'VD_012',
+      'VD-012',
     ]);
   });
 
