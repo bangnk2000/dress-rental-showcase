@@ -8,9 +8,10 @@ const at = (iso: string) => new Date(iso);
 
 describe('isShopOpen — read on the shop clock, not the viewer’s', () => {
   test.each([
-    ['Mon 15:00 (weekday, open 14–22)', '2026-09-21T08:00:00Z', true],
-    ['Mon 13:59', '2026-09-21T06:59:00Z', false],
-    ['Mon 22:00 (close is exclusive)', '2026-09-21T15:00:00Z', false],
+    ['Mon 11:00 (weekday, open 11–21)', '2026-09-21T04:00:00Z', true],
+    ['Mon 10:59', '2026-09-21T03:59:00Z', false],
+    ['Mon 21:00 (close is exclusive)', '2026-09-21T14:00:00Z', false],
+    ['Sat 21:30 (weekend still open)', '2026-09-26T14:30:00Z', true],
     ['Sat 10:30 (weekend, open 10–22)', '2026-09-26T03:30:00Z', true],
     ['Sun 09:59', '2026-09-27T02:59:00Z', false],
     // 23:30 UTC Sunday is already Monday 06:30 in Hà Nội — closed, not "Sunday evening"
