@@ -15,7 +15,7 @@ export const shop = {
   ],
   // 0 = Sunday. Minutes since local midnight.
   hours: [
-    { days: [1, 2, 3, 4, 5], open: 14 * 60, close: 22 * 60 },
+    { days: [1, 2, 3, 4, 5], open: 11 * 60, close: 21 * 60 },
     { days: [0, 6], open: 10 * 60, close: 22 * 60 },
   ],
 } as const;
