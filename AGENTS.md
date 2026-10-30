@@ -39,7 +39,8 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
   entries with their deploy order (`deploy`) — `docs/spec/init-harness/07-human-control.md`.
 - **Production (as of 2026-10-31):** API/CMS = `c00f926` (2026-10-28, WSL: PR #30 + #31 on top of release
   [`2026-09-30-r2`](docs/releases/2026-09-30-r2/README.md)), rebuilt unchanged by the first `deploy` run
-  2026-10-31 (`7b8d244`, failed at web); web = `dab2db7` (2026-10-29). Nothing on master is undeployed. Redeploys: workflow `deploy` ([`infra/deploy/README.md`](infra/deploy/README.md), not yet run);
+  2026-10-31 (`7b8d244`, failed at web); web = `dab2db7` (2026-10-29). Nothing on master is undeployed.
+  Redeploys: workflow `deploy` ([`infra/deploy/README.md`](infra/deploy/README.md); runner blocked reading prod — PR #36);
   fallback + one-off ops + execution log: out-of-repo `~/deploy-dress/tencent/RUNBOOK.md` §7/§11.
 - **Next / watch-outs:** first entry of `session-handoff.md` — do not re-derive them here.
 
