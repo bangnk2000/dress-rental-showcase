@@ -35,10 +35,12 @@ Steps, in this order (RUNBOOK §7 as code):
 3. **be.sh**: `git archive` of the target goes to the VPS, then `remote/build-remote.sh` runs over ssh.
    That stops the API, installs, runs nest build, migrates and starts the API again (**API down ~1–2 min**).
 4. **fe.sh**: Vite build on the runner, then an atomic swap of `apps/fe/dist`.
-5. **web.sh**: `next build` on the runner, **after** the BE because it prerenders from the live public API.
+5. **web.sh**: `next build` on the runner, **after** the BE because it prerenders from the live catalogue.
+   It reads the catalogue through `ssh -L 3000:127.0.0.1:3000`, not through Cloudflare (see below).
    The standalone server is swapped atomically, then pm2 restarts `dress-web` and runs local checks.
-6. **verify.sh**: asserts the external status codes (through Cloudflare, origin-by-IP must be 000) and
-   that pm2 `dress-api` and `dress-web` are online. The job goes red on any mismatch.
+6. **verify.sh**: checks the status codes **on the VPS**, against nginx with the real names, and that
+   pm2 `dress-api` and `dress-web` are online. From the runner, the origin must not answer by IP (000).
+   The job goes red on any mismatch.
 7. **record.sh** writes `.deployed`, but only after everything above passed and only when the run
    covered every changed part. A partial run (`only=web` while the BE also changed) leaves the
    old record, so the next `auto` run still sees the BE as pending.
@@ -64,6 +66,18 @@ Repo Settings → Secrets and variables → Actions → **repository secrets**:
 
 The key's public half goes into `/root/.ssh/authorized_keys` on the VPS. `harden.sh` already allows
 `22/tcp` from anywhere, with fail2ban on sshd.
+
+### Why the runner never goes through Cloudflare
+
+Cloudflare **Bot Fight Mode** serves a Managed Challenge to GitHub runner IPs (Azure). This was seen
+on the first run, 2026-10-31. The Free plan has no way to skip it for one client, and the owner chose
+to keep it on (2026-10-31). So the runner talks to the VPS only over ssh:
+
+- **Build data:** the WSL `harden-remote.sh` sshd drop-in allows `AllowTcpForwarding local` with
+  `PermitOpen 127.0.0.1:3000` and `PermitListen none`. That means a local forward to the API on
+  loopback and nothing else. Re-run `harden.sh` from WSL after changing it.
+- **Verify:** checks nginx on the VPS (`curl --resolve <name>:443:127.0.0.1`). It does not check the
+  Cloudflare edge; WSL `verify-external.sh` still does that.
 
 The job uses no GitHub Environment. A private repo on the Free plan has no environment secrets and
 no required reviewers, so the gate is the manual dispatch, which only people with write access can
