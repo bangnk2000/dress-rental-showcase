@@ -3,7 +3,7 @@
 # Port of WSL febuild.sh; expects `pnpm install` already done on the target checkout.
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
-cd "$REPO_ROOT"
+cd "$TREE"
 # Inlined at BUILD. VITE_API_BASE_URL stays EMPTY: same-origin /api behind nginx.
 export VITE_API_BASE_URL=
 export VITE_IMAGE_BASE_URL="$IMAGE_BASE_URL"

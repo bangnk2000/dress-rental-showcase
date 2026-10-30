@@ -5,7 +5,8 @@
 # Rules (RUNBOOK §7 as code):
 #  - a new migration forces a proven backup BEFORE the BE build migrates;
 #  - going BACK across a migration is refused: build-be only migrates up, so that rollback is manual;
-#  - unknown deployed SHA, or one that is not an ancestor of the target → deploy everything;
+#  - unknown deployed SHA → deploy everything AND treat it as carrying a migration (backup first);
+#  - an ssh failure while reading .deployed aborts (lib.sh deployed_sha), it is not "unknown";
 #  - `record` (write .deployed at the end) only when this run covers everything the diff needs,
 #    so the next `auto` run never mistakes a partial deploy for a complete one.
 set -euo pipefail
@@ -18,17 +19,19 @@ echo "deployed: ${DEPLOYED:-unknown} | target: $TARGET_SHA | only=$ONLY backup=$
 
 need_be=true need_fe=true need_web=true migration=false
 if [ -z "$DEPLOYED" ] || ! git cat-file -e "$DEPLOYED^{commit}" 2>/dev/null; then
-  echo "deployed SHA unknown to this checkout → everything is needed"
+  echo "deployed SHA unknown to this checkout → everything is needed, and a backup first (migrations unknown)"
+  migration=true
 elif [ "$DEPLOYED" = "$TARGET_SHA" ]; then
   echo "target is already the recorded deploy → nothing is needed"
   need_be=false need_fe=false need_web=false
 else
   CHANGED=$(git diff --name-only "$DEPLOYED" "$TARGET_SHA")
   echo "changed files: $(printf '%s\n' "$CHANGED" | grep -c .)"
-  shared='^(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|packages/)'
-  grep -qE "^apps/be/|$shared" <<<"$CHANGED" || need_be=false
-  grep -qE "^apps/fe/|$shared" <<<"$CHANGED" || need_fe=false
-  grep -qE "^apps/web/|$shared" <<<"$CHANGED" || need_web=false
+  # A change to the deploy script of a part (e.g. a new .env key in build-remote.sh) redeploys it.
+  shared='^(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|packages/|infra/deploy/lib\.sh)'
+  grep -qE "^(apps/be/|infra/deploy/(be\.sh|remote/build-remote\.sh))|$shared" <<<"$CHANGED" || need_be=false
+  grep -qE "^(apps/fe/|infra/deploy/fe\.sh)|$shared" <<<"$CHANGED" || need_fe=false
+  grep -qE "^(apps/web/|infra/deploy/web\.sh)|$shared" <<<"$CHANGED" || need_web=false
   grep -q '^apps/be/migrations/' <<<"$CHANGED" && migration=true
   if $migration && git merge-base --is-ancestor "$TARGET_SHA" "$DEPLOYED"; then
     echo "::error::target ${TARGET_SHA:0:7} is OLDER than the deployed ${DEPLOYED:0:7} and the range touches apps/be/migrations — a rollback across a migration is manual (RUNBOOK), refusing"

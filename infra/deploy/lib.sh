@@ -19,8 +19,11 @@ REMOTE_DIR=/opt/dress-rental
 OPS_DIR=/opt/dress-ops
 R2_BUCKET="${DEPLOY_R2_BUCKET:-dress-rental-backups}"   # BACKUP bucket (not the photo bucket)
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"  # the scripts' checkout (full history)
 DEPLOY_DIR="$REPO_ROOT/infra/deploy"
+# The tree that gets BUILT (fe/web) — the target commit, checked out separately by the workflow, so a
+# rollback to a commit older than these scripts still works. Defaults to the scripts' own checkout.
+TREE="${DEPLOY_TREE:-$REPO_ROOT}"
 
 # StrictHostKeyChecking=yes: the runner only trusts the host key pinned in DEPLOY_KNOWN_HOSTS.
 SSH_OPTS=(-i "$SSH_KEY" -o UserKnownHostsFile="$KNOWN_HOSTS" -o StrictHostKeyChecking=yes
@@ -28,5 +31,9 @@ SSH_OPTS=(-i "$SSH_KEY" -o UserKnownHostsFile="$KNOWN_HOSTS" -o StrictHostKeyChe
 rssh() { ssh "${SSH_OPTS[@]}" "$SSH_USER@$DEPLOY_HOST" "$@"; }
 rscp() { scp -q "${SSH_OPTS[@]}" "$@"; }
 
-# The SHA recorded by the last COMPLETE deploy (empty when unknown).
-deployed_sha() { rssh "sed -n 's/^sha=\([0-9a-f]*\).*/\1/p' $REMOTE_DIR/.deployed" 2>/dev/null || true; }
+# The SHA recorded by the last COMPLETE deploy; empty when the file is absent. An ssh failure is an
+# error, never "unknown": unknown means "deploy everything", which must not be a network accident.
+deployed_sha() {
+  rssh "[ ! -f $REMOTE_DIR/.deployed ] || sed -n 's/^sha=\([0-9a-f]*\).*/\1/p' $REMOTE_DIR/.deployed" \
+    || { echo "::error::cannot read $REMOTE_DIR/.deployed over ssh" >&2; return 1; }
+}

@@ -40,7 +40,8 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 - **Production (as of 2026-10-27):** API/CMS = release [`2026-09-30-r2`](docs/releases/2026-09-30-r2/README.md)
   `a4d32cb`; web re-deployed web-only `5d797b1` (2026-10-15). On master, NOT deployed: PR #30
   `catalog:listing-style-accessory` (migrate before BE restart) and PR #31 `catalog:public-base-code`
-  (BE before web). Execution log: out-of-repo `~/deploy-dress/tencent/RUNBOOK.md` §11.
+  (BE before web). Redeploys: workflow `deploy` ([`infra/deploy/README.md`](infra/deploy/README.md), not yet run);
+  fallback + one-off ops + execution log: out-of-repo `~/deploy-dress/tencent/RUNBOOK.md` §7/§11.
 - **Next / watch-outs:** first entry of `session-handoff.md` — do not re-derive them here.
 
 | Area | State (one line; shape, not history) | Detail lives in |

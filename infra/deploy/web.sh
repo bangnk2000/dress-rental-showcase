@@ -9,7 +9,7 @@
 # Expects `pnpm install` already done on the target checkout. Runs after be.sh (BE before web).
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
-cd "$REPO_ROOT"
+cd "$TREE"
 SHA=$(git rev-parse HEAD)
 grep -q "output: 'standalone'" apps/web/next.config.ts \
   || { echo "::error::apps/web/next.config.ts has no output: 'standalone' — this commit cannot be deployed by this script"; exit 1; }
