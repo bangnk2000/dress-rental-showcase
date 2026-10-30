@@ -14,9 +14,11 @@ you to.** Never bulk-read a set folder — that is how a session burns its conte
 | Field | Value |
 | --- | --- |
 | Source | `knowledge-system` repo → `prompts/` |
-| Synced at | **2026-08-09**, upstream commit `815fa0f` (*fix(prompts): implementation pass — make the example layer match the policy layer*) — for five sets. **2026-09-24** for `init-nextjs` (added) and `init-monorepo-contract` (re-synced): taken from the upstream **working tree** on top of `8c86def` (`init-nextjs` first landed upstream in `ebf5980`) — the monorepo-mode + bug-fix edits made while bootstrapping `apps/web` were NOT yet committed upstream at sync time, so these two sets match no upstream commit until they are |
-| Upstream chain in this sync | `e3878d7` (full L1–L2 coverage: new spec/release sets, outcome-through-boundary, stack template) → `27b417d` (consistency pass) → `815fa0f` (implementation pass) |
-| Previous sync | 2026-07-31, landed 2026-08-04 in `b219f3a` — taken from the upstream **working tree** just before `e3878d7`, which is why those files matched no upstream commit |
+| Version | **2026.10.30** (top entry of upstream `prompts/CHANGELOG.md`) |
+| Synced at | **2026-10-30**, ALL seven sets from upstream commit `518495c` (*feat(prompts): human control plane + ledger tool from the dress-rental run*) via `git archive` — a committed state, not a working tree. `518495c` is on upstream branch `feat/prompts-human-control` ([knowledge-system#1](https://github.com/bangnk2000/knowledge-system/pull/1)), **not yet merged**: if that PR is amended before merge, re-sync from the merged commit |
+| Upstream chain in this sync | `1b1c8af` (monorepo mode for init-nextjs — the 2026-09-24 working-tree edits, now committed) → `518495c` (human control plane, ledger tool, handoff rotation, Lite Path) |
+| Previous syncs | 2026-08-09 `815fa0f` (five sets) + 2026-09-24 `init-nextjs`/`init-monorepo-contract` from the upstream working tree on top of `8c86def`; 2026-07-31 (landed `b219f3a`) from the working tree before `e3878d7` |
+| Integrity | [`SHA256SUMS`](./SHA256SUMS), generated AFTER the link rewrites; CI job `harness` runs `sha256sum -c` — any local edit to vendored spec is red |
 | Local deltas | ONE kind — the link rewrites in [Upstream-only docs](#upstream-only-docs) (ddd-* docs, and `stack-set-template.md` in `init-nextjs/README.md`). Everything else is byte-identical to upstream. |
 
 ## The seven sets
@@ -55,20 +57,28 @@ this section instead. Their link text still names the upstream file: read it in 
 
 ## Re-sync procedure
 
+Run from a Linux shell (GNU `sed`). Vendor a **committed** upstream state — never a working tree
+(upstream `prompts/README.md` §Versioning):
+
 ```bash
-KS=<path-to>/knowledge-system/prompts
+REV=<upstream commit>                       # e.g. the merge commit of the upstream PR
 DR=<path-to>/dress-rental/docs/spec
+TMP=$(mktemp -d); (cd <path-to>/knowledge-system && git archive "$REV" prompts) | tar -x -C "$TMP"
+KS=$TMP/prompts
 for s in init-harness init-monorepo-contract init-nestjs-hexagonal init-react init-nextjs \
          init-feature-spec init-release; do rm -rf "$DR/$s"; cp -r "$KS/$s" "$DR/$s"; done
 # re-apply the local link delta
 grep -rl '\.\./\.\./docs/design/' "$DR" | xargs -r sed -i \
   's|](\.\./\.\./docs/design/ddd-[a-z-]*\.md)|](../README.md\#upstream-only-docs)|g'
 sed -i 's|](\.\./stack-set-template\.md)|](../README.md\#upstream-only-docs)|g' "$DR/init-nextjs/README.md"
+rm -rf "$TMP"
+# integrity: hash AFTER the rewrites (this README is local, so it is excluded)
+(cd "$DR" && find . -name '*.md' ! -path ./README.md -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
 ```
 
 Then, in the same commit:
 
-1. update **Sync provenance** above (date + commit + upstream chain);
+1. update **Sync provenance** above (version + date + commit + upstream chain);
 2. re-read the diff for rules that changed tier (SHOULD → MUST) and record every gap the new spec
    opens for this repo as a numbered entry in `apps/be/AGENTS.md` / `apps/fe/AGENTS.md`
    §Deviations — a spec rule this repo does not follow is either a **deliberate deviation** (with

@@ -18,7 +18,7 @@ knowledge repo.
 | Bounded context | {{Ordering}} |
 | Status | {{draft \| approved \| as-built}} |
 | AC source | {{link to feature brief / ticket}} |
-| Rules approved by | {{domain expert / product — name + date; empty while draft}} |
+| Rules approved by | {{domain expert / product — name + date; empty while draft; `agent-default — owner said proceed <date>, defaults in §6` when the owner explicitly deferred (init-harness 07 §7.3)}} |
 | Contract approved by | {{FE + BE — names + date; empty while draft}} |
 
 ## 1. Glossary slice

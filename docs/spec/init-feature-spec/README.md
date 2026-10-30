@@ -34,7 +34,7 @@ and **API contract agent**: the agent extracts, enumerates, and checks — a hum
 ## Composition with the Other Sets
 
 - **Where outputs live:** in the **target repo** at `docs/design/<context>/<use-case>.md`
-  (e.g. `docs/design/ordering/place-order.md`), status-headed `draft | approved | as-built` —
+  (e.g. `docs/design/ordering/place-order.md`), status-headed `draft | agent-default | approved | as-built` —
   the same intent-doc lane as [init-harness/06-design-first.md](../init-harness/06-design-first.md).
 - **Feeding the stack sets:** once the spec is `approved`, its fields are pasted into the
   scaffold INPUT CONTRACTs —

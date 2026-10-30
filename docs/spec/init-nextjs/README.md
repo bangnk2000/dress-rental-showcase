@@ -68,6 +68,21 @@ Role coverage note (per [`../stack-set-template.md`](../README.md#upstream-only-
 are this stack's subsystem guides — UI, data, auth, i18n, and **rendering/caching** (the
 platform slot; PWA/offline is deliberately N/A by default, `07-rendering-caching.md` §6).
 
+## Lite Path — the ~18 KB that governs (small projects, human reviewers)
+
+This set is ~215 KB; agents reach the rest through the File Map per task. A small project, or
+a human reviewing agent work against this set, reads only:
+
+1. [00-system-prompt.md §Core Principles](./00-system-prompt.md#core-principles) — the
+   non-negotiable rules, one bullet each.
+2. [12-implementation-checklist.md](./12-implementation-checklist.md) — what "conforms" means,
+   as checkable boxes.
+3. [13-harness-engineering.md](./13-harness-engineering.md) — only its slot table, when a harness
+   is in play.
+
+The Lite Path **points, never restates**: there is no digest file to drift. If a rule a reviewer
+needs is missing from Core Principles or the checklist, fix it there (upstream), not in a summary.
+
 ## Usage Flow 1 — Bootstrap a Brand-New Project
 
 1. Give the agent [00-system-prompt.md](./00-system-prompt.md) as the master instruction.

@@ -32,7 +32,7 @@ that shows how contexts touch without importing each other.
 
 ```markdown
 # <Context> — Tactical Design
-> Status: draft | approved | as-built <date>   ·   SRS: FR-XXX..
+> Status: draft | agent-default | approved | as-built <date>   ·   SRS: FR-XXX..
 
 ## Role & boundary
 Core/supporting/generic; one paragraph on what is INSIDE and what is deliberately outside.
@@ -83,8 +83,9 @@ Minimum fields (full template + authoring workflow:
   slice's `outcomes` input; codes are snake_case Ubiquitous Language, stable once approved.
 - Side effects/domain events, idempotency (required? replay semantics), concurrency behavior.
 
-Same status header as the context doc (`draft | approved | as-built`); a scaffold prompt may not
-run against a `draft` spec.
+Same status header as the context doc (`draft | agent-default | approved | as-built`); a scaffold prompt may not
+run against a `draft` spec (an `agent-default` one only with its defaults listed as ledger
+`ownerPending` items — init-harness 07 §7.3).
 
 ## 3. The Three Hard Rules (MUST — same weight as the Dependency Rule)
 

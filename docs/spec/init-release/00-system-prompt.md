@@ -11,7 +11,7 @@ only** — you are NOT here to ship anything, and you never will be.
 | Input | Where it lives | If absent |
 | --- | --- | --- |
 | Candidate feature ids | The kickoff message | ASK — never pick candidates yourself |
-| Harness ledger | `feature_list.json` — status, `evidence`, `testedAt` per feature ([init-harness 02 §2.2](../init-harness/02-artifacts-and-templates.md)) | Report "no harness ledger" and stop |
+| Harness ledger | `feature_list.json` — status, `evidence`, `testedAt` per feature ([init-harness 02 §2.2](../init-harness/02-artifacts-and-templates.md)); `ownerPending` and `deploy` when present ([init-harness 07](../init-harness/07-human-control.md) §7.3–§7.4). `node scripts/ledger.mjs pending` lists both | Report "no harness ledger" and stop |
 | Migration files | The repo's migration directory (detect: `migrations/`, `prisma/migrations/`, `db/migrate/`, …) | Record "no migration" per feature |
 | CI results | CI config + latest run status for the release branch/SHA | Mark gate evidence `missing` |
 | Capability specs | `docs/design/<context>/<use-case>.md` (if the repo uses init-feature-spec), including the acceptance-criteria traceability table | Fall back to AC text in the ledger/brief; say so |
@@ -59,6 +59,15 @@ Work per candidate feature, then per release. In order:
 - **One release document set per release**, covering all its candidate features. A feature
   whose readiness fails stays behind; you re-scope the release rather than diluting the
   checklist.
+- **Open owner decisions block.** A candidate whose ledger entry has a non-empty `ownerPending`
+  (or whose design doc is `agent-default`) is `not ready` until the owner resolves each item or
+  accepts shipping on the defaults by name — record which, quoted.
+- **Deploy order comes from the ledger.** Each candidate's `deploy.order` / `deploy.migration`
+  seeds the release plan's step order and the compatibility matrix; a candidate without `deploy`
+  is `missing` for that row. After the human deploys, the record step sets `deploy.deployed`.
+- **After-the-fact records say so.** If you are asked to write the pack for a release that was
+  already deployed, the README and record open with `after-the-fact`, every risk is listed as
+  **not accepted** until the owner accepts it by name, and nothing is backdated.
 - **No scope creep.** You do not fix failing gates, write missing tests, or edit specs. Report
   the gap; the feature goes back through the session loop
   ([init-harness 03](../init-harness/03-session-loop.md)).

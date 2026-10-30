@@ -5,9 +5,9 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) |
-| Status | **as-built 2026-09-18** — spec và code cùng một session theo yêu cầu trực tiếp của chủ tiệm; **các quyết định §6 là mặc định do agent chốt**, chủ tiệm bác được từng dòng (mỗi dòng bác = một thay đổi nhỏ, có đánh dấu chỗ sửa) |
+| Status | **agent-default** · as-built 2026-09-18 — spec và code cùng một session theo yêu cầu trực tiếp của chủ tiệm; **các quyết định §6 là mặc định do agent chốt**, chủ tiệm bác được từng dòng (mỗi dòng bác = một thay đổi nhỏ, có đánh dấu chỗ sửa) |
 | AC source | Đề bài chủ tiệm 2026-09-18: *"thêm tính năng sửa đơn và chi tiết đơn cho tài khoản chủ cửa hàng"*. FR đề xuất: **FR-RENT-12** (chi tiết đơn) + **FR-RENT-13** (sửa đơn, owner-only) |
-| Rules approved by | Chưa — mặc định agent ở §6, chờ chủ tiệm xác nhận sau khi test tay |
+| Rules approved by | agent-default — chủ tiệm yêu cầu làm ngay 2026-09-18 nhưng chưa chốt luật; 9 mặc định §6 chờ xác nhận sau khi test tay = `ownerPending` của ledger `rentals/update-rental` (`node scripts/ledger.mjs pending`) |
 | Contract approved by | Chủ tiệm (đại diện cả hai phía, cùng repo cùng commit) |
 
 > Vì sao là design-tier: aggregate nhận **thao tác mới** `update()` — viết lại `blocked_period` của

@@ -5,6 +5,10 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md` (l
 `docs/harness/session-handoff-archive.md` (older, same `(N)` numbers); this file is the index.
 Never needed on resume — add your line at the top without reading further.
 
+- 2026-10-30 (50) — owner "hãy thực hiện các đề xuất" / "có": spec re-sync to upstream `518495c` (version 2026.10.30,
+  knowledge-system#1) + SHA256SUMS CI gate, new ledger.mjs (`pending`), ownerPending/deploy on 3 entries,
+  SRS status column dropped, CODEOWNERS + PR template. Docs/harness only; ledger 50/50.
+
 - 2026-10-27 (49) — owner "hiện thị thêm mã váy gốc cho mẫu váy được publish": `catalog:public-base-code`
   = pass (50/50). Public DTO `codes` (base codes of active dresses), web card + detail. Not deployed.
 

@@ -50,7 +50,8 @@ Work the steps in order. Every step's output lands in ONE spec file per
   (`accepted`, `rejected_out_of_stock`, `forbidden`), and **stable once approved** — renaming
   an approved code is a breaking contract change, not an edit.
 - **The status header gates everything.** The spec carries
-  `status: draft | approved | as-built`. Only an `approved` spec may feed a scaffold prompt
+  `status: draft | agent-default | approved | as-built`. Only an `approved` spec — or an `agent-default`
+  one whose every default is an `ownerPending` ledger item ([init-harness 07 §7.3](../init-harness/07-human-control.md)) — may feed a scaffold prompt
   ([init-nestjs-hexagonal 10](../init-nestjs-hexagonal/10-module-scaffold-prompt.md),
   [init-react 10](../init-react/10-feature-scaffold-prompt.md)). After the code ships, the
   spec is updated to `as-built` with any deviations folded in.

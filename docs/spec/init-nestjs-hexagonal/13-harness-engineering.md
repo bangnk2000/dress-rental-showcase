@@ -61,7 +61,7 @@ the `00-system-prompt.md` output (section 2: each command/query use case becomes
   "features": [
     {
       "id": "billing/create-invoice",          // <context>/<use-case>
-      "name": "Create invoice (command)",
+      "title": "Create invoice (command)",
       "description": "POST /invoices: Invoice aggregate with Money VO, invariants amount>0 + draft start, InvoiceCreated event",
       "status": "pass",                        // todo | in-progress | pass | fail | blocked
       "evidence": "pnpm build/lint/arch green; create-invoice.service.spec.ts 5 cases (Ok + 2 Err paths); e2e: POST /invoices → 201 + row in DB, duplicate → 422 { status: 'rejected_duplicate_invoice' }; event handler fired (log assert).",
@@ -69,7 +69,7 @@ the `00-system-prompt.md` output (section 2: each command/query use case becomes
     },
     {
       "id": "infra/exception-filter",
-      "name": "Global exception filter",
+      "title": "Global exception filter",
       "description": "Thrown technical exceptions map to HTTP; Result errors untouched",
       "status": "pass",
       "evidence": "e2e asserts outcome bodies (status codes) + envelope codes (error.code); unit test for filter",
@@ -241,7 +241,7 @@ START  → read AGENTS.md → session-handoff.md → feature_list.json → bash 
 WORK   → pick THE ONE in-progress slice (or promote one todo)
        → plop the slice, fill bodies inside the layers (10-module-scaffold-prompt.md)
        → run the gates continuously (build/lint/arch/test), verify at runtime against compose
-FINISH → feature_list.json evidence → claude-progress.md append → session-handoff.md rewrite
+FINISH → feature_list.json evidence → claude-progress.md append → session-handoff.md prepend + rotate (init-harness 02 §2.5)
        → clean-state-checklist.md pass → commit
 ```
 

@@ -22,6 +22,24 @@ binding's text — read as reference, not instantiated as a second harness.
 | `DOCS_POINTERS` | README entry points, never bare folders: `docs/spec/init-monorepo-contract/README.md` (this set) · `docs/spec/init-nestjs-hexagonal/README.md` (inside `apps/be` work) · `docs/spec/init-react/README.md` (inside `apps/fe` work) · `docs/spec/init-nextjs/README.md` (inside a Next.js app, when the repo has one) · `docs/spec/init-harness/README.md` (session lifecycle). Detail files are opened on demand via each README's File Map |
 | `RUNTIME_SETUP` (optional) | `init.sh`: compose up DB → `pnpm --filter be migrate` → `pnpm contract:check` as the FIRST verification after install — a stale contract invalidates everything downstream |
 | `EXTRA_CHECKLIST` (optional) | clean-state additions: "no diff under `packages/contract` or `apps/fe/src/api/generated` you didn't intend"; "if BE DTOs changed this session, contract + client diffs are in the same commit" |
+| `ID_PATTERN` (optional) | the regex in §ID pattern below — `/` for `<context>/<use-case>` and `infra/<name>`, `:` ONLY for single-side `be:` / `fe:` / `web:` ids |
+| `MIGRATIONS_DIR` / `CONTRACT_DIR` (optional) | `apps/be/migrations/` / `packages/contract/` + every `apps/*/src/api/generated/` — the CODEOWNERS paths of [init-harness 07 §7.1](../init-harness/07-human-control.md) |
+| `REQUIRED_CHECKS` (optional) | the CI jobs of [03-ci-and-runtime.md](./03-ci-and-runtime.md): contract drift, each app job, BE invariant-proof, e2e — all required on the default branch |
+
+### ID pattern
+
+Paste into `scripts/ledger.mjs` ([init-harness 08](../init-harness/08-ledger-tool.md)); it is
+also that script's default:
+
+```js
+const ID_PATTERN = /^((infra|[a-z][a-z0-9-]*)\/[a-z0-9][a-z0-9-]*|(be|fe|web):[a-z0-9][a-z0-9-]*)$/;
+```
+
+Passes `catalog/list-dresses`, `infra/e2e-ci`, `be:listings-from-dresses`, `web:open-graph`;
+fails `catalog:public-base-code` — a context id with the single-side separator, the exact drift
+the first donor repo accumulated (2 of 50 ids). Enforced only on strict entries (those carrying
+`tier`), so existing drifted ids are left as they are — never failed, never renamed (a rename
+breaks every reference to the id).
 
 ## Notes
 

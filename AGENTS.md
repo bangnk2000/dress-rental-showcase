@@ -34,7 +34,9 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 ## Current state (a MAP — each row's detail lives in the doc it points at)
 
 - **Ledger:** `node scripts/ledger.mjs summary` (counts, in-progress, latest entries) — never open
-  the whole `feature_list.json`; `show <id>` prints one entry.
+  the whole `feature_list.json`; `show <id>` prints one entry. **Owner queue:**
+  `node scripts/ledger.mjs pending` — open owner decisions (`ownerPending`) + passed-not-deployed
+  entries with their deploy order (`deploy`) — `docs/spec/init-harness/07-human-control.md`.
 - **Production (as of 2026-10-27):** API/CMS = release [`2026-09-30-r2`](docs/releases/2026-09-30-r2/README.md)
   `a4d32cb`; web re-deployed web-only `5d797b1` (2026-10-15). On master, NOT deployed: PR #30
   `catalog:listing-style-accessory` (migrate before BE restart) and PR #31 `catalog:public-base-code`
@@ -51,7 +53,7 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 | Invariant proof | `pnpm --filter be test:e2e` provokes the real EXCLUDE/UNIQUE/CHECK constraints (concurrent races + raw SQL bypasses). CI has a postgres service. | `apps/be/AGENTS.md` §Invariant-proof suite |
 | Not in root gates | Playwright: FE (`pnpm --filter fe e2e`, real stack, CI `e2e`); web (`pnpm --filter web e2e`, prod build, Chromium only, CI `web`). | `apps/fe/AGENTS.md` #5, `apps/web/AGENTS.md` #4 |
 | Open by choice | `Idempotency-Key` unimplemented (DB constraint stops double-submit); cross-context table-read adapters kept. | `apps/fe/AGENTS.md` #8, `apps/be/AGENTS.md` #4 |
-| `docs/spec` | Seven vendored `init-*` sets — never edit locally. | `docs/spec/README.md` (sync provenance) |
+| `docs/spec` | Seven vendored `init-*` sets (version `2026.10.30`) — never edit locally; CI `harness` checks `docs/spec/SHA256SUMS`. | `docs/spec/README.md` (sync provenance) |
 | Release lane | `2026-08-10-r1` (stopped at go/no-go), `2026-09-30-r2` (written after rollout; R1–R11 await bangnk; 13 live features un-packed = release debt). | [`docs/releases/2026-09-30-r2/README.md`](docs/releases/2026-09-30-r2/README.md) |
 
 ## Which doc to update (keep each fact in ONE place)
@@ -132,3 +134,10 @@ Two things to know about these gates:
   `apps/*/src/api/generated`.
 - `pass` is the ledger's terminal state. Shipping is a separate lane: `docs/spec/init-release/`
   reads this ledger as its evidence source and writes `docs/releases/<release-id>/`.
+- **Owner control** (`docs/spec/init-harness/07-human-control.md`): every rule chosen without the
+  owner's decision → an `ownerPending` item on the entry (design doc state `agent-default`), never
+  only handoff prose; a pass that ships → `deploy` {order, migration}, and `deployed` once live;
+  agent commits carry a `Co-Authored-By:` trailer; PRs fill `.github/pull_request_template.md`.
+- New ledger entries carry `tier` (+ `designDoc` for design-tier) and an id matching
+  `<context>/<use-case>` or `be:|fe:|web:<slug>` — `ledger.mjs check` enforces both on entries with
+  `tier`. Existing entries stay as they are (no backfill, no renames).

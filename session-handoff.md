@@ -6,6 +6,13 @@ Watch out, ≤ ~8 lines — detail belongs in the ledger evidence or the design 
 [`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md) (history only),
 prefixing its relative link targets with `../../`.
 
+## 2026-10-30 (50) — spec re-sync 2026.10.30: owner control plane + ledger tool (docs/harness only)
+
+- Done: vendored all seven sets from knowledge-system `518495c` (git archive, PR knowledge-system#1 — NOT merged yet) + `docs/spec/SHA256SUMS` checked in CI `harness`; `scripts/ledger.mjs` → reference version (adds `pending`, `stale-status`, strict lint on `tier` entries); `ownerPending` = the 9 §6 defaults on `rentals/update-rental` (spec now `agent-default`); `deploy` on PR #30/#31 entries; SRS §7 status column dropped (2 rows were stale); CODEOWNERS + PR template. Ledger 50/50, no feature work.
+- Proof: `ledger.mjs check` OK (0 strict); `pending` → 9 owner decisions + 2 undeployed with order; `sha256sum -c` clean, and a deliberate edit to a vendored file → detected; relative links in docs/spec all resolve.
+- Next: bangnk — (1) turn on branch protection for master: PR required + CI jobs required, no force-push; (2) answer `pending` (Q1–Q9 of update-rental §6); (3) after knowledge-system#1 merges, re-sync from the merge commit if it differs from `518495c`. Deploy PR #30 → #31 still per `pending` order.
+- Watch out: existing `Deviation #N` lines in `apps/*/AGENTS.md` have no upstream reference yet (new rule in upstream prompts/README §Versioning) — record them upstream at the next re-sync. Re-sync must run in a Linux shell (GNU sed); WSL login shell is fish → `wsl.exe --exec bash <script>`.
+
 ## 2026-10-27 (49) — base dress code on public listings (`catalog:public-base-code` = pass)
 
 - Done: owner ask "hiện thị thêm mã váy gốc" → `codes: string[]` on the public Summary/Detail DTO (distinct bases of active dresses, `DressCode.baseOf`), contract regenerated, web card "Mã VAY1" + detail "Mã váy: VAY1". R6 amended in `docs/design/catalog/public-listing.md` §Amendment 2026-10-27. Ledger 50/50.
@@ -46,17 +53,3 @@ prefixing its relative link targets with `../../`.
 - Watch out: a standalone smoke server left running shows as `next-server`, not `node server.js`,
   and its ISR writes into the NEXT build's dir if the path is reused — kill by pid/port before
   rebuilding. Not deployed.
-
-## 2026-10-15 (45) — Threads link preview: Open Graph on every page (`web:open-graph` = pass)
-
-- Done: owner report — example.com shared on Threads had no thumbnail until the Sharing Debugger
-  re-scraped. Live HTML had no `og:*` at all (only dress detail had openGraph). New
-  `apps/web/src/lib/seo.ts` `pageOpenGraph()` on layout + all four pages; ledger 47/47.
-- Proof: web vitest 49/49, check/lint/arch green; production build route table unchanged;
-  standalone server fetched as facebookexternalhit serves full og:*/twitter:* in `<head>`.
-- Next: deploy web (runbook §11) — prod `SITE_URL` must be `https://example.com`; then Sharing
-  Debugger "Scrape Again" on `/` once to drop the cached no-image preview.
-- Watch out: `next start` refuses `output: standalone` — smoke via `.next/standalone/apps/web/server.js`
-  with `HOSTNAME=localhost`. Dress-detail OG image (Cloudflare 1200 variant) proven by unit test
-  only (no BE at build). Not deployed.
-

@@ -12,7 +12,7 @@ The user states one mode; if none is stated, infer from the request and say whic
 | Mode | You produce | Files written? |
 | --- | --- | --- |
 | **CREATE** | The six harness artifacts ([02-artifacts-and-templates.md](./02-artifacts-and-templates.md)) seeded for this repo | Yes, after plan approval |
-| **AUDIT** | Five-subsystem scores, bottleneck, first 2–3 fixes ([04-audit-checklist.md](./04-audit-checklist.md)) | No |
+| **AUDIT** | Five-subsystem scores + the Human control row, bottleneck, first 2–3 fixes ([04-audit-checklist.md](./04-audit-checklist.md)) | No |
 | **IMPROVE** | Targeted patches to an existing harness, justified by audit findings | Yes, minimal diff |
 
 ## First Moves (all modes)
@@ -55,6 +55,8 @@ The user states one mode; if none is stated, infer from the request and say whic
   defines multi-agent ownership boundaries.
 - **State lives in files, not chat.** Anything the next session needs must land in
   `progress.md` / `session-handoff.md` / `feature_list.json`.
+- **Govern, not just work.** Every rule the owner depends on is enforced by a gate or surfaced
+  by `ledger.mjs pending` — never prose-only ([07-human-control.md](./07-human-control.md)).
 - **Plan before files.** In CREATE mode, output the plan (file list + seeded feature entries +
   the exact gate commands `init.sh` will run) and STOP for approval before writing.
 
@@ -69,8 +71,15 @@ After approval, generate in this order and nothing else:
 3. `init.sh` — explicit commands for THIS repo, `set -euo pipefail`, exits non-zero on any gate
    failure, ends by printing the startup path.
 4. `progress.md`, `session-handoff.md`, `clean-state-checklist.md` — from templates.
-5. A closing block: how to start the first session (the exact prompt to give the agent) and how
-   to prove the harness works (`bash init.sh` from a clean checkout).
+5. `scripts/ledger.mjs` — from [08-ledger-tool.md](./08-ledger-tool.md) (Node repos; otherwise its port or
+   the `jq` subset, 08 §8.4), `ID_PATTERN` filled from
+   the binding; wire `check` into CI next to the gates.
+6. The human-control files ([07-human-control.md](./07-human-control.md) §7.1): `CODEOWNERS`
+   and the PR template, `{{CODE_OWNER}}` asked or inferred from git history.
+7. A closing block: how to start the first session (the exact prompt to give the agent), how
+   to prove the harness works (`bash init.sh` from a clean checkout), and **the branch-protection
+   settings the human must apply** (PR required, which checks are required, no force-push) — you
+   cannot apply them, so print them exactly instead of implying they exist.
 
 If you cannot write files in the current environment, emit exact file contents per path instead.
 
