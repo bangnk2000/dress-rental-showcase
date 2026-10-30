@@ -243,3 +243,7 @@ Never needed on resume — add your line at the top without reading further.
   2/2 on dev and production, webpack build ISR 5m. CI web now runs URL regression tests.
   Clean-state review: design/handoff/ledger/root map updated, generated layers unchanged.
   Scoped web evidence recorded; backend invariant tests unaffected and not rerun. No deploy.
+- 2026-10-30 (51) — Owner asks to move the WSL deploy to GitHub Actions. `infra/deploy-actions`
+  in-progress: manual deploy.yml + infra/deploy scripts (plan/backup/be/fe/web/verify/record),
+  two-tree checkout for rollback, repo secrets. plan.sh 11 fake-ssh cases, shellcheck/actionlint
+  clean. Not run against prod; pass after the first attended dispatch. No deploy.

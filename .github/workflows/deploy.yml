@@ -1,0 +1,143 @@
+name: deploy
+# Manual production deploy to the Tencent VPS (cms.example.com + example.com). Never runs on push:
+# a BE build stops the API for 1–2 minutes and the order (migrate → be → web) matters.
+# How it works, secrets, rollback, and the WSL fallback: infra/deploy/README.md.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit to deploy (branch, tag or SHA — must be on master and green in ci)
+        default: master
+        required: true
+      only:
+        description: auto = what changed since the recorded deploy; or force one part / everything
+        type: choice
+        options: [auto, all, be, fe, web]
+        default: auto
+      backup:
+        description: auto = proven backup when the range has (or may have) a migration; always = backup anyway
+        type: choice
+        options: [auto, always]
+        default: auto
+
+# One deploy at a time, and never cancel one half-way (an API stopped mid-build stays stopped).
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      # Two trees: the scripts come from THIS workflow's commit (ops/), the code that gets built from
+      # the target (target/) — so rolling back to a commit older than infra/deploy/ still works.
+      DEPLOY_TREE: ${{ github.workspace }}/target
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ops
+          fetch-depth: 0
+
+      - name: Resolve target (on master, ci green)
+        id: target
+        working-directory: ops
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          SHA=$(git rev-parse --verify -q "origin/$REF^{commit}" || git rev-parse --verify "$REF^{commit}")
+          git merge-base --is-ancestor "$SHA" origin/master \
+            || { echo "::error::$SHA is not on master — merge it first"; exit 1; }
+          CI=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$SHA" --event push \
+                 --json conclusion --jq '[.[] | select(.conclusion == "success")] | length')
+          [ "$CI" -gt 0 ] || { echo "::error::no successful ci push run for $SHA — wait for ci or fix it"; exit 1; }
+          echo "target $SHA ($(git log -1 --format=%s "$SHA"))"
+          echo "sha=$SHA" >>"$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          path: target
+          ref: ${{ steps.target.outputs.sha }}
+
+      - name: SSH key + pinned host key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_SSH_KEY" ] && [ -n "$DEPLOY_KNOWN_HOSTS" ] \
+            || { echo "::error::set the repo secrets DEPLOY_HOST, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS"; exit 1; }
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" >~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" >~/.ssh/known_hosts_deploy
+          . ops/infra/deploy/lib.sh && rssh true && echo "ssh ok"
+
+      - name: Plan
+        id: plan
+        env:
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+          ONLY: ${{ inputs.only }}
+          BACKUP: ${{ inputs.backup }}
+        run: bash ops/infra/deploy/plan.sh
+
+      - name: Backup (proven restore + R2) before migrating
+        if: steps.plan.outputs.backup == 'true'
+        run: bash ops/infra/deploy/backup.sh
+
+      - uses: pnpm/action-setup@v4
+        if: steps.plan.outputs.fe == 'true' || steps.plan.outputs.web == 'true'
+        with:
+          package_json_file: target/package.json
+      - uses: actions/setup-node@v4
+        if: steps.plan.outputs.fe == 'true' || steps.plan.outputs.web == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: target/pnpm-lock.yaml
+      - name: pnpm install (target tree)
+        if: steps.plan.outputs.fe == 'true' || steps.plan.outputs.web == 'true'
+        working-directory: target
+        run: pnpm install --frozen-lockfile
+
+      - name: BE — ship tree, build + migrate + restart on the VPS
+        if: steps.plan.outputs.be == 'true'
+        env:
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        run: bash ops/infra/deploy/be.sh
+
+      - name: FE — build here, swap dist on the VPS
+        if: steps.plan.outputs.fe == 'true'
+        run: bash ops/infra/deploy/fe.sh
+
+      - name: Web — build here (after BE), swap + restart dress-web
+        if: steps.plan.outputs.web == 'true'
+        run: bash ops/infra/deploy/web.sh
+
+      - name: Verify production
+        run: bash ops/infra/deploy/verify.sh
+
+      - name: Record deployed SHA
+        if: steps.plan.outputs.record == 'true'
+        env:
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash ops/infra/deploy/record.sh
+
+      - name: Summary
+        if: always()
+        env:
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          {
+            echo "### deploy ${TARGET_SHA:0:7} — ${{ job.status }}"
+            echo "be=${{ steps.plan.outputs.be }} fe=${{ steps.plan.outputs.fe }} web=${{ steps.plan.outputs.web }} backup=${{ steps.plan.outputs.backup }} recorded=${{ steps.plan.outputs.record }}"
+            echo ""
+            echo "Then: set \`deploy.deployed\` on the shipped ledger entries + the Production bullet in AGENTS.md."
+          } >>"$GITHUB_STEP_SUMMARY"
