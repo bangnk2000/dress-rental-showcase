@@ -15,8 +15,17 @@ grep -q "output: 'standalone'" apps/web/next.config.ts \
   || { echo "::error::apps/web/next.config.ts has no output: 'standalone' — this commit cannot be deployed by this script"; exit 1; }
 BUILD_API_URL="${BUILD_API_URL:-https://$DOMAIN}"
 WEB_BUILD_ATTEMPTS="${WEB_BUILD_ATTEMPTS:-3}"
-PUBLISHED=$(curl -sf -m 15 --retry 3 --retry-delay 65 "$BUILD_API_URL/api/v1/public/dresses" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log(Array.isArray(j)?j.length:(j.items??j.data??[]).length)})') \
-  || { echo "::error::cannot read the prod catalogue at $BUILD_API_URL/api/v1/public/dresses (dress-api down, or Cloudflare blocking the runner IP?)"; exit 1; }
+CATALOGUE=$(mktemp); HEADERS=$(mktemp)
+HTTP=$(curl -s -m 15 --retry 3 --retry-delay 65 -D "$HEADERS" -o "$CATALOGUE" -w '%{http_code}' "$BUILD_API_URL/api/v1/public/dresses") && CURL_RC=0 || CURL_RC=$?
+if [ "$CURL_RC" != 0 ] || [ "$HTTP" != 200 ]; then
+  # Print enough to tell a Cloudflare block (cf-mitigated / 403) from the API being down.
+  echo "::error::cannot read the prod catalogue at $BUILD_API_URL/api/v1/public/dresses — curl exit $CURL_RC, HTTP ${HTTP:-none}"
+  grep -iE '^(server|cf-ray|cf-mitigated|content-type|retry-after):' "$HEADERS" | sed 's/^/  /'
+  head -c 300 "$CATALOGUE" | tr -s '\n' ' ' | sed 's/^/  body: /'; echo
+  exit 1
+fi
+PUBLISHED=$(node -e 'const j=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(Array.isArray(j)?j.length:(j.items??j.data??[]).length)' "$CATALOGUE")
+rm -f "$CATALOGUE" "$HEADERS"
 echo "prod catalogue: $PUBLISHED published listing(s) at $BUILD_API_URL"
 [ "$PUBLISHED" != 0 ] || echo "::warning::nothing is published — the site builds with an EMPTY catalogue"
 

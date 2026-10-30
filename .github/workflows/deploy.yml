@@ -124,6 +124,7 @@ jobs:
         run: bash ops/infra/deploy/verify.sh
 
       - name: Record deployed SHA
+        id: record
         if: steps.plan.outputs.record == 'true'
         env:
           TARGET_SHA: ${{ steps.target.outputs.sha }}
@@ -137,7 +138,7 @@ jobs:
         run: |
           {
             echo "### deploy ${TARGET_SHA:0:7} — ${{ job.status }}"
-            echo "be=${{ steps.plan.outputs.be }} fe=${{ steps.plan.outputs.fe }} web=${{ steps.plan.outputs.web }} backup=${{ steps.plan.outputs.backup }} recorded=${{ steps.plan.outputs.record }}"
+            echo "be=${{ steps.plan.outputs.be }} fe=${{ steps.plan.outputs.fe }} web=${{ steps.plan.outputs.web }} backup=${{ steps.plan.outputs.backup }} record=${{ steps.record.outcome }}"
             echo ""
             echo "Then: set \`deploy.deployed\` on the shipped ledger entries + the Production bullet in AGENTS.md."
           } >>"$GITHUB_STEP_SUMMARY"
