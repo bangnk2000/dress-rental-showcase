@@ -247,3 +247,7 @@ Never needed on resume — add your line at the top without reading further.
   in-progress: manual deploy.yml + infra/deploy scripts (plan/backup/be/fe/web/verify/record),
   two-tree checkout for rollback, repo secrets. plan.sh 11 fake-ssh cases, shellcheck/actionlint
   clean. Not run against prod; pass after the first attended dispatch. No deploy.
+- 2026-10-31 (52) — `infra/deploy-actions` pass, 51/51. First dispatch failed at web (Cloudflare
+  Bot Fight Mode vs runner IP); owner kept it, deploy now reads prod over an ssh forward limited
+  to 127.0.0.1:3000 and verifies nginx on the VPS. Run 41101946604 green, .deployed = 5cd5646.
+  PR #30/#31 found live since 2026-10-28; ledger + Production bullet corrected.
