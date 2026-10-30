@@ -49,6 +49,21 @@ Read top-to-bottom for a full bootstrap; jump directly for a targeted task.
 | [13-harness-engineering.md](./13-harness-engineering.md) | The five harness subsystems: feature_list.json, init.sh, handoff, checklists, scripts. React binding of the standalone [`../init-harness/`](../init-harness/) set | When setting up or auditing the session harness |
 | [14-design-first.md](./14-design-first.md) | Design before code: the bootstrap brief, per-slice design docs (UX flow, URL state, data/invalidation map, interaction state machine), the UI Foundation, the visual polish pass. React binding of [`../init-harness/06-design-first.md`](../init-harness/06-design-first.md) | Before the bootstrap brief; before any design-tier slice |
 
+## Lite Path — the ~15 KB that governs (small projects, human reviewers)
+
+This set is ~180 KB; agents reach the rest through the File Map per task. A small project, or
+a human reviewing agent work against this set, reads only:
+
+1. [00-system-prompt.md §Core Principles](./00-system-prompt.md#core-principles) — the
+   non-negotiable rules, one bullet each.
+2. [12-implementation-checklist.md](./12-implementation-checklist.md) — what "conforms" means,
+   as checkable boxes.
+3. [13-harness-engineering.md](./13-harness-engineering.md) — only its slot table, when a harness
+   is in play.
+
+The Lite Path **points, never restates**: there is no digest file to drift. If a rule a reviewer
+needs is missing from Core Principles or the checklist, fix it there (upstream), not in a summary.
+
 ## Usage Flow 1 — Bootstrap a Brand-New Project
 
 1. Give the agent [00-system-prompt.md](./00-system-prompt.md) as the master instruction.

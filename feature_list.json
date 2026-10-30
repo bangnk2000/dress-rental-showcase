@@ -373,7 +373,45 @@
         "AC6: GET /rentals/:id returns the rental in full, notes and each dress’s calendar block included",
         "AC7: the FE reaches the detail from the list, offers the edit only to the owner, prefilled, with the same dress-rejection states as the create form"
       ],
-      "dependencies": []
+      "dependencies": [],
+      "ownerPending": [
+        {
+          "item": "Q1: ai xem chi tiết đơn — mặc định mọi nhân viên, chỉ nút Sửa là owner (docs/design/rentals/update-rental.md §6)",
+          "since": "2026-09-18"
+        },
+        {
+          "item": "Q2: sửa được ở booked + out; returned/cancelled từ chối toàn bộ (docs/design/rentals/update-rental.md §6)",
+          "since": "2026-09-18"
+        },
+        {
+          "item": "Q3: sửa ngày nhận ≤ hôm nay KHÔNG tự chuyển out (docs/design/rentals/update-rental.md §6)",
+          "since": "2026-09-18"
+        },
+        {
+          "item": "Q4: váy bị retire sau khi đặt vẫn giữ được; chỉ chặn váy thêm mới (docs/design/rentals/update-rental.md §6)",
+          "since": "2026-09-18"
+        },
+        {
+          "item": "Q5: váy bỏ khỏi đơn = xoá dòng (không giữ blocking=false) (docs/design/rentals/update-rental.md §6)",
+          "since": "2026-09-18"
+        },
+        {
+          "item": "Q6: API nhận price nhưng UI chưa có ô sửa giá (docs/design/rentals/update-rental.md §6)",
+          "since": "2026-09-18"
+        },
+        {
+          "item": "Q7: sổ đã có tiền KHÔNG chặn sửa (docs/design/rentals/update-rental.md §6)",
+          "since": "2026-09-18"
+        },
+        {
+          "item": "Q8: owner-only là guard rental:update (403 envelope), không phải outcome có tên (docs/design/rentals/update-rental.md §6)",
+          "since": "2026-09-18"
+        },
+        {
+          "item": "Q9: sau khi sửa, mọi item block theo buffer HIỆN HÀNH (docs/design/rentals/update-rental.md §6)",
+          "since": "2026-09-18"
+        }
+      ]
     },
     {
       "id": "web:public-pages",
@@ -596,7 +634,16 @@
       "evidence": "2026-10-19: pnpm contract + check green; be jest 289/289; web vitest 51/51; be test:e2e 17 suites/148 on real Postgres, then +2 tests for Codex C1 (listing-styles-migration: accessory up/down on accessory-only + mixed rows incl. CHECK refusal both ways; public-catalog: ?style=accessory returns the accessory listing). Not deployed — migrate must run before the BE serves accessory listings. PR #30.",
       "dependencies": [
         "web:static-images"
-      ]
+      ],
+      "deploy": {
+        "order": [
+          "migrate",
+          "be",
+          "web"
+        ],
+        "migration": true,
+        "deployed": null
+      }
     },
     {
       "id": "catalog:public-base-code",
@@ -607,7 +654,15 @@
       "evidence": "2026-10-27: pnpm contract (openapi + fe/qr-admin/web clients regenerated, committed with BE) then contract:check, check, lint (only the pre-existing fe rental-form.tsx warning), arch, test all green: be jest 290/290 (+1 publicBaseCodes unit), web vitest 9 files green (card shows 'Mã VAY01', detail 'Mã váy: VAY01'), be test:e2e 17 suites/150 on real Postgres — public-catalog 8/8: R6 key sets include codes, group WL/WL_1..3 → codes ['WL'] and no 'WL_' in either body; VAY10_1+VAY2+VAY2_1+retired VAY3 → ['VAY2','VAY10'] on list and detail. pnpm --filter web build route table unchanged. Runtime on the dev DB (BE dist + web next dev :3301): API vay-khau-design (VAY02,VAY02_1,VAY02_2) → codes [\"VAY02\"]; /bo-suu-tap HTML has 'Mã VAY01', 'Mã VAY04', 'Mã VAY02'; /bo-suu-tap/vay-khau-design has 'Mã váy: VAY02'. Web Playwright not run locally (CI web job). Not deployed — BE and web must ship together (web reads dress.codes).",
       "dependencies": [
         "catalog:listing-style-accessory"
-      ]
+      ],
+      "deploy": {
+        "order": [
+          "be",
+          "web"
+        ],
+        "migration": false,
+        "deployed": null
+      }
     }
   ]
 }

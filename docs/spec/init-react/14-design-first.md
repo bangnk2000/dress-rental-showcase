@@ -33,7 +33,7 @@ block, stub behind the generated hook, or send the BE a change request.
 
 ```markdown
 # <slice> — Design
-> Status: draft | approved | as-built <date>   ·   SRS: FR-XXX   ·   API tags: <tags>
+> Status: draft | agent-default | approved | as-built <date>   ·   SRS: FR-XXX   ·   API tags: <tags>
 
 ## 0. UX flow  (FIRST — it drives every section below)
 Per role: the happy path and each error/edge path, as a short numbered flow.

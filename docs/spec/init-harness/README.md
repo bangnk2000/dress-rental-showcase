@@ -30,9 +30,11 @@ and that course's five-subsystem model, converted into the prompt-set idiom of t
 | [01-five-subsystems.md](./01-five-subsystems.md) | The core model, design rules, sizing tiers, harness smells | Before designing or judging a harness |
 | [02-artifacts-and-templates.md](./02-artifacts-and-templates.md) | Generic templates: `AGENTS.md`, `feature_list.json`, `init.sh`, `progress.md`, `session-handoff.md`, `clean-state-checklist.md` | When generating the files |
 | [03-session-loop.md](./03-session-loop.md) | Startup path, one-feature rule, Definition of Done, end-of-session routine | When running or specifying a session |
-| [04-audit-checklist.md](./04-audit-checklist.md) | Critical/recommended checks, five-subsystem scoring, report format | When auditing an existing repo |
+| [04-audit-checklist.md](./04-audit-checklist.md) | Critical/recommended checks, five-subsystem scoring + Human control row, report format | When auditing an existing repo |
 | [05-composition-contract.md](./05-composition-contract.md) | The binding contract: slots a stack init fills, precedence rules, worked bindings | When combining with another `init-*` set |
 | [06-design-first.md](./06-design-first.md) | The design-first loop: intent vs truth docs, design tiers, the invariant rule, re-sync | Before starting any design-tier feature; when setting up `docs/design/` |
+| [07-human-control.md](./07-human-control.md) | The owner's control plane: CODEOWNERS, branch protection, PR template, agent attribution, four approval states, owner-decision queue, deploy facts as data | At CREATE (files + settings to print); when auditing; whenever an agent picks a rule the owner did not decide |
+| [08-ledger-tool.md](./08-ledger-tool.md) | Reference `scripts/ledger.mjs`: `check` / `summary` / `pending` / `show` / `stale-status`, legacy-safe strict lint | At CREATE (copy the script); when the ledger outgrows a cheap read |
 
 ## Usage Flow 1 — Standalone: Add a Harness to Any Repo
 

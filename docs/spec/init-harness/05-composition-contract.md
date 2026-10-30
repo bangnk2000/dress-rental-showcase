@@ -26,6 +26,14 @@ design-doc template + what counts as design-tier, per [06-design-first.md](./06-
 both current stack sets ship it as `14-design-first.md`), `TRUTH_DOCS` (the generated inventory /
 contract files and their `*:check` CI gates).
 
+Human-control slots ([07-human-control.md](./07-human-control.md)), optional but filled at
+CREATE by asking or inferring: `ID_PATTERN` (the regex form of `UNIT_OF_WORK`'s id convention,
+for [`ledger.mjs`](./08-ledger-tool.md)), `CODE_OWNER`, `REQUIRED_CHECKS` (the CI job names
+branch protection must require), `AGENT_TRAILER`, `MIGRATIONS_DIR` / `CONTRACT_DIR` (CODEOWNERS
+paths), `HANDOFF_KEEP` (handoff entries kept before rotation, default 5), `LEDGER_CHECK_CMD` /
+`LEDGER_SUMMARY_CMD` (default `node scripts/ledger.mjs check` / `summary`; non-Node repos name
+their port, 08 §8.4).
+
 ## 5.2 Precedence Rules
 
 When `init-harness` and a stack init are loaded together:

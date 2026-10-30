@@ -7,15 +7,15 @@ concrete commands come from the binding's slots
 ## 3.1 The Loop
 
 ```
-START  → read AGENTS.md → session-handoff.md → feature_list.json → bash init.sh
+START  → read AGENTS.md → session-handoff.md (first entry) → ledger.mjs summary → bash init.sh
 WORK   → pick THE ONE in-progress feature (or promote exactly one todo)
        → design gate: if the feature is design-tier (06-design-first.md), its design doc
          exists and is approved BEFORE implementation starts
        → implement inside scope; run the gates continuously, not just at the end
        → verify at runtime ({{RUNTIME_PROOF}})
-FINISH → feature_list.json: status + evidence + testedAt
+FINISH → feature_list.json: status + evidence + testedAt (+ ownerPending, deploy — 07)
        → progress.md: append session block
-       → session-handoff.md: rewrite
+       → session-handoff.md: prepend one entry, rotate the oldest to the archive (02 §2.5)
        → AGENTS.md: re-sync `Current state` (if present)
        → clean-state-checklist.md: pass → commit
 ```
@@ -52,7 +52,8 @@ A feature moves to `pass` only when ALL hold:
 4. New behavior has tests at the level the binding demands; changed persistence/codegen verified
    from zero (fresh DB migration, clean regeneration diff).
 5. `feature_list.json` updated: `pass` + evidence naming commands AND observations + `testedAt`;
-   when `acceptance` is filled, evidence names the ACs it proves (02 §2.2).
+   when `acceptance` is filled, evidence names the ACs it proves (02 §2.2). A feature that ships
+   to a runtime gets `deploy` (order + migration) — the reviewer's queue reads it (07 §7.4).
 6. Docs touched if behavior or commands changed (`AGENTS.md` if the rules changed). For a
    design-tier feature, the design doc got its as-built re-sync note
    ([06-design-first.md](./06-design-first.md) §6.4).
@@ -65,7 +66,10 @@ never leave a feature `in-progress` across a session boundary without saying so 
 
 1. `feature_list.json` — statuses reflect reality, evidence updated.
 2. `progress.md` — append the session block (goal, done, decisions + why, issues).
-3. `session-handoff.md` — rewrite for the next session: smallest-first next steps.
+3. `session-handoff.md` — prepend one entry for the next session (smallest-first next steps),
+   rotate the oldest verbatim to the archive (02 §2.5). Owner decisions you could not get are
+   `ownerPending` items on the ledger entry, not only handoff text
+   ([07](./07-human-control.md) §7.3).
 4. `AGENTS.md` — re-sync its `Current state` section (if present): it must describe the repo
    as-committed. A stale current-state misroutes the next session, which reads AGENTS.md before
    anything else in the startup order.

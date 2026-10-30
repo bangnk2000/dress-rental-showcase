@@ -5,6 +5,19 @@ small — only relative Markdown link targets gain a `../../` prefix, since this
 directories below the repo root. History only — never read on resume; grep it by session number,
 e.g. `## .* (19) —`.
 
+## 2026-10-15 (45) — Threads link preview: Open Graph on every page (`web:open-graph` = pass)
+
+- Done: owner report — example.com shared on Threads had no thumbnail until the Sharing Debugger
+  re-scraped. Live HTML had no `og:*` at all (only dress detail had openGraph). New
+  `apps/web/src/lib/seo.ts` `pageOpenGraph()` on layout + all four pages; ledger 47/47.
+- Proof: web vitest 49/49, check/lint/arch green; production build route table unchanged;
+  standalone server fetched as facebookexternalhit serves full og:*/twitter:* in `<head>`.
+- Next: deploy web (runbook §11) — prod `SITE_URL` must be `https://example.com`; then Sharing
+  Debugger "Scrape Again" on `/` once to drop the cached no-image preview.
+- Watch out: `next start` refuses `output: standalone` — smoke via `.next/standalone/apps/web/server.js`
+  with `HOSTNAME=localhost`. Dress-detail OG image (Cloudflare 1200 variant) proven by unit test
+  only (no BE at build). Not deployed.
+
 ## 2026-10-03 (44) — PR #26 P2 router URL synchronization fixed
 
 - Done: `web:catalog-router-sync` pass, ledger 46/46. Header Next Link now restores

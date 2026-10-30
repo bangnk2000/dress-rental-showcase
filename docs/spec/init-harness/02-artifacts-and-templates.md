@@ -1,5 +1,8 @@
 # Artifacts & Templates — the Six Files
 
+Plus, from bootstrap, `scripts/ledger.mjs` ([08](./08-ledger-tool.md)) and the human-control
+files ([07](./07-human-control.md) §7.1: `CODEOWNERS`, PR template).
+
 Generic templates with `{{slots}}`. When composing with a stack init, fill slots from its
 binding ([05-composition-contract.md](./05-composition-contract.md)); standalone, fill them from
 repo inspection. Adapted from `harness-creator/templates/`, normalized to one status vocabulary.
@@ -13,8 +16,12 @@ repo inspection. Adapted from `harness-creator/templates/`, normalized to one st
 
 ## Startup (in order)
 1. Read this file completely.
-2. Read `session-handoff.md` (previous session context), if present.
-3. Read `feature_list.json` — current state; ONE feature in progress at a time.
+2. Read the FIRST entry of `session-handoff.md` (previous session context), if present.
+3. {{LEDGER_SUMMARY_CMD}} — current state; ONE feature in progress at a time. Never open the
+   whole `feature_list.json` once it outgrows a cheap read; `show <id>` prints one entry.
+   <!-- Node repos: `node scripts/ledger.mjs summary` (08). Others: the port or `jq` subset (08 §8.4),
+        or "read feature_list.json" while it is small. -->
+
 4. Run `bash init.sh` on a fresh clone or resumed session. If baseline verification fails,
    repair that FIRST — do not add scope on a broken baseline.
 5. Review `git log --oneline -5`.
@@ -24,6 +31,9 @@ repo inspection. Adapted from `harness-creator/templates/`, normalized to one st
 - Stay in scope: don't touch files unrelated to the active feature.
 - Verification before "done": run {{GATE_COMMANDS}} — all green.
 - {{STACK_INVARIANTS}}   <!-- e.g. layer rules, import bans; owned by the stack init -->
+- Every business rule you choose without the owner's decision is an `ownerPending` item on the
+  ledger entry — never only a sentence in the handoff ([07](./07-human-control.md) §7.3).
+- Agent-authored commits carry `{{AGENT_TRAILER}}`; PRs fill the template's control facts (07 §7.5).
 
 ## Definition of Done
 See `clean-state-checklist.md`. Short form: behavior implemented, gates green,
@@ -31,7 +41,7 @@ runtime-verified ({{RUNTIME_PROOF}}), evidence recorded, repo restartable via `b
 
 ## End of Session
 1. Update `feature_list.json` (status + evidence + timestamp).
-2. Append to `progress.md`; rewrite `session-handoff.md`.
+2. Append to `progress.md`; prepend one `session-handoff.md` entry and rotate (§2.5).
 3. Re-sync the `Current state` section of this file (if present) to the repo as-committed.
 4. Run `clean-state-checklist.md`; commit when the tree is safe.
 
@@ -66,15 +76,20 @@ Status vocabulary (normalize upstream's `not-started` → `todo`):
   "description": "{{ONE_LINE}}",
   "features": [
     {
-      "id": "{{UNIT_OF_WORK_ID}}",        // convention owned by the stack binding
-      "name": "{{HUMAN_NAME}}",
-      "description": "{{BEHAVIOR + DONE CRITERIA, concrete enough to verify}}",
+      "id": "{{UNIT_OF_WORK_ID}}",        // convention owned by the stack binding; ID_PATTERN lints it
+      "title": "{{HUMAN_NAME}}",           // (legacy ledgers: "name" — readers accept both)
+      "description": "{{BEHAVIOR + DONE CRITERIA + REQUIREMENT ID, concrete enough to verify}}",
+      "tier": "standard",                  // mechanical | standard | design (06 §6.3) — marks a strict entry
+      "designDoc": null,                   // required for tier "design": path to its approved doc
       "dependencies": [],                  // ids that must pass first
       "acceptance": [],                    // optional: acceptance criteria ids/text; when present,
                                            // evidence names which AC each command proved
       "status": "todo",
       "evidence": "",                      // REQUIRED non-empty for pass/fail: commands run + behavior observed
-      "testedAt": null                     // ISO timestamp when status last verified
+      "testedAt": null,                    // ISO date when status last verified
+      "pr": null,                          // optional: PR/MR reference once opened
+      "ownerPending": [],                  // optional: [{ "item": "<decision, §ref>", "since": "YYYY-MM-DD" }] (07 §7.3)
+      "deploy": null                       // optional, set at pass: { "order": [...], "migration": bool, "deployed": null } (07 §7.4)
     }
   ]
 }
@@ -92,7 +107,13 @@ Rules:
 - `pass` is the ledger's terminal state; "ready for release → released" is owned by a release
   workflow (e.g. the [init-release](../init-release/README.md) set), which reads this ledger
   as its evidence source.
-- Cheap CI lint (valid JSON, one in-progress, evidence non-empty for `pass`) catches ledger rot.
+- **Status lives ONLY here.** Other docs (SRS traceability tables, design indexes, READMEs)
+  link the ledger `id`; they never carry their own status column. A second copy of status is
+  stale by the next session — `ledger.mjs stale-status <md…>` finds the rows that already are.
+- Lint and read it with [`scripts/ledger.mjs`](./08-ledger-tool.md) (`check` in CI and as the
+  first line of `init.sh`; `summary`/`show` instead of opening the file). The strict fields
+  (`tier`, `description`, `designDoc`, id pattern) are enforced only on entries carrying `tier`,
+  so adopting this schema never fails an existing ledger — and never backfill old entries.
 
 ## 2.3 `init.sh` (Verification) — every resume starts here
 
@@ -102,6 +123,7 @@ bootstrap only; replace it with named gates once known.
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
+echo "[0/N] ledger"         && {{LEDGER_CHECK_CMD}}       # `node scripts/ledger.mjs check`, or its port / jq subset (08 §8.4)
 echo "[1/N] install"        && {{INSTALL_CMD}}
 echo "[2/N] gates"          && {{GATE_COMMANDS_IN_ORDER}}
 echo "[3/N] runtime deps"   && {{RUNTIME_SETUP_OR_SKIP}}   # DB up, migrations from zero, codegen drift check…
@@ -130,18 +152,31 @@ One block per session; the history, not the current state:
 
 ## 2.5 `session-handoff.md` (Lifecycle) — the baton
 
-Rewritten at session END, read at next session START. The *current* state — keep it short, all
-sections present even when "None":
+**Newest first, rotated.** At session END prepend ONE entry; at START read ONLY the first entry.
+Keep at most `{{HANDOFF_KEEP}}` entries (default 5): move the oldest, **verbatim**, to the top of
+`docs/harness/session-handoff-archive.md` (history only, never read on resume; fix its relative
+links for the new location). Entries are never edited after the session that wrote them — moving
+one to the archive is not editing it.
+
+Why not "rewrite one current-state file": a single rewritten file loses the previous session's
+watch-outs the moment the next session overwrites it, and an append-only file grows until the
+resume read costs more than the work. Prepend + rotate keeps both the history and a cheap resume
+(first donor: 49 sessions, resume read stays ~8 lines).
 
 ```markdown
-# Session Handoff — {{DATE}}
-## Objective & status        (goal, branch/commit, % feel)
-## Completed this session    (bullet per feature, evidence pointer)
-## Next concrete steps       (smallest-first)
-## Decisions made            (and why)
-## Files modified            (paths, one line each)
-## Blockers / risks          (or "None")
+# Session Handoff
+Newest first. On resume read ONLY the first entry. Close: prepend one entry, keep ≤ {{HANDOFF_KEEP}},
+move the oldest verbatim to docs/harness/session-handoff-archive.md.
+
+## {{DATE}} ({{N}}) — {{one-line outcome}} (`{{feature-id}}` = {{status}})
+- Done: (per feature, with commit/PR)
+- Proof: (the commands + observations — detail lives in the ledger evidence)
+- Next: (smallest-first; deploy order if something passed but is not live)
+- Watch out: (traps the next session would otherwise hit; "None" if none)
 ```
+
+≤ ~8 lines per entry. Decisions waiting on the owner go in the ledger's `ownerPending`
+(07 §7.3), not only here — `Next` may point at them, never be their only home.
 
 ## 2.6 `clean-state-checklist.md` (Lifecycle) — end-of-session gate
 
@@ -151,8 +186,9 @@ sections present even when "None":
 - [ ] Runtime proof for changed behavior: {{RUNTIME_PROOF}}
 ## Repository
 - [ ] No unintended/stray files staged; no secrets; generated code in sync
-- [ ] feature_list.json reflects REALITY (status + evidence + testedAt)
-- [ ] progress.md appended; session-handoff.md rewritten
+- [ ] {{LEDGER_CHECK_CMD}} green; feature_list.json reflects REALITY (status + evidence
+      + testedAt; `ownerPending` holds every rule chosen without the owner; `deploy` set on a pass)
+- [ ] progress.md appended; one session-handoff.md entry prepended, oldest rotated to the archive
 - [ ] AGENTS.md `Current state` (if present) matches the repo as-committed
 - [ ] Committed with a descriptive message once the tree is safe
 ```

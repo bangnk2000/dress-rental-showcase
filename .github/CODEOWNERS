@@ -1,0 +1,26 @@
+# Paths where an unreviewed change silently moves intent or safety
+# (docs/spec/init-harness/07-human-control.md §7.1). Owner: the shop owner / repo owner.
+
+# Harness and the gates themselves
+AGENTS.md                       @bangnk2000
+apps/*/AGENTS.md                @bangnk2000
+feature_list.json               @bangnk2000
+init.sh                         @bangnk2000
+scripts/                        @bangnk2000
+.github/                        @bangnk2000
+
+# Intent: requirements, design, decisions, releases
+docs/SRS*                       @bangnk2000
+docs/design/                    @bangnk2000
+docs/adr/                       @bangnk2000
+docs/releases/                  @bangnk2000
+
+# Vendored spec — any diff is a re-sync or a mistake (SHA256SUMS gate)
+docs/spec/                      @bangnk2000
+
+# Schema = invariants (BR-1 EXCLUDE etc.) and the wire contract
+apps/be/migrations/             @bangnk2000
+packages/contract/              @bangnk2000
+apps/fe/src/api/generated/      @bangnk2000
+apps/qr-admin/src/api/generated/ @bangnk2000
+apps/web/src/api/generated/     @bangnk2000

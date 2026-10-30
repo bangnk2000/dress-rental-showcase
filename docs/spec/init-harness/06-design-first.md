@@ -30,6 +30,9 @@ Rules:
   catalog / contract-shape section is intent, not a restatement — it is written BEFORE the code
   that `openapi.json` is later generated from, and it is the source the code implements. The
   smell is copying the *emitted* contract back into a doc, not specifying the *intended* one.
+- **Intent docs never carry delivery status.** An SRS traceability table maps requirement →
+  ledger `id` → design doc; whether that id is `todo` or `pass` is read from the ledger, never
+  copied into a status column (02 §2.2 — the copy goes stale silently).
 - **Intent docs carry a date and an as-built note.** After the feature merges, reconcile the doc
   with what was actually built (one dated line is enough: "as-built 2026-07-02, matches" or
   "deviated: <what> because <why>"). An intent doc with no reconciliation and no date is a rumor.
@@ -58,6 +61,11 @@ Calibrate per feature, and say which tier you chose (mirror of the sizing tiers 
 
 The gate (extends the session loop in [03-session-loop.md](./03-session-loop.md)): a
 design-tier feature may not move to `in-progress` until its design doc exists and was approved.
+"Approved" is one of the four header states in [07 §7.3](./07-human-control.md) —
+`approved`/`as-built`, or `agent-default` when the owner explicitly said to proceed without
+deciding (then every default is an `ownerPending` item). The ledger entry carries
+`tier: "design"` + `designDoc`, and `ledger.mjs check` enforces the gate
+([08](./08-ledger-tool.md)) instead of trusting the session to remember it.
 Writing the doc is itself legitimate session work — a session that produces only a reviewed
 design doc is a successful session.
 
@@ -103,3 +111,5 @@ unreachable-action state machines for the frontend).
   the doc; the audit (04) should flag it.
 - A review that only ever approves — if no design doc has ever been changed by review, the
   review is theater.
+- A doc headed `as-built` whose "approved by" line says "not yet" — two states hiding a third;
+  it is `agent-default` and its defaults belong in `ownerPending` (07 §7.3).

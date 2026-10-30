@@ -59,7 +59,7 @@ Seeded from the Features & Routes table of the `00-system-prompt.md` output; upd
   "features": [
     {
       "id": "events",                         // kebab-case, == features/<id>/ when it's a slice
-      "name": "Events — list + create",
+      "title": "Events — list + create",
       "description": "Authenticated /events segment: prefetch+hydrated list, validated create form, invalidation",
       "status": "pass",                       // todo | in-progress | pass | fail | blocked
       "evidence": "pnpm check/lint/arch/test green (5 slice tests) + build route table ƒ dynamic as declared. Verified in pnpm dev: anonymous redirected; create → toast + list refresh; duplicate → field error (outcome rejected_duplicate_event); empty state on fresh account.",
@@ -234,7 +234,7 @@ Adapted to this stack; run before committing and at session end:
 START  → read AGENTS.md → session-handoff.md → feature_list.json → bash init.sh
 WORK   → pick THE ONE in-progress (or promote one todo) → build inside the rings
        → run the gates continuously (check/lint/arch/test), verify at runtime
-FINISH → feature_list.json evidence → claude-progress.md append → session-handoff.md rewrite
+FINISH → feature_list.json evidence → claude-progress.md append → session-handoff.md prepend + rotate (init-harness 02 §2.5)
        → clean-state-checklist.md pass → commit
 ```
 

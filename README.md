@@ -150,8 +150,9 @@ Khi thay đổi API, luôn chạy `pnpm contract`; không chỉnh sửa trực t
   SRS → design → feature → task
 - [Hồ sơ phát hành](docs/releases/2026-08-10-r1/README.md) — readiness từng feature, kế hoạch
   triển khai, phương án rollback cho lần lên production đầu tiên (chưa chạy, đang chờ go/no-go)
-- [Chỉ mục spec `init-*`](docs/spec/README.md) — sáu bộ prompt được vendor từ repo
+- [Chỉ mục spec `init-*`](docs/spec/README.md) — bảy bộ prompt được vendor từ repo
   `knowledge-system`: bộ nào là nguồn quy tắc cho phần nào, và cách re-sync
-  (mới nhất: 2026-08-09, commit upstream `815fa0f`)
+  (mới nhất: 2026-10-30, version `2026.10.30`, commit upstream `518495c`; CI kiểm tra
+  `docs/spec/SHA256SUMS`)
 - [Hợp đồng monorepo](docs/spec/init-monorepo-contract/README.md) — hình dạng workspace + pipeline
   contract một chiều

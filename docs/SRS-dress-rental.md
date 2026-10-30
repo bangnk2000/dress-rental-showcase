@@ -203,36 +203,40 @@ nhưng chưa có consumer — chỉ bật khi có nhu cầu thật, spec 01 §8)
 
 ## 7. Bảng truy vết FR ↔ feature ↔ design
 
-| FR | Feature (`feature_list.json`) | Design doc | Trạng thái |
-| --- | --- | --- | --- |
-| FR-AUTH-01..03 | `infra/be-bootstrap` (identity ship cùng bootstrap) | [identity-aggregate.md](./design/identity-aggregate.md) | pass |
-| FR-AUTH-04, FR-AUTH-01 (đổi định danh) | `identity/manage-users` | [identity/manage-users.md](./design/identity/manage-users.md) (spec `as-built`), [identity-aggregate.md](./design/identity-aggregate.md) | pass |
-| FR-CAT-01, 02, 04 | `catalog/list-dresses` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
-| FR-CAT-01, 03 | `catalog/manage-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
-| FR-CAT-05 | `catalog/purchase-price` | [catalog/purchase-price.md](./design/catalog/purchase-price.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
-| FR-CAT-06 | `catalog/price-history` | [catalog/price-history.md](./design/catalog/price-history.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
-| FR-CAT-07 | `catalog/dress-category` | [catalog/dress-category.md](./design/catalog/dress-category.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
-| FR-RENT-01, 02 | `rentals/create-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
-| FR-RENT-03 | `rentals/availability-check` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
-| FR-RENT-04, 07 | `rentals/today-board` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
-| FR-RENT-05 | `rentals/return-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md), [payments-aggregate.md](./design/payments-aggregate.md) | pass |
-| FR-RENT-06 | `rentals/cancel-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
-| FR-RENT-08 | `rentals/list-rentals` | [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
-| FR-PAY-01 | `payments/list-payments` | [payments-aggregate.md](./design/payments-aggregate.md) | pass |
-| FR-PAY-02 | `payments/record-collection` | [payments/record-collection.md](./design/payments/record-collection.md) (spec `as-built`), [payments-aggregate.md](./design/payments-aggregate.md) | pass |
-| FR-RENT-09 | `rentals/settle-late-fee` | [rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Phí trễ hạn | pass |
-| FR-RENT-10 (siết FR-RENT-05, nới FR-RENT-06) | `rentals/pickup-before-return` | [rentals/pickup-before-return.md](./design/rentals/pickup-before-return.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) | pass |
-| FR-CAT-08 | `catalog/duplicate-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) §Nhân bản | pass |
-| FR-RENT-11 | `rentals/rental-discount` | [rentals-aggregate.md](./design/rentals-aggregate.md) §Giảm giá | pass |
-| FR-RENT-12, 13 | `rentals/update-rental` | [rentals/update-rental.md](./design/rentals/update-rental.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Sửa đơn | pass |
-| FR-WEB-01..04 | `web:public-pages` (mock data) | [web/public-pages.md](./design/web/public-pages.md) | pass |
-| FR-CAT-10, 11 | `catalog/dress-photo-upload` | [catalog/dress-photo-upload.md](./design/catalog/dress-photo-upload.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) | pass |
-| FR-CAT-09 | `catalog/public-listing` | [catalog/public-listing.md](./design/catalog/public-listing.md) (spec `approved`) | not-started |
-| FR-WEB-05 | `web:public-catalog-live` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Thứ tự làm, [web/public-pages.md](./design/web/public-pages.md) §4 | not-started |
-| FR-WEB-01, 06 (CTA giữ filter) | `web:featured-filter-link` | [web/search-dresses.md](./design/web/search-dresses.md) follow-up 2026-10-03 | pass |
-| FR-WEB-02, 03 (mã váy gốc) | `catalog:public-base-code` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Amendment 2026-10-27 | pass |
-| FR-WEB-06 | `web:search-dresses` | [web/search-dresses.md](./design/web/search-dresses.md) (as-built 2026-10-02) | pass |
-| (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — | pass |
+Trạng thái giao hàng KHÔNG ghi ở đây — đọc từ ledger: `node scripts/ledger.mjs show <id>` (cột cũ
+đã lệch: FR-CAT-09 / FR-WEB-05 ghi `not-started` khi đã pass + deploy; bỏ 2026-10-30 theo
+`docs/spec/init-harness/02-artifacts-and-templates.md` §2.2 "Status lives ONLY here").
+
+| FR | Feature (`feature_list.json`) | Design doc |
+| --- | --- | --- |
+| FR-AUTH-01..03 | `infra/be-bootstrap` (identity ship cùng bootstrap) | [identity-aggregate.md](./design/identity-aggregate.md) |
+| FR-AUTH-04, FR-AUTH-01 (đổi định danh) | `identity/manage-users` | [identity/manage-users.md](./design/identity/manage-users.md) (spec `as-built`), [identity-aggregate.md](./design/identity-aggregate.md) |
+| FR-CAT-01, 02, 04 | `catalog/list-dresses` | [catalog-aggregate.md](./design/catalog-aggregate.md) |
+| FR-CAT-01, 03 | `catalog/manage-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) |
+| FR-CAT-05 | `catalog/purchase-price` | [catalog/purchase-price.md](./design/catalog/purchase-price.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) |
+| FR-CAT-06 | `catalog/price-history` | [catalog/price-history.md](./design/catalog/price-history.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) |
+| FR-CAT-07 | `catalog/dress-category` | [catalog/dress-category.md](./design/catalog/dress-category.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) |
+| FR-RENT-01, 02 | `rentals/create-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) |
+| FR-RENT-03 | `rentals/availability-check` | [rentals-aggregate.md](./design/rentals-aggregate.md) |
+| FR-RENT-04, 07 | `rentals/today-board` | [rentals-aggregate.md](./design/rentals-aggregate.md) |
+| FR-RENT-05 | `rentals/return-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md), [payments-aggregate.md](./design/payments-aggregate.md) |
+| FR-RENT-06 | `rentals/cancel-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) |
+| FR-RENT-08 | `rentals/list-rentals` | [rentals-aggregate.md](./design/rentals-aggregate.md) |
+| FR-PAY-01 | `payments/list-payments` | [payments-aggregate.md](./design/payments-aggregate.md) |
+| FR-PAY-02 | `payments/record-collection` | [payments/record-collection.md](./design/payments/record-collection.md) (spec `as-built`), [payments-aggregate.md](./design/payments-aggregate.md) |
+| FR-RENT-09 | `rentals/settle-late-fee` | [rentals/settle-late-fee.md](./design/rentals/settle-late-fee.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Phí trễ hạn |
+| FR-RENT-10 (siết FR-RENT-05, nới FR-RENT-06) | `rentals/pickup-before-return` | [rentals/pickup-before-return.md](./design/rentals/pickup-before-return.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) |
+| FR-CAT-08 | `catalog/duplicate-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) §Nhân bản |
+| FR-RENT-11 | `rentals/rental-discount` | [rentals-aggregate.md](./design/rentals-aggregate.md) §Giảm giá |
+| FR-RENT-12, 13 | `rentals/update-rental` | [rentals/update-rental.md](./design/rentals/update-rental.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Sửa đơn |
+| FR-WEB-01..04 | `web:public-pages` (mock data) | [web/public-pages.md](./design/web/public-pages.md) |
+| FR-CAT-10, 11 | `catalog/dress-photo-upload` | [catalog/dress-photo-upload.md](./design/catalog/dress-photo-upload.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) |
+| FR-CAT-09 | `catalog/public-listing` | [catalog/public-listing.md](./design/catalog/public-listing.md) (spec `approved`) |
+| FR-WEB-05 | `web:public-catalog-live` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Thứ tự làm, [web/public-pages.md](./design/web/public-pages.md) §4 |
+| FR-WEB-01, 06 (CTA giữ filter) | `web:featured-filter-link` | [web/search-dresses.md](./design/web/search-dresses.md) follow-up 2026-10-03 |
+| FR-WEB-02, 03 (mã váy gốc) | `catalog:public-base-code` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Amendment 2026-10-27 |
+| FR-WEB-06 | `web:search-dresses` | [web/search-dresses.md](./design/web/search-dresses.md) (as-built 2026-10-02) |
+| (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được
 promote lên `in-progress`** — xem quy trình ở [design/README.md](./design/README.md).

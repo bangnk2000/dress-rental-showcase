@@ -24,6 +24,11 @@ Run every check; classify CRITICAL (harness doesn't function without it) vs RECO
 - [ ] **CRITICAL** — At most ONE feature `in-progress`.
 - [ ] **CRITICAL** — Every `pass` has non-empty evidence naming commands + observations.
 - [ ] REC — A progress log exists and its last entry matches recent `git log`.
+- [ ] REC — Status lives only in the ledger: no other doc (SRS traceability, design index,
+      README) carries a status column that disagrees with it — run
+      `node scripts/ledger.mjs stale-status <docs>` ([08](./08-ledger-tool.md)) or diff by hand.
+- [ ] REC — Human-facing docs (root README, design index) name every app/area that exists and
+      no release/state that is no longer true. Agents keep `AGENTS.md` fresh; these rot unseen.
 
 ### Verification
 - [ ] **CRITICAL** — `init.sh` (or documented equivalent) exists and exits non-zero on failure.
@@ -41,14 +46,31 @@ Run every check; classify CRITICAL (harness doesn't function without it) vs RECO
       dodge the doc) is flagged as a finding.
 
 ### Lifecycle
-- [ ] REC — `session-handoff.md` exists and is no more than one session stale.
+- [ ] REC — `session-handoff.md` exists, newest entry first, no more than one session stale,
+      rotated (≤ the kept count; older entries in the archive, verbatim) — 02 §2.5.
 - [ ] REC — A clean-state checklist exists, short enough to actually run (≤ ~15 boxes).
 - [ ] REC — Last sessions ended with the routine (ledger + log + handoff updated in the same
       commit window).
 
+### Human control ([07-human-control.md](./07-human-control.md)) — scored as a sixth row
+- [ ] REC — `CODEOWNERS` covers harness files, design/ADR/SRS docs, vendored spec, migrations,
+      contract, CI config (07 §7.1).
+- [ ] REC — Default branch requires a PR + the CI checks (inspect the forge settings, or mark
+      "unverified" — never assume).
+- [ ] REC — PR template carries the control facts (tier, requirement, design state, owner
+      decisions, deploy order) and recent PRs actually filled it.
+- [ ] REC — Agent-authored commits are distinguishable (`git log --grep '<trailer>'`).
+- [ ] REC — Every design doc is in one of the four approval states (07 §7.3); no `as-built` doc
+      whose rules line says "not yet"; every `agent-default` doc has `ownerPending` items.
+- [ ] REC — `ledger.mjs pending` agrees with reality: no owner question only in the handoff, no
+      deploy only in an external runbook, no release record written after the fact without
+      saying so.
+
 ## 4.2 Scoring
 
-Score each subsystem 1–5 with a one-line justification:
+Score each subsystem 1–5 with a one-line justification. The five subsystems measure whether
+agents can work reliably; **Human control** measures whether the owner can govern that work —
+a repo can score 5 on the first five and 2 on the sixth, and that gap is the usual finding:
 
 | Score | Meaning |
 | --- | --- |
@@ -69,6 +91,7 @@ Score each subsystem 1–5 with a one-line justification:
 | Verification | n/5 | … |
 | Scope | n/5 | … |
 | Lifecycle | n/5 | … |
+| Human control | n/5 | … |
 
 **Bottleneck:** {{lowest subsystem}} — treat as CANDIDATE cause; confirm against real failures
 (logs, session outcomes) before claiming causality.
