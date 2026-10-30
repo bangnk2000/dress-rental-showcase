@@ -663,6 +663,22 @@
         "migration": false,
         "deployed": null
       }
+    },
+    {
+      "id": "infra/deploy-actions",
+      "title": "Production redeploy runs as a manual GitHub Actions workflow instead of WSL scripts",
+      "description": "Owner ask 2026-10-30. Standard tier (ops tooling, no domain rule). Ports RUNBOOK §7 of the out-of-repo ~/deploy-dress/tencent set into infra/deploy/*.sh + .github/workflows/deploy.yml (workflow_dispatch, environment production, one deploy at a time). Done when one real dispatch ships master to the VPS and verify.sh passes. The WSL set stays the fallback and keeps provision/restore/harden/TLS/serve.",
+      "status": "in-progress",
+      "tier": "standard",
+      "acceptance": [
+        "AC1: the workflow decides be/fe/web from the diff between the SHA recorded in .deployed and the target; unknown recorded SHA → everything",
+        "AC2: a migration in range forces a proven backup (rehearsal restore + R2) before the BE build; a rollback across a migration is refused",
+        "AC3: only a master commit with a green ci push run can be deployed; deploys never overlap or get cancelled half-way",
+        "AC4: verify fails the job on any wrong external status code or a pm2 app not online; .deployed is written only after that, and only when the run covered every changed part",
+        "AC5: no secret enters the repo or the logs — VPS secrets stay in /root/.dress-secrets, the runner gets only host, a dedicated ssh key and a pinned host key; DB dumps never leave the VPS"
+      ],
+      "evidence": "2026-10-30 (local, before any real dispatch): AC1+AC2 — plan.sh driven by a fake ssh returning a chosen .deployed SHA, 9 cases: unknown → be/fe/web all; same SHA → nothing; f343ae8^..f343ae8 (web copy fix) → web only; a4d32cb..master (PR #30 migration) → all + backup; master → a4d32cb with only=all → refused (rollback across a migration, rc=1); only=web with be pending → web only, record=false + warnings; only=be on a web-only range → record=false; backup=always → backup on a web-only range; only=foo → rc=1. AC3/AC4/AC5 are in the workflow/scripts as written (ancestor-of-origin/master + `gh run list --workflow ci.yml --commit --event push` success; concurrency deploy-production, cancel-in-progress false; verify.sh exits 1 on any FAIL; record.sh is the last step and gated on plan.record; secrets only DEPLOY_HOST/DEPLOY_SSH_KEY/DEPLOY_KNOWN_HOSTS, StrictHostKeyChecking=yes, backup.sh never copies the dump) — NOT yet observed on a real run. Static: bash -n on every script, shellcheck -S warning clean, actionlint clean on deploy.yml + ci.yml, ledger check OK. Pending for pass: owner creates the production environment + secrets + a dedicated key on the VPS, then one real dispatch with verify green.",
+      "dependencies": []
     }
   ]
 }
