@@ -6,6 +6,13 @@ Watch out, ≤ ~8 lines — detail belongs in the ledger evidence or the design 
 [`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md) (history only),
 prefixing its relative link targets with `../../`.
 
+## 2026-10-31 (52) — first green GitHub Actions deploy (`infra/deploy-actions` = pass)
+
+- Done: run 1 (7b8d244) failed at web — Cloudflare Bot Fight Mode challenged the runner IP. Owner kept Bot Fight Mode; PR #36: web.sh builds through `ssh -L 3000:127.0.0.1:3000`, verify.sh checks nginx on the VPS + origin-by-IP 000 from the runner; WSL `harden-remote.sh` sshd now `AllowTcpForwarding local` + `PermitOpen 127.0.0.1:3000` (owner re-ran harden.sh). Run 41101946604 (5cd5646) green end to end; `.deployed` written by the workflow. Also found PR #30/#31 had been live since 2026-10-28 (`c00f926`) — ledger + Production bullet corrected.
+- Proof: ledger evidence of `infra/deploy-actions` (all verify lines, tunnel catalogue 99, 109 pages).
+- Next: routine deploys = Actions → deploy with `only=auto`. The release-lane debt (r2 R1–R11, un-packed features) is unchanged.
+- Watch out: verify from the runner no longer sees the Cloudflare edge — after Cloudflare changes run WSL `verify-external.sh`. `remote/build-remote.sh` + `backup-remote.sh` exist in repo AND in ~/deploy-dress (keep in step or retire the WSL copies). Node 20 action deprecation + ubuntu-latest → 26 annotations on every run (ci.yml too) — bump actions in one go later.
+
 ## 2026-10-30 (51) — production deploy as a GitHub Actions workflow (`infra/deploy-actions` = in-progress)
 
 - Done: RUNBOOK §7 ported into `infra/deploy/*.sh` + manual `.github/workflows/deploy.yml` (plan from the diff against `.deployed`, proven backup before a migration, BE built on the VPS, fe/web on the runner, strict verify, `.deployed` written last). WSL `~/deploy-dress/tencent` stays the fallback + one-off work. See `infra/deploy/README.md`.
@@ -33,15 +40,3 @@ prefixing its relative link targets with `../../`.
 - Proof: be jest 289, web vitest 51, be e2e on real Postgres green.
 - Next: merge, deploy (**migrate before BE restart**), then staff tag accessory listings in /website.
 - Watch out: Codex MCP is pinned to 0.153.2 and the server now rejects every model for it; reviews ran via `codex exec -s read-only` (0.162.1).
-
-## 2026-10-15 (47) — web-only deploys recorded (docs only)
-
-- Done: PR #27 (`web:open-graph`) deployed 03:57 as `1472e07`; PR #28 (`web:static-images` +
-  favicon) Codex-approved, CI flake fixed (`e2e/catalog-navigation.spec.ts` clock race), merged and
-  deployed 04:59 as `5d797b1`. Ledger evidence + Current state now say so. Ledger 48/48.
-- Proof: live example.com — og:* on every page, `/favicon.ico` 200, site images served as
-  Cloudflare variants; execution log in `~/deploy-dress/tencent/RUNBOOK.md` §11.6.
-- Next: owner runs Sharing Debugger "Scrape Again" on `/`; the r2 release debt (R1–R11, un-packed
-  features) is unchanged and these two web deploys add to it.
-- Watch out: a local standalone smoke needs `.next/static` + `public/` copied next to `server.js`
-  (webbuild.sh does this) or the page never hydrates and every Playwright test fails.
