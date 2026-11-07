@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) — chủ của create + pickup; ghi vào sổ `payments` bằng domain code của record-collection (xem amendment R1 ở §6) |
-| Status | **approved 2026-11-07** (§6 Q1–Q6, Q8). Chủ tiệm **chọn bỏ vòng prototype** (2026-11-07, "code luôn đi") — §3 state matrix là bản thiết kế UI. Phụ thuộc `rentals/cancel-with-refund` đã merge (PR #38). Ledger `rentals/deposit-at-pickup` = in-progress |
+| Status | **as-built 2026-11-07** (§7) — approved 2026-11-07 (§6 Q1–Q6, Q8). Chủ tiệm **chọn bỏ vòng prototype** ("code luôn đi") — §3 state matrix là bản thiết kế UI. Phụ thuộc `rentals/cancel-with-refund` đã merge (PR #38) |
 | AC source | Yêu cầu chủ tiệm 2026-11-07: *"khi tạo đơn có 1 checkbox để tick xem khách hàng đã trả cả tiền cọc hay chỉ mới trả tiền thuê; nếu chưa trả tiền cọc thì có warning ở màn giao váy và hiện thêm 1 modal confirm để nhân viên xác nhận là đã thu đủ tiền cọc khi giao váy"* |
 | FR | **FR-RENT-14 (đề xuất, §5)** — vào SRS cùng PR code, sau khi §6 được duyệt |
 | Rules approved by | Chủ tiệm — 2026-11-07 (§6) |
@@ -190,3 +190,19 @@ khỏi tiệm không cọc, đơn đặt trước thì không. Chủ tiệm ch�
 | major | Huỷ đơn `booked` có tiền là ngõ cụt (Q8) | chốt Q8 trước khi code create+collect |
 | major | Pickup hiện không có body — thêm body tuỳ chọn phải giữ client cũ (gửi rỗng) hợp lệ | DTO toàn field optional |
 | minor | `rejected_deposit_already_recorded` xuất hiện trên endpoint thứ hai — giữ đúng payload `recordedAmount` để FE dùng chung message | dùng lại outcome DTO của payments |
+
+## 7. Re-sync as-built (2026-11-07)
+
+Khớp §2–§6, trừ các điểm sau:
+
+| Điểm | As-built | Vì sao |
+| --- | --- | --- |
+| Nơi ghi tiền (amendment R1 ở §6) | Không qua port uỷ cho domain code record-collection: `RentalRepository` ghi dòng `payments` TRONG transaction của chính nó — `insertWithCollection` (bước `afterWrite`, SAU dòng rental vì `payments.rental_id` là FK) và `savePickedUp(entity, depositCollected)` (dưới row lock) | Cùng cách `rentals/cancel-with-refund` đã ship (Codex duyệt, PR #38): một transaction cho trạng thái + tiền. R2 (số ≥ 1) giữ ở DTO `@Min(1)`; R3 giữ bởi partial UNIQUE + đọc sổ dưới cùng row lock mà record-collection khoá. Vẫn là adapter chạm bảng của context khác (apps/be Deviation #4) |
+| Bước 6 "race thua UNIQUE" của pickup | Không cần requery: pickup và record-collection cùng `SELECT … FOR UPDATE` dòng rental nên chạy lần lượt; pre-check dưới lock trả đúng `rejected_deposit_already_recorded` | e2e "race: a pickup collecting the deposit vs. a collection" chứng minh đúng MỘT dòng cọc |
+| Ghi chú dòng tiền | `note` = NULL cho tiền thu lúc tạo và lúc giao | Form không có ô ghi chú tiền; ghi chú đơn (`notes`) là của đơn, không phải của dòng tiền |
+| `/rentals/:id` | Không có nút giao — ngoài phạm vi (§3) | Giao/nhận về chỉ ở bảng Hôm nay |
+| `standardDeposit` trên board | Bỏ — `dresses[].depositAmount` đã có | Tránh field thừa trên contract |
+| Thẻ đơn `booked` | "Chưa thu cọc" (badge vàng) / "Đã cọc {{amount}}"; đơn `out` không hiện gì | Chỉ đơn còn phải giao mới cần câu hỏi cọc |
+| Fixture/Playwright | Happy path thu cọc + tiền thuê NGAY lúc tạo (thay bước "Tiền" riêng) | Form điền sẵn tiền thuê (Q1), nên luồng thật của tiệm là ghi lúc đặt |
+
+Bằng chứng: ledger `rentals/deposit-at-pickup`.
