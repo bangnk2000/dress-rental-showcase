@@ -9,7 +9,7 @@ prefixing its relative link targets with `../../`.
 ## 2026-11-07 (53) — cancel a prepaid booking with refunds (`rentals/cancel-with-refund` = pass)
 
 - Done: owner asked for "thu cọc khi tạo đơn + nhắc cọc khi giao váy"; two design-tier specs written and owner-approved — [`deposit-at-pickup`](docs/design/rentals/deposit-at-pickup.md) (rules approved, prototype pending) and its prerequisite [`cancel-with-refund`](docs/design/rentals/cancel-with-refund.md) (as-built). Built cancel-with-refund: migration 1755800000000 (`rental_fee_refund`), refunds in the cancel transaction, 4 new outcomes, ONE kernel cancel dialog + `api/use-cancel-rental.ts` on board/list/detail. Ledger 52/52.
-- Proof: all root gates green; be e2e 160 (new suite: race collect↔cancel, raw SQL CHECK, migration down/up), fe vitest 172.
+- Proof: all root gates green; be e2e 160 (new suite: race collect↔cancel, raw SQL CHECK, migration down/up), fe vitest 173.
 - Next: PR from `feat/cancel-with-refund` (holds both specs) → merge; deploy **migrate → be → fe** (`ledger.mjs pending`). Then `deposit-at-pickup`: prototype round, then build (Q3 = hard block at pickup → new outcome `rejected_deposit_not_collected`).
 - Watch out: outcome payload keys must never be `kind` — `mapApiError` overwrites it (hence `refundKind`). Kernel may not import `@/api`; shared data hooks go in `src/api/`. PowerShell eats `&` and backticks in inline bash — use script files.
 

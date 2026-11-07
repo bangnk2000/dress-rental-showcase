@@ -433,6 +433,24 @@ describe('cancel with refunds (rentals/cancel-with-refund)', () => {
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
   });
 
+  test('the money dialog of a cancelled prepaid booking counts BOTH refunds as handed back', async () => {
+    seedRentalList([makeRentalListItem({ status: 'cancelled' })]);
+    seedRentalPayments('rental-1', [
+      makePayment({ id: 'p-1', kind: 'deposit', amount: 3_000_000 }),
+      makePayment({ id: 'p-2', kind: 'rental_fee', amount: 1_500_000 }),
+      makePayment({ id: 'p-3', kind: 'deposit_refund', amount: 3_000_000 }),
+      makePayment({ id: 'p-4', kind: 'rental_fee_refund', amount: 1_000_000 }),
+    ]);
+    const user = userEvent.setup();
+    renderList();
+
+    await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('Hoàn tiền thuê')).toBeInTheDocument();
+    const refunded = within(dialog).getByText('Đã hoàn khách').nextElementSibling;
+    expect(refunded).toHaveTextContent(/4\.000\.000/);
+  });
+
   test('an OUT rental with money offers no cancel — it points at "Nhận về"', async () => {
     seedRentalList([makeRentalListItem({ status: 'out' })]);
     seedRentalPayments('rental-1', [makePayment({ kind: 'deposit', amount: 3_000_000 })]);

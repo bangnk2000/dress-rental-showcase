@@ -162,4 +162,4 @@ Khớp spec, trừ các điểm sau (đã phản ánh ở trên và trong ADR 00
 | Migration down | Từ chối khi đã có dòng `rental_fee_refund` | Không xoá lịch sử tiền để vừa schema cũ |
 
 Bằng chứng: ledger `rentals/cancel-with-refund` — be jest, be e2e `test/cancel-with-refund.e2e-spec.ts`
-(race collect ↔ cancel, raw SQL CHECK, migration down/up), fe vitest 5 ca mới.
+(race collect ↔ cancel, raw SQL CHECK, migration down/up), fe vitest 6 ca mới (gồm tổng "Đã hoàn khách" của dialog Tiền).
