@@ -53,7 +53,7 @@ export class CancelRentalHttpController {
     status: 422,
     type: CancelRentalOutcomeDto,
     description:
-      'Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (currentStatus) | rejected_cancel_has_payments | rejected_cancel_basis_changed (collectedDeposit, collectedRentalFee) | rejected_refund_exceeds_collected (kind, collected, submitted) | rejected_retention_note_required (retainedAmount)',
+      'Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (currentStatus) | rejected_cancel_has_payments | rejected_cancel_basis_changed (collectedDeposit, collectedRentalFee) | rejected_refund_exceeds_collected (refundKind, collected, submitted) | rejected_retention_note_required (retainedAmount)',
   })
   @ApiResponse({
     status: 403,
@@ -104,7 +104,7 @@ export class CancelRentalHttpController {
         if (error instanceof RefundExceedsCollectedError) {
           throw new BusinessOutcomeException({
             status: 'rejected_refund_exceeds_collected',
-            kind: error.kind,
+            refundKind: error.kind,
             collected: error.collected,
             submitted: error.submitted,
           });

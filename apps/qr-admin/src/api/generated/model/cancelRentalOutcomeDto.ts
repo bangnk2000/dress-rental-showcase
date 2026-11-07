@@ -5,8 +5,8 @@
  * OpenAPI spec version: 0
  */
 import type { CancelRentalOutcomeDtoCurrentStatus } from './cancelRentalOutcomeDtoCurrentStatus';
-import type { CancelRentalOutcomeDtoKind } from './cancelRentalOutcomeDtoKind';
 import type { CancelRentalOutcomeDtoReason } from './cancelRentalOutcomeDtoReason';
+import type { CancelRentalOutcomeDtoRefundKind } from './cancelRentalOutcomeDtoRefundKind';
 import type { CancelRentalOutcomeDtoStatus } from './cancelRentalOutcomeDtoStatus';
 
 export interface CancelRentalOutcomeDto {
@@ -18,11 +18,11 @@ export interface CancelRentalOutcomeDto {
   collectedDeposit?: number;
   /** Rental fee on file (rejected_cancel_basis_changed) */
   collectedRentalFee?: number;
-  /** Which refund exceeded what was collected (rejected_refund_exceeds_collected) */
-  kind?: CancelRentalOutcomeDtoKind;
-  /** Collected amount of `kind` */
+  /** Which refund exceeded what was collected (rejected_refund_exceeds_collected). Not `kind`: the FE outcome seam (mapApiError) owns that key */
+  refundKind?: CancelRentalOutcomeDtoRefundKind;
+  /** Collected amount of `refundKind` */
   collected?: number;
-  /** Refund the client tried to record for `kind` */
+  /** Refund the client tried to record for `refundKind` */
   submitted?: number;
   /** Money the cancel would keep (forbidden / rejected_retention_note_required) */
   retainedAmount?: number;

@@ -78,7 +78,7 @@ Domain rules / invariants:
 | `rejected_cancel_not_allowed` | returned/cancelled | 422 | `currentStatus` | có sẵn |
 | `rejected_cancel_has_payments` | `out` + sổ có tiền | 422 | — | có sẵn, **thu hẹp nghĩa** (chỉ `out`) |
 | `rejected_cancel_basis_changed` | Số đã thu khác số màn hình đã thấy (hoặc chưa gửi basis) | 422 | `collectedDeposit`, `collectedRentalFee` | **mới** |
-| `rejected_refund_exceeds_collected` | Hoàn nhiều hơn đã thu | 422 | `kind`, `collected`, `submitted` | **mới** |
+| `rejected_refund_exceeds_collected` | Hoàn nhiều hơn đã thu | 422 | `refundKind`, `collected`, `submitted` | **mới** |
 | `rejected_retention_note_required` | Giữ lại tiền mà không ghi lý do | 422 | — | **mới** (Q3) |
 | `forbidden` | Staff giữ lại tiền | 403 | `reason: 'cancel_retention_requires_owner'` | **mới** (Q3, giống late-fee waiver) |
 

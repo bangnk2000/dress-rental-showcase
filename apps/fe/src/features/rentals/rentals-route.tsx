@@ -1,19 +1,12 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { toast } from 'sonner';
 
-import { mapApiError } from '@/api/errors';
-import {
-  getGetTodayBoardHttpControllerGetQueryKey,
-  getListRentalsHttpControllerListQueryKey,
-  useCancelRentalHttpControllerCancel,
-  useListRentalsHttpControllerListSuspense,
-} from '@/api/generated/rentals/rentals';
+import { useListRentalsHttpControllerListSuspense } from '@/api/generated/rentals/rentals';
+import { useCancelRental } from '@/api/use-cancel-rental';
 import type { RentalListItemDto } from '@/api/generated/model';
-import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { EmptyState } from '@/components/feedback/empty-state';
+import { CancelRentalDialog } from '@/components/rentals/cancel-rental-dialog';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 
@@ -30,58 +23,12 @@ import { useRentalFilters } from './hooks/use-rental-filters';
  */
 export function RentalsRoute() {
   const { t } = useTranslation('rentals');
-  const queryClient = useQueryClient();
   const { q, status, listParams, hasActiveFilters, setSearch, setStatus, setPage } =
     useRentalFilters();
   const { data } = useListRentalsHttpControllerListSuspense(listParams);
   const [paymentsTarget, setPaymentsTarget] = useState<RentalListItemDto | null>(null);
   const [cancelTarget, setCancelTarget] = useState<RentalListItemDto | null>(null);
-
-  // Cancel is booked-only on the server; frees the calendar.
-  const cancelRental = useCancelRentalHttpControllerCancel({
-    mutation: {
-      onSuccess: async () => {
-        // Parameterless keys prefix every filtered list / dated board query.
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: getListRentalsHttpControllerListQueryKey(),
-          }),
-          queryClient.invalidateQueries({
-            queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
-          }),
-        ]);
-        toast.success(t('cancel.success'));
-      },
-      onError: async (error) => {
-        // Rejections mean another device moved this rental on: say what state it is in and
-        // refresh, instead of one vague "conflict" (ADR 0001 §4).
-        const mapped = mapApiError(error);
-        if (mapped.kind === 'outcome') {
-          toast.error(
-            mapped.status === 'rejected_cancel_not_allowed'
-              ? t('cancel.notAllowed', {
-                  status: t(`status.${String(mapped.currentStatus)}`, {
-                    defaultValue: String(mapped.currentStatus ?? ''),
-                  }),
-                })
-              : mapped.status === 'rejected_cancel_has_payments'
-                ? t('cancel.hasPayments')
-                : t('errors.rentalNotFound'),
-          );
-          await Promise.all([
-            queryClient.invalidateQueries({
-              queryKey: getListRentalsHttpControllerListQueryKey(),
-            }),
-            queryClient.invalidateQueries({
-              queryKey: getGetTodayBoardHttpControllerGetQueryKey(),
-            }),
-          ]);
-          return;
-        }
-        toast.error(t('cancel.error'));
-      },
-    },
-  });
+  const cancelController = useCancelRental(cancelTarget?.rentalId ?? null);
 
   const totalPages = data.limit > 0 ? Math.max(1, Math.ceil(data.count / data.limit)) : 1;
 
@@ -136,23 +83,12 @@ export function RentalsRoute() {
           </>
         )}
       </div>
-      {/* Cancelling frees the calendar immediately and cannot be undone — the confirmation names
-          the customer so a mis-tap on the tablet is caught before, not after. */}
-      <ConfirmDialog
-        open={cancelTarget !== null}
-        onOpenChange={(open) => !open && setCancelTarget(null)}
-        title={t('cancel.title')}
-        description={
-          cancelTarget
-            ? t('cancel.confirmFor', { customer: cancelTarget.customerName })
-            : undefined
-        }
-        confirmLabel={t('cancel.confirmAction')}
-        destructive
-        onConfirm={() => {
-          if (cancelTarget) cancelRental.mutate({ id: cancelTarget.rentalId });
-          setCancelTarget(null);
-        }}
+      {/* Cancelling frees the calendar immediately and cannot be undone — the dialog names the
+          customer, and with money on file it asks for the refunds (rentals/cancel-with-refund). */}
+      <CancelRentalDialog
+        rental={cancelTarget}
+        controller={cancelController}
+        onClose={() => setCancelTarget(null)}
       />
       <RentalPaymentsDialog rental={paymentsTarget} onClose={() => setPaymentsTarget(null)} />
     </>

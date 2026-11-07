@@ -1808,7 +1808,7 @@
             }
           },
           "422": {
-            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (currentStatus) | rejected_cancel_has_payments | rejected_cancel_basis_changed (collectedDeposit, collectedRentalFee) | rejected_refund_exceeds_collected (kind, collected, submitted) | rejected_retention_note_required (retainedAmount)",
+            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (currentStatus) | rejected_cancel_has_payments | rejected_cancel_basis_changed (collectedDeposit, collectedRentalFee) | rejected_refund_exceeds_collected (refundKind, collected, submitted) | rejected_retention_note_required (retainedAmount)",
             "content": {
               "application/json": {
                 "schema": {
@@ -4585,21 +4585,21 @@
             "type": "number",
             "description": "Rental fee on file (rejected_cancel_basis_changed)"
           },
-          "kind": {
+          "refundKind": {
             "enum": [
               "deposit",
               "rental_fee"
             ],
             "type": "string",
-            "description": "Which refund exceeded what was collected (rejected_refund_exceeds_collected)"
+            "description": "Which refund exceeded what was collected (rejected_refund_exceeds_collected). Not `kind`: the FE outcome seam (mapApiError) owns that key"
           },
           "collected": {
             "type": "number",
-            "description": "Collected amount of `kind`"
+            "description": "Collected amount of `refundKind`"
           },
           "submitted": {
             "type": "number",
-            "description": "Refund the client tried to record for `kind`"
+            "description": "Refund the client tried to record for `refundKind`"
           },
           "retainedAmount": {
             "type": "number",

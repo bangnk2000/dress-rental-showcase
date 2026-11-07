@@ -37,5 +37,43 @@
   },
   "errors": {
     "mutationFailed": "Thao tác thất bại. Vui lòng thử lại."
+  },
+  "cancelRental": {
+    "title": "Huỷ lượt thuê?",
+    "confirmFor": "Huỷ lượt thuê của {{customer}}? Lịch của váy sẽ được giải phóng ngay để khách khác đặt, và không thể hoàn tác.",
+    "confirmAction": "Huỷ lượt thuê",
+    "refundTitle": "Huỷ đơn & hoàn tiền",
+    "refundFor": "{{customer}} đã trả trước. Ghi số tiền trả lại khách — lịch của váy được giải phóng ngay và không thể hoàn tác.",
+    "refundAction": "Hoàn tiền & huỷ đơn",
+    "collected": {
+      "deposit": "Đã thu cọc: {{amount}}",
+      "rentalFee": "Đã thu tiền thuê: {{amount}}"
+    },
+    "fields": {
+      "depositRefund": "Hoàn cọc",
+      "rentalFeeRefund": "Hoàn tiền thuê",
+      "note": "Ghi chú",
+      "noteRequired": "Lý do giữ lại tiền (bắt buộc)"
+    },
+    "totals": "Trả lại khách {{refunded}} — tiệm giữ {{retained}}",
+    "success": "Đã huỷ lượt thuê.",
+    "successRefunded": "Đã huỷ lượt thuê, hoàn khách {{amount}}.",
+    "error": "Có lỗi xảy ra, vui lòng thử lại.",
+    "notAllowed": "Không huỷ được: lượt thuê đang ở trạng thái \"{{status}}\".",
+    "hasPayments": "Lượt thuê đã giao và có tiền trong sổ — dùng \"Nhận về & tất toán\" thay vì huỷ.",
+    "notFound": "Lượt thuê không còn — danh sách đã được làm mới.",
+    "basisChanged": "Sổ tiền vừa thay đổi trên thiết bị khác — kiểm tra lại số hoàn rồi bấm lại.",
+    "ledgerUnavailable": "Không đọc được sổ tiền của lượt thuê này. Thử lại — chưa chắc là chưa có tiền.",
+    "errors": {
+      "exceeds": "Không được hoàn nhiều hơn số đã thu ({{amount}}).",
+      "noteRequired": "Giữ lại tiền phải ghi lý do.",
+      "retentionForbidden": "Chỉ chủ tiệm được giữ lại tiền khi huỷ — nhân viên hoàn đủ cho khách."
+    },
+    "status": {
+      "booked": "Đã đặt",
+      "out": "Đang thuê",
+      "returned": "Đã trả",
+      "cancelled": "Đã huỷ"
+    }
   }
 }

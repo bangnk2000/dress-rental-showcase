@@ -53,14 +53,18 @@ export class CancelRentalOutcomeDto {
   @ApiProperty({
     enum: ['deposit', 'rental_fee'],
     required: false,
-    description: 'Which refund exceeded what was collected (rejected_refund_exceeds_collected)',
+    description:
+      'Which refund exceeded what was collected (rejected_refund_exceeds_collected). Not `kind`: the FE outcome seam (mapApiError) owns that key',
   })
-  readonly kind?: 'deposit' | 'rental_fee';
+  readonly refundKind?: 'deposit' | 'rental_fee';
 
-  @ApiProperty({ required: false, description: 'Collected amount of `kind`' })
+  @ApiProperty({ required: false, description: 'Collected amount of `refundKind`' })
   readonly collected?: number;
 
-  @ApiProperty({ required: false, description: 'Refund the client tried to record for `kind`' })
+  @ApiProperty({
+    required: false,
+    description: 'Refund the client tried to record for `refundKind`',
+  })
   readonly submitted?: number;
 
   @ApiProperty({

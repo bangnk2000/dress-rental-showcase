@@ -36,14 +36,6 @@
   "handedOut": "Handed out to the customer",
   "pickupSuccess": "Hand-out recorded.",
   "actionError": "Something went wrong, please retry.",
-  "cancel": {
-    "title": "Cancel this rental?",
-    "confirmFor": "Cancel the rental of {{customer}}? The dresses free up immediately and this cannot be undone.",
-    "confirmAction": "Cancel rental",
-    "success": "Rental cancelled.",
-    "notAllowed": "Could not cancel — the rental just changed state. The board has been refreshed.",
-    "hasPayments": "Money is already recorded on this rental — take back & settle instead."
-  },
   "returnDialog": {
     "title": "Settle rental",
     "description": "Record the return of {{customer}}'s rental and settle the deposit and fees.",

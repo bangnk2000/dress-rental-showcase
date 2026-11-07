@@ -10,6 +10,7 @@ import type {
   AvailabilityResponseDto,
   BookedRangeDto,
   BookedRangeListResponseDto,
+  CancelRentalRequestDto,
   CreateRentalRequestDto,
   IdResponse,
   LateFeeQuoteResponseDto,
@@ -50,6 +51,7 @@ let rentalList: RentalListItemDto[] = [];
 let rentalListCount: number | null = null;
 let lastRentalListParams: Record<string, string> | null = null;
 let lastCancelRentalId: string | null = null;
+let lastCancelBody: CancelRentalRequestDto | null = null;
 let rentalPayments = new Map<string, PaymentDto[]>();
 let lateFeeQuotes = new Map<string, LateFeeQuoteResponseDto>();
 let lastCollectBody: RecordCollectionRequestDto | null = null;
@@ -185,6 +187,11 @@ export function getLastCancelRentalId(): string | null {
   return lastCancelRentalId;
 }
 
+/** The body of the most recent POST cancel (rentals/cancel-with-refund). */
+export function getLastCancelBody(): CancelRentalRequestDto | null {
+  return lastCancelBody;
+}
+
 export function makePayment(overrides: Partial<PaymentDto> = {}): PaymentDto {
   return {
     id: 'payment-1',
@@ -255,6 +262,7 @@ function summaryOf(payments: readonly PaymentDto[]): PaymentListResponseDto['sum
     deposit: total('deposit'),
     rentalFee: total('rental_fee'),
     depositRefund: total('deposit_refund'),
+    rentalFeeRefund: total('rental_fee_refund'),
     lateFee: total('late_fee'),
     damageFee: total('damage_fee'),
   };
@@ -275,6 +283,7 @@ export function resetRentals(): void {
   rentalListCount = null;
   lastRentalListParams = null;
   lastCancelRentalId = null;
+  lastCancelBody = null;
   rentalPayments = new Map();
   lastCollectBody = null;
   lastCollectRentalId = null;
@@ -377,9 +386,10 @@ export const rentalsHandlers: HttpHandler[] = [
     return HttpResponse.json(response);
   }),
 
-  // POST /api/v1/rentals/:id/cancel — 200 IdResponse, capturing the id.
-  http.post('/api/v1/rentals/:id/cancel', ({ params }) => {
+  // POST /api/v1/rentals/:id/cancel — 200 IdResponse, capturing the id + body.
+  http.post('/api/v1/rentals/:id/cancel', async ({ params, request }) => {
     lastCancelRentalId = params.id as string;
+    lastCancelBody = (await request.json().catch(() => ({}))) as CancelRentalRequestDto;
     const response: IdResponse = { id: params.id as string };
     return HttpResponse.json(response);
   }),

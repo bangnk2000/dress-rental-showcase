@@ -36,14 +36,6 @@
   "handedOut": "Đã giao cho khách",
   "pickupSuccess": "Đã ghi nhận giao váy cho khách.",
   "actionError": "Có lỗi xảy ra, vui lòng thử lại.",
-  "cancel": {
-    "title": "Huỷ lượt thuê?",
-    "confirmFor": "Huỷ lượt thuê của {{customer}}? Lịch của váy sẽ được giải phóng ngay và không thể hoàn tác.",
-    "confirmAction": "Huỷ lượt thuê",
-    "success": "Đã huỷ lượt thuê.",
-    "notAllowed": "Không huỷ được nữa — trạng thái lượt thuê vừa thay đổi. Bảng đã được làm mới.",
-    "hasPayments": "Lượt thuê đã có tiền trong sổ — nhận về & tất toán thay vì huỷ."
-  },
   "returnDialog": {
     "title": "Tất toán lượt thuê",
     "description": "Ghi nhận trả váy của {{customer}} và tất toán cọc, phí.",

@@ -136,7 +136,7 @@ pre-check/entity ở service VÀ ràng buộc/điều kiện nằm trong câu gh
 | `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` (từ FR-RENT-10 chỉ còn `returned`/`cancelled` — đơn `out` sổ trống được huỷ) | `currentStatus` | FR-RENT-06, FR-RENT-10, BR-3 |
 | `rentals/cancel-rental` | `RentalCancelHasPaymentsError` | `rejected_cancel_has_payments` — từ 2026-11-07 chỉ còn đơn **`out`** có tiền (váy đang ở ngoài → lối ra là return); đơn `booked` có tiền huỷ được kèm hoàn | — | FR-RENT-06, FR-RENT-10 |
 | `rentals/cancel-rental` | `CancelBasisChangedError` | `rejected_cancel_basis_changed` — sổ có tiền mà lệnh không gửi basis, hoặc basis ≠ số đã thu đọc lại dưới row lock | `collectedDeposit`, `collectedRentalFee` | FR-RENT-06 (cancel-with-refund) |
-| `rentals/cancel-rental` | `RefundExceedsCollectedError` | `rejected_refund_exceeds_collected` | `kind` (`deposit`\|`rental_fee`), `collected`, `submitted` | FR-RENT-06 (cancel-with-refund) |
+| `rentals/cancel-rental` | `RefundExceedsCollectedError` | `rejected_refund_exceeds_collected` | `refundKind` (`deposit`\|`rental_fee`), `collected`, `submitted` | FR-RENT-06 (cancel-with-refund) |
 | `rentals/cancel-rental` | `CancelRetentionNotAllowedError` | `forbidden` (**403**) + `reason: 'cancel_retention_requires_owner'` | `retainedAmount` | FR-RENT-06 (cancel-with-refund) |
 | `rentals/cancel-rental` | `CancelRetentionNoteRequiredError` | `rejected_retention_note_required` | `retainedAmount` | FR-RENT-06 (cancel-with-refund) |
 | `rentals/update-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-13 |

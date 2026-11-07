@@ -37,5 +37,43 @@
   },
   "errors": {
     "mutationFailed": "The action failed. Please try again."
+  },
+  "cancelRental": {
+    "title": "Cancel this rental?",
+    "confirmFor": "Cancel {{customer}}'s rental? The dresses' calendar is freed at once for other bookings, and this cannot be undone.",
+    "confirmAction": "Cancel rental",
+    "refundTitle": "Cancel & refund",
+    "refundFor": "{{customer}} paid in advance. Enter what is handed back — the calendar is freed at once and this cannot be undone.",
+    "refundAction": "Refund & cancel",
+    "collected": {
+      "deposit": "Deposit collected: {{amount}}",
+      "rentalFee": "Rental fee collected: {{amount}}"
+    },
+    "fields": {
+      "depositRefund": "Deposit refund",
+      "rentalFeeRefund": "Rental fee refund",
+      "note": "Note",
+      "noteRequired": "Reason for keeping money (required)"
+    },
+    "totals": "Back to customer {{refunded}} — shop keeps {{retained}}",
+    "success": "Rental cancelled.",
+    "successRefunded": "Rental cancelled, {{amount}} refunded.",
+    "error": "Something went wrong, please try again.",
+    "notAllowed": "Cannot cancel: the rental is \"{{status}}\".",
+    "hasPayments": "The rental is out and has money on file — use \"Return & settle\" instead of cancelling.",
+    "notFound": "The rental no longer exists — the list was refreshed.",
+    "basisChanged": "The ledger just changed on another device — check the refunds and try again.",
+    "ledgerUnavailable": "Could not read this rental's ledger. Retry — it may not be empty.",
+    "errors": {
+      "exceeds": "A refund cannot exceed what was collected ({{amount}}).",
+      "noteRequired": "Keeping money requires a reason.",
+      "retentionForbidden": "Only the owner may keep money when cancelling — staff refund in full."
+    },
+    "status": {
+      "booked": "Booked",
+      "out": "Out",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    }
   }
 }

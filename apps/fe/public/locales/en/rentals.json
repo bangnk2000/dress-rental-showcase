@@ -36,16 +36,6 @@
       "noMatchHint": "Try another search term or clear the status filter."
     }
   },
-  "cancel": {
-    "title": "Cancel this rental?",
-    "confirmAction": "Cancel the rental",
-    "confirmFor": "Cancel {{customer}}'s rental? The dresses are freed for other bookings straight away, and this cannot be undone.",
-    "confirm": "Cancel this rental? The dresses' calendar will be freed for other bookings.",
-    "success": "Rental cancelled.",
-    "error": "Something went wrong, please retry.",
-    "notAllowed": "Cannot cancel: the rental is \"{{status}}\".",
-    "hasPayments": "Money is already recorded on this rental — take back & settle instead."
-  },
   "payments": {
     "title": "Money of the rental",
     "description": "What has been recorded for {{customer}}.",
@@ -56,7 +46,8 @@
       "deposit_refund": "Deposit refund",
       "rental_fee": "Rental fee",
       "late_fee": "Late fee",
-      "damage_fee": "Damage fee"
+      "damage_fee": "Damage fee",
+      "rental_fee_refund": "Rental fee refund"
     },
     "totals": {
       "collected": "Total collected",

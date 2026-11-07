@@ -166,7 +166,7 @@ describe('cancel with refund (real Postgres)', () => {
     expect(cancel.status).toBe(422);
     expect(cancel.body).toEqual({
       status: 'rejected_refund_exceeds_collected',
-      kind: 'rental_fee',
+      refundKind: 'rental_fee',
       collected: 1_500_000,
       submitted: 1_600_000,
     });
