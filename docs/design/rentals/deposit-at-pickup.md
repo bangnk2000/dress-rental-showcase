@@ -87,8 +87,11 @@ cọc khác với số nhân viên này đang cầm — màn hình phải cho th
 | | `rejected_deposit_not_collected` | Giao mà sổ chưa có cọc và lệnh không kèm cọc | 422 | — | **mới** (Q3) |
 
 Ghi chú: đây là luật ở BE (không chỉ FE) — client cũ gọi pickup không body sẽ bị từ chối khi sổ
-chưa có cọc. FE và BE ship cùng một đơn vị (invariant #5), nên không có client cũ nào ngoài
-cache trình duyệt; toast lỗi chung đủ cho khoảng chuyển tiếp đó.
+chưa có cọc. FE và BE ship cùng một đơn vị (invariant #5), nhưng FE là PWA: bản cũ có thể còn trên
+máy tính bảng của tiệm tới khi bấm "Tải lại". **Sửa as-built:** bản cũ map mọi outcome lạ thành
+"Lượt thuê này không còn tồn tại" (không phải toast chung) — sai thông điệp nhưng không ghi gì. Vì
+vậy bước deploy gồm: **tải lại CMS trên mọi máy của tiệm** (chấp nhận "Đã có phiên bản mới") trước
+lượt giao váy đầu tiên. Cùng lưu ý áp cho huỷ đơn trả trước (PR #38).
 
 ## 3. UI state matrix
 

@@ -118,6 +118,11 @@ files here.
   query now (the money dialog on `/rentals`, the return dialog's refund basis), so a settlement that
   skips it leaves the reconciliation screen showing a pre-settlement ledger for the whole 60s
   `staleTime`. Playwright caught this; no unit test would have.
+- **A mutation that renders its own rejections passes `onError: () => undefined`.** The app-wide
+  `QueryClient` in `app/providers.tsx` toasts "Thao tác thất bại" on EVERY mutation error, so a
+  dialog that already shows the designed message gets a second, generic one. Tests cannot catch it:
+  the test `QueryClient` (`src/test/render.tsx`) has no global `onError`. Missed once in
+  `api/use-cancel-rental.ts` (fixed 2026-11-07).
 - **A reference figure must say it is one.** The refund is computed from the deposit ACTUALLY
   collected (`summary.deposit`); the catalog standard is a fallback and the banner then reads
   "Chưa ghi nhận tiền cọc" rather than quietly presenting it as money the shop holds.

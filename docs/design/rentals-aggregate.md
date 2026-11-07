@@ -1,6 +1,6 @@
 # rentals — Tactical Design
 
-> Status: **as-built 2026-09-18** (FR-RENT-12/13 chi tiết + sửa đơn owner-only; 2026-09-03: FR-RENT-11 giảm giá; 2026-08-10: ADR 0001 + BR-1/2/3 proof tests trên Postgres thật + FR-RENT-09 phí trễ hạn + FR-RENT-10 pickup gate) · SRS: FR-RENT-01..13, BR-1..3, BR-5..6 · Context **Core**
+> Status: **as-built 2026-11-07** (FR-RENT-14 cọc khi giao + FR-RENT-06 huỷ kèm hoàn; 2026-09-18: FR-RENT-12/13 chi tiết + sửa đơn owner-only; 2026-09-03: FR-RENT-11 giảm giá; 2026-08-10: ADR 0001 + BR-1/2/3 proof tests trên Postgres thật + FR-RENT-09 phí trễ hạn + FR-RENT-10 pickup gate) · SRS: FR-RENT-01..13, BR-1..3, BR-5..6 · Context **Core**
 
 ## Vai trò & ranh giới
 
@@ -23,14 +23,15 @@ Aggregate trải **2 bảng** (`rentals` + `rental_items`) — repository overri
 | From | Action (method) | To | Ghi chú |
 | --- | --- | --- | --- |
 | *(create, start ≤ shopToday)* | `create()` + `markPickedUp(now)` | out | **FR-RENT-10**: đơn giao ngay/nhập bù sinh ra đã `out`; cả hai event cùng transaction |
-| booked | `markPickedUp(now)` | out | FR-RENT-04 |
-| out | `markReturned(now)` | returned | **CHỈ từ out** (FR-RENT-10 bỏ lối tắt booked→returned); items TIẾP TỤC block hết buffer = "đang vệ sinh" (BR-5) |
-| booked, out | `cancel(now)` | cancelled | `item.unblock(now)` từng item → giải phóng lịch, giữ history (FR-RENT-06). Đơn `out` (và cả `booked`) chỉ huỷ được khi **sổ tiền TRỐNG** — check dưới row lock trong `saveCancelled` (repository), race với record-collection lấy cùng lock nên take turns |
+| booked | `markPickedUp(now)` | out | FR-RENT-04. **FR-RENT-14 (2026-11-07):** chỉ khi sổ ĐÃ có cọc, hoặc lệnh giao mang `depositCollected` (ghi cùng transaction) — `savePickedUp` đọc lại status + sổ cọc dưới row lock |
+| out | `markReturned(now)` | returned | **CHỈ từ out** (FR-RENT-10 bỏ lối tắt booked→returned); items TIẾP TỤC block hết buffer = "đang vệ sinh" (BR-5). `saveReturned` đọc lại status dưới row lock (2026-11-07) |
+| booked, out | `cancel(now, reason)` | cancelled | `item.unblock(now)` từng item → giải phóng lịch, giữ history (FR-RENT-06). Đơn `out` chỉ huỷ được khi **sổ tiền TRỐNG**; đơn `booked` có tiền huỷ **kèm dòng hoàn** (`rentals/cancel-with-refund`, 2026-11-07) — tất cả kiểm dưới row lock trong `saveCancelled`, race với record-collection lấy cùng lock nên take turns; `reason` lưu ở `rentals.cancel_reason` |
 | booked, out | `update(changes, now, buffer)` | *(không đổi)* | **FR-RENT-13** (owner-only): viết lại NỘI DUNG — khách, kỳ thuê, item (reconcile theo id: giữ/thêm/bỏ — bỏ = XOÁ dòng), giá item, giảm giá, ghi chú; mọi item `reblock` = kỳ mới + buffer HIỆN HÀNH; `validate()` chạy lại (giảm giá ≤ Σ mới). KHÔNG đổi status. `saveUpdated` đọc lại status dưới row lock → `RentalStateChangedError` nếu đơn vừa bị đóng |
 
 Mọi transition khác → `Err(...NotAllowedError)` → controller render outcome
-`rejected_{pickup,return,cancel,update}_not_allowed` (422) kèm `currentStatus`; sổ có tiền →
-`rejected_cancel_has_payments` ([ADR 0001](../adr/0001-outcome-model-at-the-http-boundary.md) §3).
+`rejected_{pickup,return,cancel,update}_not_allowed` (422) kèm `currentStatus`; đơn `out` có tiền
+→ `rejected_cancel_has_payments`; giao khi chưa cọc → `rejected_deposit_not_collected`
+([ADR 0001](../adr/0001-outcome-model-at-the-http-boundary.md) §3).
 
 ## Bảng invariant-enforcement (mục load-bearing — spec 14 §3.1)
 
@@ -42,6 +43,8 @@ Mọi transition khác → `Err(...NotAllowedError)` → controller render outco
 | Giá item ≥ 0 | `Money` VO | `CHECK (price >= 0)` | 400 envelope | unit VO (có) |
 | FR-RENT-11: giảm giá ≥ 0 và ≤ Σ giá item | `Money` VO (≥ 0) + `RentalEntity.validate()` (≤ Σ — rule trải 2 bảng nên chỉ aggregate giữ được) | `CHECK (discount_amount >= 0)` (migration 1755400000000) | 400 envelope: `GENERIC.VALIDATION` (âm, DTO) / `GENERIC.ARGUMENT_INVALID` (vượt Σ) | unit `create-rental.service.spec.ts` (4 ca) + `test:e2e` → `rental-discount.e2e-spec.ts`: lưu + list đọc lại, vượt Σ → 400 không ghi gì, UPDATE âm bị CHECK chặn |
 | BR-1 **xuyên suốt sửa đơn** (FR-RENT-13): kỳ block MỚI của mọi item không giao với đơn khác | `findBlockedDressIds(…, { excludeRentalId })` pre-check trên kỳ mới + buffer, bỏ qua dòng của chính đơn | CÙNG `EXCLUDE rental_items_no_overlap` — UPDATE một dòng không bị so với chính nó, nhưng bị so với mọi dòng khác | `rejected_dress_unavailable` (422) + `dressIds` — pre-check LẪN race (`saveUpdated` → `RentalItemsOverlapError` → cùng outcome) | `rental-update.e2e-spec.ts`: gia hạn trùng đơn khác 422 / vào chỗ trống 200 (block của mọi item dời theo), race PATCH-vs-POST đúng một bên thắng, raw UPDATE `blocked_period` chồng lên đơn khác bị EXCLUDE chặn |
+| FR-RENT-14: `booked → out` chỉ khi có cọc (trong sổ, hoặc thu ngay lúc giao); tiền thu lúc tạo/giao không bao giờ mồ côi | không có pre-check ngoài lock — luật nằm ở repository | Không có constraint tĩnh cho "chuyển trạng thái phụ thuộc bảng khác" → **row lock + đọc sổ cọc** trong `savePickedUp` (cùng lock với record-collection); tiền lúc tạo ghi SAU dòng rental trong cùng transaction (`insertWithCollection`, FK `payments.rental_id`); partial UNIQUE (1 dòng cọc/đơn) là lưới cuối | `rejected_deposit_not_collected` / `rejected_deposit_already_recorded` + `recordedAmount` (422) | `deposit-at-pickup.e2e-spec.ts`: giao không cọc 422 vẫn `booked`; giao kèm cọc → `out` + 1 dòng; race giao-kèm-cọc ↔ collect → đúng 1 dòng cọc; race hai create cùng váy có collect → tiền chỉ của đơn thắng |
+| cancel-with-refund: hoàn ≤ đã thu, basis đúng sổ, đơn đóng không bị pickup/return cũ mở lại | service so hoàn với basis client gửi | **row lock + đọc lại** trong `saveCancelled` / `savePickedUp` / `saveReturned`; `payments_kind_check` có `rental_fee_refund` | `rejected_cancel_basis_changed` / `rejected_refund_exceeds_collected` / `forbidden` (403) / `rejected_retention_note_required`; lock thua → `rejected_{pickup,return}_not_allowed` | `cancel-with-refund.e2e-spec.ts`: race collect↔cancel, pickup↔cancel, return↔cancel; raw SQL kind lạ bị CHECK chặn |
 | FR-RENT-13: chỉ đơn MỞ mới sửa được, và đơn đã đóng không bị bản sửa cũ mở lại | `RentalEntity.update()` + service pre-check `isOpen` | Không có constraint tĩnh diễn đạt được "dòng đã đóng thì bất biến" → **row lock + đọc lại status** trong `saveUpdated` (`SELECT … FOR UPDATE`, cùng lock với `saveCancelled`/`saveReturned`/record-collection) | `rejected_update_not_allowed` (422) + `currentStatus` — cả pre-check lẫn đường lock | unit `update-rental.service.spec.ts` (đóng trước / đóng dưới lock) + e2e: cancel rồi PATCH → 422, row và item không đổi |
 
 ## Phí trễ hạn (FR-RENT-09)
