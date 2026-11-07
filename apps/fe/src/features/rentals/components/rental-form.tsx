@@ -22,6 +22,8 @@ import {
   rentalFormSchema,
   type RentalFormValues,
 } from '../schemas/rental-form.schema';
+import { parseCollectAmount } from '../lib/parse-collect-amount';
+import { BookingPaymentFields, type BookingPaymentValues } from './booking-payment-fields';
 import { DressPicker, type BlockedDresses, type PickerPeriod, type SelectedDress } from './dress-picker';
 import { RentalFormMessage } from './rental-form-message';
 
@@ -37,6 +39,8 @@ export interface RentalFormSubmission {
   discountAmount: number;
   /** The picked dresses; `rentalPrice` is the price on screen for each. */
   items: SelectedDress[];
+  /** FR-RENT-14, create only: money handed over at booking; absent = not collected. */
+  collect?: { deposit?: number; rentalFee?: number };
 }
 
 interface RentalFormProps {
@@ -125,6 +129,33 @@ export function RentalForm({
   const discount = parseDiscount(form.watch('discountAmount'));
   const subtotal = selected.reduce((sum, dress) => sum + dress.rentalPrice, 0);
 
+  // FR-RENT-14 (create only): the money block. Both amounts follow the selection and discount
+  // (§3 "pre-fill tính lại") until staff types in that field — then their number stands.
+  const expectedFee = Math.max(0, subtotal - discount);
+  const standardDeposit = selected.reduce((sum, dress) => sum + (dress.depositAmount ?? 0), 0);
+  const [payment, setPayment] = useState<BookingPaymentValues>({
+    rentalFee: '',
+    depositPaid: false,
+    deposit: '',
+  });
+  const touched = useRef({ rentalFee: false, deposit: false });
+  useEffect(() => {
+    setPayment((current) => ({
+      ...current,
+      rentalFee: touched.current.rentalFee
+        ? current.rentalFee
+        : expectedFee > 0
+          ? String(expectedFee)
+          : '',
+      deposit: touched.current.deposit
+        ? current.deposit
+        : standardDeposit > 0
+          ? String(standardDeposit)
+          : '',
+    }));
+  }, [expectedFee, standardDeposit]);
+  const bornOut = mode === 'create' && !!startDate && startDate <= shopTodayIso();
+
   /**
    * The current selection, readable after an awaited submit — which captured the `selected` of
    * the render that fired it, not the one on screen when the answer arrives.
@@ -160,6 +191,8 @@ export function RentalForm({
       values.endDate,
       selected.map((dress) => dress.id),
     );
+    const collectedFee = parseCollectAmount(payment.rentalFee);
+    const collectedDeposit = payment.depositPaid ? parseCollectAmount(payment.deposit) : null;
     setSubmitting(true);
     try {
       await onSubmit({
@@ -170,6 +203,14 @@ export function RentalForm({
         notes: values.notes,
         discountAmount,
         items: selected,
+        ...(mode === 'create' && (collectedFee !== null || collectedDeposit !== null)
+          ? {
+              collect: {
+                ...(collectedFee !== null ? { rentalFee: collectedFee } : {}),
+                ...(collectedDeposit !== null ? { deposit: collectedDeposit } : {}),
+              },
+            }
+          : {}),
       });
     } catch (error) {
       // The answer must belong to the booking still on screen. Staff who edits the dates or the
@@ -331,6 +372,19 @@ export function RentalForm({
             </FormItem>
           )}
         />
+        {mode === 'create' ? (
+          <BookingPaymentFields
+            values={payment}
+            onChange={(next) => {
+              if (next.rentalFee !== payment.rentalFee) touched.current.rentalFee = true;
+              if (next.deposit !== payment.deposit) touched.current.deposit = true;
+              setPayment(next);
+            }}
+            expectedFee={expectedFee}
+            standardDeposit={standardDeposit}
+            bornOut={bornOut}
+          />
+        ) : null}
         {/* Every rejection outcome renders form-level here; the picker owns only noDresses. */}
         {formError && formError !== 'form.errors.noDresses' ? (
           <p role="alert" className="text-sm text-destructive">

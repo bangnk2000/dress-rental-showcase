@@ -4,7 +4,7 @@ import { Link } from 'react-router';
 
 import type { TodayBoardRentalDto } from '@/api/generated/model';
 import { Badge } from '@/components/ui/badge';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatVnd } from '@/lib/format';
 
 /** Status → badge variant; 'out' stands out (the dress is with the customer). */
 const statusVariant = {
@@ -46,6 +46,21 @@ export function TodayBoardSection({
                   {t(`status.${rental.status}`)}
                 </Badge>
               </div>
+              {/* FR-RENT-14: only a booking still to hand out owes the deposit check. */}
+              {rental.status === 'booked' ? (
+                rental.depositCollected > 0 ? (
+                  <p className="text-sm text-muted-foreground tabular-nums">
+                    {t('deposit.collected', { amount: formatVnd(rental.depositCollected) })}
+                  </p>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="border-amber-500 text-amber-700 dark:text-amber-300"
+                  >
+                    {t('deposit.missing')}
+                  </Badge>
+                )
+              ) : null}
               <p className="text-sm text-muted-foreground">
                 <a href={`tel:${rental.customerPhone}`}>{rental.customerPhone}</a>
                 {' · '}

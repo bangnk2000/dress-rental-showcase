@@ -17,6 +17,8 @@ export interface SelectedDress {
   code: string;
   name: string;
   rentalPrice: number;
+  /** Catalog standard deposit — pre-fills "Tiền cọc" at booking (FR-RENT-14). Edit omits it. */
+  depositAmount?: number;
   /** First catalog photo, so the chosen row stays recognisable by sight. */
   photoUrl?: string;
 }
@@ -117,6 +119,7 @@ export function DressPicker({
                       code: dress.code,
                       name: dress.name,
                       rentalPrice: dress.rentalPrice,
+                      depositAmount: dress.depositAmount,
                       ...(dress.photoUrls[0] ? { photoUrl: dress.photoUrls[0] } : {}),
                     });
                     setSearch('');

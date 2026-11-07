@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
-import { beforeEach, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
 import { makeDress, resetCatalog, seedDresses } from '@/test/msw/handlers/catalog';
@@ -108,13 +108,71 @@ test('searching adds a dress, and creating toasts then navigates to /rentals', a
 
   expect(await screen.findByText('Đã tạo lượt thuê và ghi nhận giao váy.')).toBeInTheDocument();
   expect(await screen.findByText('rentals-list-stub')).toBeInTheDocument();
-  // the request carried the form exactly: dates inclusive, no price override
+  // the request carried the form exactly: dates inclusive, no price override, and (FR-RENT-14
+  // §6.Q1) the pre-filled rental fee as money collected at booking — deposit untouched (§6.Q2)
   expect(getLastCreateRentalBody()).toEqual({
     customerName: 'Nguyễn Thị Hoa',
     customerPhone: '0903123456',
     startDate: '2026-08-01',
     endDate: '2026-08-03',
     items: [{ dressId: 'd1' }],
+    collect: { rentalFee: 500_000 },
+  });
+});
+
+describe('FR-RENT-14: money handed over at booking', () => {
+  test('fee pre-filled from the agreement, deposit behind an unticked box, both sent when ticked', async () => {
+    seedDresses([
+      makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', rentalPrice: 500_000, depositAmount: 2_000_000 }),
+    ]);
+    const user = userEvent.setup();
+    renderNewRental();
+
+    await fillCustomerAndDates(user);
+    await pickDress(user, 'DR-001');
+    expect(screen.getByLabelText('Tiền thuê đã thu')).toHaveValue('500000');
+    const box = screen.getByLabelText('Khách đã đóng cọc');
+    expect(box).not.toBeChecked();
+    expect(screen.queryByLabelText('Tiền cọc đã thu')).not.toBeInTheDocument();
+
+    await user.click(box);
+    const deposit = screen.getByLabelText('Tiền cọc đã thu');
+    expect(deposit).toHaveValue('2000000');
+    await user.clear(deposit);
+    await user.type(deposit, '1500000'); // partial deposit: the ledger records what was taken
+    await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+
+    await screen.findByText('rentals-list-stub');
+    expect(getLastCreateRentalBody()).toMatchObject({
+      collect: { rentalFee: 500_000, deposit: 1_500_000 },
+    });
+  });
+
+  test('a cleared fee and no deposit send no collect at all', async () => {
+    seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', rentalPrice: 500_000 })]);
+    const user = userEvent.setup();
+    renderNewRental();
+
+    await fillCustomerAndDates(user);
+    await pickDress(user, 'DR-001');
+    await user.clear(screen.getByLabelText('Tiền thuê đã thu'));
+    await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+
+    await screen.findByText('rentals-list-stub');
+    expect(getLastCreateRentalBody()).not.toHaveProperty('collect');
+  });
+
+  test('§6.Q5: a rental handed out today without a deposit is warned about, not blocked', async () => {
+    seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+    const user = userEvent.setup();
+    renderNewRental();
+
+    await fillCustomerAndDates(user); // fixture dates are in the past → born out
+    await pickDress(user, 'DR-001');
+
+    expect(screen.getByText(/giao ngay hôm nay nhưng chưa thu cọc/)).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Khách đã đóng cọc'));
+    expect(screen.queryByText(/giao ngay hôm nay nhưng chưa thu cọc/)).not.toBeInTheDocument();
   });
 });
 
@@ -339,7 +397,9 @@ test('FR-RENT-11: a discount is read back grouped, shown against the subtotal, a
 
   expect(screen.getByText('100.000 ₫')).toBeInTheDocument(); // the digits, read back grouped
   expect(screen.getByText('Tiền thuê sau giảm')).toBeInTheDocument();
-  expect(screen.getByText('400.000 ₫')).toBeInTheDocument();
+  // 400.000 shows in the picker total AND as the read-back of the pre-filled fee (FR-RENT-14).
+  expect(screen.getAllByText('400.000 ₫').length).toBeGreaterThanOrEqual(1);
+  expect(screen.getByLabelText('Tiền thuê đã thu')).toHaveValue('400000');
 
   await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
 

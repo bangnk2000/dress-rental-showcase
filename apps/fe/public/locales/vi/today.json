@@ -74,5 +74,20 @@
     "rentalNotFound": "Lượt thuê này không còn tồn tại. Bảng đã được làm mới.",
     "lateFeeWaiverForbidden": "Chỉ chủ tiệm được giảm phí trễ so với số đề xuất.",
     "waiverNoteRequired": "Giảm phí trễ thì phải ghi lý do."
+  },
+  "deposit": {
+    "missing": "Chưa thu cọc",
+    "collected": "Đã cọc {{amount}}"
+  },
+  "pickupDialog": {
+    "title": "Thu cọc & giao váy",
+    "description": "Lượt thuê của {{customer}} chưa có tiền cọc trong sổ. Thu cọc rồi mới giao váy — số tiền được ghi cùng lúc với việc giao.",
+    "field": "Tiền cọc đã thu",
+    "hint": "Cọc chuẩn của các váy: {{amount}}",
+    "submit": "Đã thu cọc & giao váy",
+    "close": "Đóng",
+    "success": "Đã giao váy và ghi nhận cọc.",
+    "alreadyRecorded": "Đơn vừa được ghi cọc {{amount}} trên thiết bị khác — bấm \"Giao váy\" để giao không ghi thêm cọc.",
+    "notCollected": "Đơn chưa có cọc trong sổ — nhập tiền cọc rồi bấm lại."
   }
 }

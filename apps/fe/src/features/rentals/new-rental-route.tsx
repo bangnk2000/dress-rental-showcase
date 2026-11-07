@@ -29,6 +29,8 @@ function toCreateRentalRequest(submission: RentalFormSubmission): CreateRentalRe
     ...(submission.discountAmount > 0 ? { discountAmount: submission.discountAmount } : {}),
     // Price omitted on purpose: the BE defaults to each dress's standard price.
     items: submission.items.map((dress) => ({ dressId: dress.id })),
+    // FR-RENT-14: written to the ledger in the same transaction as the rental.
+    ...(submission.collect ? { collect: submission.collect } : {}),
   };
 }
 
@@ -47,6 +49,7 @@ export function NewRentalRoute() {
     await createRental.mutateAsync({ data: toCreateRentalRequest(submission) });
     // The cached list/board may still be FRESH (staleTime 60s) — without
     // this, the post-create landing shows a list missing the new rental.
+    // A brand-new rental has no ledger in the cache yet, so there is no payments key to drop.
     await Promise.all([
       queryClient.invalidateQueries({
         queryKey: getListRentalsHttpControllerListQueryKey(),
