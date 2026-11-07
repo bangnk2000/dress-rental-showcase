@@ -21,7 +21,7 @@
 | Term | Meaning | Notes |
 | --- | --- | --- |
 | Chi tiết đơn (`rental detail`) | Một màn hình cho MỘT đơn: khách, ngày, váy + giá thoả thuận, giảm giá, ghi chú, trạng thái, sổ tiền, và các hành động | mới — `GET /rentals/:id`; lần đầu `notes` được hiển thị |
-| Sửa đơn (`update rental`) | Chủ tiệm viết lại NỘI DUNG đơn khi đơn còn mở: khách, ngày, váy, giá từng váy, giảm giá, ghi chú. **Không** đổi trạng thái — pickup/return/cancel vẫn là chủ của status | mới — `PATCH /rentals/:id`, policy `rental:update` owner-only |
+| Sửa đơn (`update rental`) | ~~Chủ tiệm~~ Nhân viên (mọi vai trò, từ 2026-11-07 — §8) viết lại NỘI DUNG đơn khi đơn còn mở: khách, ngày, váy, giá từng váy, giảm giá, ghi chú. **Không** đổi trạng thái — pickup/return/cancel vẫn là chủ của status | mới — `PATCH /rentals/:id`, policy `rental:update` — mọi nhân viên từ 2026-11-07 (§8) |
 | Đơn MỞ (`open rental`) | `booked` hoặc `out` | đã có từ FR-PAY-02 |
 | Váy GIỮ LẠI / váy THÊM MỚI / váy BỎ | Giữ lại = có trên đơn trước và sau khi sửa (giữ nguyên dòng + giá đã thoả thuận); thêm mới = dòng mới, giá chuẩn catalog; bỏ = dòng bị XOÁ | luật retired chỉ áp cho váy thêm mới (§6.Q4) |
 | Kỳ block hiện hành | Sau mỗi lần sửa, MỌI item block = kỳ thuê mới + `CLEANING_BUFFER_DAYS` hiện hành | đơn tạo lúc buffer=2, sửa lúc buffer=1 → block theo 1 (luật tiệm đang chạy) |
@@ -31,7 +31,7 @@
 ```text
 Use case: UpdateRental (command) + GetRental (read slice) — MỘT feature vì màn hình chi tiết
   là nơi nút "Sửa đơn" sống, và form sửa đọc chi tiết để prefill
-Actor: UpdateRental — owner (policy `rental:update`, fail-closed; staff → 403 ENVELOPE
+Actor: UpdateRental — [SUPERSEDED 2026-11-07, §8: mọi nhân viên; không còn 403] owner (policy `rental:update`, fail-closed; staff → 403 ENVELOPE
   GENERIC.FORBIDDEN vì guard chặn TRƯỚC khi use case chạy — ADR 0001 §2, giống user:manage).
   GetRental — mọi nhân viên đã đăng nhập (read = auth only, như mọi read khác — §6.Q1).
 Trigger: PATCH /rentals/:id từ màn sửa · GET /rentals/:id từ màn chi tiết
@@ -50,7 +50,7 @@ Preconditions:
   - Đơn còn MỞ (booked|out)                               → rejected_update_not_allowed { currentStatus }
 
 Business flow (mỗi bước từ chối nêu outcome):
-  1. Guard rental:update (owner)                          → 403 envelope (guard, không phải outcome)
+  1. Guard rental:update (owner → mọi nhân viên từ 2026-11-07, §8; trước đó 403 envelope)
   2. Load aggregate; không có                             → rejected_rental_not_found
   3. status ∉ {booked, out}                               → rejected_update_not_allowed { currentStatus }
   4. Gộp kỳ thuê mới; ngày sai / start > end              → 400 envelope (RentalPeriod VO throw)
