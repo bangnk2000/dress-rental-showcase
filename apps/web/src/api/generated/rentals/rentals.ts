@@ -31,6 +31,7 @@ import type {
   AvailabilityResponseDto,
   BookedRangeListResponseDto,
   CancelRentalOutcomeDto,
+  CancelRentalRequestDto,
   CheckAvailabilityHttpControllerCheckParams,
   CreateRentalOutcomeDto,
   CreateRentalRequestDto,
@@ -311,16 +312,17 @@ export const getCancelRentalHttpControllerCancelUrl = (id: string,) => {
 }
 
 /**
- * @summary Cancel a booked or out rental with an EMPTY ledger — frees the calendar, keeps history
+ * @summary Cancel a rental — frees the calendar, keeps history. A booked rental with money on file is cancelled WITH refunds (body); an out rental only with an empty ledger
  */
-export const cancelRentalHttpControllerCancel = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<IdResponse> => {
+export const cancelRentalHttpControllerCancel = async (id: string,
+    cancelRentalRequestDto: CancelRentalRequestDto, options?: Parameters<typeof customFetch>[1]): Promise<IdResponse> => {
 
   return customFetch<IdResponse>(getCancelRentalHttpControllerCancelUrl(id),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cancelRentalRequestDto)
   }
 );}
 
@@ -328,9 +330,9 @@ export const cancelRentalHttpControllerCancel = async (id: string, options?: Par
 
 
 
-export const getCancelRentalHttpControllerCancelMutationOptions = <TError = CancelRentalOutcomeDto,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext> => {
+export const getCancelRentalHttpControllerCancelMutationOptions = <TError = ApiErrorResponseDto | CancelRentalOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string;data: CancelRentalRequestDto}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string;data: CancelRentalRequestDto}, TContext> => {
 
 const mutationKey = ['cancelRentalHttpControllerCancel'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -342,10 +344,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, {id: string}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, {id: string;data: CancelRentalRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  cancelRentalHttpControllerCancel(id,requestOptions)
+          return  cancelRentalHttpControllerCancel(id,data,requestOptions)
         }
 
 
@@ -356,18 +358,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CancelRentalHttpControllerCancelMutationResult = NonNullable<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>>
-
-    export type CancelRentalHttpControllerCancelMutationError = CancelRentalOutcomeDto
+    export type CancelRentalHttpControllerCancelMutationBody = CancelRentalRequestDto
+    export type CancelRentalHttpControllerCancelMutationError = ApiErrorResponseDto | CancelRentalOutcomeDto
 
     /**
- * @summary Cancel a booked or out rental with an EMPTY ledger — frees the calendar, keeps history
+ * @summary Cancel a rental — frees the calendar, keeps history. A booked rental with money on file is cancelled WITH refunds (body); an out rental only with an empty ledger
  */
-export const useCancelRentalHttpControllerCancel = <TError = CancelRentalOutcomeDto,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useCancelRentalHttpControllerCancel = <TError = ApiErrorResponseDto | CancelRentalOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>, TError,{id: string;data: CancelRentalRequestDto}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof cancelRentalHttpControllerCancel>>,
         TError,
-        {id: string},
+        {id: string;data: CancelRentalRequestDto},
         TContext
       > => {
       return useMutation(getCancelRentalHttpControllerCancelMutationOptions(options), queryClient);

@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) — chủ của cancel; ghi dòng hoàn vào sổ `payments` qua `PaymentRecorderPort` (cùng đường với return flow) |
-| Status | **rules approved 2026-11-07** (§6 Q1–Q5, mọi đề xuất được chấp nhận) — còn chờ: prototype §3 duyệt. Chưa có code |
+| Status | **approved 2026-11-07** (§6 Q1–Q5, mọi đề xuất được chấp nhận). Chủ tiệm **chọn bỏ vòng prototype** (2026-11-07) — §3 state matrix là bản thiết kế UI; ledger `rentals/cancel-with-refund` = in-progress |
 | AC source | [deposit-at-pickup](./deposit-at-pickup.md) §6.Q8, chủ tiệm chốt 2026-11-07: *"huỷ kèm ghi tiền hoàn — dialog huỷ hỏi số tiền trả lại khách: cọc hoàn đủ, tiền thuê hoàn tuỳ (phần giữ lại = phí huỷ); sổ ghi dòng hoàn rồi đơn chuyển Đã huỷ"*; tách feature, ship TRƯỚC deposit-at-pickup |
 | FR | **FR-RENT-06 sửa (đề xuất, §5)** — vào SRS cùng PR code |
 | Rules approved by | Chủ tiệm — 2026-11-07 (§6) |

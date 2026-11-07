@@ -12,4 +12,8 @@ export const CancelRentalOutcomeDtoStatus = {
   rejected_rental_not_found: 'rejected_rental_not_found',
   rejected_cancel_not_allowed: 'rejected_cancel_not_allowed',
   rejected_cancel_has_payments: 'rejected_cancel_has_payments',
+  rejected_cancel_basis_changed: 'rejected_cancel_basis_changed',
+  rejected_refund_exceeds_collected: 'rejected_refund_exceeds_collected',
+  rejected_retention_note_required: 'rejected_retention_note_required',
+  forbidden: 'forbidden',
 } as const;

@@ -9,8 +9,16 @@ export type CollectionKind = 'deposit' | 'rental_fee';
 
 export const COLLECTION_KINDS: readonly CollectionKind[] = ['deposit', 'rental_fee'];
 
-/** Every kind the `payments` table may hold, collected + settlement. */
-export type PaymentKind = CollectionKind | 'deposit_refund' | 'late_fee' | 'damage_fee';
+/**
+ * Every kind the `payments` table may hold, collected + settlement. `rental_fee_refund` is written
+ * only by the rentals cancel flow (rentals/cancel-with-refund).
+ */
+export type PaymentKind =
+  | CollectionKind
+  | 'deposit_refund'
+  | 'rental_fee_refund'
+  | 'late_fee'
+  | 'damage_fee';
 
 export interface PaymentProps {
   rentalId: string;

@@ -1,9 +1,16 @@
+import { CommandProps } from '../../../../libs/ddd/command.base';
 import { Money } from '../../../../libs/ddd/money.value-object';
+import { LedgerBasisChangedError } from '../../application/ports/ledger-basis-changed.error';
 import { LedgerNotEmptyError } from '../../application/ports/ledger-not-empty.error';
+import { RentalStateChangedError } from '../../application/ports/rental-state-changed.error';
 import { RentalRepositoryPort } from '../../application/ports/rental.repository.port';
 import { RentalEntity } from '../../domain/rental.entity';
 import { RentalPeriod } from '../../domain/rental-period.value-object';
 import {
+  CancelBasisChangedError,
+  CancelRetentionNotAllowedError,
+  CancelRetentionNoteRequiredError,
+  RefundExceedsCollectedError,
   RentalCancelHasPaymentsError,
   RentalCancelNotAllowedError,
   RentalNotFoundError,
@@ -53,7 +60,22 @@ function makeRepo(rental: RentalEntity | null): RentalRepositoryPort {
   };
 }
 
-const command = new CancelRentalCommand({ rentalId: RENTAL_ID });
+type CancelInput = Partial<Omit<CommandProps<CancelRentalCommand>, 'rentalId'>>;
+
+function cancelCommand(input: CancelInput = {}): CancelRentalCommand {
+  return new CancelRentalCommand({
+    rentalId: RENTAL_ID,
+    expectedDepositCollected: null,
+    expectedRentalFeeCollected: null,
+    depositRefund: null,
+    rentalFeeRefund: null,
+    note: null,
+    actorRole: 'staff',
+    ...input,
+  });
+}
+
+const command = cancelCommand();
 
 test('booked → cancelled: EVERY item stops blocking, saved through the ledger guard', async () => {
   const rental = makeRental();
@@ -64,8 +86,109 @@ test('booked → cancelled: EVERY item stops blocking, saved through the ledger 
   expect(result.isOk()).toBe(true);
   expect(rental.status).toBe('cancelled');
   expect(rental.items.every((item) => !item.blocking)).toBe(true);
-  expect(repo.saveCancelled).toHaveBeenCalledWith(rental);
+  expect(repo.saveCancelled).toHaveBeenCalledWith(rental, null); // no claim = empty-ledger cancel
   expect(repo.save).not.toHaveBeenCalled(); // never the unguarded write
+});
+
+describe('cancel with refunds (rentals/cancel-with-refund)', () => {
+  const PAID = { expectedDepositCollected: 3_000_000, expectedRentalFeeCollected: 1_500_000 };
+
+  test('staff refunding in full: settlement carries the basis and both refund rows', async () => {
+    const rental = makeRental();
+    const repo = makeRepo(rental);
+
+    const result = await new CancelRentalService(repo).execute(
+      cancelCommand({ ...PAID, depositRefund: 3_000_000, rentalFeeRefund: 1_500_000 }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    expect(repo.saveCancelled).toHaveBeenCalledWith(rental, {
+      ...PAID,
+      refunds: [
+        { kind: 'deposit_refund', amount: 3_000_000, note: null },
+        { kind: 'rental_fee_refund', amount: 1_500_000, note: null },
+      ],
+    });
+  });
+
+  test('a zero refund writes no row (BR-4) — owner keeps the fee with a note', async () => {
+    const rental = makeRental();
+    const repo = makeRepo(rental);
+
+    const result = await new CancelRentalService(repo).execute(
+      cancelCommand({ ...PAID, depositRefund: 3_000_000, note: 'Huỷ sát ngày', actorRole: 'owner' }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    expect(repo.saveCancelled).toHaveBeenCalledWith(rental, {
+      ...PAID,
+      refunds: [{ kind: 'deposit_refund', amount: 3_000_000, note: 'Huỷ sát ngày' }],
+    });
+  });
+
+  test('refund above what was collected → RefundExceedsCollectedError, nothing saved', async () => {
+    const repo = makeRepo(makeRental());
+
+    const result = await new CancelRentalService(repo).execute(
+      cancelCommand({ ...PAID, depositRefund: 3_000_001, rentalFeeRefund: 1_500_000 }),
+    );
+
+    const error = result.unwrapErr() as RefundExceedsCollectedError;
+    expect(error).toBeInstanceOf(RefundExceedsCollectedError);
+    expect([error.kind, error.collected, error.submitted]).toEqual(['deposit', 3_000_000, 3_000_001]);
+    expect(repo.saveCancelled).not.toHaveBeenCalled();
+  });
+
+  test('staff keeping money → CancelRetentionNotAllowedError (403 forbidden)', async () => {
+    const repo = makeRepo(makeRental());
+
+    const result = await new CancelRentalService(repo).execute(
+      cancelCommand({ ...PAID, depositRefund: 3_000_000, rentalFeeRefund: 1_000_000, note: 'x' }),
+    );
+
+    const error = result.unwrapErr() as CancelRetentionNotAllowedError;
+    expect(error).toBeInstanceOf(CancelRetentionNotAllowedError);
+    expect(error.retainedAmount).toBe(500_000);
+    expect(repo.saveCancelled).not.toHaveBeenCalled();
+  });
+
+  test('owner keeping money without a note → CancelRetentionNoteRequiredError', async () => {
+    const repo = makeRepo(makeRental());
+
+    const result = await new CancelRentalService(repo).execute(
+      cancelCommand({ ...PAID, depositRefund: 0, rentalFeeRefund: 0, note: '  ', actorRole: 'owner' }),
+    );
+
+    const error = result.unwrapErr() as CancelRetentionNoteRequiredError;
+    expect(error).toBeInstanceOf(CancelRetentionNoteRequiredError);
+    expect(error.retainedAmount).toBe(4_500_000);
+  });
+
+  test('basis moved under the lock → CancelBasisChangedError with what IS on file', async () => {
+    const repo = makeRepo(makeRental());
+    (repo.saveCancelled as jest.Mock).mockRejectedValue(
+      new LedgerBasisChangedError(2_000_000, 1_500_000),
+    );
+
+    const result = await new CancelRentalService(repo).execute(
+      cancelCommand({ ...PAID, depositRefund: 3_000_000, rentalFeeRefund: 1_500_000 }),
+    );
+
+    const error = result.unwrapErr() as CancelBasisChangedError;
+    expect(error).toBeInstanceOf(CancelBasisChangedError);
+    expect([error.collectedDeposit, error.collectedRentalFee]).toEqual([2_000_000, 1_500_000]);
+  });
+
+  test('closed between load and lock → the same rejected_cancel_not_allowed', async () => {
+    const repo = makeRepo(makeRental());
+    (repo.saveCancelled as jest.Mock).mockRejectedValue(new RentalStateChangedError('returned'));
+
+    const result = await new CancelRentalService(repo).execute(command);
+
+    const error = result.unwrapErr() as RentalCancelNotAllowedError;
+    expect(error).toBeInstanceOf(RentalCancelNotAllowedError);
+    expect(error.currentStatus).toBe('returned');
+  });
 });
 
 test('an OUT rental with an empty ledger cancels too — the born-out escape hatch (FR-RENT-10 §6.Q2)', async () => {
@@ -80,7 +203,7 @@ test('an OUT rental with an empty ledger cancels too — the born-out escape hat
   expect(rental.items.every((item) => !item.blocking)).toBe(true);
 });
 
-test('recorded money refuses the cancel with its own outcome — settle through return instead', async () => {
+test('an OUT rental with recorded money refuses the cancel — settle through return instead', async () => {
   const rental = makeRental();
   const repo = makeRepo(rental);
   (repo.saveCancelled as jest.Mock).mockRejectedValue(new LedgerNotEmptyError());

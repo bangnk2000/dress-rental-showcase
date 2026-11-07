@@ -1766,6 +1766,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelRentalRequestDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -1777,8 +1787,28 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid cancel body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Named denial: forbidden + reason cancel_retention_requires_owner (retainedAmount) — staff may only cancel with full refunds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelRentalOutcomeDto"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (carries currentStatus) | rejected_cancel_has_payments",
+            "description": "Business rejection: rejected_rental_not_found | rejected_cancel_not_allowed (currentStatus) | rejected_cancel_has_payments | rejected_cancel_basis_changed (collectedDeposit, collectedRentalFee) | rejected_refund_exceeds_collected (kind, collected, submitted) | rejected_retention_note_required (retainedAmount)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1793,7 +1823,7 @@
             "bearer": []
           }
         ],
-        "summary": "Cancel a booked or out rental with an EMPTY ledger — frees the calendar, keeps history",
+        "summary": "Cancel a rental — frees the calendar, keeps history. A booked rental with money on file is cancelled WITH refunds (body); an out rental only with an empty ledger",
         "tags": [
           "rentals"
         ]
@@ -4480,6 +4510,42 @@
           "dressIds"
         ]
       },
+      "CancelRentalRequestDto": {
+        "type": "object",
+        "properties": {
+          "expectedDepositCollected": {
+            "type": "number",
+            "minimum": 0,
+            "example": 3000000,
+            "description": "Deposit total on file that the refunds were computed from (VND integer)"
+          },
+          "expectedRentalFeeCollected": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1500000,
+            "description": "Rental fee total on file that the refunds were computed from (VND integer)"
+          },
+          "depositRefund": {
+            "type": "number",
+            "minimum": 0,
+            "example": 3000000,
+            "description": "Deposit handed back to the customer (VND integer); omitted = 0"
+          },
+          "rentalFeeRefund": {
+            "type": "number",
+            "minimum": 0,
+            "example": 1500000,
+            "description": "Rental fee handed back to the customer (VND integer); omitted = 0"
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "Khách huỷ trước 2 ngày, giữ 30% tiền thuê",
+            "description": "Written on every refund row; required when any money is kept (owner only)"
+          }
+        }
+      },
       "CancelRentalOutcomeDto": {
         "type": "object",
         "properties": {
@@ -4487,7 +4553,11 @@
             "enum": [
               "rejected_rental_not_found",
               "rejected_cancel_not_allowed",
-              "rejected_cancel_has_payments"
+              "rejected_cancel_has_payments",
+              "rejected_cancel_basis_changed",
+              "rejected_refund_exceeds_collected",
+              "rejected_retention_note_required",
+              "forbidden"
             ],
             "type": "string"
           },
@@ -4499,6 +4569,41 @@
               "cancelled"
             ],
             "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "cancel_retention_requires_owner"
+            ],
+            "description": "Why the denial happened — only set for status=forbidden"
+          },
+          "collectedDeposit": {
+            "type": "number",
+            "description": "Deposit on file (rejected_cancel_basis_changed)"
+          },
+          "collectedRentalFee": {
+            "type": "number",
+            "description": "Rental fee on file (rejected_cancel_basis_changed)"
+          },
+          "kind": {
+            "enum": [
+              "deposit",
+              "rental_fee"
+            ],
+            "type": "string",
+            "description": "Which refund exceeded what was collected (rejected_refund_exceeds_collected)"
+          },
+          "collected": {
+            "type": "number",
+            "description": "Collected amount of `kind`"
+          },
+          "submitted": {
+            "type": "number",
+            "description": "Refund the client tried to record for `kind`"
+          },
+          "retainedAmount": {
+            "type": "number",
+            "description": "Money the cancel would keep (forbidden / rejected_retention_note_required)"
           }
         },
         "required": [
@@ -5191,6 +5296,7 @@
               "deposit",
               "deposit_refund",
               "rental_fee",
+              "rental_fee_refund",
               "late_fee",
               "damage_fee"
             ],
@@ -5238,6 +5344,11 @@
             "example": 2800000,
             "description": "Deposit handed back, VND"
           },
+          "rentalFeeRefund": {
+            "type": "number",
+            "example": 0,
+            "description": "Rental fee handed back when a prepaid booking was cancelled, VND"
+          },
           "lateFee": {
             "type": "number",
             "example": 200000,
@@ -5253,6 +5364,7 @@
           "deposit",
           "rentalFee",
           "depositRefund",
+          "rentalFeeRefund",
           "lateFee",
           "damageFee"
         ]

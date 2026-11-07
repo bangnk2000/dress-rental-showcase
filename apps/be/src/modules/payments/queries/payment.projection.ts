@@ -7,7 +7,14 @@ import {
 
 export const paymentRowSchema = z.object({
   id: z.string(),
-  kind: z.enum(['deposit', 'deposit_refund', 'rental_fee', 'late_fee', 'damage_fee']),
+  kind: z.enum([
+    'deposit',
+    'deposit_refund',
+    'rental_fee',
+    'rental_fee_refund',
+    'late_fee',
+    'damage_fee',
+  ]),
   amount: z.number().int(),
   note: z.string().nullable(),
   created_at: z.union([z.number(), z.string(), z.date()]),
@@ -28,6 +35,7 @@ export function toPaymentSummaryDto(rows: readonly PaymentRow[]): PaymentSummary
     deposit: total('deposit'),
     rentalFee: total('rental_fee'),
     depositRefund: total('deposit_refund'),
+    rentalFeeRefund: total('rental_fee_refund'),
     lateFee: total('late_fee'),
     damageFee: total('damage_fee'),
   });

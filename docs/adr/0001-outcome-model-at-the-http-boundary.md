@@ -134,7 +134,11 @@ pre-check/entity ở service VÀ ràng buộc/điều kiện nằm trong câu gh
 | `rentals/return-rental` | `ReturnDepositBasisChangedError` | `rejected_deposit_basis_changed` | `collectedDeposit` | FR-PAY-02 |
 | `rentals/cancel-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-06 |
 | `rentals/cancel-rental` | `RentalCancelNotAllowedError` | `rejected_cancel_not_allowed` (từ FR-RENT-10 chỉ còn `returned`/`cancelled` — đơn `out` sổ trống được huỷ) | `currentStatus` | FR-RENT-06, FR-RENT-10, BR-3 |
-| `rentals/cancel-rental` | `RentalCancelHasPaymentsError` | `rejected_cancel_has_payments` — sổ có tiền thì lối ra duy nhất là return | — | FR-RENT-10 |
+| `rentals/cancel-rental` | `RentalCancelHasPaymentsError` | `rejected_cancel_has_payments` — từ 2026-11-07 chỉ còn đơn **`out`** có tiền (váy đang ở ngoài → lối ra là return); đơn `booked` có tiền huỷ được kèm hoàn | — | FR-RENT-06, FR-RENT-10 |
+| `rentals/cancel-rental` | `CancelBasisChangedError` | `rejected_cancel_basis_changed` — sổ có tiền mà lệnh không gửi basis, hoặc basis ≠ số đã thu đọc lại dưới row lock | `collectedDeposit`, `collectedRentalFee` | FR-RENT-06 (cancel-with-refund) |
+| `rentals/cancel-rental` | `RefundExceedsCollectedError` | `rejected_refund_exceeds_collected` | `kind` (`deposit`\|`rental_fee`), `collected`, `submitted` | FR-RENT-06 (cancel-with-refund) |
+| `rentals/cancel-rental` | `CancelRetentionNotAllowedError` | `forbidden` (**403**) + `reason: 'cancel_retention_requires_owner'` | `retainedAmount` | FR-RENT-06 (cancel-with-refund) |
+| `rentals/cancel-rental` | `CancelRetentionNoteRequiredError` | `rejected_retention_note_required` | `retainedAmount` | FR-RENT-06 (cancel-with-refund) |
 | `rentals/update-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-13 |
 | `rentals/update-rental` | `RentalUpdateNotAllowedError` | `rejected_update_not_allowed` — đơn `returned`/`cancelled`; pre-check LẪN đọc lại dưới row lock (`RentalStateChangedError` của repository) ra cùng mã | `currentStatus` | FR-RENT-13, BR-3 |
 | `rentals/update-rental` | `RentalDressNotFoundError` \| `RentalDressRetiredError` (chỉ váy THÊM MỚI) \| `DressUnavailableError` (pre-check bỏ qua dòng của chính đơn, VÀ đường race) | `rejected_dress_not_found` \| `rejected_dress_retired` \| `rejected_dress_unavailable` — dùng lại mã của create: cùng luật, cùng mã | `dressIds[]` | FR-RENT-13, BR-1 |
@@ -235,8 +239,16 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_return_not_allowed` | đóng dialog, toast nêu `currentStatus` + invalidate; `currentStatus='booked'` có câu RIÊNG chỉ việc ("giao trước khi nhận về") | `today:errors.returnNotAllowed` / `today:errors.returnNotPickedUp` |
 | `forbidden` (`late_fee_waiver_requires_owner`) | GIỮ dialog, field error dưới phí trễ; số đề xuất vẫn hiển thị ở banner phía trên (message form là i18n key, không nội suy tham số) | `today:errors.lateFeeWaiverForbidden` |
 | `rejected_waiver_note_required` | GIỮ dialog, focus field Ghi chú + message bắt buộc lý do | `today:errors.waiverNoteRequired` |
-| `rejected_cancel_not_allowed` | toast nêu `currentStatus` + invalidate list/board | `rentals:cancel.notAllowed` / `today:cancel.notAllowed` |
-| `rejected_cancel_has_payments` | toast "sổ đã có tiền — đi đường return" + invalidate | `rentals:cancel.hasPayments` / `today:cancel.hasPayments` |
+| `rejected_cancel_not_allowed` | toast nêu `currentStatus` + invalidate list/board | `common:cancelRental.notAllowed` |
+| `rejected_cancel_has_payments` | toast "đơn đã giao có tiền — dùng Nhận về" + invalidate | `common:cancelRental.hasPayments` |
+| `rejected_cancel_basis_changed` | GIỮ dialog, invalidate sổ của đơn → dialog chuyển sang dạng hoàn tiền với số mới, message "sổ vừa thay đổi — kiểm tra lại số hoàn" | `common:cancelRental.basisChanged` |
+| `rejected_refund_exceeds_collected` | GIỮ dialog, field error dưới ô hoàn của `kind` | `common:cancelRental.errors.exceeds` |
+| `forbidden` (`cancel_retention_requires_owner`) | phòng hờ — UI đã disable nút cho staff khi giữ tiền; GIỮ dialog + message form-level | `common:cancelRental.errors.retentionForbidden` |
+| `rejected_retention_note_required` | GIỮ dialog, field error dưới Ghi chú | `common:cancelRental.errors.noteRequired` |
+
+Dialog huỷ (2026-11-07, `rentals/cancel-with-refund`) là MỘT component kernel
+`components/rentals/cancel-rental-dialog.tsx` dùng ở bảng Hôm nay, `/rentals` và `/rentals/:id` —
+nên các key `rentals:cancel.*` / `today:cancel.*` cũ dồn về `common:cancelRental.*`.
 | `rejected_update_not_allowed` | toast nêu `currentStatus` + invalidate list/board/detail + điều hướng về `/rentals/:id` (không còn gì để sửa) | `rentals:edit.notAllowed` |
 | `rejected_dress_not_found` / `_retired` / `_unavailable` (update) | GIỮ form sửa, message form-level + đánh dấu đúng hàng váy — CÙNG state với create vì `RentalForm` dùng chung | `rentals:form.errors.*` |
 | `rejected_rental_not_found` (update) | toast + invalidate + điều hướng `/rentals` | `rentals:errors.rentalNotFound` |

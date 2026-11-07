@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { randomUUID } from 'node:crypto';
 import {
   CheckExclusionConstraintViolationError,
   DatabasePool,
@@ -12,10 +13,14 @@ import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { AggregateID } from '../../../libs/ddd/entity.base';
 import { LOGGER_PORT, LoggerPort } from '../../../libs/ports/logger.port';
 import { DepositBasisChangedError } from '../application/ports/deposit-basis-changed.error';
+import { LedgerBasisChangedError } from '../application/ports/ledger-basis-changed.error';
 import { LedgerNotEmptyError } from '../application/ports/ledger-not-empty.error';
 import { RentalItemsOverlapError } from '../application/ports/rental-overlap.error';
 import { RentalStateChangedError } from '../application/ports/rental-state-changed.error';
-import { RentalRepositoryPort } from '../application/ports/rental.repository.port';
+import {
+  CancelSettlement,
+  RentalRepositoryPort,
+} from '../application/ports/rental.repository.port';
 import { RentalEntity } from '../domain/rental.entity';
 import { RentalPeriod } from '../domain/rental-period.value-object';
 import { toDateRangeLiteral } from './daterange';
@@ -31,7 +36,11 @@ import {
 
 const dressIdSchema = z.object({ dress_id: z.string() });
 const collectedDepositSchema = z.object({ collected: z.number().int() });
-const movementCountSchema = z.object({ movements: z.number().int() });
+const ledgerSchema = z.object({
+  movements: z.number().int(),
+  deposit: z.number().int(),
+  rental_fee: z.number().int(),
+});
 const rentalStatusSchema = z.object({
   status: z.enum(['booked', 'out', 'returned', 'cancelled']),
 });
@@ -95,22 +104,49 @@ export class RentalRepository
   }
 
   /**
-   * A cancel is only legal while the ledger is empty (FR-RENT-10 §6.Q2). Checked HERE, under the
-   * rental's row lock and in the SAME transaction as the status flip — record-collection locks
-   * the very same row before inserting, so either its money lands first and this count sees it,
-   * or the cancel commits first and the collection's own closed-rental rule refuses it. Lock
-   * order is rentals → payments on both sides, so no deadlock.
+   * The ledger rules of a cancel (rentals/cancel-with-refund) are checked HERE, under the rental's
+   * row lock and in the SAME transaction as the status flip — record-collection locks the very
+   * same row before inserting, so either its money lands first and this read sees it, or the
+   * cancel commits first and the collection's own closed-rental rule refuses it. Lock order is
+   * rentals → payments on both sides, so no deadlock. The refund rows are written in this same
+   * transaction (the payments table is written directly, as PaymentRecorderAdapter does —
+   * apps/be Deviation #4), so a cancel is recorded whole or not at all.
    */
-  async saveCancelled(entity: RentalEntity): Promise<void> {
+  async saveCancelled(entity: RentalEntity, settlement: CancelSettlement | null): Promise<void> {
     await this.writeAggregate(entity, true, async (conn, record) => {
-      await conn.query(sql.unsafe`
-        SELECT id FROM rentals WHERE id = ${record.rental.id} FOR UPDATE
+      const rentalId = record.rental.id;
+      const { status } = await conn.one(sql.type(rentalStatusSchema)`
+        SELECT status FROM rentals WHERE id = ${rentalId} FOR UPDATE
       `);
-      const { movements } = await conn.one(sql.type(movementCountSchema)`
-        SELECT count(*)::int AS movements FROM payments WHERE rental_id = ${record.rental.id}
+      if (status !== 'booked' && status !== 'out') {
+        throw new RentalStateChangedError(status);
+      }
+      const ledger = await conn.one(sql.type(ledgerSchema)`
+        SELECT count(*)::int AS movements,
+               coalesce(sum(amount) FILTER (WHERE kind = 'deposit'), 0)::int AS deposit,
+               coalesce(sum(amount) FILTER (WHERE kind = 'rental_fee'), 0)::int AS rental_fee
+        FROM payments WHERE rental_id = ${rentalId}
       `);
-      if (movements > 0) {
-        throw new LedgerNotEmptyError();
+      const claimsMatch =
+        settlement !== null &&
+        settlement.expectedDepositCollected === ledger.deposit &&
+        settlement.expectedRentalFeeCollected === ledger.rental_fee;
+
+      if (ledger.movements === 0) {
+        if (settlement !== null && !claimsMatch) throw new LedgerBasisChangedError(0, 0);
+        return;
+      }
+      if (status !== 'booked') throw new LedgerNotEmptyError();
+      if (settlement === null || !claimsMatch) {
+        throw new LedgerBasisChangedError(ledger.deposit, ledger.rental_fee);
+      }
+
+      for (const refund of settlement.refunds) {
+        if (refund.amount <= 0) continue;
+        await conn.query(sql.unsafe`
+          INSERT INTO payments (id, rental_id, kind, amount, note)
+          VALUES (${randomUUID()}, ${rentalId}, ${refund.kind}, ${refund.amount}, ${refund.note})
+        `);
       }
     });
   }

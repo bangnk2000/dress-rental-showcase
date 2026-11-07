@@ -36,9 +36,25 @@ export interface RentalRepositoryPort extends RepositoryPort<RentalEntity> {
   saveReturned(entity: RentalEntity, expectedDepositCollected: number | null): Promise<void>;
 
   /**
-   * `save`, plus a check that the rental's ledger is EMPTY — both under the rental's row lock,
-   * so record-collection (which locks the same row) and this cancel take turns. Any money row
-   * throws `LedgerNotEmptyError` and writes nothing.
+   * `save` for a CANCEL (rentals/cancel-with-refund), with the ledger re-read under the rental's
+   * row lock — the lock record-collection takes too — so a collection and this cancel take turns:
+   *
+   * - row no longer open (returned/cancelled) → `RentalStateChangedError`
+   * - ledger empty → cancel; a `settlement` claiming money on file → `LedgerBasisChangedError(0, 0)`
+   * - money on file and the row is `out` → `LedgerNotEmptyError` (return is the way out)
+   * - money on file, `booked`: `settlement` must be present and its expected amounts equal the
+   *   ledger (else `LedgerBasisChangedError` with what IS on file); then its refunds are written
+   *   in the SAME transaction as the status flip.
+   *
+   * Every throw writes nothing.
    */
-  saveCancelled(entity: RentalEntity): Promise<void>;
+  saveCancelled(entity: RentalEntity, settlement: CancelSettlement | null): Promise<void>;
+}
+
+/** What a cancel of a rental with money on file claims and pays back. */
+export interface CancelSettlement {
+  expectedDepositCollected: number;
+  expectedRentalFeeCollected: number;
+  /** Rows to write; amounts > 0 only (zero = "no refund" = no row). */
+  refunds: { kind: 'deposit_refund' | 'rental_fee_refund'; amount: number; note: string | null }[];
 }
