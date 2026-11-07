@@ -717,10 +717,20 @@
       "description": "Owner ask 2026-11-07, FR-RENT-14. Create form: optional rental fee paid (pre-filled) + checkbox \"Khách đã đóng cọc\" (unticked) with an editable deposit, recorded in the SAME transaction as the rental. Today board marks bookings whose ledger has no deposit; pickup is a hard block (§6.Q3) — the pickup modal collects the deposit and records it in the same transaction as booked → out (rejected_deposit_not_collected / rejected_deposit_already_recorded). Born-out creates without a deposit only warn on the form (§6.Q5). Applies to existing rentals too (§6.Q6). Owner approved §6 Q1–Q6, Q8 (split into rentals/cancel-with-refund, shipped first) and chose to skip the prototype round.",
       "tier": "design",
       "designDoc": "docs/design/rentals/deposit-at-pickup.md",
-      "status": "in-progress",
+      "status": "pass",
       "dependencies": [
         "rentals/cancel-with-refund"
-      ]
+      ],
+      "testedAt": "2026-11-07",
+      "evidence": "2026-11-07: spec docs/design/rentals/deposit-at-pickup.md approved by owner (§6) and stamped as-built (§7); owner chose to skip the prototype round. BE: CreateRentalRequestDto.collect {deposit, rentalFee} (@Min(1)) written by RentalRepository.insertWithCollection AFTER the rental row in the same transaction; PickupRentalRequestDto.depositCollected judged in savePickedUp under the rental row lock (rejected_deposit_not_collected / rejected_deposit_already_recorded {recordedAmount}); today board depositCollected per rental (subquery). ADR 0001 §3/§4 rows added; SRS FR-RENT-14. `bash init.sh` → all runnable gates green: ledger check, contract:check, check, lint (only the pre-existing fe rental-form.tsx warning), arch (4 apps), be jest 303, fe vitest 180, be test:e2e 19 suites / 175 on real Postgres — deposit-at-pickup.e2e-spec.ts: create with collect writes deposit + rental_fee; fee only → no deposit row; 0₫ collect → 400 and no rental; concurrent creates for the same dress → one 201 + one 422 and payments only for the winner (no orphan); booking without deposit → 422 rejected_deposit_not_collected, still booked; pickup with depositCollected → out + one deposit row; deposit on file → body-less pickup 200; deposit brought while one on file → 422 with recordedAmount, nothing moves; race pickup+deposit vs collect → exactly one deposit row, loser gets its named outcome; board depositCollected is per rental (6M for a 2-dress rental, not 12M); born-out create without deposit allowed. fe vitest: create form fee pre-fill + unticked deposit + partial deposit sent, cleared fee → no collect, born-out warning; board badge 'Chưa thu cọc' / 'Đã cọc', deposit dialog pre-fill + body, no hand-out-without-deposit button, already-recorded keeps the dialog and hands out without a deposit, stale not_collected reopens the dialog. Playwright happy path updated to collect at booking; local run blocked before the changed steps (dev DB owner password is not the CI seed 'changeme') — the CI e2e job is the proof. Also in this branch: fix(fe) a980ffc — the cancel dialog no longer doubles each rejection with the global mutation toast (merged in PR #38, not yet deployed). Not deployed.",
+      "deploy": {
+        "order": [
+          "migrate",
+          "be",
+          "fe"
+        ],
+        "migration": true
+      }
     }
   ]
 }

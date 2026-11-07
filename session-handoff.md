@@ -6,6 +6,13 @@ Watch out, ≤ ~8 lines — detail belongs in the ledger evidence or the design 
 [`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md) (history only),
 prefixing its relative link targets with `../../`.
 
+## 2026-11-07 (54) — deposit at booking + deposit gate at pickup (`rentals/deposit-at-pickup` = pass)
+
+- Done: PR #38 (cancel-with-refund) merged by owner. Built FR-RENT-14: create form records rental fee (pre-filled) and deposit (unticked box) with the rental; a booking with no deposit on file cannot be handed out — the board marks it "Chưa thu cọc" and pickup opens "Thu cọc & giao váy" (deposit written with the handover, under the row lock). Also fixed the cancel dialog's double toast (merged, undeployed). Ledger 53/53.
+- Proof: `bash init.sh` all green; be e2e 175 (new deposit-at-pickup suite incl. no-orphan create race and pickup↔collect race), fe vitest 180.
+- Next: PR from `feat/deposit-at-pickup` → Codex review → owner merges; deploy **migrate → be → fe** for BOTH cancel-with-refund and deposit-at-pickup (`ledger.mjs pending`). Tell staff: existing bookings without a deposit now need one at pickup (§6.Q6).
+- Watch out: local Playwright stops at sign-in on the dev DB (owner password ≠ CI seed `changeme`); CI `e2e` is the proof. Every mutation that renders its own rejections needs `onError: () => undefined` (app/providers.tsx toasts globally).
+
 ## 2026-11-07 (53) — cancel a prepaid booking with refunds (`rentals/cancel-with-refund` = pass)
 
 - Done: owner asked for "thu cọc khi tạo đơn + nhắc cọc khi giao váy"; two design-tier specs written and owner-approved — [`deposit-at-pickup`](docs/design/rentals/deposit-at-pickup.md) (rules approved, prototype pending) and its prerequisite [`cancel-with-refund`](docs/design/rentals/cancel-with-refund.md) (as-built). Built cancel-with-refund: migration 1755800000000 (`rental_fee_refund`), refunds in the cancel transaction, 4 new outcomes, ONE kernel cancel dialog + `api/use-cancel-rental.ts` on board/list/detail. Ledger 52/52.
@@ -33,10 +40,3 @@ prefixing its relative link targets with `../../`.
 - Proof: `ledger.mjs check` OK (0 strict); `pending` → 9 owner decisions + 2 undeployed with order; `sha256sum -c` clean, and a deliberate edit to a vendored file → detected; relative links in docs/spec all resolve.
 - Next: bangnk — (1) turn on branch protection for master: PR required + CI jobs required, no force-push; (2) answer `pending` (Q1–Q9 of update-rental §6); (3) after knowledge-system#1 merges, re-sync from the merge commit if it differs from `518495c`. Deploy PR #30 → #31 still per `pending` order.
 - Watch out: existing `Deviation #N` lines in `apps/*/AGENTS.md` have no upstream reference yet (new rule in upstream prompts/README §Versioning) — record them upstream at the next re-sync. Re-sync must run in a Linux shell (GNU sed); WSL login shell is fish → `wsl.exe --exec bash <script>`.
-
-## 2026-10-27 (49) — base dress code on public listings (`catalog:public-base-code` = pass)
-
-- Done: owner ask "hiện thị thêm mã váy gốc" → `codes: string[]` on the public Summary/Detail DTO (distinct bases of active dresses, `DressCode.baseOf`), contract regenerated, web card "Mã VAY1" + detail "Mã váy: VAY1". R6 amended in `docs/design/catalog/public-listing.md` §Amendment 2026-10-27. Ledger 50/50.
-- Proof: be jest 290, web vitest green, be e2e 150 on real Postgres (public-catalog 8/8), web build green.
-- Next: PR → merge; deploy BE FIRST, then web (the new web reads `dress.codes`; against the old BE it is undefined → card/detail throw on `.length`; the old web just ignores the new field). PR #30 (accessory, needs migrate) is still undeployed too.
-- Watch out: a code like `VD_012` counts as a copy of `VD` — `baseOf` strips any trailing `_<digits>`; that is existing FR-CAT-08 behaviour, not new.
