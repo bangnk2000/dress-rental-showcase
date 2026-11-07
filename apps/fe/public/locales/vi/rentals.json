@@ -125,7 +125,8 @@
       "expectedFeeHint": "Tạm tính {{subtotal}} trừ giảm giá {{discount}}. Tiền cọc tính riêng.",
       "createdAt": "Tạo lúc",
       "notes": "Ghi chú",
-      "noNotes": "Không có ghi chú."
+      "noNotes": "Không có ghi chú.",
+      "cancelReason": "Lý do huỷ"
     },
     "dresses": {
       "title": "Váy trong lượt thuê",

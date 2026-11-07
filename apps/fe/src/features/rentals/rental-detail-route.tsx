@@ -150,6 +150,12 @@ function RentalDetail({ rentalId }: { rentalId: string }) {
             {rental.notes ?? <span className="text-muted-foreground">{t('detail.info.noNotes')}</span>}
           </p>
         </section>
+        {rental.cancelReason ? (
+          <section className="space-y-2">
+            <h2 className="text-base font-semibold">{t('detail.info.cancelReason')}</h2>
+            <p className="text-sm whitespace-pre-line">{rental.cancelReason}</p>
+          </section>
+        ) : null}
         <Button asChild variant="link" className="px-0">
           <Link to="/rentals">{t('detail.actions.back')}</Link>
         </Button>

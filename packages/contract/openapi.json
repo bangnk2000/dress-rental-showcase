@@ -5248,6 +5248,12 @@
             "nullable": true,
             "example": "Khách quen"
           },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true,
+            "example": "Khách huỷ sát ngày — giữ tiền thuê",
+            "description": "Why the rental was cancelled (rentals/cancel-with-refund) — required when money was kept; null otherwise"
+          },
           "discountAmount": {
             "type": "number",
             "example": 100000,
@@ -5278,6 +5284,7 @@
           "startDate",
           "endDate",
           "notes",
+          "cancelReason",
           "discountAmount",
           "createdAt",
           "updatedAt",

@@ -2,6 +2,7 @@ import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateID } from '../../../../libs/ddd/entity.base';
+import { RentalStateChangedError } from '../../application/ports/rental-state-changed.error';
 import {
   RENTAL_REPOSITORY,
   RentalRepositoryPort,
@@ -33,7 +34,15 @@ export class PickupRentalService
     const pickedUp = rental.markPickedUp(new Date());
     if (pickedUp.isErr()) return Err(pickedUp.unwrapErr());
 
-    await this.rentalRepo.save(rental);
+    try {
+      await this.rentalRepo.savePickedUp(rental);
+    } catch (error) {
+      if (error instanceof RentalStateChangedError) {
+        // Cancelled between load and lock: the same rule the aggregate's pre-check enforces.
+        return Err(new RentalPickupNotAllowedError(error.currentStatus, error));
+      }
+      throw error;
+    }
     return Ok(rental.id);
   }
 }

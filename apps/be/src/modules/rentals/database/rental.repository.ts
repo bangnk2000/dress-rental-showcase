@@ -89,10 +89,10 @@ export class RentalRepository
     expectedDepositCollected: number | null,
   ): Promise<void> {
     await this.writeAggregate(entity, true, async (conn, record) => {
+      // The status flip is only legal from `out`, re-read under the lock: a cancel committed
+      // since the load must not be overwritten by a stale "returned" (PR #38 review C1).
+      await this.lockExpectingStatus(conn, record.rental.id, 'out');
       if (expectedDepositCollected === null) return;
-      await conn.query(sql.unsafe`
-        SELECT id FROM rentals WHERE id = ${record.rental.id} FOR UPDATE
-      `);
       const { collected } = await conn.one(sql.type(collectedDepositSchema)`
         SELECT coalesce(sum(amount), 0)::int AS collected
         FROM payments WHERE rental_id = ${record.rental.id} AND kind = 'deposit'
@@ -101,6 +101,30 @@ export class RentalRepository
         throw new DepositBasisChangedError(collected);
       }
     });
+  }
+
+  /**
+   * Pickup (booked → out) re-reads the status under the rental's row lock — the lock cancel,
+   * return, edit and record-collection take — so a cancel that committed after the service loaded
+   * the rental is never overwritten: without it a stale pickup reopens a cancelled, refunded
+   * rental as `out` with blocking items, and its return could refund the deposit twice.
+   */
+  async savePickedUp(entity: RentalEntity): Promise<void> {
+    await this.writeAggregate(entity, true, async (conn, record) => {
+      await this.lockExpectingStatus(conn, record.rental.id, 'booked');
+    });
+  }
+
+  /** `SELECT … FOR UPDATE` the rental row; anything but `expected` → `RentalStateChangedError`. */
+  private async lockExpectingStatus(
+    conn: DatabaseTransactionConnection,
+    rentalId: string,
+    expected: 'booked' | 'out',
+  ): Promise<void> {
+    const { status } = await conn.one(sql.type(rentalStatusSchema)`
+      SELECT status FROM rentals WHERE id = ${rentalId} FOR UPDATE
+    `);
+    if (status !== expected) throw new RentalStateChangedError(status);
   }
 
   /**
@@ -176,7 +200,7 @@ export class RentalRepository
     // hand back parsed range objects that daterange.ts does not speak.
     const rental = await this.pool.maybeOne(sql.type(rentalRowSchema)`
       SELECT id, customer_name, customer_phone, period::text AS period,
-             status, notes, discount_amount, created_at, updated_at
+             status, notes, discount_amount, cancel_reason, created_at, updated_at
       FROM rentals WHERE id = ${id}
     `);
     if (!rental) return null;
@@ -260,9 +284,9 @@ export class RentalRepository
   ): Promise<void> {
     const insert = sql.fragment`
       INSERT INTO rentals (id, customer_name, customer_phone, period, status, notes, discount_amount,
-                           created_at, updated_at)
+                           cancel_reason, created_at, updated_at)
       VALUES (${row.id}, ${row.customer_name}, ${row.customer_phone}, ${row.period}::daterange,
-              ${row.status}, ${row.notes}, ${row.discount_amount},
+              ${row.status}, ${row.notes}, ${row.discount_amount}, ${row.cancel_reason},
               ${row.created_at as string}, ${row.updated_at as string})
     `;
     await conn.query(
@@ -270,7 +294,8 @@ export class RentalRepository
         ? sql.unsafe`${insert} ON CONFLICT (id) DO UPDATE SET
             customer_name = EXCLUDED.customer_name, customer_phone = EXCLUDED.customer_phone,
             period = EXCLUDED.period, status = EXCLUDED.status, notes = EXCLUDED.notes,
-            discount_amount = EXCLUDED.discount_amount, updated_at = EXCLUDED.updated_at`
+            discount_amount = EXCLUDED.discount_amount, cancel_reason = EXCLUDED.cancel_reason,
+            updated_at = EXCLUDED.updated_at`
         : sql.unsafe`${insert}`,
     );
   }

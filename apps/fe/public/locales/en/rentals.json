@@ -125,7 +125,8 @@
       "expectedFeeHint": "Subtotal {{subtotal}} minus discount {{discount}}. The deposit is separate.",
       "createdAt": "Created",
       "notes": "Notes",
-      "noNotes": "No notes."
+      "noNotes": "No notes.",
+      "cancelReason": "Cancellation reason"
     },
     "dresses": {
       "title": "Dresses in this rental",

@@ -36,6 +36,13 @@ export interface RentalRepositoryPort extends RepositoryPort<RentalEntity> {
   saveReturned(entity: RentalEntity, expectedDepositCollected: number | null): Promise<void>;
 
   /**
+   * `save` for a PICKUP, plus a re-read of the status under the rental's row lock: anything but
+   * `booked` (a cancel committed since the load) → `RentalStateChangedError`, nothing written.
+   * `saveReturned` does the same for `out`.
+   */
+  savePickedUp(entity: RentalEntity): Promise<void>;
+
+  /**
    * `save` for a CANCEL (rentals/cancel-with-refund), with the ledger re-read under the rental's
    * row lock — the lock record-collection takes too — so a collection and this cancel take turns:
    *

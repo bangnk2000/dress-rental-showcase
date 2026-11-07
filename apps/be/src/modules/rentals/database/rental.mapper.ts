@@ -39,6 +39,7 @@ export class RentalMapper implements Mapper<RentalEntity, RentalModel, RentalSna
         status: record.rental.status,
         notes: record.rental.notes,
         discount: Money.create(record.rental.discount_amount),
+        cancelReason: record.rental.cancel_reason,
         items: record.items.map((item) => {
           const blocked = fromDateRangeLiteral(item.blocked_period);
           return new RentalItemEntity({
@@ -68,6 +69,7 @@ export class RentalMapper implements Mapper<RentalEntity, RentalModel, RentalSna
         status: props.status,
         notes: props.notes,
         discount_amount: props.discount.amount,
+        cancel_reason: props.cancelReason ?? null,
         created_at: props.createdAt.toISOString(),
         updated_at: props.updatedAt.toISOString(),
       },

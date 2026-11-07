@@ -56,7 +56,9 @@ export class CancelRentalService
     const rental = await this.rentalRepo.findOneById(command.rentalId);
     if (!rental) return Err(new RentalNotFoundError());
 
-    const cancelled = rental.cancel(new Date());
+    // The reason lives on the rental, not only on refund rows: when everything is kept there is
+    // no row to carry it (PR #38 review C2).
+    const cancelled = rental.cancel(new Date(), command.note?.trim() || null);
     if (cancelled.isErr()) return Err(cancelled.unwrapErr());
 
     const settlement = this.settlementFrom(command);

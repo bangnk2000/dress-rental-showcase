@@ -16,6 +16,12 @@ export interface RentalProps {
    */
   discount: Money;
   items: RentalItemEntity[];
+  /**
+   * rentals/cancel-with-refund: why the rental was cancelled — mandatory when money was kept, and
+   * stored on the RENTAL so it survives a cancel that writes no refund row (everything kept).
+   * Absent/null on every rental that was never cancelled with a reason.
+   */
+  cancelReason?: string | null;
 }
 
 export interface UpdateRentalItemProps {

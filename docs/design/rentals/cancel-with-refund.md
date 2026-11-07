@@ -160,6 +160,8 @@ Khớp spec, trừ các điểm sau (đã phản ánh ở trên và trong ADR 00
 | Status đổi giữa lúc tải và lúc khoá | `returned`/`cancelled` → `rejected_cancel_not_allowed` (qua `RentalStateChangedError`); `booked → out` mà có tiền → `rejected_cancel_has_payments` | Status đọc lại dưới row lock, không tin aggregate đã tải |
 | FE | MỘT dialog kernel `components/rentals/cancel-rental-dialog.tsx` + hook `api/use-cancel-rental.ts` (kernel không được import `@/api`), thay 3 bản mutation huỷ; key `rentals:cancel.*` / `today:cancel.*` → `common:cancelRental.*` | Ba feature dùng chung mà không import chéo |
 | Migration down | Từ chối khi đã có dòng `rental_fee_refund` | Không xoá lịch sử tiền để vừa schema cũ |
+| Lý do huỷ (Codex PR #38 C2) | Cột `rentals.cancel_reason` (migration `1755800000001`), set bởi `RentalEntity.cancel(now, reason)`, trả ra ở `GET /rentals/:id` (`cancelReason`) + hiện trên chi tiết đơn | Giữ lại TOÀN BỘ tiền thì không có dòng hoàn nào mang ghi chú — lý do bắt buộc (§6.Q3) sẽ mất |
+| Pickup/return đọc lại status dưới row lock (Codex PR #38 C1) | `savePickedUp` (phải `booked`) và `saveReturned` (phải `out`) → `RentalStateChangedError` → `rejected_pickup_not_allowed` / `rejected_return_not_allowed` | Pickup cũ ghi bằng `save()` không khoá: một pickup tải đơn trước khi huỷ có thể mở lại đơn đã huỷ + đã hoàn tiền thành `out`, rồi return hoàn cọc lần nữa |
 
 Bằng chứng: ledger `rentals/cancel-with-refund` — be jest, be e2e `test/cancel-with-refund.e2e-spec.ts`
 (race collect ↔ cancel, raw SQL CHECK, migration down/up), fe vitest 6 ca mới (gồm tổng "Đã hoàn khách" của dialog Tiền).

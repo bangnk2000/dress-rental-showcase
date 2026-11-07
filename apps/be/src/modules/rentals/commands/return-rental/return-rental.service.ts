@@ -10,6 +10,7 @@ import {
   SettlementPayment,
 } from '../../application/ports/payment-recorder.port';
 import { DepositBasisChangedError } from '../../application/ports/deposit-basis-changed.error';
+import { RentalStateChangedError } from '../../application/ports/rental-state-changed.error';
 import {
   RENTAL_REPOSITORY,
   RentalRepositoryPort,
@@ -88,6 +89,10 @@ export class ReturnRentalService
     } catch (error) {
       if (error instanceof DepositBasisChangedError) {
         return Err(new ReturnDepositBasisChangedError(error.collectedDeposit, error));
+      }
+      if (error instanceof RentalStateChangedError) {
+        // No longer `out` under the lock (e.g. cancelled meanwhile): same rule as the pre-check.
+        return Err(new RentalReturnNotAllowedError(error.currentStatus, error));
       }
       throw error;
     }

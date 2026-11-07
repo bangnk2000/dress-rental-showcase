@@ -8,6 +8,7 @@ export const rentalRowSchema = z.object({
   status: z.enum(['booked', 'out', 'returned', 'cancelled']),
   notes: z.string().nullable(),
   discount_amount: z.number().int(),
+  cancel_reason: z.string().nullable(),
   created_at: z.union([z.number(), z.string(), z.date()]),
   updated_at: z.union([z.number(), z.string(), z.date()]),
 });

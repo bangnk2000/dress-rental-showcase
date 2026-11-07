@@ -5,6 +5,8 @@ type Migration = { up: Step; down: Step };
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires -- node-pg-migrate files are CommonJS JS
 const refundKind = require('../migrations/1755800000000_payments_rental_fee_refund.js') as Migration;
+// eslint-disable-next-line @typescript-eslint/no-var-requires -- node-pg-migrate files are CommonJS JS
+const cancelReasonMigration = require('../migrations/1755800000001_rentals_cancel_reason.js') as Migration;
 
 function shopToday(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -243,6 +245,104 @@ describe('cancel with refund (real Postgres)', () => {
         collectedRentalFee: 1_500_000,
       });
       expect(await statusOf(rentalId)).toBe('booked');
+    }
+  });
+
+  it('C2: keeping EVERYTHING writes no refund row, yet the reason is stored on the rental', async () => {
+    const { rentalId } = await prepaidBooking('E2E-CR11');
+
+    const cancel = await context.request(`/api/v1/rentals/${rentalId}/cancel`, {
+      method: 'POST',
+      body: { ...BASIS, depositRefund: 0, rentalFeeRefund: 0, note: 'Khách bỏ cọc' },
+      token: context.token,
+    });
+
+    expect(cancel.status).toBe(200);
+    expect(await refundsOf(rentalId)).toEqual([]);
+    const detail = await context.request(`/api/v1/rentals/${rentalId}`, { token: context.token });
+    expect(detail.body).toMatchObject({ status: 'cancelled', cancelReason: 'Khách bỏ cọc' });
+  });
+
+  it('migration 1755800000001: down refuses while a cancel reason is on file', async () => {
+    const { rentalId } = await prepaidBooking('E2E-CR14');
+    await context.db.query(`UPDATE rentals SET cancel_reason = 'x' WHERE id = $1`, [rentalId]);
+    const statements: string[] = [];
+    cancelReasonMigration.down({ sql: (sql) => statements.push(sql) });
+    await context.db.query('BEGIN');
+    try {
+      await expect(context.db.query(statements.join('\n'))).rejects.toThrow(/cannot roll back/);
+    } finally {
+      await context.db.query('ROLLBACK');
+    }
+  });
+
+  it('C1 race: pickup and a refund-cancel on the same booking — one wins, never both', async () => {
+    const { rentalId } = await prepaidBooking('E2E-CR12');
+
+    const [pickup, cancel] = await Promise.all([
+      context.request(`/api/v1/rentals/${rentalId}/pickup`, {
+        method: 'POST',
+        token: context.token,
+      }),
+      context.request(`/api/v1/rentals/${rentalId}/cancel`, {
+        method: 'POST',
+        body: { ...BASIS, depositRefund: 3_000_000, rentalFeeRefund: 1_500_000 },
+        token: context.token,
+      }),
+    ]);
+
+    const blocking = await context.db.query<{ blocking: boolean }>(
+      'SELECT blocking FROM rental_items WHERE rental_id = $1',
+      [rentalId],
+    );
+    if (cancel.status === 200) {
+      // The stale pickup must not reopen a cancelled, refunded rental.
+      expect(pickup.status).toBe(422);
+      expect(pickup.body).toEqual({
+        status: 'rejected_pickup_not_allowed',
+        currentStatus: 'cancelled',
+      });
+      expect(await statusOf(rentalId)).toBe('cancelled');
+      expect(blocking.rows.every((row) => !row.blocking)).toBe(true);
+    } else {
+      expect(pickup.status).toBe(200);
+      expect(cancel.body).toEqual({ status: 'rejected_cancel_has_payments' });
+      expect(await statusOf(rentalId)).toBe('out');
+      expect(await refundsOf(rentalId)).toEqual([]);
+    }
+  });
+
+  it('C1 race: return and cancel of the same OUT rental — the loser is refused by name', async () => {
+    const today = shopToday();
+    const dressId = await context.db.seedDress('E2E-CR13');
+    const created = await context.request('/api/v1/rentals', {
+      method: 'POST',
+      body: rentalBody([dressId], today, shiftDays(today, 1)),
+      token: context.token,
+    });
+    const rentalId = (created.body as { id: string }).id;
+    expect(await statusOf(rentalId)).toBe('out'); // born out, empty ledger: cancellable
+
+    const [settle, cancel] = await Promise.all([
+      context.request(`/api/v1/rentals/${rentalId}/return`, {
+        method: 'POST',
+        body: { lateFee: 0, damageFee: 0 },
+        token: context.token,
+      }),
+      context.request(`/api/v1/rentals/${rentalId}/cancel`, {
+        method: 'POST',
+        token: context.token,
+      }),
+    ]);
+
+    expect([settle.status, cancel.status].sort()).toEqual([200, 422]);
+    const final = await statusOf(rentalId);
+    if (cancel.status === 200) {
+      expect(settle.body).toEqual({ status: 'rejected_return_not_allowed', currentStatus: 'cancelled' });
+      expect(final).toBe('cancelled');
+    } else {
+      expect(cancel.body).toEqual({ status: 'rejected_cancel_not_allowed', currentStatus: 'returned' });
+      expect(final).toBe('returned');
     }
   });
 
