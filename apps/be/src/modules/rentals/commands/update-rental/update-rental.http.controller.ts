@@ -30,12 +30,12 @@ export class UpdateRentalHttpController {
   constructor(private readonly commandBus: CommandBus) {}
 
   @Patch(':id')
-  // Owner-only (FR-RENT-13): the WHOLE endpoint belongs to the owner, so the denial is the
-  // guard's 403 envelope, not a named outcome (spec §6.Q8, ADR 0001 §2).
+  // Any staff (FR-RENT-13, owner decision 2026-11-07 — owner-only before); the policy stays so a
+  // future narrowing is one line in rentals.policies.ts.
   @RequirePermission('rental:update')
   @ApiOperation({
     summary:
-      'Edit an OPEN rental (owner-only, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list',
+      'Edit an OPEN rental (any staff, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list',
   })
   @ApiOkResponse({ type: IdResponse })
   @ApiResponse({
@@ -43,11 +43,6 @@ export class UpdateRentalHttpController {
     type: UpdateRentalOutcomeDto,
     description:
       'Business rejection: rejected_rental_not_found | rejected_update_not_allowed (carries currentStatus — returned/cancelled, pre-check or under the row lock) | rejected_dress_not_found | rejected_dress_retired (an ADDED dress) | rejected_dress_unavailable (new period incl. cleaning buffer overlaps another rental, pre-check AND race) — the dress codes carry dressIds',
-  })
-  @ApiResponse({
-    status: 403,
-    type: ApiErrorResponseDto,
-    description: 'Not the owner — GENERIC.FORBIDDEN envelope from the policy guard',
   })
   @ApiResponse({
     status: 400,

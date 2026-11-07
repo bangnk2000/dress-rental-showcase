@@ -33,7 +33,7 @@ function shiftDays(isoDate: string, days: number): string {
 /**
  * FR-RENT-12/13 proofs (docs/design/rentals/update-rental.md): the owner's edit re-blocks every
  * item, BR-1 holds across the edit (pre-check, race and raw SQL), the item list reconciles by
- * dress, a closed rental is immutable, staff is refused by the guard, and the detail read returns
+ * dress, a closed rental is immutable, staff may edit too (owner decision 2026-11-07), and the detail read returns
  * what the edit wrote. CLEANING_BUFFER_DAYS=2 in this harness.
  */
 describe('rental update + detail (real Postgres)', () => {
@@ -289,19 +289,23 @@ describe('rental update + detail (real Postgres)', () => {
     expect(row.rows[0]!.status).toBe('booked'); // create would have been born out; an edit is not a handover
   });
 
-  it('AC5: staff is refused by the policy guard with the 403 envelope and nothing changes', async () => {
+  it('AC5 (amended 2026-11-07): staff passes the policy guard and the edit is written', async () => {
     const dressId = await context.db.seedDress('UPD-015');
     const rentalId = await createRental([dressId], '2027-09-10', '2027-09-12');
 
-    const refused = await patch(rentalId, { customerName: 'Staff sửa' }, context.staffToken);
-    expect(refused.status).toBe(403);
-    expect(refused.body).toMatchObject({ error: { code: 'GENERIC.FORBIDDEN' } });
+    const edited = await patch(
+      rentalId,
+      { customerName: 'Staff sửa', discountAmount: 100_000 },
+      context.staffToken,
+    );
+    expect(edited.status).toBe(200);
 
-    const row = await context.db.query<{ customer_name: string }>(
-      'SELECT customer_name FROM rentals WHERE id = $1',
+    const row = await context.db.query<{ customer_name: string; discount_amount: string }>(
+      'SELECT customer_name, discount_amount FROM rentals WHERE id = $1',
       [rentalId],
     );
-    expect(row.rows[0]!.customer_name).toBe('Nguyễn Thị Hoa');
+    expect(row.rows[0]!.customer_name).toBe('Staff sửa');
+    expect(Number(row.rows[0]!.discount_amount)).toBe(100_000);
   });
 
   it('AC4: a discount above the NEW item total is a 400 envelope; notes null clears, omitted keeps', async () => {

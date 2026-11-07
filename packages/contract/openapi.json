@@ -2015,16 +2015,6 @@
               }
             }
           },
-          "403": {
-            "description": "Not the owner — GENERIC.FORBIDDEN envelope from the policy guard",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponseDto"
-                }
-              }
-            }
-          },
           "422": {
             "description": "Business rejection: rejected_rental_not_found | rejected_update_not_allowed (carries currentStatus — returned/cancelled, pre-check or under the row lock) | rejected_dress_not_found | rejected_dress_retired (an ADDED dress) | rejected_dress_unavailable (new period incl. cleaning buffer overlaps another rental, pre-check AND race) — the dress codes carry dressIds",
             "content": {
@@ -2041,7 +2031,7 @@
             "bearer": []
           }
         ],
-        "summary": "Edit an OPEN rental (owner-only, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list",
+        "summary": "Edit an OPEN rental (any staff, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list",
         "tags": [
           "rentals"
         ]

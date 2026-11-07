@@ -143,7 +143,7 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   thoả thuận và ngày giữ váy tới (kể cả buffer), giảm giá, tiền thuê dự kiến, **ghi chú** (lần đầu
   hiển thị), trạng thái, sổ tiền; hành động Tiền / Huỷ (đơn mở) / Sửa đơn (owner). Tên khách trên
   danh sách là link tới chi tiết.
-- **FR-RENT-13** Sửa đơn (`PATCH /rentals/:id`, **owner-only** — policy `rental:update`): viết lại
+- **FR-RENT-13** Sửa đơn (`PATCH /rentals/:id`, policy `rental:update` — **mọi nhân viên** từ 2026-11-07, trước đó owner-only): viết lại
   nội dung của đơn còn MỞ (`booked|out`): khách, ngày, danh sách váy (thay thế — váy giữ lại giữ
   dòng + giá thoả thuận, váy thêm mới lấy giá chuẩn, váy bỏ bị XOÁ dòng), giá từng váy, giảm giá,
   ghi chú. KHÔNG đổi trạng thái (không auto-`out` như khi tạo). Sau khi sửa, mọi váy block = kỳ mới

@@ -26,7 +26,7 @@ Aggregate trải **2 bảng** (`rentals` + `rental_items`) — repository overri
 | booked | `markPickedUp(now)` | out | FR-RENT-04. **FR-RENT-14 (2026-11-07):** chỉ khi sổ ĐÃ có cọc, hoặc lệnh giao mang `depositCollected` (ghi cùng transaction) — `savePickedUp` đọc lại status + sổ cọc dưới row lock |
 | out | `markReturned(now)` | returned | **CHỈ từ out** (FR-RENT-10 bỏ lối tắt booked→returned); items TIẾP TỤC block hết buffer = "đang vệ sinh" (BR-5). `saveReturned` đọc lại status dưới row lock (2026-11-07) |
 | booked, out | `cancel(now, reason)` | cancelled | `item.unblock(now)` từng item → giải phóng lịch, giữ history (FR-RENT-06). Đơn `out` chỉ huỷ được khi **sổ tiền TRỐNG**; đơn `booked` có tiền huỷ **kèm dòng hoàn** (`rentals/cancel-with-refund`, 2026-11-07) — tất cả kiểm dưới row lock trong `saveCancelled`, race với record-collection lấy cùng lock nên take turns; `reason` lưu ở `rentals.cancel_reason` |
-| booked, out | `update(changes, now, buffer)` | *(không đổi)* | **FR-RENT-13** (owner-only): viết lại NỘI DUNG — khách, kỳ thuê, item (reconcile theo id: giữ/thêm/bỏ — bỏ = XOÁ dòng), giá item, giảm giá, ghi chú; mọi item `reblock` = kỳ mới + buffer HIỆN HÀNH; `validate()` chạy lại (giảm giá ≤ Σ mới). KHÔNG đổi status. `saveUpdated` đọc lại status dưới row lock → `RentalStateChangedError` nếu đơn vừa bị đóng |
+| booked, out | `update(changes, now, buffer)` | *(không đổi)* | **FR-RENT-13** (mọi nhân viên từ 2026-11-07): viết lại NỘI DUNG — khách, kỳ thuê, item (reconcile theo id: giữ/thêm/bỏ — bỏ = XOÁ dòng), giá item, giảm giá, ghi chú; mọi item `reblock` = kỳ mới + buffer HIỆN HÀNH; `validate()` chạy lại (giảm giá ≤ Σ mới). KHÔNG đổi status. `saveUpdated` đọc lại status dưới row lock → `RentalStateChangedError` nếu đơn vừa bị đóng |
 
 Mọi transition khác → `Err(...NotAllowedError)` → controller render outcome
 `rejected_{pickup,return,cancel,update}_not_allowed` (422) kèm `currentStatus`; đơn `out` có tiền
@@ -78,7 +78,7 @@ EXCLUDE đóng; hai staff cùng thao tác một đơn là kịch bản chấp nh
 
 | Mục | Chốt |
 | --- | --- |
-| Quyền | `PATCH /rentals/:id` = `rental:update`, policy **owner-only** (quyền ghi owner-only đầu tiên của rentals); staff → 403 envelope (guard). `GET /rentals/:id` = read, mọi nhân viên |
+| Quyền | `PATCH /rentals/:id` = `rental:update`, policy **mọi nhân viên** từ 2026-11-07 (owner-only 2026-09-18 → 2026-11-07 — [update-rental §8](rentals/update-rental.md)). `GET /rentals/:id` = read, mọi nhân viên |
 | Trạng thái | Chỉ `booked`/`out`; update KHÔNG đổi status (không auto-`out` như create — §6.Q3 của spec) |
 | Item | Danh tính = váy: giữ lại → cùng dòng + giá thoả thuận (trừ khi gửi `price`); thêm mới → dòng mới + giá chuẩn (trừ khi gửi `price`); bỏ → **XOÁ dòng** (`writeAggregate` xoá các id không còn trong aggregate ở mọi đường upsert — các đường cũ không bớt item nên no-op). Váy giữ lại đã retired KHÔNG chặn; váy thêm mới retired → `rejected_dress_retired` |
 | Lịch block | Sau sửa, MỌI item = kỳ mới + `CLEANING_BUFFER_DAYS` hiện hành (kể cả khi chỉ sửa tên) |

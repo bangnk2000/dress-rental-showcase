@@ -3,7 +3,14 @@
 Older `session-handoff.md` entries, moved here VERBATIM (newest first) so the resume path stays
 small — only relative Markdown link targets gain a `../../` prefix, since this file sits two
 directories below the repo root. History only — never read on resume; grep it by session number,
-e.g. `## 2026-10-30 (50) — spec re-sync 2026.10.30: owner control plane + ledger tool (docs/harness only)
+e.g. `## 2026-10-30 (51) — production deploy as a GitHub Actions workflow (`infra/deploy-actions` = in-progress)
+
+- Done: RUNBOOK §7 ported into `infra/deploy/*.sh` + manual `.github/workflows/deploy.yml` (plan from the diff against `.deployed`, proven backup before a migration, BE built on the VPS, fe/web on the runner, strict verify, `.deployed` written last). WSL `~/deploy-dress/tencent` stays the fallback + one-off work. See `infra/deploy/README.md`.
+- Proof: plan.sh 11 fake-ssh cases (ledger evidence), shellcheck + actionlint clean. No real run yet.
+- Next: bangnk — merge; add repo secrets DEPLOY_HOST / DEPLOY_SSH_KEY / DEPLOY_KNOWN_HOSTS + the key's public half on the VPS; check `/opt/dress-rental/.deployed`; first dispatch attended, evening, `only=all backup=always` (ships PR #30 migrate→be and #31 be→web). Green → entry pass, `deploy.deployed` on both, Production bullet.
+- Watch out: this entry holds the one in-progress slot until that first run. Copies of `build-remote.sh`/`backup-remote.sh` now live in two places — keep in step or retire the WSL ones.
+
+## 2026-10-30 (50) — spec re-sync 2026.10.30: owner control plane + ledger tool (docs/harness only)
 
 - Done: vendored all seven sets from knowledge-system `518495c` (git archive, PR knowledge-system#1 — NOT merged yet) + `docs/spec/SHA256SUMS` checked in CI `harness`; `scripts/ledger.mjs` → reference version (adds `pending`, `stale-status`, strict lint on `tier` entries); `ownerPending` = the 9 §6 defaults on `rentals/update-rental` (spec now `agent-default`); `deploy` on PR #30/#31 entries; SRS §7 status column dropped (2 rows were stale); CODEOWNERS + PR template. Ledger 50/50, no feature work.
 - Proof: `ledger.mjs check` OK (0 strict); `pending` → 9 owner decisions + 2 undeployed with order; `sha256sum -c` clean, and a deliberate edit to a vendored file → detected; relative links in docs/spec all resolve.

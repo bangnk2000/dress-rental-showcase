@@ -376,10 +376,6 @@
       "dependencies": [],
       "ownerPending": [
         {
-          "item": "Q1: ai xem chi tiết đơn — mặc định mọi nhân viên, chỉ nút Sửa là owner (docs/design/rentals/update-rental.md §6)",
-          "since": "2026-09-18"
-        },
-        {
           "item": "Q2: sửa được ở booked + out; returned/cancelled từ chối toàn bộ (docs/design/rentals/update-rental.md §6)",
           "since": "2026-09-18"
         },
@@ -401,10 +397,6 @@
         },
         {
           "item": "Q7: sổ đã có tiền KHÔNG chặn sửa (docs/design/rentals/update-rental.md §6)",
-          "since": "2026-09-18"
-        },
-        {
-          "item": "Q8: owner-only là guard rental:update (403 envelope), không phải outcome có tên (docs/design/rentals/update-rental.md §6)",
           "since": "2026-09-18"
         },
         {
@@ -731,6 +723,29 @@
         ],
         "migration": false
       }
+    },
+    {
+      "id": "rentals/update-rental-by-staff",
+      "title": "Every staff member may edit an open rental (FR-RENT-13 opened beyond the owner)",
+      "tier": "standard",
+      "status": "pass",
+      "description": "Owner ask 2026-11-07: \"Mở tính năng sửa đơn cho nhân viên\"; scope asked back and answered \"Sửa tất cả như chủ\" (every field incl. discount/price). Resolves rentals/update-rental §6 Q1 + Q8 (removed from its ownerPending). rental:update policy → any authenticated staff; OpenAPI drops the 403 + owner-only summary (description only); FE shows Sửa đơn to everyone and the edit route loses its role redirect. Amendment: docs/design/rentals/update-rental.md §8.",
+      "dependencies": [
+        "rentals/update-rental"
+      ],
+      "acceptance": [
+        "AC1: staff PATCH /rentals/:id on an open rental → 200 and the edit (name + discount) is written",
+        "AC2: staff sees Sửa đơn on an open rental detail and gets the edit form (no redirect)"
+      ],
+      "evidence": "2026-11-07 on 6301f2e (rebased onto ad36b34): `bash init.sh` → all runnable gates green — ledger check, contract:check (openapi.json: 403 response + owner-only summary removed; fe/qr-admin/web clients regenerated, summary comment only), check, lint (only the pre-existing fe rental-form.tsx warning), arch, be jest 303, fe vitest 181, qr-admin/web green, fe/qr-admin/web builds. AC1: be test:e2e 19 suites / 175 on real Postgres — rental-update.e2e-spec.ts AC5 (amended) staff PATCH → 200, customer_name and discount_amount written. AC2: fe vitest rental-detail.test.tsx — staff session sees Sửa đơn linking /rentals/rental-1/edit; staff on the edit route gets the form (Lưu thay đổi + prefilled Tên khách), no redirect. Not run: Playwright, manual browser. Not deployed.",
+      "deploy": {
+        "order": [
+          "be",
+          "fe"
+        ],
+        "migration": false
+      },
+      "testedAt": "2026-11-07"
     }
   ]
 }

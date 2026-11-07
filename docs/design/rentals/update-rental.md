@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) |
-| Status | **agent-default** · as-built 2026-09-18 — spec và code cùng một session theo yêu cầu trực tiếp của chủ tiệm; **các quyết định §6 là mặc định do agent chốt**, chủ tiệm bác được từng dòng (mỗi dòng bác = một thay đổi nhỏ, có đánh dấu chỗ sửa) |
+| Status | **agent-default** · as-built 2026-09-18 · **amended 2026-11-07: chủ tiệm chốt Q1 + Q8 — mọi nhân viên sửa được đơn (§8)**; Q2–Q7, Q9 vẫn là mặc định — spec và code cùng một session theo yêu cầu trực tiếp của chủ tiệm; **các quyết định §6 là mặc định do agent chốt**, chủ tiệm bác được từng dòng (mỗi dòng bác = một thay đổi nhỏ, có đánh dấu chỗ sửa) |
 | AC source | Đề bài chủ tiệm 2026-09-18: *"thêm tính năng sửa đơn và chi tiết đơn cho tài khoản chủ cửa hàng"*. FR đề xuất: **FR-RENT-12** (chi tiết đơn) + **FR-RENT-13** (sửa đơn, owner-only) |
 | Rules approved by | agent-default — chủ tiệm yêu cầu làm ngay 2026-09-18 nhưng chưa chốt luật; 9 mặc định §6 chờ xác nhận sau khi test tay = `ownerPending` của ledger `rentals/update-rental` (`node scripts/ledger.mjs pending`) |
 | Contract approved by | Chủ tiệm (đại diện cả hai phía, cùng repo cùng commit) |
@@ -21,7 +21,7 @@
 | Term | Meaning | Notes |
 | --- | --- | --- |
 | Chi tiết đơn (`rental detail`) | Một màn hình cho MỘT đơn: khách, ngày, váy + giá thoả thuận, giảm giá, ghi chú, trạng thái, sổ tiền, và các hành động | mới — `GET /rentals/:id`; lần đầu `notes` được hiển thị |
-| Sửa đơn (`update rental`) | Chủ tiệm viết lại NỘI DUNG đơn khi đơn còn mở: khách, ngày, váy, giá từng váy, giảm giá, ghi chú. **Không** đổi trạng thái — pickup/return/cancel vẫn là chủ của status | mới — `PATCH /rentals/:id`, policy `rental:update` owner-only |
+| Sửa đơn (`update rental`) | ~~Chủ tiệm~~ Nhân viên (mọi vai trò, từ 2026-11-07 — §8) viết lại NỘI DUNG đơn khi đơn còn mở: khách, ngày, váy, giá từng váy, giảm giá, ghi chú. **Không** đổi trạng thái — pickup/return/cancel vẫn là chủ của status | mới — `PATCH /rentals/:id`, policy `rental:update` — mọi nhân viên từ 2026-11-07 (§8) |
 | Đơn MỞ (`open rental`) | `booked` hoặc `out` | đã có từ FR-PAY-02 |
 | Váy GIỮ LẠI / váy THÊM MỚI / váy BỎ | Giữ lại = có trên đơn trước và sau khi sửa (giữ nguyên dòng + giá đã thoả thuận); thêm mới = dòng mới, giá chuẩn catalog; bỏ = dòng bị XOÁ | luật retired chỉ áp cho váy thêm mới (§6.Q4) |
 | Kỳ block hiện hành | Sau mỗi lần sửa, MỌI item block = kỳ thuê mới + `CLEANING_BUFFER_DAYS` hiện hành | đơn tạo lúc buffer=2, sửa lúc buffer=1 → block theo 1 (luật tiệm đang chạy) |
@@ -31,7 +31,7 @@
 ```text
 Use case: UpdateRental (command) + GetRental (read slice) — MỘT feature vì màn hình chi tiết
   là nơi nút "Sửa đơn" sống, và form sửa đọc chi tiết để prefill
-Actor: UpdateRental — owner (policy `rental:update`, fail-closed; staff → 403 ENVELOPE
+Actor: UpdateRental — [SUPERSEDED 2026-11-07, §8: mọi nhân viên; không còn 403] owner (policy `rental:update`, fail-closed; staff → 403 ENVELOPE
   GENERIC.FORBIDDEN vì guard chặn TRƯỚC khi use case chạy — ADR 0001 §2, giống user:manage).
   GetRental — mọi nhân viên đã đăng nhập (read = auth only, như mọi read khác — §6.Q1).
 Trigger: PATCH /rentals/:id từ màn sửa · GET /rentals/:id từ màn chi tiết
@@ -50,7 +50,7 @@ Preconditions:
   - Đơn còn MỞ (booked|out)                               → rejected_update_not_allowed { currentStatus }
 
 Business flow (mỗi bước từ chối nêu outcome):
-  1. Guard rental:update (owner)                          → 403 envelope (guard, không phải outcome)
+  1. Guard rental:update (owner → mọi nhân viên từ 2026-11-07, §8; trước đó 403 envelope)
   2. Load aggregate; không có                             → rejected_rental_not_found
   3. status ∉ {booked, out}                               → rejected_update_not_allowed { currentStatus }
   4. Gộp kỳ thuê mới; ngày sai / start > end              → 400 envelope (RentalPeriod VO throw)
@@ -177,14 +177,14 @@ mang tên khách trong accessible name nếu lặp. Responsive: lưới thông t
 
 | # | Question | Mặc định | Vì sao | Nếu bác |
 | --- | --- | --- | --- | --- |
-| 1 | Ai xem được chi tiết đơn? | **Mọi nhân viên** đã đăng nhập; chỉ nút **Sửa đơn** là owner | Read = auth only là bất biến của repo; chi tiết không lộ gì ngoài list (+ ghi chú do chính staff nhập) | thêm `Navigate` theo `me.role` ở route chi tiết + policy đọc ở BE (lần đầu một read có permission) |
+| 1 | Ai xem được chi tiết đơn? | **Mọi nhân viên** đã đăng nhập; ~~chỉ nút **Sửa đơn** là owner~~ → **chủ tiệm chốt 2026-11-07: xem VÀ sửa đều là mọi nhân viên** (§8) | Read = auth only là bất biến của repo; chi tiết không lộ gì ngoài list (+ ghi chú do chính staff nhập) | thêm `Navigate` theo `me.role` ở route chi tiết + policy đọc ở BE (lần đầu một read có permission) |
 | 2 | Sửa được ở trạng thái nào? | **`booked` và `out`**; `returned`/`cancelled` từ chối toàn bộ (kể cả tên/ghi chú) | Đơn đóng đã tất toán — sửa gì cũng là sửa lịch sử | mở riêng tên/ghi chú cho đơn đóng = nhánh riêng trong `update()` |
 | 3 | Sửa ngày nhận về ≤ hôm nay có tự chuyển `out` như khi tạo? | **Không** | Sửa không phải giao váy; board vẫn mời "Giao váy" đúng quy trình | thêm `markPickedUp` sau update khi start ≤ shopToday |
 | 4 | Váy trên đơn bị retire SAU khi đặt? | **Giữ lại được**; chỉ váy THÊM MỚI bị chặn retired | Sửa số điện thoại không được thất bại vì catalog đổi | áp check retired cho mọi váy |
 | 5 | Váy bỏ khỏi đơn: xoá dòng hay giữ `blocking=false`? | **Xoá dòng** | Mọi read liệt kê item bất kể `blocking` → giữ dòng thì list vẫn hiện váy đã bỏ, và UNIQUE (rental_id, dress_id) chặn thêm lại sau này | — |
 | 6 | Sửa giá thoả thuận từng váy trên UI? | API nhận `price`; **UI chưa có ô sửa giá** (giữ deferred như form tạo) — váy giữ lại gửi lại đúng giá cũ, váy thêm mới gửi giá catalog đang hiện | Giới hạn scope; API sẵn sàng | thêm ô giá trong `DressPicker` (cả tạo lẫn sửa) |
 | 7 | Sổ đã có tiền có chặn sửa không? | **Không** | Sổ ghi thực thu; sửa chỉ đổi số gợi ý; gia hạn sau khi đã cọc là ca thường gặp | thêm guard sổ trống như cancel |
-| 8 | Owner-only là guard (403 envelope) hay outcome 403 có tên? | **Guard** `rental:update` = policy owner-only, giống `user:manage`/`dress:retire` | Không có "denial có tên" trong luật — toàn bộ endpoint là của owner | — |
+| 8 | Owner-only là guard (403 envelope) hay outcome 403 có tên? | ~~**Guard** `rental:update` = policy owner-only~~ → **hết hiệu lực 2026-11-07**: `rental:update` mở cho mọi nhân viên, không còn denial (§8) | Không có "denial có tên" trong luật — toàn bộ endpoint là của owner | — |
 | 9 | Buffer của item sau khi sửa | MỌI item block = kỳ mới + buffer **hiện hành** (kể cả khi chỉ sửa tên) | Một luật, dễ đoán; tiệm đã đổi buffer 2→1 nên đơn cũ sửa xong theo luật mới | chỉ tính lại khi ngày đổi |
 
 ## Contract check (02-contract-check.md) — chạy trên draft
@@ -223,6 +223,21 @@ Implement khớp spec; các điểm đáng ghi:
 | R2 | `update-rental.service.ts` (pre-check `excludeRentalId`, race → `DressUnavailableError`); e2e AC2 (gia hạn 422/200, race PATCH-vs-POST, raw UPDATE bị EXCLUDE chặn) |
 | R3 | service ánh xạ id/giá; entity reconcile; e2e AC3 |
 | R4 | `validate()` gọi lại cuối `update()`; unit AC4 |
-| AC5 | `rentals.policies.ts` `rental:update` owner-only; e2e 403 envelope |
+| AC5 | ~~owner-only; e2e 403 envelope~~ → từ 2026-11-07: `rentals.policies.ts` `rental:update` = mọi nhân viên; e2e AC5 staff PATCH 200 (§8) |
 | R6 | `queries/get-rental/*` (`RentalDetailDto`); e2e AC6 |
 | §3 | `rental-detail-route.tsx`, `edit-rental-route.tsx`, `rental-form.tsx`; vitest `rental-detail.test.tsx` |
+
+## 8. Amendment 2026-11-07 — mọi nhân viên sửa được đơn
+
+Chủ tiệm (bangnk), 2026-11-07: *"Mở tính năng sửa đơn cho nhân viên"*; hỏi lại phạm vi → chọn
+**"Sửa tất cả như chủ"** — nhân viên dùng đúng form sửa của chủ, kể cả giảm giá (và `price` qua API).
+
+| Thay đổi | Ở đâu |
+| --- | --- |
+| `rental:update` = `() => true` (mọi nhân viên đã đăng nhập), giữ tên policy để thu hẹp lại sau là một dòng | `apps/be/src/modules/rentals/rentals.policies.ts` |
+| Bỏ `@ApiResponse(403)` + "owner-only" khỏi summary → `pnpm contract` (chỉ mô tả, không đổi shape) | `update-rental.http.controller.ts`, `packages/contract/openapi.json`, 3 client |
+| FE: nút **Sửa đơn** hiện cho mọi nhân viên khi đơn mở; route sửa bỏ `Navigate` theo `me.role` | `rental-detail-route.tsx`, `edit-rental-route.tsx`; vitest `rental-detail.test.tsx` |
+| e2e AC5 đảo: staff PATCH → 200, ghi tên + giảm giá | `apps/be/test/rental-update.e2e-spec.ts` |
+
+Không đổi: mọi outcome, BR-1 xuyên suốt sửa đơn, row lock. Ngoài phạm vi: giữ tiền khi huỷ
+(`cancel-with-refund` §6) vẫn owner-only — đó là luật riêng.

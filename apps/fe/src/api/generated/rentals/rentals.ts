@@ -480,7 +480,7 @@ export const useReturnRentalHttpControllerSettle = <TError = ApiErrorResponseDto
       return useMutation(getReturnRentalHttpControllerSettleMutationOptions(options), queryClient);
     }
     /**
- * @summary Edit an OPEN rental (owner-only, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list
+ * @summary Edit an OPEN rental (any staff, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list
  */
 export const updateRentalHttpControllerUpdate = (
     id: string,
@@ -532,7 +532,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateRentalHttpControllerUpdateMutationError = ApiErrorResponseDto | UpdateRentalOutcomeDto
 
     /**
- * @summary Edit an OPEN rental (owner-only, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list
+ * @summary Edit an OPEN rental (any staff, FR-RENT-13): customer, dates, dresses, prices, discount, notes — partial; omitted fields are kept, items replace the list
  */
 export const useUpdateRentalHttpControllerUpdate = <TError = ApiErrorResponseDto | UpdateRentalOutcomeDto,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRentalHttpControllerUpdate>>, TError,{id: string;data: UpdateRentalRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
