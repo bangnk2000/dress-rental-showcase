@@ -261,3 +261,5 @@ Never needed on resume — add your line at the top without reading further.
   deposit dialog; cancel-dialog double-toast fix. init.sh green, be e2e 175, fe 180. Not deployed.
 - 2026-11-07 (55) — PR #38/#39 merged; #38 already live (run 42363551332, 1067bc1) → ledger
   deployed + Production bullet; #39 held by owner. Docs only.
+- 2026-11-07 (56) — rentals/update-rental-by-staff pass, 54/54: rental:update open to all staff
+  (owner: "Sửa tất cả như chủ"), update-rental Q1+Q8 resolved. init.sh green, be e2e 175, fe 181.
