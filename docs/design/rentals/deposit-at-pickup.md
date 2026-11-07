@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) — chủ của create + pickup; ghi vào sổ `payments` qua `PaymentRecorderPort` (cùng đường với return flow) |
-| Status | **draft 2026-11-07** — chờ chủ tiệm trả lời §6 (Q1–Q7). Chưa có code, chưa có ledger entry |
+| Status | **draft 2026-11-07** — chờ chủ tiệm trả lời §6 (Q1–Q8). Chưa có code, chưa có ledger entry |
 | AC source | Yêu cầu chủ tiệm 2026-11-07: *"khi tạo đơn có 1 checkbox để tick xem khách hàng đã trả cả tiền cọc hay chỉ mới trả tiền thuê; nếu chưa trả tiền cọc thì có warning ở màn giao váy và hiện thêm 1 modal confirm để nhân viên xác nhận là đã thu đủ tiền cọc khi giao váy"* |
 | FR | **FR-RENT-14 (đề xuất, §5)** — vào SRS cùng PR code, sau khi §6 được duyệt |
 | Rules approved by | — (chờ) |
@@ -98,7 +98,7 @@ cọc khác với số nhân viên này đang cầm — màn hình phải cho th
 | giao ngay (sinh `out`) | startDate ≤ hôm nay & không tick cọc | cảnh báo vàng ngay trên nút Lưu: "Đơn này giao ngay — chưa thu cọc" (Q5) |
 | accepted / rejections | như hiện tại | không đổi; sổ ghi cùng lúc nên trang chi tiết hiện ngay các dòng tiền |
 
-### Giao váy — Bảng Hôm nay (`dueOut` + overdue `booked`) và `/rentals/:id`
+### Giao váy — Bảng Hôm nay (nút Giao ở CẢ ba mục: `dueOut`, và đơn `booked` nằm ở `dueBack` / `overdue` — FR-RENT-10c giao trễ; `today-route.tsx`) và `/rentals/:id`
 
 | State | Condition | Display / action |
 | --- | --- | --- |
@@ -121,7 +121,7 @@ Q1/Q3/Q5 đổi hình dạng của form và modal.
 | Need | Source | Change |
 | --- | --- | --- |
 | Board biết đơn nào chưa cọc | `GET /rentals/today-board` | **thêm `depositCollected: number`** (Σ dòng deposit, 0 = chưa) vào `TodayBoardRentalDto` — một subquery trong projection, KHÔNG gọi payments theo từng thẻ |
-| Pre-fill cọc trong modal | Σ `depositAmount` của váy | thêm `standardDeposit: number` vào `TodayBoardRentalDto`; trang chi tiết đã có qua dresses |
+| Pre-fill cọc trong modal | Σ `depositAmount` của váy | thêm `standardDeposit: number` vào `TodayBoardRentalDto`; trang chi tiết đã có (`dresses[].depositAmount`, `get-rental.query-handler.ts`) |
 | Chi tiết đơn | `GET /rentals/:id/payments` (`summary.deposit`) | không đổi |
 | Tạo đơn | `CreateRentalRequestDto.collect` | mới |
 | Giao váy | `PickupRentalRequestDto.depositCollected` (body mới; hiện pickup không có body) | mới |
@@ -150,11 +150,21 @@ Contract: BE → `pnpm contract` → cả 3 client (web/qr-admin không dùng, c
 | 5 | Đơn tạo với ngày nhận ≤ hôm nay sinh ra ở `out` (FR-RENT-10b) — không qua màn giao. Nhắc cọc ở đâu? | **Cảnh báo ngay trên form tạo** khi không tick cọc | Đây chính là lúc giao | bắt tick/nhập cọc mới cho lưu (chặn cứng ở form) |
 | 6 | Đơn đang mở hiện có (tạo trước tính năng, sổ trống) cũng hiện "Chưa thu cọc"? | **Có** — sổ không có cọc thì đúng là chưa ghi nhận | Một luật, không đoán theo ngày tạo | ẩn cảnh báo cho đơn tạo trước ngày release |
 | 7 | Nhân viên thường hay chỉ chủ tiệm được bấm "Giao, chưa thu cọc"? | **Mọi nhân viên** (như pickup hiện tại) | Nhân viên đứng quầy | owner-only → guard mới `rental:pickup-without-deposit` |
+| 8 | **Khách huỷ đơn đã trả trước** (tiền thuê/cọc ghi lúc tạo). Hiện tại huỷ bị chặn khi sổ có tiền (`rejected_cancel_has_payments`, guard áp cho cả `booked` — `cancel-rental.service.ts`), và trả váy chỉ đi từ `out` ⇒ đơn `booked` trả trước **không có lối ra**. Tính năng này biến ca đó thành ca thường. Tiền xử lý thế nào? | **Huỷ được, kèm dòng hoàn**: dialog huỷ hỏi số hoàn cho khách (cọc hoàn đủ; tiền thuê hoàn tuỳ — giữ lại = tiền mất cọc/phí huỷ), ghi `deposit_refund` / kind hoàn tiền thuê, rồi `cancelled` | Sổ phải khớp tiền thực trong két; không có "đơn treo" | (a) không cho huỷ đơn đã trả trước — phải liên hệ chủ tiệm sửa DB; (b) huỷ không ghi hoàn — sổ nói tiệm giữ tiền mãi. Đây là use case riêng (`rentals/cancel-with-refund`), có thể tách entry |
+
+> **Sửa luật đã duyệt:** [record-collection](../payments/record-collection.md) R1 (duyệt
+> 2026-08-10) nói mỗi khoản tiền chỉ có MỘT nơi sinh ra. Spec này thêm create + pickup làm nơi sinh
+> `deposit` / `rental_fee`. Cách giữ tinh thần R1: create/pickup **không tự ghi** mà gọi đúng domain
+> code của `payments/commands/record-collection` (R2 số ≥ 1, R3 UNIQUE, requery khi race) trong cùng
+> transaction — qua một port mới phía rentals, adapter uỷ cho service payments. Không nhân bản luật
+> sang `PaymentRecorderPort` (comment "payments has no domain code yet" của port đó đã cũ). Khi
+> duyệt spec này, R1 được ghi amendment ở cả hai doc.
 
 ## Contract check (02-contract-check.md) — sẽ chạy lại sau §6
 
 | Severity | Finding | Suggested fix |
 | --- | --- | --- |
-| major | `PaymentRecorderPort` chỉ nhận kind tất toán | mở rộng port với `recordCollection(rentalId, {deposit?, rentalFee?}, tx)`; adapter dùng chung transaction của use case |
+| major | `PaymentRecorderPort` chỉ nhận kind tất toán | port mới `CollectionRecorderPort` phía rentals; adapter uỷ cho domain code record-collection, dùng chung transaction (xem amendment R1 ở §6) |
+| major | Huỷ đơn `booked` có tiền là ngõ cụt (Q8) | chốt Q8 trước khi code create+collect |
 | major | Pickup hiện không có body — thêm body tuỳ chọn phải giữ client cũ (gửi rỗng) hợp lệ | DTO toàn field optional |
 | minor | `rejected_deposit_already_recorded` xuất hiện trên endpoint thứ hai — giữ đúng payload `recordedAmount` để FE dùng chung message | dùng lại outcome DTO của payments |
