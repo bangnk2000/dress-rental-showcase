@@ -166,12 +166,14 @@ describe('pickup gate (real Postgres)', () => {
     expect(await statusOf(rentalId)).toBe('booked');
   });
 
-  it('the normal advance flow is untouched: book future → pickup on the day → return', async () => {
+  it('the normal advance flow: book future → pickup (deposit collected at the counter) → return', async () => {
     const today = shopToday();
     const rentalId = await createRental(shiftDays(today, 3), shiftDays(today, 4), 'E2E-G08');
 
+    // FR-RENT-14: a booking with no deposit on file is handed out only with the deposit.
     const pickup = await context.request(`/api/v1/rentals/${rentalId}/pickup`, {
       method: 'POST',
+      body: { depositCollected: 3_000_000 },
       token: context.token,
     });
     expect(pickup.status).toBe(200);

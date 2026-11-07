@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
+import { PickupDepositDialog } from './components/pickup-deposit-dialog';
 import { ReturnRentalDialog } from './components/return-rental-dialog';
 import { TodayBoardSection } from './components/today-board-section';
 import { localDateIso, shiftDateIso } from './lib/local-date';
@@ -37,6 +38,7 @@ export function TodayRoute() {
   const [date, setDate] = useState(() => localDateIso());
   const [returnTarget, setReturnTarget] = useState<TodayBoardRentalDto | null>(null);
   const [cancelTarget, setCancelTarget] = useState<TodayBoardRentalDto | null>(null);
+  const [depositTarget, setDepositTarget] = useState<TodayBoardRentalDto | null>(null);
   // A new date suspends the board query. Inside a transition React keeps the current board on
   // screen (dimmed) instead of dropping the whole route to the spinner — this screen is opened
   // dozens of times a day and blanking it for every date step read as a reload.
@@ -72,8 +74,18 @@ export function TodayRoute() {
         ]);
         toast.success(t('pickupSuccess'));
       },
-      onError: async (error) => {
+      onError: async (error, variables) => {
         const mapped = mapApiError(error);
+        if (mapped.kind === 'outcome' && mapped.status === 'rejected_deposit_not_collected') {
+          // The board thought a deposit was on file; the ledger says otherwise (FR-RENT-14).
+          // Refresh and ask for the deposit right away instead of a dead-end toast.
+          await refreshBoardAndList();
+          const rental = [...board.dueOut, ...board.dueBack, ...board.overdue].find(
+            (entry) => entry.rentalId === variables.id,
+          );
+          if (rental) setDepositTarget({ ...rental, depositCollected: 0 });
+          return;
+        }
         if (mapped.kind === 'outcome') {
           toast.error(
             mapped.status === 'rejected_pickup_not_allowed'
@@ -93,6 +105,18 @@ export function TodayRoute() {
   });
 
   const cancelController = useCancelRental(cancelTarget?.rentalId ?? null);
+
+  /**
+   * FR-RENT-14 §6.Q3: a booking is handed out only with a deposit on file. With one, the tap
+   * hands out straight away as before; without, the deposit dialog collects it with the handover.
+   */
+  function startPickup(rental: TodayBoardRentalDto): void {
+    if (rental.depositCollected > 0) {
+      pickupRental.mutate({ id: rental.rentalId, data: {} });
+    } else {
+      setDepositTarget(rental);
+    }
+  }
 
   /**
    * FR-RENT-10: only an OUT rental can come back. A booked rental on due-back/overdue means the
@@ -116,7 +140,7 @@ export function TodayRoute() {
           className={TOUCH_ACTION}
           disabled={pickupRental.isPending}
           aria-label={t('actions.pickupFor', { customer: rental.customerName })}
-          onClick={() => pickupRental.mutate({ id: rental.rentalId })}
+          onClick={() => startPickup(rental)}
         >
           {t('actions.pickup')}
         </Button>
@@ -204,7 +228,7 @@ export function TodayRoute() {
                 className={TOUCH_ACTION}
                 disabled={pickupRental.isPending}
                 aria-label={t('actions.pickupFor', { customer: rental.customerName })}
-                onClick={() => pickupRental.mutate({ id: rental.rentalId })}
+                onClick={() => startPickup(rental)}
               >
                 {inFlight ? <Loader2 aria-hidden className="animate-spin" /> : null}
                 {t('actions.pickup')}
@@ -226,6 +250,7 @@ export function TodayRoute() {
         />
       </div>
       <ReturnRentalDialog rental={returnTarget} onClose={() => setReturnTarget(null)} />
+      <PickupDepositDialog rental={depositTarget} onClose={() => setDepositTarget(null)} />
       {/* The board is the natural place to close a no-show: the card lost its return action
           (FR-RENT-10). A prepaid no-show cancels with refunds (rentals/cancel-with-refund). */}
       <CancelRentalDialog

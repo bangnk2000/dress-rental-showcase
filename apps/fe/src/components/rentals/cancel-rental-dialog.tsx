@@ -87,11 +87,12 @@ export function CancelRentalDialog({ rental, controller, onClose }: CancelRental
   );
 }
 
-/** A typed amount as a number; blank or not a whole number ≥ 0 → null. */
+/** A typed amount as a number; blank or not digits-only → null. `Number('500.000')` is 500. */
 function parseAmount(raw: string): number | null {
-  if (!raw.trim()) return null;
-  const value = Number(raw);
-  return Number.isInteger(value) && value >= 0 ? value : null;
+  const trimmed = raw.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const value = Number(trimmed);
+  return Number.isSafeInteger(value) ? value : null;
 }
 
 type ErrorSlot = 'deposit' | 'rentalFee' | 'note' | 'form';

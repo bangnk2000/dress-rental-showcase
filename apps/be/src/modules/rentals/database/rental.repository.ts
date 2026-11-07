@@ -13,11 +13,16 @@ import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { AggregateID } from '../../../libs/ddd/entity.base';
 import { LOGGER_PORT, LoggerPort } from '../../../libs/ports/logger.port';
 import { DepositBasisChangedError } from '../application/ports/deposit-basis-changed.error';
+import {
+  DepositMissingError,
+  DepositOnFileError,
+} from '../application/ports/pickup-deposit.error';
 import { LedgerBasisChangedError } from '../application/ports/ledger-basis-changed.error';
 import { LedgerNotEmptyError } from '../application/ports/ledger-not-empty.error';
 import { RentalItemsOverlapError } from '../application/ports/rental-overlap.error';
 import { RentalStateChangedError } from '../application/ports/rental-state-changed.error';
 import {
+  BookingCollection,
   CancelSettlement,
   RentalRepositoryPort,
 } from '../application/ports/rental.repository.port';
@@ -72,6 +77,27 @@ export class RentalRepository
     await this.writeAggregate(entity, false);
   }
 
+  /**
+   * FR-RENT-14: a NEW rental plus the money handed over at booking, in ONE transaction — a
+   * rental that loses the overlap race leaves no orphan payment, and a failed payment write leaves
+   * no rental. The rows land AFTER the rental row (payments.rental_id is a FK). A brand-new rental
+   * has no row yet, so the partial UNIQUE indexes cannot fire; they stay the backstop.
+   */
+  async insertWithCollection(entity: RentalEntity, collection: BookingCollection): Promise<void> {
+    await this.writeAggregate(entity, false, undefined, async (conn, record) => {
+      const rows = [
+        { kind: 'deposit', amount: collection.deposit },
+        { kind: 'rental_fee', amount: collection.rentalFee },
+      ].filter((row): row is { kind: string; amount: number } => (row.amount ?? 0) > 0);
+      for (const row of rows) {
+        await conn.query(sql.unsafe`
+          INSERT INTO payments (id, rental_id, kind, amount, note)
+          VALUES (${randomUUID()}, ${record.rental.id}, ${row.kind}, ${row.amount}, ${collection.note})
+        `);
+      }
+    });
+  }
+
   override async save(entity: RentalEntity): Promise<void> {
     await this.writeAggregate(entity, true);
   }
@@ -109,9 +135,25 @@ export class RentalRepository
    * the rental is never overwritten: without it a stale pickup reopens a cancelled, refunded
    * rental as `out` with blocking items, and its return could refund the deposit twice.
    */
-  async savePickedUp(entity: RentalEntity): Promise<void> {
+  async savePickedUp(entity: RentalEntity, depositCollected: number | null): Promise<void> {
     await this.writeAggregate(entity, true, async (conn, record) => {
-      await this.lockExpectingStatus(conn, record.rental.id, 'booked');
+      const rentalId = record.rental.id;
+      await this.lockExpectingStatus(conn, rentalId, 'booked');
+      // FR-RENT-14 §6.Q3: no deposit on file = no handover. Read under the SAME lock
+      // record-collection takes, so a collection and this pickup take turns.
+      const { collected } = await conn.one(sql.type(collectedDepositSchema)`
+        SELECT coalesce(sum(amount), 0)::int AS collected
+        FROM payments WHERE rental_id = ${rentalId} AND kind = 'deposit'
+      `);
+      if (depositCollected === null) {
+        if (collected === 0) throw new DepositMissingError();
+        return;
+      }
+      if (collected > 0) throw new DepositOnFileError(collected);
+      await conn.query(sql.unsafe`
+        INSERT INTO payments (id, rental_id, kind, amount, note)
+        VALUES (${randomUUID()}, ${rentalId}, 'deposit', ${depositCollected}, NULL)
+      `);
     });
   }
 
@@ -238,6 +280,8 @@ export class RentalRepository
     upsert: boolean,
     /** Runs INSIDE the write transaction, before any row is touched. Throwing aborts the write. */
     precondition?: (conn: DatabaseTransactionConnection, record: RentalModel) => Promise<void>,
+    /** Runs INSIDE the write transaction, after the rental + item rows. Throwing aborts it all. */
+    afterWrite?: (conn: DatabaseTransactionConnection, record: RentalModel) => Promise<void>,
   ): Promise<void> {
     try {
       await this.writeInTransaction(entity, async (conn, record) => {
@@ -253,6 +297,7 @@ export class RentalRepository
         for (const item of record.items) {
           await this.writeItemRow(conn, item, upsert);
         }
+        await afterWrite?.(conn, record);
       });
     } catch (error) {
       if (error instanceof CheckExclusionConstraintViolationError) {

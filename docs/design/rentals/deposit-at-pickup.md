@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) — chủ của create + pickup; ghi vào sổ `payments` bằng domain code của record-collection (xem amendment R1 ở §6) |
-| Status | **rules approved 2026-11-07** (§6 Q1–Q6, Q8) — còn chờ: prototype §3 duyệt. Chưa có code. **Phụ thuộc:** `rentals/cancel-with-refund` (Q8) ship TRƯỚC |
+| Status | **as-built 2026-11-07** (§7) — approved 2026-11-07 (§6 Q1–Q6, Q8). Chủ tiệm **chọn bỏ vòng prototype** ("code luôn đi") — §3 state matrix là bản thiết kế UI. Phụ thuộc `rentals/cancel-with-refund` đã merge (PR #38) |
 | AC source | Yêu cầu chủ tiệm 2026-11-07: *"khi tạo đơn có 1 checkbox để tick xem khách hàng đã trả cả tiền cọc hay chỉ mới trả tiền thuê; nếu chưa trả tiền cọc thì có warning ở màn giao váy và hiện thêm 1 modal confirm để nhân viên xác nhận là đã thu đủ tiền cọc khi giao váy"* |
 | FR | **FR-RENT-14 (đề xuất, §5)** — vào SRS cùng PR code, sau khi §6 được duyệt |
 | Rules approved by | Chủ tiệm — 2026-11-07 (§6) |
@@ -87,8 +87,11 @@ cọc khác với số nhân viên này đang cầm — màn hình phải cho th
 | | `rejected_deposit_not_collected` | Giao mà sổ chưa có cọc và lệnh không kèm cọc | 422 | — | **mới** (Q3) |
 
 Ghi chú: đây là luật ở BE (không chỉ FE) — client cũ gọi pickup không body sẽ bị từ chối khi sổ
-chưa có cọc. FE và BE ship cùng một đơn vị (invariant #5), nên không có client cũ nào ngoài
-cache trình duyệt; toast lỗi chung đủ cho khoảng chuyển tiếp đó.
+chưa có cọc. FE và BE ship cùng một đơn vị (invariant #5), nhưng FE là PWA: bản cũ có thể còn trên
+máy tính bảng của tiệm tới khi bấm "Tải lại". **Sửa as-built:** bản cũ map mọi outcome lạ thành
+"Lượt thuê này không còn tồn tại" (không phải toast chung) — sai thông điệp nhưng không ghi gì. Vì
+vậy bước deploy gồm: **tải lại CMS trên mọi máy của tiệm** (chấp nhận "Đã có phiên bản mới") trước
+lượt giao váy đầu tiên. Cùng lưu ý áp cho huỷ đơn trả trước (PR #38).
 
 ## 3. UI state matrix
 
@@ -102,7 +105,10 @@ cache trình duyệt; toast lỗi chung đủ cho khoảng chuyển tiếp đó.
 | giao ngay (sinh `out`) | startDate ≤ hôm nay & không tick cọc | cảnh báo vàng ngay trên nút Lưu: "Đơn này giao ngay — chưa thu cọc" (Q5) |
 | accepted / rejections | như hiện tại | không đổi; sổ ghi cùng lúc nên trang chi tiết hiện ngay các dòng tiền |
 
-### Giao váy — Bảng Hôm nay (nút Giao ở CẢ ba mục: `dueOut`, và đơn `booked` nằm ở `dueBack` / `overdue` — FR-RENT-10c giao trễ; `today-route.tsx`) và `/rentals/:id`
+### Giao váy — Bảng Hôm nay (nút Giao ở CẢ ba mục: `dueOut`, và đơn `booked` nằm ở `dueBack` / `overdue` — FR-RENT-10c giao trễ; `today-route.tsx`)
+
+`/rentals/:id` KHÔNG có nút giao (giao và nhận về chỉ ở bảng Hôm nay — `rental-detail-route.tsx`), nên
+không thuộc phạm vi (sửa 2026-11-07 khi bắt đầu code).
 
 | State | Condition | Display / action |
 | --- | --- | --- |
@@ -117,15 +123,14 @@ cache trình duyệt; toast lỗi chung đủ cho khoảng chuyển tiếp đó.
 | pickup-not-allowed / not-found | có sẵn | hành vi hiện tại (toast + refetch) |
 | network-error | | toast + bấm lại (an toàn: lần 2 bị UNIQUE / state guard chặn) |
 
-Prototype từng hàng (`docs/design/prototypes/rentals/deposit-at-pickup/`): vòng duyệt thứ hai,
-TRƯỚC khi code.
+Prototype: chủ tiệm chọn bỏ (2026-11-07).
 
 ## 4. FE data needs
 
 | Need | Source | Change |
 | --- | --- | --- |
 | Board biết đơn nào chưa cọc | `GET /rentals/today-board` | **thêm `depositCollected: number`** (Σ dòng deposit, 0 = chưa) vào `TodayBoardRentalDto` — một subquery trong projection, KHÔNG gọi payments theo từng thẻ |
-| Pre-fill cọc trong modal | Σ `depositAmount` của váy | thêm `standardDeposit: number` vào `TodayBoardRentalDto`; trang chi tiết đã có (`dresses[].depositAmount`, `get-rental.query-handler.ts`) |
+| Pre-fill cọc trong modal | Σ `depositAmount` của váy | không đổi — `TodayBoardRentalDto.dresses[].depositAmount` đã có (bỏ `standardDeposit` dự tính ban đầu) |
 | Chi tiết đơn | `GET /rentals/:id/payments` (`summary.deposit`) | không đổi |
 | Tạo đơn | `CreateRentalRequestDto.collect` | mới |
 | Giao váy | `PickupRentalRequestDto.depositCollected` (body mới; hiện pickup không có body) | mới |
@@ -188,3 +193,19 @@ khỏi tiệm không cọc, đơn đặt trước thì không. Chủ tiệm ch�
 | major | Huỷ đơn `booked` có tiền là ngõ cụt (Q8) | chốt Q8 trước khi code create+collect |
 | major | Pickup hiện không có body — thêm body tuỳ chọn phải giữ client cũ (gửi rỗng) hợp lệ | DTO toàn field optional |
 | minor | `rejected_deposit_already_recorded` xuất hiện trên endpoint thứ hai — giữ đúng payload `recordedAmount` để FE dùng chung message | dùng lại outcome DTO của payments |
+
+## 7. Re-sync as-built (2026-11-07)
+
+Khớp §2–§6, trừ các điểm sau:
+
+| Điểm | As-built | Vì sao |
+| --- | --- | --- |
+| Nơi ghi tiền (amendment R1 ở §6) | Không qua port uỷ cho domain code record-collection: `RentalRepository` ghi dòng `payments` TRONG transaction của chính nó — `insertWithCollection` (bước `afterWrite`, SAU dòng rental vì `payments.rental_id` là FK) và `savePickedUp(entity, depositCollected)` (dưới row lock) | Cùng cách `rentals/cancel-with-refund` đã ship (Codex duyệt, PR #38): một transaction cho trạng thái + tiền. R2 (số ≥ 1) giữ ở DTO `@Min(1)`; R3 giữ bởi partial UNIQUE + đọc sổ dưới cùng row lock mà record-collection khoá. Vẫn là adapter chạm bảng của context khác (apps/be Deviation #4) |
+| Bước 6 "race thua UNIQUE" của pickup | Không cần requery: pickup và record-collection cùng `SELECT … FOR UPDATE` dòng rental nên chạy lần lượt; pre-check dưới lock trả đúng `rejected_deposit_already_recorded` | e2e "race: a pickup collecting the deposit vs. a collection" chứng minh đúng MỘT dòng cọc |
+| Ghi chú dòng tiền | `note` = NULL cho tiền thu lúc tạo và lúc giao | Form không có ô ghi chú tiền; ghi chú đơn (`notes`) là của đơn, không phải của dòng tiền |
+| `/rentals/:id` | Không có nút giao — ngoài phạm vi (§3) | Giao/nhận về chỉ ở bảng Hôm nay |
+| `standardDeposit` trên board | Bỏ — `dresses[].depositAmount` đã có | Tránh field thừa trên contract |
+| Thẻ đơn `booked` | "Chưa thu cọc" (badge vàng) / "Đã cọc {{amount}}"; đơn `out` không hiện gì | Chỉ đơn còn phải giao mới cần câu hỏi cọc |
+| Fixture/Playwright | Happy path thu cọc + tiền thuê NGAY lúc tạo (thay bước "Tiền" riêng) | Form điền sẵn tiền thuê (Q1), nên luồng thật của tiệm là ghi lúc đặt |
+
+Bằng chứng: ledger `rentals/deposit-at-pickup`.

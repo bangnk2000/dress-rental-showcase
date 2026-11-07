@@ -21,6 +21,7 @@ export const todayBoardRowSchema = z.object({
   due_out: z.boolean(),
   due_back: z.boolean(),
   overdue: z.boolean(),
+  deposit_collected: z.number().int(),
 });
 
 export type TodayBoardRow = z.infer<typeof todayBoardRowSchema>;
@@ -56,6 +57,7 @@ export function toTodayBoardDto(
           status: row.status,
           startDate: period.start,
           endDate: period.endInclusive,
+          depositCollected: row.deposit_collected,
           dresses: [],
         }),
         dueOut: row.due_out,

@@ -92,7 +92,14 @@ export class CreateRentalService
     }
 
     try {
-      await this.rentalRepo.insert(rental);
+      // FR-RENT-14: money handed over at booking lands in the SAME transaction as the rental —
+      // a rental that loses the overlap race below leaves no orphan payment behind.
+      const { deposit, rentalFee } = command.collect;
+      if ((deposit ?? 0) > 0 || (rentalFee ?? 0) > 0) {
+        await this.rentalRepo.insertWithCollection(rental, { deposit, rentalFee, note: null });
+      } else {
+        await this.rentalRepo.insert(rental);
+      }
     } catch (error) {
       if (error instanceof RentalItemsOverlapError) {
         // A concurrent request won the race and the EXCLUDE constraint refused this write. Same

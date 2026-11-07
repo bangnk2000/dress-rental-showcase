@@ -256,3 +256,6 @@ Never needed on resume — add your line at the top without reading further.
   written; cancel-with-refund built and pass, 52/52: booked+money cancels with refund rows in one
   transaction, new kind rental_fee_refund (migration), one shared cancel dialog. Gates green,
   be e2e 160. Not deployed (migrate → be → fe).
+- 2026-11-07 (54) — PR #38 merged. rentals/deposit-at-pickup pass, 53/53 (FR-RENT-14): money at
+  booking in the rental's transaction, deposit gate at pickup under the row lock, board badge +
+  deposit dialog; cancel-dialog double-toast fix. init.sh green, be e2e 175, fe 180. Not deployed.

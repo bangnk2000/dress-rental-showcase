@@ -16,6 +16,7 @@ import type {
   LateFeeQuoteResponseDto,
   PaymentDto,
   PaymentListResponseDto,
+  PickupRentalRequestDto,
   RecordCollectionRequestDto,
   RentalDetailDto,
   RentalListItemDto,
@@ -45,6 +46,7 @@ let bookedRanges = new Map<string, BookedRangeDto[]>();
 let todayBoard: TodayBoardLists = emptyBoard();
 let lastTodayBoardDate: string | null = null;
 let lastPickupRentalId: string | null = null;
+let lastPickupBody: PickupRentalRequestDto | null = null;
 let lastReturnRentalId: string | null = null;
 let lastReturnBody: ReturnRentalRequestDto | null = null;
 let rentalList: RentalListItemDto[] = [];
@@ -95,6 +97,7 @@ export function makeTodayRental(
     status: TodayBoardRentalDtoStatus.booked,
     startDate: '2099-08-01',
     endDate: '2099-08-03',
+    depositCollected: 3_000_000,
     dresses: [
       {
         dressId: 'd1',
@@ -138,6 +141,11 @@ export function getLastTodayBoardDate(): string | null {
 /** The rental id of the most recent POST pickup. */
 export function getLastPickupRentalId(): string | null {
   return lastPickupRentalId;
+}
+
+/** The body of the most recent POST pickup (FR-RENT-14 `depositCollected`). */
+export function getLastPickupBody(): PickupRentalRequestDto | null {
+  return lastPickupBody;
 }
 
 /** The id + body of the most recent POST return — asserts the settlement mapping. */
@@ -277,6 +285,7 @@ export function resetRentals(): void {
   todayBoard = emptyBoard();
   lastTodayBoardDate = null;
   lastPickupRentalId = null;
+  lastPickupBody = null;
   lastReturnRentalId = null;
   lastReturnBody = null;
   lateFeeQuotes = new Map();
@@ -395,9 +404,10 @@ export const rentalsHandlers: HttpHandler[] = [
     return HttpResponse.json(response);
   }),
 
-  // POST /api/v1/rentals/:id/pickup — 200 IdResponse, capturing the id.
-  http.post('/api/v1/rentals/:id/pickup', ({ params }) => {
+  // POST /api/v1/rentals/:id/pickup — 200 IdResponse, capturing the id + body (FR-RENT-14).
+  http.post('/api/v1/rentals/:id/pickup', async ({ params, request }) => {
     lastPickupRentalId = params.id as string;
+    lastPickupBody = (await request.json().catch(() => ({}))) as PickupRentalRequestDto;
     const response: IdResponse = { id: params.id as string };
     return HttpResponse.json(response);
   }),

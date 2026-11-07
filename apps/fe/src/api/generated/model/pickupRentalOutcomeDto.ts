@@ -10,4 +10,6 @@ import type { PickupRentalOutcomeDtoStatus } from './pickupRentalOutcomeDtoStatu
 export interface PickupRentalOutcomeDto {
   status: PickupRentalOutcomeDtoStatus;
   currentStatus?: PickupRentalOutcomeDtoCurrentStatus;
+  /** Deposit already on file (rejected_deposit_already_recorded) */
+  recordedAmount?: number;
 }

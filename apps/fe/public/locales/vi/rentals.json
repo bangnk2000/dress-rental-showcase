@@ -86,6 +86,19 @@
       "dressNotFound": "Có váy không còn trong danh mục. Vui lòng chọn lại.",
       "discountInvalid": "Chỉ nhập chữ số (VND)",
       "discountTooLarge": "Giảm giá không được vượt quá tạm tính tiền thuê"
+    },
+    "payment": {
+      "title": "Thanh toán lúc đặt",
+      "rentalFee": "Tiền thuê đã thu",
+      "rentalFeeHint": "Để trống nếu khách chưa trả. Tiền thuê dự kiến: {{amount}}",
+      "depositPaid": "Khách đã đóng cọc",
+      "deposit": "Tiền cọc đã thu",
+      "depositHint": "Cọc chuẩn của các váy: {{amount}}",
+      "bornOutNoDeposit": "Đơn này giao ngay hôm nay nhưng chưa thu cọc — nếu khách đã đưa cọc, tick \"Khách đã đóng cọc\".",
+      "errors": {
+        "invalidAmount": "Nhập số tiền bằng chữ số, không dấu chấm/phẩy (vd 1500000) — hoặc để trống nếu chưa thu.",
+        "depositRequired": "Đã tick \"Khách đã đóng cọc\" thì phải nhập số cọc đã thu (chỉ chữ số, vd 3000000)."
+      }
     }
   },
   "picker": {

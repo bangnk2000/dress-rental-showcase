@@ -21,6 +21,7 @@ function makeRentalRepo(overrides: Partial<RentalRepositoryPort> = {}): RentalRe
     saveReturned: jest.fn().mockResolvedValue(undefined),
     saveCancelled: jest.fn().mockResolvedValue(undefined),
     savePickedUp: jest.fn().mockResolvedValue(undefined),
+    insertWithCollection: jest.fn().mockResolvedValue(undefined),
     saveUpdated: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(null),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
@@ -47,6 +48,7 @@ const baseCommand = new CreateRentalCommand({
     { dressId: DRESS_A, price: null },
     { dressId: DRESS_B, price: 900_000 },
   ],
+  collect: { deposit: null, rentalFee: null },
 });
 
 const snapshotA: DressSnapshot = {
@@ -99,6 +101,27 @@ describe('CreateRentalService', () => {
     expect(first?.price.amount).toBe(1_500_000);
     expect(second?.price.amount).toBe(900_000);
     expect(rental.domainEvents).toHaveLength(1); // RentalCreatedDomainEvent queued
+  });
+
+  it('FR-RENT-14: money handed over at booking goes through insertWithCollection, never plain insert', async () => {
+    const repo = makeRentalRepo();
+    const service = new CreateRentalService(repo, makeDressLookup(bothDresses), config);
+
+    const result = await service.execute(
+      new CreateRentalCommand({
+        ...baseCommand,
+        collect: { deposit: 5_000_000, rentalFee: 2_400_000 },
+      }),
+    );
+
+    expect(result.isOk()).toBe(true);
+    expect(repo.insert).not.toHaveBeenCalled();
+    const [rental, collection] = (repo.insertWithCollection as jest.Mock).mock.calls[0] as [
+      RentalEntity,
+      unknown,
+    ];
+    expect(rental.getProps().status).toBe('booked');
+    expect(collection).toEqual({ deposit: 5_000_000, rentalFee: 2_400_000, note: null });
   });
 
   it('FR-RENT-10 R2: a rental starting TODAY (shop day) is born delivered — status out, both events', async () => {

@@ -1,7 +1,16 @@
-import { Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
@@ -10,13 +19,16 @@ import {
 import { match } from 'oxide.ts';
 import { RequirePermission } from '../../../../libs/authz/require-permission.decorator';
 import { IdResponse } from '../../../../libs/ddd/id.response.dto';
-import { BusinessOutcomeException } from '../../../../libs/exceptions';
+import { ApiErrorResponseDto, BusinessOutcomeException } from '../../../../libs/exceptions';
 import {
+  DepositNotCollectedError,
+  PickupDepositAlreadyRecordedError,
   RentalNotFoundError,
   RentalPickupNotAllowedError,
 } from '../../domain/rental.errors';
 import { PickupRentalCommand } from './pickup-rental.command';
 import { PickupRentalOutcomeDto } from './pickup-rental.outcome.dto';
+import { PickupRentalRequestDto } from './pickup-rental.request.dto';
 import { PickupRentalResult } from './pickup-rental.service';
 
 @ApiTags('rentals')
@@ -28,17 +40,26 @@ export class PickupRentalHttpController {
   @Post(':id/pickup')
   @HttpCode(HttpStatus.OK)
   @RequirePermission('rental:pickup')
-  @ApiOperation({ summary: 'Mark a booked rental as handed out to the customer' })
+  @ApiOperation({
+    summary:
+      'Hand a booked rental out to the customer — only with a deposit on file or collected now (FR-RENT-14)',
+  })
   @ApiOkResponse({ type: IdResponse })
   @ApiResponse({
     status: 422,
     type: PickupRentalOutcomeDto,
     description:
-      'Business rejection: rejected_rental_not_found | rejected_pickup_not_allowed (carries currentStatus)',
+      'Business rejection: rejected_rental_not_found | rejected_pickup_not_allowed (carries currentStatus) | rejected_deposit_not_collected | rejected_deposit_already_recorded (recordedAmount)',
   })
-  async pickup(@Param('id', ParseUUIDPipe) id: string): Promise<IdResponse> {
+  @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Invalid pickup body' })
+  // Optional on the wire too: a body-less pickup is the normal case when a deposit is on file.
+  @ApiBody({ type: PickupRentalRequestDto, required: false })
+  async pickup(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: PickupRentalRequestDto,
+  ): Promise<IdResponse> {
     const result: PickupRentalResult = await this.commandBus.execute(
-      new PickupRentalCommand({ rentalId: id }),
+      new PickupRentalCommand({ rentalId: id, depositCollected: body?.depositCollected ?? null }),
     );
 
     return match(result, {
@@ -51,6 +72,15 @@ export class PickupRentalHttpController {
           throw new BusinessOutcomeException({
             status: 'rejected_pickup_not_allowed',
             currentStatus: error.currentStatus,
+          });
+        }
+        if (error instanceof DepositNotCollectedError) {
+          throw new BusinessOutcomeException({ status: 'rejected_deposit_not_collected' });
+        }
+        if (error instanceof PickupDepositAlreadyRecordedError) {
+          throw new BusinessOutcomeException({
+            status: 'rejected_deposit_already_recorded',
+            recordedAmount: error.recordedAmount,
           });
         }
         throw error;

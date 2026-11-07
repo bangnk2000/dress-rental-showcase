@@ -3,11 +3,12 @@ import { http, HttpResponse } from 'msw';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
 import {
   getLastCancelRentalId,
+  getLastPickupBody,
   getLastPickupRentalId,
   getLastReturn,
   getLastTodayBoardDate,
@@ -163,6 +164,75 @@ test('the pickup button marks a due-out rental as handed out', async () => {
 
   expect(await screen.findByText('Đã ghi nhận giao váy cho khách.')).toBeInTheDocument();
   expect(getLastPickupRentalId()).toBe('rental-1');
+  // the deposit is on file (fixture), so no deposit is sent and no dialog stands in the way
+  expect(getLastPickupBody()).toEqual({});
+  expect(screen.getByText('Đã cọc 3.000.000 ₫')).toBeInTheDocument();
+});
+
+describe('FR-RENT-14: no deposit on file, no handover', () => {
+  test('the card says "Chưa thu cọc" and the pickup opens the deposit dialog, pre-filled', async () => {
+    seedTodayBoard({ dueOut: [makeTodayRental({ depositCollected: 0 })] });
+    const user = userEvent.setup();
+    renderToday();
+
+    expect(await screen.findByText('Chưa thu cọc')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Đã giao váy/ }));
+
+    const dialog = await screen.findByRole('dialog');
+    const field = within(dialog).getByLabelText('Tiền cọc đã thu');
+    expect(field).toHaveValue('3000000'); // Σ catalog standard of the dresses
+    // §6.Q3: a hard block — there is no way to hand out without a deposit from here
+    expect(within(dialog).queryByRole('button', { name: /^Giao váy$/ })).toBeNull();
+
+    await user.clear(field);
+    await user.type(field, '2500000');
+    await user.click(within(dialog).getByRole('button', { name: 'Đã thu cọc & giao váy' }));
+
+    expect(await screen.findByText('Đã giao váy và ghi nhận cọc.')).toBeInTheDocument();
+    expect(getLastPickupBody()).toEqual({ depositCollected: 2_500_000 });
+  });
+
+  test('deposit already recorded elsewhere: the dialog stays, says the amount, and hands out without one', async () => {
+    seedTodayBoard({ dueOut: [makeTodayRental({ depositCollected: 0 })] });
+    let calls = 0;
+    server.use(
+      http.post('*/api/v1/rentals/:id/pickup', () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json(
+              { status: 'rejected_deposit_already_recorded', recordedAmount: 2_000_000 },
+              { status: 422 },
+            )
+          : HttpResponse.json({ id: 'rental-1' });
+      }),
+    );
+    const user = userEvent.setup();
+    renderToday();
+
+    await user.click(await screen.findByRole('button', { name: /Đã giao váy/ }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Đã thu cọc & giao váy' }));
+
+    expect(await within(dialog).findByText(/vừa được ghi cọc 2\.000\.000/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Giao váy' }));
+    expect(await screen.findByText('Đã ghi nhận giao váy cho khách.')).toBeInTheDocument();
+    expect(calls).toBe(2);
+  });
+
+  test('a stale board that thought the deposit was on file reopens as the deposit dialog', async () => {
+    seedTodayBoard({ dueOut: [makeTodayRental()] }); // board says 3.000.000 on file
+    server.use(
+      http.post('*/api/v1/rentals/:id/pickup', () =>
+        HttpResponse.json({ status: 'rejected_deposit_not_collected' }, { status: 422 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderToday();
+
+    await user.click(await screen.findByRole('button', { name: /Đã giao váy/ }));
+
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Thu cọc & giao váy');
+  });
 });
 
 test('the return dialog settles fees + refund and sends only filled amounts', async () => {

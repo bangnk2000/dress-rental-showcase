@@ -16,5 +16,7 @@ export interface TodayBoardRentalDto {
   startDate: string;
   /** Last rental day (inclusive) */
   endDate: string;
+  /** FR-RENT-14: deposit on file for this rental, VND (0 = none yet — a booked rental cannot be handed out without collecting one) */
+  depositCollected: number;
   dresses: RentalDressDto[];
 }
