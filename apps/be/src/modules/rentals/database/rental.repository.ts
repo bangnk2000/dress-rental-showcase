@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { randomUUID } from 'node:crypto';
 import {
   CheckExclusionConstraintViolationError,
   DatabasePool,
@@ -12,10 +13,14 @@ import { DB_POOL } from '../../../libs/db/db.di-tokens';
 import { AggregateID } from '../../../libs/ddd/entity.base';
 import { LOGGER_PORT, LoggerPort } from '../../../libs/ports/logger.port';
 import { DepositBasisChangedError } from '../application/ports/deposit-basis-changed.error';
+import { LedgerBasisChangedError } from '../application/ports/ledger-basis-changed.error';
 import { LedgerNotEmptyError } from '../application/ports/ledger-not-empty.error';
 import { RentalItemsOverlapError } from '../application/ports/rental-overlap.error';
 import { RentalStateChangedError } from '../application/ports/rental-state-changed.error';
-import { RentalRepositoryPort } from '../application/ports/rental.repository.port';
+import {
+  CancelSettlement,
+  RentalRepositoryPort,
+} from '../application/ports/rental.repository.port';
 import { RentalEntity } from '../domain/rental.entity';
 import { RentalPeriod } from '../domain/rental-period.value-object';
 import { toDateRangeLiteral } from './daterange';
@@ -31,7 +36,11 @@ import {
 
 const dressIdSchema = z.object({ dress_id: z.string() });
 const collectedDepositSchema = z.object({ collected: z.number().int() });
-const movementCountSchema = z.object({ movements: z.number().int() });
+const ledgerSchema = z.object({
+  movements: z.number().int(),
+  deposit: z.number().int(),
+  rental_fee: z.number().int(),
+});
 const rentalStatusSchema = z.object({
   status: z.enum(['booked', 'out', 'returned', 'cancelled']),
 });
@@ -80,10 +89,10 @@ export class RentalRepository
     expectedDepositCollected: number | null,
   ): Promise<void> {
     await this.writeAggregate(entity, true, async (conn, record) => {
+      // The status flip is only legal from `out`, re-read under the lock: a cancel committed
+      // since the load must not be overwritten by a stale "returned" (PR #38 review C1).
+      await this.lockExpectingStatus(conn, record.rental.id, 'out');
       if (expectedDepositCollected === null) return;
-      await conn.query(sql.unsafe`
-        SELECT id FROM rentals WHERE id = ${record.rental.id} FOR UPDATE
-      `);
       const { collected } = await conn.one(sql.type(collectedDepositSchema)`
         SELECT coalesce(sum(amount), 0)::int AS collected
         FROM payments WHERE rental_id = ${record.rental.id} AND kind = 'deposit'
@@ -95,22 +104,73 @@ export class RentalRepository
   }
 
   /**
-   * A cancel is only legal while the ledger is empty (FR-RENT-10 §6.Q2). Checked HERE, under the
-   * rental's row lock and in the SAME transaction as the status flip — record-collection locks
-   * the very same row before inserting, so either its money lands first and this count sees it,
-   * or the cancel commits first and the collection's own closed-rental rule refuses it. Lock
-   * order is rentals → payments on both sides, so no deadlock.
+   * Pickup (booked → out) re-reads the status under the rental's row lock — the lock cancel,
+   * return, edit and record-collection take — so a cancel that committed after the service loaded
+   * the rental is never overwritten: without it a stale pickup reopens a cancelled, refunded
+   * rental as `out` with blocking items, and its return could refund the deposit twice.
    */
-  async saveCancelled(entity: RentalEntity): Promise<void> {
+  async savePickedUp(entity: RentalEntity): Promise<void> {
     await this.writeAggregate(entity, true, async (conn, record) => {
-      await conn.query(sql.unsafe`
-        SELECT id FROM rentals WHERE id = ${record.rental.id} FOR UPDATE
+      await this.lockExpectingStatus(conn, record.rental.id, 'booked');
+    });
+  }
+
+  /** `SELECT … FOR UPDATE` the rental row; anything but `expected` → `RentalStateChangedError`. */
+  private async lockExpectingStatus(
+    conn: DatabaseTransactionConnection,
+    rentalId: string,
+    expected: 'booked' | 'out',
+  ): Promise<void> {
+    const { status } = await conn.one(sql.type(rentalStatusSchema)`
+      SELECT status FROM rentals WHERE id = ${rentalId} FOR UPDATE
+    `);
+    if (status !== expected) throw new RentalStateChangedError(status);
+  }
+
+  /**
+   * The ledger rules of a cancel (rentals/cancel-with-refund) are checked HERE, under the rental's
+   * row lock and in the SAME transaction as the status flip — record-collection locks the very
+   * same row before inserting, so either its money lands first and this read sees it, or the
+   * cancel commits first and the collection's own closed-rental rule refuses it. Lock order is
+   * rentals → payments on both sides, so no deadlock. The refund rows are written in this same
+   * transaction (the payments table is written directly, as PaymentRecorderAdapter does —
+   * apps/be Deviation #4), so a cancel is recorded whole or not at all.
+   */
+  async saveCancelled(entity: RentalEntity, settlement: CancelSettlement | null): Promise<void> {
+    await this.writeAggregate(entity, true, async (conn, record) => {
+      const rentalId = record.rental.id;
+      const { status } = await conn.one(sql.type(rentalStatusSchema)`
+        SELECT status FROM rentals WHERE id = ${rentalId} FOR UPDATE
       `);
-      const { movements } = await conn.one(sql.type(movementCountSchema)`
-        SELECT count(*)::int AS movements FROM payments WHERE rental_id = ${record.rental.id}
+      if (status !== 'booked' && status !== 'out') {
+        throw new RentalStateChangedError(status);
+      }
+      const ledger = await conn.one(sql.type(ledgerSchema)`
+        SELECT count(*)::int AS movements,
+               coalesce(sum(amount) FILTER (WHERE kind = 'deposit'), 0)::int AS deposit,
+               coalesce(sum(amount) FILTER (WHERE kind = 'rental_fee'), 0)::int AS rental_fee
+        FROM payments WHERE rental_id = ${rentalId}
       `);
-      if (movements > 0) {
-        throw new LedgerNotEmptyError();
+      const claimsMatch =
+        settlement !== null &&
+        settlement.expectedDepositCollected === ledger.deposit &&
+        settlement.expectedRentalFeeCollected === ledger.rental_fee;
+
+      if (ledger.movements === 0) {
+        if (settlement !== null && !claimsMatch) throw new LedgerBasisChangedError(0, 0);
+        return;
+      }
+      if (status !== 'booked') throw new LedgerNotEmptyError();
+      if (settlement === null || !claimsMatch) {
+        throw new LedgerBasisChangedError(ledger.deposit, ledger.rental_fee);
+      }
+
+      for (const refund of settlement.refunds) {
+        if (refund.amount <= 0) continue;
+        await conn.query(sql.unsafe`
+          INSERT INTO payments (id, rental_id, kind, amount, note)
+          VALUES (${randomUUID()}, ${rentalId}, ${refund.kind}, ${refund.amount}, ${refund.note})
+        `);
       }
     });
   }
@@ -140,7 +200,7 @@ export class RentalRepository
     // hand back parsed range objects that daterange.ts does not speak.
     const rental = await this.pool.maybeOne(sql.type(rentalRowSchema)`
       SELECT id, customer_name, customer_phone, period::text AS period,
-             status, notes, discount_amount, created_at, updated_at
+             status, notes, discount_amount, cancel_reason, created_at, updated_at
       FROM rentals WHERE id = ${id}
     `);
     if (!rental) return null;
@@ -224,9 +284,9 @@ export class RentalRepository
   ): Promise<void> {
     const insert = sql.fragment`
       INSERT INTO rentals (id, customer_name, customer_phone, period, status, notes, discount_amount,
-                           created_at, updated_at)
+                           cancel_reason, created_at, updated_at)
       VALUES (${row.id}, ${row.customer_name}, ${row.customer_phone}, ${row.period}::daterange,
-              ${row.status}, ${row.notes}, ${row.discount_amount},
+              ${row.status}, ${row.notes}, ${row.discount_amount}, ${row.cancel_reason},
               ${row.created_at as string}, ${row.updated_at as string})
     `;
     await conn.query(
@@ -234,7 +294,8 @@ export class RentalRepository
         ? sql.unsafe`${insert} ON CONFLICT (id) DO UPDATE SET
             customer_name = EXCLUDED.customer_name, customer_phone = EXCLUDED.customer_phone,
             period = EXCLUDED.period, status = EXCLUDED.status, notes = EXCLUDED.notes,
-            discount_amount = EXCLUDED.discount_amount, updated_at = EXCLUDED.updated_at`
+            discount_amount = EXCLUDED.discount_amount, cancel_reason = EXCLUDED.cancel_reason,
+            updated_at = EXCLUDED.updated_at`
         : sql.unsafe`${insert}`,
     );
   }

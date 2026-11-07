@@ -52,7 +52,10 @@ export function RentalPaymentsDialog({ rental, onClose }: RentalPaymentsDialogPr
 
   const summary = data?.summary ?? null;
   const collected = summary ? summary.deposit + summary.rentalFee : 0;
-  const returnedToCustomer = summary ? summary.depositRefund : 0;
+  // Everything handed back: the deposit (return or cancel) AND the rental fee a cancel refunded
+  // (rentals/cancel-with-refund) — leaving the latter out understates refunds on the one screen
+  // the shop reconciles against.
+  const returnedToCustomer = summary ? summary.depositRefund + summary.rentalFeeRefund : 0;
 
   return (
     <Dialog open={rental !== null} onOpenChange={(open) => !open && onClose()}>

@@ -108,6 +108,16 @@ test('a closed rental offers money only — no edit, no cancel', async () => {
   expect(screen.getByText('Đã giải phóng lịch')).toBeInTheDocument();
 });
 
+test('a cancelled rental shows why it was cancelled (the reason survives a cancel that kept everything)', async () => {
+  seedRentalDetail(
+    makeRentalDetail({ status: 'cancelled', cancelReason: 'Khách bỏ cọc' }),
+  );
+  renderRentalRoutes('/rentals/rental-1');
+
+  expect(await screen.findByRole('heading', { name: 'Lý do huỷ' })).toBeInTheDocument();
+  expect(screen.getByText('Khách bỏ cọc')).toBeInTheDocument();
+});
+
 test('cancelling from the detail confirms in-app, calls the API, and toasts', async () => {
   seedRentalDetail(makeRentalDetail());
   const user = userEvent.setup();

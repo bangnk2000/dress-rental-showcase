@@ -36,16 +36,6 @@
       "noMatchHint": "Thử từ khoá khác hoặc bỏ bộ lọc trạng thái."
     }
   },
-  "cancel": {
-    "title": "Huỷ lượt thuê?",
-    "confirmAction": "Huỷ lượt thuê",
-    "confirmFor": "Huỷ lượt thuê của {{customer}}? Lịch của váy sẽ được giải phóng ngay để khách khác đặt, và không thể hoàn tác.",
-    "confirm": "Huỷ lượt thuê này? Lịch của váy sẽ được giải phóng để khách khác đặt.",
-    "success": "Đã huỷ lượt thuê.",
-    "error": "Có lỗi xảy ra, vui lòng thử lại.",
-    "notAllowed": "Không huỷ được: lượt thuê đang ở trạng thái \"{{status}}\".",
-    "hasPayments": "Lượt thuê đã có tiền trong sổ — nhận về & tất toán thay vì huỷ."
-  },
   "payments": {
     "title": "Tiền của lượt thuê",
     "description": "Các khoản đã ghi nhận cho {{customer}}.",
@@ -56,7 +46,8 @@
       "deposit_refund": "Hoàn cọc",
       "rental_fee": "Tiền thuê",
       "late_fee": "Phí trễ hạn",
-      "damage_fee": "Phí hư hỏng"
+      "damage_fee": "Phí hư hỏng",
+      "rental_fee_refund": "Hoàn tiền thuê"
     },
     "totals": {
       "collected": "Tổng đã thu",
@@ -134,7 +125,8 @@
       "expectedFeeHint": "Tạm tính {{subtotal}} trừ giảm giá {{discount}}. Tiền cọc tính riêng.",
       "createdAt": "Tạo lúc",
       "notes": "Ghi chú",
-      "noNotes": "Không có ghi chú."
+      "noNotes": "Không có ghi chú.",
+      "cancelReason": "Lý do huỷ"
     },
     "dresses": {
       "title": "Váy trong lượt thuê",

@@ -4,6 +4,7 @@ export type PaymentKind =
   | 'deposit'
   | 'deposit_refund'
   | 'rental_fee'
+  | 'rental_fee_refund'
   | 'late_fee'
   | 'damage_fee';
 
@@ -13,7 +14,7 @@ export class PaymentDto {
   readonly id!: string;
 
   @ApiProperty({
-    enum: ['deposit', 'deposit_refund', 'rental_fee', 'late_fee', 'damage_fee'],
+    enum: ['deposit', 'deposit_refund', 'rental_fee', 'rental_fee_refund', 'late_fee', 'damage_fee'],
     example: 'deposit_refund',
   })
   readonly kind!: PaymentKind;
@@ -42,6 +43,12 @@ export class PaymentSummaryDto {
 
   @ApiProperty({ example: 2800000, description: 'Deposit handed back, VND' })
   readonly depositRefund!: number;
+
+  @ApiProperty({
+    example: 0,
+    description: 'Rental fee handed back when a prepaid booking was cancelled, VND',
+  })
+  readonly rentalFeeRefund!: number;
 
   @ApiProperty({ example: 200000, description: 'Late fees charged, VND' })
   readonly lateFee!: number;

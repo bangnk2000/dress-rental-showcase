@@ -18,6 +18,11 @@ export interface RentalDetailDto {
   endDate: string;
   /** @nullable */
   notes: string | null;
+  /**
+     * Why the rental was cancelled (rentals/cancel-with-refund) — required when money was kept; null otherwise
+     * @nullable
+     */
+  cancelReason: string | null;
   /** Discount on the rental fee in VND (FR-RENT-11); 0 = none. Expected rental fee = Σ dresses.agreedPrice − discountAmount. */
   discountAmount: number;
   createdAt: string;

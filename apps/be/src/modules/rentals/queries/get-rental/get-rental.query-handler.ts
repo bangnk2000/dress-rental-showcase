@@ -59,6 +59,7 @@ export class GetRentalQueryHandler
       startDate: props.period.start,
       endDate: props.period.end,
       notes: props.notes,
+      cancelReason: props.cancelReason ?? null,
       discountAmount: props.discount.amount,
       createdAt: props.createdAt.toISOString(),
       updatedAt: props.updatedAt.toISOString(),

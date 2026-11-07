@@ -1,21 +1,13 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
-import { toast } from 'sonner';
 
-import { mapApiError } from '@/api/errors';
 import { useMeHttpControllerMeSuspense } from '@/api/generated/identity/identity';
-import {
-  getGetRentalHttpControllerGetQueryKey,
-  getGetTodayBoardHttpControllerGetQueryKey,
-  getListRentalsHttpControllerListQueryKey,
-  useCancelRentalHttpControllerCancel,
-  useGetRentalHttpControllerGetSuspense,
-} from '@/api/generated/rentals/rentals';
+import { useGetRentalHttpControllerGetSuspense } from '@/api/generated/rentals/rentals';
 import type { RentalDetailDto } from '@/api/generated/model';
-import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
+import { useCancelRental } from '@/api/use-cancel-rental';
 import { PageHeader } from '@/components/layout/page-header';
+import { CancelRentalDialog } from '@/components/rentals/cancel-rental-dialog';
 import { Button } from '@/components/ui/button';
 import { formatDate, formatVnd } from '@/lib/format';
 
@@ -39,49 +31,11 @@ export function RentalDetailRoute() {
  */
 function RentalDetail({ rentalId }: { rentalId: string }) {
   const { t } = useTranslation('rentals');
-  const queryClient = useQueryClient();
   const { data: rental } = useGetRentalHttpControllerGetSuspense(rentalId);
   const { data: me } = useMeHttpControllerMeSuspense();
   const [paymentsOpen, setPaymentsOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
-
-  async function refreshRentalQueries(): Promise<void> {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: getListRentalsHttpControllerListQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getGetTodayBoardHttpControllerGetQueryKey() }),
-      queryClient.invalidateQueries({ queryKey: getGetRentalHttpControllerGetQueryKey(rentalId) }),
-    ]);
-  }
-
-  // Same designed states as the list's cancel (ADR 0001 §4): a rejection means another device
-  // moved this rental on — say what state it is in and refresh.
-  const cancelRental = useCancelRentalHttpControllerCancel({
-    mutation: {
-      onSuccess: async () => {
-        await refreshRentalQueries();
-        toast.success(t('cancel.success'));
-      },
-      onError: async (error) => {
-        const mapped = mapApiError(error);
-        if (mapped.kind === 'outcome') {
-          toast.error(
-            mapped.status === 'rejected_cancel_not_allowed'
-              ? t('cancel.notAllowed', {
-                  status: t(`status.${String(mapped.currentStatus)}`, {
-                    defaultValue: String(mapped.currentStatus ?? ''),
-                  }),
-                })
-              : mapped.status === 'rejected_cancel_has_payments'
-                ? t('cancel.hasPayments')
-                : t('errors.rentalNotFound'),
-          );
-          await refreshRentalQueries();
-          return;
-        }
-        toast.error(t('cancel.error'));
-      },
-    },
-  });
+  const cancelController = useCancelRental(cancelOpen ? rentalId : null);
 
   const open = isOpenRental(rental.status);
   const subtotal = rental.dresses.reduce((sum, dress) => sum + dress.agreedPrice, 0);
@@ -141,7 +95,7 @@ function RentalDetail({ rentalId }: { rentalId: string }) {
             {open ? (
               <Button
                 variant="outline"
-                disabled={cancelRental.isPending}
+                disabled={cancelController.pending}
                 onClick={() => setCancelOpen(true)}
               >
                 {t('detail.actions.cancel')}
@@ -196,23 +150,22 @@ function RentalDetail({ rentalId }: { rentalId: string }) {
             {rental.notes ?? <span className="text-muted-foreground">{t('detail.info.noNotes')}</span>}
           </p>
         </section>
+        {rental.cancelReason ? (
+          <section className="space-y-2">
+            <h2 className="text-base font-semibold">{t('detail.info.cancelReason')}</h2>
+            <p className="text-sm whitespace-pre-line">{rental.cancelReason}</p>
+          </section>
+        ) : null}
         <Button asChild variant="link" className="px-0">
           <Link to="/rentals">{t('detail.actions.back')}</Link>
         </Button>
       </div>
-      {/* Cancelling frees the calendar immediately and cannot be undone — the confirmation names
-          the customer so a mis-tap on the tablet is caught before, not after. */}
-      <ConfirmDialog
-        open={cancelOpen}
-        onOpenChange={setCancelOpen}
-        title={t('cancel.title')}
-        description={t('cancel.confirmFor', { customer: rental.customerName })}
-        confirmLabel={t('cancel.confirmAction')}
-        destructive
-        onConfirm={() => {
-          setCancelOpen(false);
-          cancelRental.mutate({ id: rentalId });
-        }}
+      {/* Cancelling frees the calendar immediately and cannot be undone — the dialog names the
+          customer, and with money on file it asks for the refunds (rentals/cancel-with-refund). */}
+      <CancelRentalDialog
+        rental={cancelOpen ? rental : null}
+        controller={cancelController}
+        onClose={() => setCancelOpen(false)}
       />
       <RentalPaymentsDialog
         rental={paymentsOpen ? rental : null}

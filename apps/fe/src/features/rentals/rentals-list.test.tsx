@@ -3,11 +3,14 @@ import { http, HttpResponse } from 'msw';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 
 import { Toaster } from '@/components/ui/sonner';
 import { server } from '@/test/msw/server';
+import { setTokens } from '@/api/mutator/auth-tokens';
+import { testTokenPair, testUser } from '@/test/msw/handlers/identity';
 import {
+  getLastCancelBody,
   getLastCancelRentalId,
   getLastCollectBody,
   getLastCollectRentalId,
@@ -313,4 +316,150 @@ test('FR-RENT-11: the rental fee offered for collection is the agreement MINUS t
   expect(
     screen.getByText('Tiền thuê đã thoả thuận: 1.200.000 ₫ (đã trừ giảm giá 300.000 ₫)'),
   ).toBeInTheDocument();
+});
+
+describe('cancel with refunds (rentals/cancel-with-refund)', () => {
+  // Signed in, so GET /auth/me answers — the dialog reads the role from it (owner by default).
+  beforeEach(() => {
+    setTokens(testTokenPair);
+  });
+
+  function seedPrepaidBooking(): void {
+    seedRentalList([makeRentalListItem()]);
+    seedRentalPayments('rental-1', [
+      makePayment({ id: 'p-1', kind: 'deposit', amount: 3_000_000 }),
+      makePayment({ id: 'p-2', kind: 'rental_fee', amount: 1_500_000 }),
+    ]);
+  }
+
+  async function openCancel(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(await screen.findByRole('button', { name: 'Huỷ' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await within(dialog).findByText('Huỷ đơn & hoàn tiền');
+    return dialog;
+  }
+
+  test('a prepaid booking asks for the refunds, pre-filled in full, and sends the basis', async () => {
+    seedPrepaidBooking();
+    const user = userEvent.setup();
+    renderList();
+
+    const dialog = await openCancel(user);
+    expect(within(dialog).getByLabelText('Hoàn cọc')).toHaveValue('3000000');
+    expect(within(dialog).getByLabelText('Hoàn tiền thuê')).toHaveValue('1500000');
+    expect(within(dialog).getByText(/Trả lại khách 4\.500\.000.*tiệm giữ 0/)).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Hoàn tiền & huỷ đơn' }));
+
+    expect(await screen.findByText(/Đã huỷ lượt thuê, hoàn khách 4\.500\.000/)).toBeInTheDocument();
+    expect(getLastCancelBody()).toEqual({
+      expectedDepositCollected: 3_000_000,
+      expectedRentalFeeCollected: 1_500_000,
+      depositRefund: 3_000_000,
+      rentalFeeRefund: 1_500_000,
+    });
+  });
+
+  test('§6.Q3: staff cannot keep money — the confirm stays disabled and says why', async () => {
+    seedPrepaidBooking();
+    server.use(http.get('*/api/v1/auth/me', () => HttpResponse.json({ ...testUser, role: 'staff' })));
+    const user = userEvent.setup();
+    renderList();
+
+    const dialog = await openCancel(user);
+    const fee = within(dialog).getByLabelText('Hoàn tiền thuê');
+    await user.clear(fee);
+    await user.type(fee, '1000000');
+    await user.type(within(dialog).getByLabelText('Lý do giữ lại tiền (bắt buộc)'), 'phí huỷ');
+
+    expect(within(dialog).getByText(/tiệm giữ 500\.000/)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('Chỉ chủ tiệm được giữ lại tiền khi huỷ — nhân viên hoàn đủ cho khách.'),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Hoàn tiền & huỷ đơn' })).toBeDisabled();
+  });
+
+  test('§6.Q3: the owner keeps money only with a reason, which travels with the refunds', async () => {
+    seedPrepaidBooking();
+    const user = userEvent.setup();
+    renderList();
+
+    const dialog = await openCancel(user);
+    const fee = within(dialog).getByLabelText('Hoàn tiền thuê');
+    await user.clear(fee);
+    await user.type(fee, '0');
+    const confirm = within(dialog).getByRole('button', { name: 'Hoàn tiền & huỷ đơn' });
+    expect(confirm).toBeDisabled();
+
+    await user.type(within(dialog).getByLabelText('Lý do giữ lại tiền (bắt buộc)'), 'Huỷ sát ngày');
+    await user.click(confirm);
+
+    await waitFor(() =>
+      expect(getLastCancelBody()).toEqual({
+        expectedDepositCollected: 3_000_000,
+        expectedRentalFeeCollected: 1_500_000,
+        depositRefund: 3_000_000,
+        rentalFeeRefund: 0,
+        note: 'Huỷ sát ngày',
+      }),
+    );
+  });
+
+  test('basis changed: the dialog stays open, says so, and re-reads the ledger', async () => {
+    seedPrepaidBooking();
+    server.use(
+      http.post('*/api/v1/rentals/:id/cancel', () =>
+        HttpResponse.json(
+          {
+            status: 'rejected_cancel_basis_changed',
+            collectedDeposit: 3_000_000,
+            collectedRentalFee: 1_500_000,
+          },
+          { status: 422 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderList();
+
+    const dialog = await openCancel(user);
+    await user.click(within(dialog).getByRole('button', { name: 'Hoàn tiền & huỷ đơn' }));
+
+    expect(
+      await within(dialog).findByText(
+        'Sổ tiền vừa thay đổi trên thiết bị khác — kiểm tra lại số hoàn rồi bấm lại.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+  });
+
+  test('the money dialog of a cancelled prepaid booking counts BOTH refunds as handed back', async () => {
+    seedRentalList([makeRentalListItem({ status: 'cancelled' })]);
+    seedRentalPayments('rental-1', [
+      makePayment({ id: 'p-1', kind: 'deposit', amount: 3_000_000 }),
+      makePayment({ id: 'p-2', kind: 'rental_fee', amount: 1_500_000 }),
+      makePayment({ id: 'p-3', kind: 'deposit_refund', amount: 3_000_000 }),
+      makePayment({ id: 'p-4', kind: 'rental_fee_refund', amount: 1_000_000 }),
+    ]);
+    const user = userEvent.setup();
+    renderList();
+
+    await user.click(await screen.findByRole('button', { name: /^Tiền/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText('Hoàn tiền thuê')).toBeInTheDocument();
+    const refunded = within(dialog).getByText('Đã hoàn khách').nextElementSibling;
+    expect(refunded).toHaveTextContent(/4\.000\.000/);
+  });
+
+  test('an OUT rental with money offers no cancel — it points at "Nhận về"', async () => {
+    seedRentalList([makeRentalListItem({ status: 'out' })]);
+    seedRentalPayments('rental-1', [makePayment({ kind: 'deposit', amount: 3_000_000 })]);
+    const user = userEvent.setup();
+    renderList();
+
+    await user.click(await screen.findByRole('button', { name: 'Huỷ' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(await within(dialog).findByText(/dùng "Nhận về & tất toán" thay vì huỷ/)).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /huỷ đơn|Huỷ lượt thuê/ })).toBeNull();
+  });
 });

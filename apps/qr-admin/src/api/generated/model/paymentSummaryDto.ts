@@ -12,6 +12,8 @@ export interface PaymentSummaryDto {
   rentalFee: number;
   /** Deposit handed back, VND */
   depositRefund: number;
+  /** Rental fee handed back when a prepaid booking was cancelled, VND */
+  rentalFeeRefund: number;
   /** Late fees charged, VND */
   lateFee: number;
   /** Damage fees charged, VND */

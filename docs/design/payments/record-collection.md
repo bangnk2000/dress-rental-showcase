@@ -61,6 +61,10 @@ Domain rules / invariants:
   - R1 (AC1): lệnh này chỉ ghi kind `deposit` và `rental_fee`. Ba kind tất toán
               (`deposit_refund`, `late_fee`, `damage_fee`) vẫn thuộc return flow của rentals —
               một khoản tiền có đúng một nơi sinh ra nó.
+              **Amendment 2026-11-07** (chủ tiệm chọn "huỷ kèm ghi tiền hoàn",
+              [rentals/cancel-with-refund](../rentals/cancel-with-refund.md) §6): `deposit_refund`
+              nay có HAI nơi sinh — trả váy và huỷ đơn `booked` đã trả trước — và kind mới
+              `rental_fee_refund` chỉ do huỷ sinh ra. Lệnh này vẫn chỉ ghi `deposit`/`rental_fee`.
   - R2 (AC1): số tiền là VND integer ≥ 1 (BR-4). 0 nghĩa là "không thu", và cách diễn đạt
               "không thu" là VẮNG MẶT field, không phải số 0 — sổ không có dòng 0₫.
   - R3 (AC2): mỗi đơn tối đa MỘT dòng `deposit` và MỘT dòng `rental_fee`. Chặn ở

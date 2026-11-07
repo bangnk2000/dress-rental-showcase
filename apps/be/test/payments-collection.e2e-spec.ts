@@ -82,6 +82,7 @@ describe('recording money collected (real Postgres)', () => {
       deposit: 3_000_000,
       rentalFee: 1_500_000,
       depositRefund: 0,
+      rentalFeeRefund: 0,
       lateFee: 0,
       damageFee: 0,
     });

@@ -251,3 +251,8 @@ Never needed on resume — add your line at the top without reading further.
   Bot Fight Mode vs runner IP); owner kept it, deploy now reads prod over an ssh forward limited
   to 127.0.0.1:3000 and verifies nginx on the VPS. Run 41101946604 green, .deployed = 5cd5646.
   PR #30/#31 found live since 2026-10-28; ledger + Production bullet corrected.
+- 2026-11-07 (53) — Owner feature ask (deposit at create + pickup warning). Specs deposit-at-pickup
+  (rules approved, prototype pending) and cancel-with-refund (approved, prototype skipped by owner)
+  written; cancel-with-refund built and pass, 52/52: booked+money cancels with refund rows in one
+  transaction, new kind rental_fee_refund (migration), one shared cancel dialog. Gates green,
+  be e2e 160. Not deployed (migrate → be → fe).

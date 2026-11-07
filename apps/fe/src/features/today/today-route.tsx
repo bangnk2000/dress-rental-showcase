@@ -8,13 +8,13 @@ import { mapApiError } from '@/api/errors';
 import {
   getGetTodayBoardHttpControllerGetQueryKey,
   getListRentalsHttpControllerListQueryKey,
-  useCancelRentalHttpControllerCancel,
   useGetTodayBoardHttpControllerGetSuspense,
   usePickupRentalHttpControllerPickup,
 } from '@/api/generated/rentals/rentals';
 import type { TodayBoardRentalDto } from '@/api/generated/model';
-import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
+import { useCancelRental } from '@/api/use-cancel-rental';
 import { PageHeader } from '@/components/layout/page-header';
+import { CancelRentalDialog } from '@/components/rentals/cancel-rental-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -92,29 +92,7 @@ export function TodayRoute() {
     },
   });
 
-  // The board is the natural place to close a no-show: the card lost its return action
-  // (FR-RENT-10) and cancelling is what the shop actually does with a booking nobody collected.
-  const cancelRental = useCancelRentalHttpControllerCancel({
-    mutation: {
-      onSuccess: async () => {
-        await refreshBoardAndList();
-        toast.success(t('cancel.success'));
-      },
-      onError: async (error) => {
-        const mapped = mapApiError(error);
-        if (mapped.kind === 'outcome') {
-          toast.error(
-            mapped.status === 'rejected_cancel_has_payments'
-              ? t('cancel.hasPayments')
-              : t('cancel.notAllowed'),
-          );
-          await refreshBoardAndList();
-          return;
-        }
-        toast.error(t('actionError'));
-      },
-    },
-  });
+  const cancelController = useCancelRental(cancelTarget?.rentalId ?? null);
 
   /**
    * FR-RENT-10: only an OUT rental can come back. A booked rental on due-back/overdue means the
@@ -248,23 +226,12 @@ export function TodayRoute() {
         />
       </div>
       <ReturnRentalDialog rental={returnTarget} onClose={() => setReturnTarget(null)} />
-      <ConfirmDialog
-        open={cancelTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setCancelTarget(null);
-        }}
-        title={t('cancel.title')}
-        description={
-          cancelTarget
-            ? t('cancel.confirmFor', { customer: cancelTarget.customerName })
-            : undefined
-        }
-        confirmLabel={t('cancel.confirmAction')}
-        destructive
-        onConfirm={() => {
-          if (cancelTarget) cancelRental.mutate({ id: cancelTarget.rentalId });
-          setCancelTarget(null);
-        }}
+      {/* The board is the natural place to close a no-show: the card lost its return action
+          (FR-RENT-10). A prepaid no-show cancels with refunds (rentals/cancel-with-refund). */}
+      <CancelRentalDialog
+        rental={cancelTarget}
+        controller={cancelController}
+        onClose={() => setCancelTarget(null)}
       />
     </>
   );

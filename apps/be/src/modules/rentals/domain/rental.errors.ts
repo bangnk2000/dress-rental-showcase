@@ -134,11 +134,12 @@ export class RentalCancelNotAllowedError extends ExceptionBase {
 }
 
 /**
- * FR-RENT-10 §6.Q2: cancelling is for rentals whose ledger is EMPTY — recorded money must leave
- * through the return flow, where the refund is written down, never be orphaned by a cancel.
+ * FR-RENT-10 §6.Q2, narrowed by rentals/cancel-with-refund (2026-11-07): an OUT rental with money
+ * on file cannot be cancelled — the dress is with the customer, so the way out is the return flow.
+ * A BOOKED rental with money cancels WITH refunds instead.
  */
 export class RentalCancelHasPaymentsError extends ExceptionBase {
-  static readonly message = 'The rental has recorded money — settle it through the return flow';
+  static readonly message = 'The rental is out and has recorded money — settle it through the return flow';
   public readonly code = 'RENTALS.CANCEL_HAS_PAYMENTS';
 
   constructor(cause?: Error, metadata?: unknown) {
@@ -160,5 +161,66 @@ export class ReturnDepositBasisChangedError extends ExceptionBase {
     cause?: Error,
   ) {
     super(ReturnDepositBasisChangedError.message, cause, { collectedDeposit });
+  }
+}
+
+/**
+ * rentals/cancel-with-refund R3: the refunds were computed from collected amounts that are not
+ * what the ledger holds under the row lock (or the caller sent no basis while money is on file).
+ * Nothing is written; the payload is what IS on file so the dialog re-derives its refunds.
+ */
+export class CancelBasisChangedError extends ExceptionBase {
+  static readonly message = 'The money on file changed while the cancel was being prepared';
+  public readonly code = 'RENTALS.CANCEL_BASIS_CHANGED';
+
+  constructor(
+    readonly collectedDeposit: number,
+    readonly collectedRentalFee: number,
+    cause?: Error,
+  ) {
+    super(CancelBasisChangedError.message, cause, { collectedDeposit, collectedRentalFee });
+  }
+}
+
+export type RefundableKind = 'deposit' | 'rental_fee';
+
+/** rentals/cancel-with-refund R2: a refund never exceeds what was collected of the same kind. */
+export class RefundExceedsCollectedError extends ExceptionBase {
+  static readonly message = 'A refund cannot exceed the amount collected';
+  public readonly code = 'RENTALS.REFUND_EXCEEDS_COLLECTED';
+
+  constructor(
+    readonly kind: RefundableKind,
+    readonly collected: number,
+    readonly submitted: number,
+    cause?: Error,
+  ) {
+    super(RefundExceedsCollectedError.message, cause, { kind, collected, submitted });
+  }
+}
+
+/** rentals/cancel-with-refund §6.Q3: keeping any of the customer's money is the owner's call. */
+export class CancelRetentionNotAllowedError extends ExceptionBase {
+  static readonly message = 'Only the shop owner may keep money when cancelling';
+  public readonly code = 'RENTALS.CANCEL_RETENTION_NOT_ALLOWED';
+
+  constructor(
+    readonly retainedAmount: number,
+    cause?: Error,
+  ) {
+    super(CancelRetentionNotAllowedError.message, cause, { retainedAmount });
+  }
+}
+
+/** rentals/cancel-with-refund §6.Q3: money kept on a cancel must carry a reason. */
+export class CancelRetentionNoteRequiredError extends ExceptionBase {
+  static readonly message = 'Keeping money when cancelling requires a note';
+  public readonly code = 'RENTALS.CANCEL_RETENTION_NOTE_REQUIRED';
+
+  constructor(
+    readonly retainedAmount: number,
+    cause?: Error,
+  ) {
+    super(CancelRetentionNoteRequiredError.message, cause, { retainedAmount });
   }
 }

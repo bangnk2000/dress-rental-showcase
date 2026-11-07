@@ -47,12 +47,14 @@ test('the summary totals each kind separately; a kind with no row is 0, never ab
     row('rental_fee', 1_500_000),
     row('late_fee', 200_000),
     row('deposit_refund', 2_800_000),
+    row('rental_fee_refund', 1_000_000),
   ]);
 
   expect(summary).toEqual({
     deposit: 3_000_000,
     rentalFee: 1_500_000,
     depositRefund: 2_800_000,
+    rentalFeeRefund: 1_000_000,
     lateFee: 200_000,
     damageFee: 0,
   });
@@ -63,6 +65,7 @@ test('an empty ledger totals zero everywhere — that is how a screen tells "not
     deposit: 0,
     rentalFee: 0,
     depositRefund: 0,
+    rentalFeeRefund: 0,
     lateFee: 0,
     damageFee: 0,
   });

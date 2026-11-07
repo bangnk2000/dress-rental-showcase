@@ -1,4 +1,5 @@
 import { Money } from '../../../../libs/ddd/money.value-object';
+import { RentalStateChangedError } from '../../application/ports/rental-state-changed.error';
 import { RentalRepositoryPort } from '../../application/ports/rental.repository.port';
 import { RentalEntity } from '../../domain/rental.entity';
 import { RentalPeriod } from '../../domain/rental-period.value-object';
@@ -39,6 +40,7 @@ function makeRepo(rental: RentalEntity | null): RentalRepositoryPort {
     save: jest.fn().mockResolvedValue(undefined),
     saveReturned: jest.fn().mockResolvedValue(undefined),
     saveCancelled: jest.fn().mockResolvedValue(undefined),
+    savePickedUp: jest.fn().mockResolvedValue(undefined),
     saveUpdated: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(rental),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
@@ -57,7 +59,19 @@ test('books → out: saves and returns the rental id', async () => {
   expect(result.isOk()).toBe(true);
   expect(result.unwrap()).toBe(RENTAL_ID);
   expect(rental.status).toBe('out');
-  expect(repo.save).toHaveBeenCalledWith(rental);
+  expect(repo.savePickedUp).toHaveBeenCalledWith(rental);
+  expect(repo.save).not.toHaveBeenCalled(); // never the unguarded write
+});
+
+test('cancelled between load and lock → the same rejected_pickup_not_allowed (PR #38 C1)', async () => {
+  const repo = makeRepo(makeRental());
+  (repo.savePickedUp as jest.Mock).mockRejectedValue(new RentalStateChangedError('cancelled'));
+
+  const result = await new PickupRentalService(repo).execute(command);
+
+  const error = result.unwrapErr() as RentalPickupNotAllowedError;
+  expect(error).toBeInstanceOf(RentalPickupNotAllowedError);
+  expect(error.currentStatus).toBe('cancelled');
 });
 
 test('an already handed-out rental cannot be handed out again', async () => {
@@ -69,7 +83,7 @@ test('an already handed-out rental cannot be handed out again', async () => {
 
   expect(result.isErr()).toBe(true);
   expect(result.unwrapErr()).toBeInstanceOf(RentalPickupNotAllowedError);
-  expect(repo.save).not.toHaveBeenCalled();
+  expect(repo.savePickedUp).not.toHaveBeenCalled();
 });
 
 test('unknown rental → RentalNotFoundError', async () => {

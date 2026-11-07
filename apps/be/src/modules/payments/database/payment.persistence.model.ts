@@ -7,7 +7,14 @@ import { z } from 'zod';
 export const paymentSchema = z.object({
   id: z.string(),
   rental_id: z.string(),
-  kind: z.enum(['deposit', 'deposit_refund', 'rental_fee', 'late_fee', 'damage_fee']),
+  kind: z.enum([
+    'deposit',
+    'deposit_refund',
+    'rental_fee',
+    'rental_fee_refund',
+    'late_fee',
+    'damage_fee',
+  ]),
   amount: z.number().int(),
   note: z.string().nullable(),
   created_at: z.union([z.number(), z.string(), z.date()]),

@@ -1,10 +1,10 @@
 import { ExceptionBase } from '../../../../libs/exceptions';
 
 /**
- * Part of the RentalRepositoryPort CONTRACT for `saveCancelled`: the rental's ledger holds at
- * least one money row, checked under the rental's row lock so a collection cannot slip in
- * between the service's decision and the status flip. Money on file must leave through the
- * return flow, never be orphaned by a cancel (FR-RENT-10 §6.Q2).
+ * Part of the RentalRepositoryPort CONTRACT for `saveCancelled`: the rental is OUT and its ledger
+ * holds at least one money row, checked under the rental's row lock so a collection cannot slip
+ * in between the service's decision and the status flip. The dress is with the customer, so the
+ * money leaves through the return flow (FR-RENT-10 §6.Q2, narrowed by cancel-with-refund §6.Q1).
  *
  * Technical signal, not a business rejection — `cancel-rental.service.ts` converts it into the
  * `rejected_cancel_has_payments` outcome.

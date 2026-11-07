@@ -45,6 +45,15 @@ export class RentalDetailDto {
   readonly notes!: string | null;
 
   @ApiProperty({
+    example: 'Khách huỷ sát ngày — giữ tiền thuê',
+    nullable: true,
+    type: String,
+    description:
+      'Why the rental was cancelled (rentals/cancel-with-refund) — required when money was kept; null otherwise',
+  })
+  readonly cancelReason!: string | null;
+
+  @ApiProperty({
     example: 100000,
     description:
       'Discount on the rental fee in VND (FR-RENT-11); 0 = none. Expected rental fee = Σ dresses.agreedPrice − discountAmount.',

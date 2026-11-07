@@ -12,6 +12,7 @@ export const PaymentDtoKind = {
   deposit: 'deposit',
   deposit_refund: 'deposit_refund',
   rental_fee: 'rental_fee',
+  rental_fee_refund: 'rental_fee_refund',
   late_fee: 'late_fee',
   damage_fee: 'damage_fee',
 } as const;

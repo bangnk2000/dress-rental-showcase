@@ -125,7 +125,16 @@ files here.
 Two things that are NOT deviations but bite if missed: the three former
 `features/*/lib/is-conflict-error.ts` files are deleted — never recreate that shape; and rejection
 copy is per feature namespace, where `t('status.<value>')` renders the `currentStatus` payload, so a
-NEW rental status needs its label in BOTH `rentals` and `today`.
+NEW rental status needs its label in `rentals`, `today` AND `common:cancelRental.status`.
+
+**One UI shared by several features** (2026-11-07, `rentals/cancel-with-refund`): the cancel dialog
+is used by the today board, `/rentals` and `/rentals/:id`. Features never import each other and the
+kernel may not import `@/api`, so it is split: the presentational dialog lives in the kernel
+(`components/rentals/cancel-rental-dialog.tsx`, which also owns the plain-data result types) and its
+data side — queries, mutation, invalidations, outcome → result mapping — is a hook in the api ring
+(`src/api/use-cancel-rental.ts`, api → kernel is allowed). Each feature calls the hook and passes it
+to the dialog. Never name an outcome payload field `kind`: `mapApiError` uses it as the
+outcome/fault discriminant and overwrites it.
 
 ## Where do I add a new feature?
 

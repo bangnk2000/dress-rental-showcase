@@ -689,6 +689,27 @@
         "migration": false,
         "deployed": "5cd5646 2026-10-31"
       }
+    },
+    {
+      "id": "rentals/cancel-with-refund",
+      "title": "Cancel a booked rental that already holds money, recording the refunds in the ledger",
+      "description": "Owner ask 2026-11-07 (split out of rentals/deposit-at-pickup Q8, ships first). FR-RENT-06 amended: a BOOKED rental with deposit/rental_fee on file can be cancelled; the cancel writes deposit_refund / rental_fee_refund (new kind, migration) in the same transaction as the status flip; each refund <= collected, basis re-checked under the row lock; retaining money is owner-only + note. OUT with money still rejected_cancel_has_payments. Owner approved all 5 rules 2026-11-07 and chose to skip the prototype round.",
+      "tier": "design",
+      "designDoc": "docs/design/rentals/cancel-with-refund.md",
+      "status": "pass",
+      "dependencies": [
+        "rentals/update-rental"
+      ],
+      "testedAt": "2026-11-07",
+      "evidence": "2026-11-07: spec docs/design/rentals/cancel-with-refund.md approved by owner (§6 Q1–Q5) and stamped as-built (§7); owner chose to skip the prototype round. BE: migration 1755800000000 (payments_kind_check + rental_fee_refund; down refuses while such rows exist), CancelRentalRequestDto (basis + refunds + note), saveCancelled re-reads status + ledger FOR UPDATE and writes refund rows in the same transaction, 4 new outcomes in ADR 0001 §3/§4 (rejected_cancel_basis_changed, rejected_refund_exceeds_collected {refundKind}, rejected_retention_note_required, forbidden/cancel_retention_requires_owner at 403). Gates all green on 925ca91 + docs: pnpm contract:check, check, lint (only the pre-existing fe rental-form.tsx warning), arch (4 apps), test (be jest 297, fe vitest 173 incl. 6 new cancel-with-refund cases (one proves the money dialog's 'Đã hoàn khách' total now adds rental_fee_refund), qr-admin/web green), be test:e2e 18 suites / 160 on real Postgres — cancel-with-refund.e2e-spec.ts: staff full refund → cancelled + both rows + calendar rebooks; staff retention → 403 outcome, nothing written; owner retention needs note, zero refund writes no row; refund > collected → 422 refundKind; stale basis → 422 with amounts on file; concurrent collect vs cancel → exactly one wins with its named outcome; OUT with money → has_payments even with correct basis; raw SQL: CHECK admits rental_fee_refund, refuses unknown kind (23514 payments_kind_check); migration down refuses with rows, down/up flips the CHECK. fe/qr-admin/web builds green. Not run: Playwright (no cancel scenario in e2e/; CI e2e job), no manual browser session. Not deployed. Codex review PR #38 round 0 → fixed: C1 pickup/return now re-read status under the row lock (savePickedUp / saveReturned, RentalStateChangedError → named outcome; e2e races pickup↔refund-cancel and return↔cancel); C2 cancel reason stored on rentals.cancel_reason (migration 1755800000001, GET /rentals/:id cancelReason, shown on the detail; e2e keep-everything keeps the reason, down refuses with reasons on file). After the fixes: be jest 298, be e2e 164, fe vitest 174.",
+      "deploy": {
+        "order": [
+          "migrate",
+          "be",
+          "fe"
+        ],
+        "migration": true
+      }
     }
   ]
 }

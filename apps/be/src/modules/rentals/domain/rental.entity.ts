@@ -79,6 +79,10 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
     return this.props.discount;
   }
 
+  get cancelReason(): string | null {
+    return this.props.cancelReason ?? null;
+  }
+
   /** Σ item prices — the rental fee BEFORE the discount. */
   get itemsTotal(): Money {
     return Money.create(this.props.items.reduce((sum, item) => sum + item.price.amount, 0));
@@ -131,11 +135,12 @@ export class RentalEntity extends AggregateRoot<RentalProps> {
    * is EMPTY (a mis-created born-out rental, FR-RENT-10 §6.Q2) — that money rule lives in the
    * application/repository layer, since the aggregate cannot see the payments table.
    */
-  cancel(now: Date): Result<void, RentalCancelNotAllowedError> {
+  cancel(now: Date, reason: string | null = null): Result<void, RentalCancelNotAllowedError> {
     if (this.props.status !== 'booked' && this.props.status !== 'out') {
       return Err(new RentalCancelNotAllowedError(this.props.status));
     }
     this.props.status = 'cancelled';
+    this.props.cancelReason = reason;
     for (const item of this.props.items) {
       item.unblock(now);
     }

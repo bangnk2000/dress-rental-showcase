@@ -13,7 +13,8 @@ function shiftDays(isoDate: string, days: number): string {
 
 /**
  * FR-RENT-10 (docs/design/rentals/pickup-before-return.md): return only from `out`, same-day and
- * backdated creates are born delivered, and cancel is gated on an EMPTY ledger.
+ * backdated creates are born delivered, and an OUT rental cancels only with an EMPTY ledger
+ * (booked + money: test/cancel-with-refund.e2e-spec.ts).
  */
 describe('pickup gate (real Postgres)', () => {
   let context: E2eContext;
@@ -138,7 +139,9 @@ describe('pickup gate (real Postgres)', () => {
     expect(blocking.rows[0]!.blocking).toBe(true);
   });
 
-  it('a BOOKED rental with a collected deposit refuses the cancel too — the same money rule', async () => {
+  // Narrowed 2026-11-07 (rentals/cancel-with-refund): a BOOKED rental with money cancels WITH
+  // refunds — a bare cancel (no basis) is told what is on file instead of being refused outright.
+  it('a BOOKED rental with a collected deposit and a bare cancel → told the basis, nothing written', async () => {
     const today = shopToday();
     const rentalId = await createRental(shiftDays(today, 10), shiftDays(today, 12), 'E2E-G07');
     expect(await statusOf(rentalId)).toBe('booked');
@@ -155,7 +158,12 @@ describe('pickup gate (real Postgres)', () => {
       token: context.token,
     });
     expect(cancel.status).toBe(422);
-    expect(cancel.body).toEqual({ status: 'rejected_cancel_has_payments' });
+    expect(cancel.body).toEqual({
+      status: 'rejected_cancel_basis_changed',
+      collectedDeposit: 1_000_000,
+      collectedRentalFee: 0,
+    });
+    expect(await statusOf(rentalId)).toBe('booked');
   });
 
   it('the normal advance flow is untouched: book future → pickup on the day → return', async () => {
