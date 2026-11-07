@@ -4,11 +4,11 @@
 
 | | |
 | --- | --- |
-| Bounded context | `rentals` (Core) — chủ của create + pickup; ghi vào sổ `payments` qua `PaymentRecorderPort` (cùng đường với return flow) |
-| Status | **draft 2026-11-07** — chờ chủ tiệm trả lời §6 (Q1–Q8). Chưa có code, chưa có ledger entry |
+| Bounded context | `rentals` (Core) — chủ của create + pickup; ghi vào sổ `payments` bằng domain code của record-collection (xem amendment R1 ở §6) |
+| Status | **rules approved 2026-11-07** (§6 Q1–Q6, Q8) — còn chờ: prototype §3 duyệt. Chưa có code. **Phụ thuộc:** `rentals/cancel-with-refund` (Q8) ship TRƯỚC |
 | AC source | Yêu cầu chủ tiệm 2026-11-07: *"khi tạo đơn có 1 checkbox để tick xem khách hàng đã trả cả tiền cọc hay chỉ mới trả tiền thuê; nếu chưa trả tiền cọc thì có warning ở màn giao váy và hiện thêm 1 modal confirm để nhân viên xác nhận là đã thu đủ tiền cọc khi giao váy"* |
 | FR | **FR-RENT-14 (đề xuất, §5)** — vào SRS cùng PR code, sau khi §6 được duyệt |
-| Rules approved by | — (chờ) |
+| Rules approved by | Chủ tiệm — 2026-11-07 (§6) |
 
 > Vì sao design-tier: contract cross-context MỚI (create + pickup của rentals ghi dòng `deposit` /
 > `rental_fee` vào sổ payments — trước nay chỉ return flow làm vậy), và pattern tương tác FE mới
@@ -65,8 +65,8 @@ Business flow:
   2. Đơn phải booked                               → rejected_pickup_not_allowed        (có sẵn)
   3. depositCollected có mặt và sổ ĐÃ có dòng cọc  → rejected_deposit_already_recorded  (TÁI DÙNG
                                                      code của record-collection, + recordedAmount)
-  4. [chỉ khi Q3 = chặn cứng] depositCollected vắng và sổ chưa có cọc
-                                                   → rejected_deposit_not_collected     (MỚI, Q3)
+  4. depositCollected vắng và sổ chưa có cọc       → rejected_deposit_not_collected     (MỚI, Q3)
+     (đọc sổ dưới row lock của đơn — một collect chen vào giữa vẫn được thấy)
   5. markPickedUp + (nếu có) ghi dòng deposit — MỘT transaction
   6. Race thua UNIQUE index ở bước 5 → truy vấn lại, trả ĐÚNG outcome bước 3 (giống record-collection)
 ```
@@ -84,7 +84,11 @@ cọc khác với số nhân viên này đang cầm — màn hình phải cho th
 | | `rejected_rental_not_found` | | 422 | — | có sẵn |
 | | `rejected_pickup_not_allowed` | | 422 | `currentStatus` | có sẵn |
 | | `rejected_deposit_already_recorded` | Gửi kèm cọc nhưng sổ đã có dòng cọc | 422 | `recordedAmount` | **mới trên endpoint này** (code có sẵn) |
-| | `rejected_deposit_not_collected` | Giao mà chưa thu cọc | 422 | — | **chỉ khi Q3 = chặn cứng** |
+| | `rejected_deposit_not_collected` | Giao mà sổ chưa có cọc và lệnh không kèm cọc | 422 | — | **mới** (Q3) |
+
+Ghi chú: đây là luật ở BE (không chỉ FE) — client cũ gọi pickup không body sẽ bị từ chối khi sổ
+chưa có cọc. FE và BE ship cùng một đơn vị (invariant #5), nên không có client cũ nào ngoài
+cache trình duyệt; toast lỗi chung đủ cho khoảng chuyển tiếp đó.
 
 ## 3. UI state matrix
 
@@ -105,16 +109,16 @@ cọc khác với số nhân viên này đang cầm — màn hình phải cho th
 | đã cọc | `depositCollected > 0` | như hiện tại; nhãn nhỏ "Đã cọc {{amount}}" |
 | **chưa cọc** | `depositCollected = 0` | nhãn/banner vàng **"Chưa thu cọc"** trên thẻ đơn |
 | bấm Giao (đã cọc) | | giao luôn như hiện tại |
-| bấm Giao (chưa cọc) | | **Modal "Xác nhận thu cọc"**: ô Tiền cọc pre-fill Σ cọc chuẩn (sửa được) + nút **"Đã thu cọc & giao váy"**; nút phụ theo Q3 ("Giao, chưa thu cọc" — hoặc không có nếu chặn cứng) |
+| bấm Giao (chưa cọc) | | **Modal "Xác nhận thu cọc"**: ô Tiền cọc pre-fill Σ cọc chuẩn (sửa được, ≥ 1, Q4) + nút **"Đã thu cọc & giao váy"** + nút Đóng. KHÔNG có nút giao mà bỏ qua cọc (Q3) |
 | submitting | | nút disabled, chặn double submit |
 | accepted | 200 | toast "Đã giao váy và ghi nhận cọc." / "Đã giao váy."; refetch board + payments |
 | deposit-already | `rejected_deposit_already_recorded` | GIỮ modal, message "Đơn đã ghi cọc {{recordedAmount}} — giao lại không kèm cọc"; refetch; nút đổi thành "Giao váy" |
-| not-collected | `rejected_deposit_not_collected` (Q3) | message trong modal, giữ ô tiền |
+| not-collected | `rejected_deposit_not_collected` (board cũ nghĩ đã cọc, nhưng sổ không có) | refetch board + MỞ modal thu cọc cho đơn đó |
 | pickup-not-allowed / not-found | có sẵn | hành vi hiện tại (toast + refetch) |
 | network-error | | toast + bấm lại (an toàn: lần 2 bị UNIQUE / state guard chặn) |
 
-Prototype từng hàng (`docs/design/prototypes/rentals/deposit-at-pickup/`) vẽ SAU khi §6 chốt —
-Q1/Q3/Q5 đổi hình dạng của form và modal.
+Prototype từng hàng (`docs/design/prototypes/rentals/deposit-at-pickup/`): vòng duyệt thứ hai,
+TRƯỚC khi code.
 
 ## 4. FE data needs
 
@@ -135,11 +139,27 @@ Contract: BE → `pnpm contract` → cả 3 client (web/qr-admin không dùng, c
 | FR (đề xuất) | **FR-RENT-14** Thu tiền lúc đặt & nhắc cọc lúc giao: form tạo đơn ghi nhận tiền thuê (và cọc nếu khách đã đóng) vào sổ cùng lúc tạo; đơn sắp giao mà sổ chưa có cọc bị đánh dấu "Chưa thu cọc"; giao váy chưa cọc phải qua modal xác nhận thu cọc, ghi dòng cọc cùng transaction với pickup |
 | Feature id | `rentals/deposit-at-pickup` (tier: design, designDoc: file này) |
 | Invariants | không thêm constraint mới — tái dùng partial UNIQUE (1 dòng deposit / 1 dòng rental_fee mỗi đơn) và state guard pickup; proof e2e mới: create+collect rollback khi đơn trùng lịch; pickup+deposit race với collect; raw SQL vẫn bị UNIQUE chặn |
-| BE tests | create với/không `collect`; pickup với `depositCollected` (ok / already-recorded / race); Q3 nếu chặn cứng |
-| FE tests | checkbox + pre-fill; banner board; modal 3 nhánh |
-| ADR 0001 §3/§4 | thêm hàng `rejected_deposit_already_recorded` cho pickup (+ `rejected_deposit_not_collected` nếu Q3) |
+| BE tests | create với/không `collect`; pickup với `depositCollected` (ok / already-recorded / race); pickup không cọc khi sổ trống → rejected_deposit_not_collected (cả race với collect) |
+| FE tests | checkbox + pre-fill; banner board (cả 3 mục); modal: ok, already-recorded, not-collected |
+| ADR 0001 §3/§4 | thêm hàng `rejected_deposit_already_recorded` cho pickup + rejected_deposit_not_collected |
 
-## 6. Owner decisions — CHỜ chủ tiệm (chưa có mặc định nào được áp)
+## 6. Decisions (chủ tiệm chốt 2026-11-07)
+
+| # | Quyết định |
+| --- | --- |
+| 1 | Tiền thuê lúc tạo: **tuỳ chọn**, pre-fill Σ giá − giảm giá; xoá trắng = chưa thu |
+| 2 | Checkbox "Khách đã đóng cọc": **không tick sẵn** |
+| 3 | Giao váy khi sổ chưa có cọc: **chặn cứng** → `rejected_deposit_not_collected`; modal chỉ có "Đã thu cọc & giao váy" |
+| 4 | Số cọc **sửa được**, ghi số thực thu (≥ 1), một dòng cọc duy nhất — thu thiếu vẫn tính "đã cọc" |
+| 5 | Đơn sinh `out` lúc tạo: **cảnh báo vàng trên form**, vẫn cho lưu không cọc |
+| 6 | Áp cho **mọi đơn**, kể cả đơn tạo trước tính năng |
+| 7 | Không còn áp dụng (Q3 bỏ nút giao-không-cọc) |
+| 8 | Huỷ đơn đã trả trước: **huỷ kèm ghi tiền hoàn**, tách thành feature riêng `rentals/cancel-with-refund` (kind mới hoàn tiền thuê + migration), spec riêng, **ship trước** feature này |
+
+Ghi nhận: Q3 (chặn cứng) + Q5 (giao ngay được lưu không cọc) nghĩa là đơn tạo hôm nay có thể ra
+khỏi tiệm không cọc, đơn đặt trước thì không. Chủ tiệm chọn vậy có chủ đích.
+
+### Câu hỏi đã hỏi (giữ để truy vết)
 
 | # | Câu hỏi | Agent đề xuất | Vì sao | Nếu chọn khác |
 | --- | --- | --- | --- | --- |

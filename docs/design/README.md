@@ -33,6 +33,7 @@ Yêu cầu sản phẩm: [../SRS-dress-rental.md](../SRS-dress-rental.md) (FR/BR
 | --- | --- | --- |
 | `rentals/settle-late-fee` (FR-RENT-09) | **as-built 2026-08-10** — spec duyệt trước khi code, §6 ghi 4 quyết định của chủ tiệm | [rentals/settle-late-fee.md](./rentals/settle-late-fee.md) |
 | `rentals/update-rental` (FR-RENT-12/13) | **agent-default** · as-built 2026-09-18 — spec + code cùng session theo yêu cầu trực tiếp của chủ tiệm; §6 là 9 mặc định của agent CHỜ chủ tiệm xác nhận/bác (`node scripts/ledger.mjs pending`) | [rentals/update-rental.md](./rentals/update-rental.md) |
+| `rentals/deposit-at-pickup` (FR-RENT-14 đề xuất) | **rules approved 2026-11-07** — chờ duyệt prototype; phụ thuộc `rentals/cancel-with-refund` (chưa có spec, ship trước) | [rentals/deposit-at-pickup.md](./rentals/deposit-at-pickup.md) |
 
 Chỉ spec `approved` mới được feed scaffold prompt. Spec ở đây là **intent**: nó nói cái SẼ xây và
 outcome catalog mà cả hai phía cùng dùng, không phải mô tả lại code đã có.
