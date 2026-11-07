@@ -107,8 +107,11 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   lối tắt booked→returned); ghi các dòng tiền `deposit_refund` / `late_fee` / `damage_fee`
   (+ ghi chú) vào `payments`. Váy tiếp tục bị block hết buffer (= "đang vệ sinh"), sau đó tự do.
 - **FR-RENT-06** Cancel: đơn `booked` — hoặc `out` với **sổ tiền TRỐNG** (FR-RENT-10 §6.Q2) —
-  → `cancelled`; items chuyển `blocking=false` — **giải phóng lịch, giữ lịch sử**. Sổ có tiền
-  → `rejected_cancel_has_payments`: lối ra duy nhất là return.
+  → `cancelled`; items chuyển `blocking=false` — **giải phóng lịch, giữ lịch sử**. Đơn `out` có
+  tiền → `rejected_cancel_has_payments`: lối ra duy nhất là return. Đơn **`booked` có tiền** (trả
+  trước) huỷ được **kèm dòng hoàn** `deposit_refund` / `rental_fee_refund` ghi CÙNG transaction,
+  mỗi khoản hoàn ≤ khoản đã thu (basis kiểm dưới row lock); giữ lại tiền chỉ chủ tiệm và phải ghi
+  lý do. Quyết định + lý do: [design/rentals/cancel-with-refund.md](./design/rentals/cancel-with-refund.md) §6.
 - **FR-RENT-07** Bảng "Hôm nay": váy phải giao hôm nay (due out — gồm cả đơn **đã giao** trong
   ngày, xếp sau đơn chưa giao, để nhân viên nhìn một chỗ thấy cả ngày đã giao gì), phải nhận về
   hôm nay (due back), và **OVERDUE** — màn hình nhân viên mở mỗi sáng, có nút thao tác trực tiếp.
@@ -220,7 +223,7 @@ Trạng thái giao hàng KHÔNG ghi ở đây — đọc từ ledger: `node scri
 | FR-RENT-03 | `rentals/availability-check` | [rentals-aggregate.md](./design/rentals-aggregate.md) |
 | FR-RENT-04, 07 | `rentals/today-board` | [rentals-aggregate.md](./design/rentals-aggregate.md) |
 | FR-RENT-05 | `rentals/return-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md), [payments-aggregate.md](./design/payments-aggregate.md) |
-| FR-RENT-06 | `rentals/cancel-rental` | [rentals-aggregate.md](./design/rentals-aggregate.md) |
+| FR-RENT-06 | `rentals/cancel-rental`, `rentals/cancel-with-refund` | [rentals-aggregate.md](./design/rentals-aggregate.md), [rentals/cancel-with-refund.md](./design/rentals/cancel-with-refund.md) (spec `as-built`) |
 | FR-RENT-08 | `rentals/list-rentals` | [rentals-aggregate.md](./design/rentals-aggregate.md) |
 | FR-PAY-01 | `payments/list-payments` | [payments-aggregate.md](./design/payments-aggregate.md) |
 | FR-PAY-02 | `payments/record-collection` | [payments/record-collection.md](./design/payments/record-collection.md) (spec `as-built`), [payments-aggregate.md](./design/payments-aggregate.md) |

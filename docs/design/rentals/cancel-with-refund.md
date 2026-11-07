@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) — chủ của cancel; ghi dòng hoàn vào sổ `payments` qua `PaymentRecorderPort` (cùng đường với return flow) |
-| Status | **approved 2026-11-07** (§6 Q1–Q5, mọi đề xuất được chấp nhận). Chủ tiệm **chọn bỏ vòng prototype** (2026-11-07) — §3 state matrix là bản thiết kế UI; ledger `rentals/cancel-with-refund` = in-progress |
+| Status | **as-built 2026-11-07** (§7) — approved 2026-11-07 (§6 Q1–Q5, mọi đề xuất được chấp nhận). Chủ tiệm **chọn bỏ vòng prototype** (2026-11-07) — §3 state matrix là bản thiết kế UI |
 | AC source | [deposit-at-pickup](./deposit-at-pickup.md) §6.Q8, chủ tiệm chốt 2026-11-07: *"huỷ kèm ghi tiền hoàn — dialog huỷ hỏi số tiền trả lại khách: cọc hoàn đủ, tiền thuê hoàn tuỳ (phần giữ lại = phí huỷ); sổ ghi dòng hoàn rồi đơn chuyển Đã huỷ"*; tách feature, ship TRƯỚC deposit-at-pickup |
 | FR | **FR-RENT-06 sửa (đề xuất, §5)** — vào SRS cùng PR code |
 | Rules approved by | Chủ tiệm — 2026-11-07 (§6) |
@@ -146,3 +146,20 @@ Prototype từng hàng (`docs/design/prototypes/rentals/cancel-with-refund/`): v
 | major | Cancel có body ⇒ ba nơi gọi `cancelRental.mutate({ id })` phải đổi; client cũ (không basis) + sổ có tiền ⇒ `basis_changed` thay vì `has_payments` | FE map `basis_changed` → mở dialog hoàn |
 | minor | `rejected_cancel_has_payments` thu hẹp nghĩa (chỉ `out`) — message FE hiện nói chung chung | đổi copy: "Đơn đã giao có tiền — dùng Nhận về" |
 | minor | `PaymentRecorderPort.SettlementPaymentKind` thêm `rental_fee_refund` | một dòng type |
+
+## 7. Re-sync as-built (2026-11-07)
+
+Khớp spec, trừ các điểm sau (đã phản ánh ở trên và trong ADR 0001):
+
+| Điểm | As-built | Vì sao |
+| --- | --- | --- |
+| Ghi dòng hoàn | Trong transaction của `RentalRepository.saveCancelled` (đọc status + sổ `FOR UPDATE`, rồi INSERT) — KHÔNG qua `PaymentRecorderPort` (finding minor ở trên không cần nữa) | Port đó ghi trong transaction RIÊNG (return flow chấp nhận "đã trả mà mất dòng phí"); với huỷ, "đã huỷ mà mất dòng hoàn" là sai tiền → một transaction. Vẫn là adapter chạm bảng của context khác (apps/be Deviation #4) |
+| Thứ tự kiểm | hoàn vượt / giữ tiền kiểm trên basis CLIENT gửi, trước khi khoá; basis kiểm dưới row lock sau | Repository chứng minh basis = sổ, nên kiểm trên basis là kiểm trên sổ. Hệ quả: basis sai + hoàn vượt basis → `rejected_refund_exceeds_collected` trước `rejected_cancel_basis_changed` |
+| Tên payload | `refundKind` (không phải `kind`) | `mapApiError` của FE dùng `kind` làm discriminant (`outcome`/`fault`) và ghi đè payload trùng tên |
+| API: ô hoàn vắng mặt | vắng = 0 (giữ lại) → kích hoạt luật giữ tiền | API không tự trả tiền khách thay người bấm; UI luôn gửi đủ hai số |
+| Status đổi giữa lúc tải và lúc khoá | `returned`/`cancelled` → `rejected_cancel_not_allowed` (qua `RentalStateChangedError`); `booked → out` mà có tiền → `rejected_cancel_has_payments` | Status đọc lại dưới row lock, không tin aggregate đã tải |
+| FE | MỘT dialog kernel `components/rentals/cancel-rental-dialog.tsx` + hook `api/use-cancel-rental.ts` (kernel không được import `@/api`), thay 3 bản mutation huỷ; key `rentals:cancel.*` / `today:cancel.*` → `common:cancelRental.*` | Ba feature dùng chung mà không import chéo |
+| Migration down | Từ chối khi đã có dòng `rental_fee_refund` | Không xoá lịch sử tiền để vừa schema cũ |
+
+Bằng chứng: ledger `rentals/cancel-with-refund` — be jest, be e2e `test/cancel-with-refund.e2e-spec.ts`
+(race collect ↔ cancel, raw SQL CHECK, migration down/up), fe vitest 5 ca mới.

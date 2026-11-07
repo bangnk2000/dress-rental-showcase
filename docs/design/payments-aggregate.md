@@ -14,6 +14,7 @@ Ranh giới hiện tại chia theo *ai sinh ra khoản tiền*:
 | --- | --- | --- |
 | `deposit`, `rental_fee` (tiền VÀO) | **payments** — `record-collection` | Thu tiền là nghiệp vụ đứng riêng: khách đưa cọc lúc đặt, lúc lấy váy, hay chuyển khoản trước đều được (chủ tiệm chốt 2026-08-10) |
 | `deposit_refund`, `late_fee`, `damage_fee` (tất toán) | **rentals** — return flow qua `PaymentRecorderPort` | Tất toán là một BƯỚC của việc trả váy, không phải use case độc lập |
+| `deposit_refund`, `rental_fee_refund` (hoàn khi huỷ, 2026-11-07) | **rentals** — cancel flow, ghi trong transaction của `saveCancelled` | Huỷ đơn `booked` đã trả trước là một BƯỚC của việc huỷ ([rentals/cancel-with-refund.md](./rentals/cancel-with-refund.md)); `rental_fee_refund` chỉ cancel sinh ra |
 
 Đây đúng là kịch bản đã dự trù từ lần thiết kế đầu ("khi có nghiệp vụ tiền độc lập thì aggregate +
 command mọc ở ĐÂY, không phình vào rentals") — và nó đã xảy ra.
@@ -27,7 +28,7 @@ command mọc ở ĐÂY, không phình vào rentals") — và nó đã xảy ra.
 ## Persistence sketch
 
 `payments` (id, rental_id FK → rentals, kind CHECK ∈ {`deposit`, `deposit_refund`, `rental_fee`,
-`late_fee`, `damage_fee`}, amount integer CHECK ≥ 0, note, created_at). Không có `updated_at`: dòng
+`rental_fee_refund` (migration `1755800000000`), `late_fee`, `damage_fee`}, amount integer CHECK ≥ 0, note, created_at). Không có `updated_at`: dòng
 tiền viết một lần. Hai partial UNIQUE index (migration `1754900000000`) giữ BR-7.
 
 ## Bảng invariant-enforcement
