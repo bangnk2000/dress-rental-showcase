@@ -5,10 +5,10 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) — chủ của cancel; ghi dòng hoàn vào sổ `payments` qua `PaymentRecorderPort` (cùng đường với return flow) |
-| Status | **draft 2026-11-07** — chờ chủ tiệm trả lời §6 (Q1–Q5). Chưa có code, chưa có ledger entry |
+| Status | **rules approved 2026-11-07** (§6 Q1–Q5, mọi đề xuất được chấp nhận) — còn chờ: prototype §3 duyệt. Chưa có code |
 | AC source | [deposit-at-pickup](./deposit-at-pickup.md) §6.Q8, chủ tiệm chốt 2026-11-07: *"huỷ kèm ghi tiền hoàn — dialog huỷ hỏi số tiền trả lại khách: cọc hoàn đủ, tiền thuê hoàn tuỳ (phần giữ lại = phí huỷ); sổ ghi dòng hoàn rồi đơn chuyển Đã huỷ"*; tách feature, ship TRƯỚC deposit-at-pickup |
 | FR | **FR-RENT-06 sửa (đề xuất, §5)** — vào SRS cùng PR code |
-| Rules approved by | — (chờ) |
+| Rules approved by | Chủ tiệm — 2026-11-07 (§6) |
 
 > Vì sao design-tier: **đổi state transition đã duyệt** (FR-RENT-06 §6.Q2 — huỷ chỉ khi sổ trống),
 > thêm **kind mới** trong CHECK của `payments` (migration), và thêm luật tiền có race với
@@ -121,7 +121,13 @@ Prototype từng hàng (`docs/design/prototypes/rentals/cancel-with-refund/`): v
 | FE tests | dialog 2 dạng; pre-fill; owner/staff; basis-changed |
 | ADR 0001 §3/§4 | thêm 3 code 422 + reason 403 mới |
 
-## 6. Owner decisions — CHỜ chủ tiệm
+## 6. Decisions (chủ tiệm chốt 2026-11-07 — chấp nhận cả 5 đề xuất bên dưới)
+
+1. Huỷ có tiền **chỉ cho `booked`**; `out` có tiền vẫn phải Nhận về.
+2. Ô hoàn tiền thuê **pre-fill hoàn đủ**.
+3. Giữ lại tiền (cọc hoặc tiền thuê) **chỉ owner, bắt buộc ghi chú**.
+4. Cọc **được** giữ lại theo cùng luật Q3.
+5. **Không** có phí huỷ tự tính — người huỷ nhập số hoàn.
 
 | # | Câu hỏi | Agent đề xuất | Vì sao | Nếu chọn khác |
 | --- | --- | --- | --- | --- |
