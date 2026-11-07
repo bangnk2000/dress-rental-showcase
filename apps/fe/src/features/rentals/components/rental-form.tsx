@@ -23,7 +23,11 @@ import {
   type RentalFormValues,
 } from '../schemas/rental-form.schema';
 import { parseCollectAmount } from '../lib/parse-collect-amount';
-import { BookingPaymentFields, type BookingPaymentValues } from './booking-payment-fields';
+import {
+  BookingPaymentFields,
+  type BookingPaymentValues,
+  type PaymentErrors,
+} from './booking-payment-fields';
 import { DressPicker, type BlockedDresses, type PickerPeriod, type SelectedDress } from './dress-picker';
 import { RentalFormMessage } from './rental-form-message';
 
@@ -139,6 +143,7 @@ export function RentalForm({
     deposit: '',
   });
   const touched = useRef({ rentalFee: false, deposit: false });
+  const [paymentErrors, setPaymentErrors] = useState<PaymentErrors>({});
   useEffect(() => {
     setPayment((current) => ({
       ...current,
@@ -193,6 +198,20 @@ export function RentalForm({
     );
     const collectedFee = parseCollectAmount(payment.rentalFee);
     const collectedDeposit = payment.depositPaid ? parseCollectAmount(payment.deposit) : null;
+    if (mode === 'create') {
+      // A typo must never turn money that changed hands into "not collected" (Codex PR #39 C1):
+      // a non-blank fee must be an amount, and a ticked deposit must carry one.
+      const errors: PaymentErrors = {
+        ...(payment.rentalFee.trim() !== '' && collectedFee === null
+          ? { rentalFee: 'form.payment.errors.invalidAmount' }
+          : {}),
+        ...(payment.depositPaid && collectedDeposit === null
+          ? { deposit: 'form.payment.errors.depositRequired' }
+          : {}),
+      };
+      setPaymentErrors(errors);
+      if (errors.rentalFee || errors.deposit) return;
+    }
     setSubmitting(true);
     try {
       await onSubmit({
@@ -379,7 +398,9 @@ export function RentalForm({
               if (next.rentalFee !== payment.rentalFee) touched.current.rentalFee = true;
               if (next.deposit !== payment.deposit) touched.current.deposit = true;
               setPayment(next);
+              setPaymentErrors({});
             }}
+            errors={paymentErrors}
             expectedFee={expectedFee}
             standardDeposit={standardDeposit}
             bornOut={bornOut}

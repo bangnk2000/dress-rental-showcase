@@ -31,12 +31,12 @@ interface PickupDepositDialogProps {
   onClose: () => void;
 }
 
-/** A typed amount as a whole VND ≥ 1, or null. */
+/** A typed amount as a whole VND ≥ 1, or null. Digits only: `Number('500.000')` is 500. */
 function parseAmount(raw: string): number | null {
   const trimmed = raw.trim();
-  if (!trimmed) return null;
+  if (!/^\d+$/.test(trimmed)) return null;
   const value = Number(trimmed);
-  return Number.isInteger(value) && value >= 1 ? value : null;
+  return Number.isSafeInteger(value) && value >= 1 ? value : null;
 }
 
 /**

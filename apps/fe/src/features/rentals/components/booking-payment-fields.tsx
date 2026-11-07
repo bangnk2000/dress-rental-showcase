@@ -13,8 +13,15 @@ export interface BookingPaymentValues {
   deposit: string;
 }
 
+/** i18n keys (rentals namespace) shown under each field; set at submit by the form. */
+export interface PaymentErrors {
+  rentalFee?: string;
+  deposit?: string;
+}
+
 interface BookingPaymentFieldsProps {
   values: BookingPaymentValues;
+  errors: PaymentErrors;
   onChange: (next: BookingPaymentValues) => void;
   /** Σ agreed price − discount: what the pre-fill of the fee is based on. */
   expectedFee: number;
@@ -32,12 +39,20 @@ interface BookingPaymentFieldsProps {
  */
 export function BookingPaymentFields({
   values,
+  errors,
   onChange,
   expectedFee,
   standardDeposit,
   bornOut,
 }: BookingPaymentFieldsProps) {
   const { t } = useTranslation('rentals');
+  const translate = t as unknown as (key: string) => string;
+  const errorFor = (key: string | undefined) =>
+    key ? (
+      <p role="alert" className="text-sm text-destructive">
+        {translate(key)}
+      </p>
+    ) : null;
   const fee = parseCollectAmount(values.rentalFee);
   const deposit = parseCollectAmount(values.deposit);
 
@@ -58,6 +73,7 @@ export function BookingPaymentFields({
             ? formatVnd(fee)
             : t('form.payment.rentalFeeHint', { amount: formatVnd(expectedFee) })}
         </p>
+        {errorFor(errors.rentalFee)}
       </div>
       <label className="flex items-center gap-2 text-sm">
         <input
@@ -83,6 +99,7 @@ export function BookingPaymentFields({
               ? formatVnd(deposit)
               : t('form.payment.depositHint', { amount: formatVnd(standardDeposit) })}
           </p>
+          {errorFor(errors.deposit)}
         </div>
       ) : null}
       {bornOut && !(values.depositPaid && deposit !== null) ? (

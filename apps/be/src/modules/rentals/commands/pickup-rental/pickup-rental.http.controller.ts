@@ -10,6 +10,7 @@ import {
 import { CommandBus } from '@nestjs/cqrs';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
@@ -51,6 +52,8 @@ export class PickupRentalHttpController {
       'Business rejection: rejected_rental_not_found | rejected_pickup_not_allowed (carries currentStatus) | rejected_deposit_not_collected | rejected_deposit_already_recorded (recordedAmount)',
   })
   @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Invalid pickup body' })
+  // Optional on the wire too: a body-less pickup is the normal case when a deposit is on file.
+  @ApiBody({ type: PickupRentalRequestDto, required: false })
   async pickup(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: PickupRentalRequestDto,

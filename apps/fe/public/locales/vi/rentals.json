@@ -94,7 +94,11 @@
       "depositPaid": "Khách đã đóng cọc",
       "deposit": "Tiền cọc đã thu",
       "depositHint": "Cọc chuẩn của các váy: {{amount}}",
-      "bornOutNoDeposit": "Đơn này giao ngay hôm nay nhưng chưa thu cọc — nếu khách đã đưa cọc, tick \"Khách đã đóng cọc\"."
+      "bornOutNoDeposit": "Đơn này giao ngay hôm nay nhưng chưa thu cọc — nếu khách đã đưa cọc, tick \"Khách đã đóng cọc\".",
+      "errors": {
+        "invalidAmount": "Nhập số tiền bằng chữ số, không dấu chấm/phẩy (vd 1500000) — hoặc để trống nếu chưa thu.",
+        "depositRequired": "Đã tick \"Khách đã đóng cọc\" thì phải nhập số cọc đã thu (chỉ chữ số, vd 3000000)."
+      }
     }
   },
   "picker": {

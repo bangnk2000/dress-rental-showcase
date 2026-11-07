@@ -94,7 +94,11 @@
       "depositPaid": "Customer paid the deposit",
       "deposit": "Deposit collected",
       "depositHint": "Standard deposit of the dresses: {{amount}}",
-      "bornOutNoDeposit": "This rental is handed out today but no deposit is recorded — if the customer paid one, tick \"Customer paid the deposit\"."
+      "bornOutNoDeposit": "This rental is handed out today but no deposit is recorded — if the customer paid one, tick \"Customer paid the deposit\".",
+      "errors": {
+        "invalidAmount": "Enter the amount in digits only, no separators (e.g. 1500000) — or leave it blank if nothing was paid.",
+        "depositRequired": "With \"Customer paid the deposit\" ticked, enter the deposit collected (digits only, e.g. 3000000)."
+      }
     }
   },
   "picker": {

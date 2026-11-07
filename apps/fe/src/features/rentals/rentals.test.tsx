@@ -162,6 +162,35 @@ describe('FR-RENT-14: money handed over at booking', () => {
     expect(getLastCreateRentalBody()).not.toHaveProperty('collect');
   });
 
+  test('Codex C1: a mistyped fee or a ticked-but-empty deposit cannot submit as "not collected"', async () => {
+    seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', rentalPrice: 500_000 })]);
+    const user = userEvent.setup();
+    renderNewRental();
+
+    await fillCustomerAndDates(user);
+    await pickDress(user, 'DR-001');
+    const fee = screen.getByLabelText('Tiền thuê đã thu');
+    await user.clear(fee);
+    await user.type(fee, '500.000'); // separators are not an amount
+    await user.click(screen.getByLabelText('Khách đã đóng cọc'));
+    await user.clear(screen.getByLabelText('Tiền cọc đã thu'));
+    await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+
+    // '500.000' is NOT 500: Number() would read the separator as a decimal point.
+    expect(await screen.findByText(/Nhập số tiền bằng chữ số/)).toBeInTheDocument();
+    expect(screen.getByText(/phải nhập số cọc đã thu/)).toBeInTheDocument();
+    expect(getLastCreateRentalBody()).toBeNull(); // nothing went out
+
+    await user.clear(fee);
+    await user.type(fee, '500000');
+    await user.type(screen.getByLabelText('Tiền cọc đã thu'), '3000000');
+    await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+    await screen.findByText('rentals-list-stub');
+    expect(getLastCreateRentalBody()).toMatchObject({
+      collect: { rentalFee: 500_000, deposit: 3_000_000 },
+    });
+  });
+
   test('§6.Q5: a rental handed out today without a deposit is warned about, not blocked', async () => {
     seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
     const user = userEvent.setup();
