@@ -376,10 +376,6 @@
       "dependencies": [],
       "ownerPending": [
         {
-          "item": "Q1: ai xem chi tiết đơn — mặc định mọi nhân viên, chỉ nút Sửa là owner (docs/design/rentals/update-rental.md §6)",
-          "since": "2026-09-18"
-        },
-        {
           "item": "Q2: sửa được ở booked + out; returned/cancelled từ chối toàn bộ (docs/design/rentals/update-rental.md §6)",
           "since": "2026-09-18"
         },
@@ -401,10 +397,6 @@
         },
         {
           "item": "Q7: sổ đã có tiền KHÔNG chặn sửa (docs/design/rentals/update-rental.md §6)",
-          "since": "2026-09-18"
-        },
-        {
-          "item": "Q8: owner-only là guard rental:update (403 envelope), không phải outcome có tên (docs/design/rentals/update-rental.md §6)",
           "since": "2026-09-18"
         },
         {
@@ -724,6 +716,28 @@
       ],
       "testedAt": "2026-11-07",
       "evidence": "2026-11-07: spec docs/design/rentals/deposit-at-pickup.md approved by owner (§6) and stamped as-built (§7); owner chose to skip the prototype round. BE: CreateRentalRequestDto.collect {deposit, rentalFee} (@Min(1)) written by RentalRepository.insertWithCollection AFTER the rental row in the same transaction; PickupRentalRequestDto.depositCollected judged in savePickedUp under the rental row lock (rejected_deposit_not_collected / rejected_deposit_already_recorded {recordedAmount}); today board depositCollected per rental (subquery). ADR 0001 §3/§4 rows added; SRS FR-RENT-14. `bash init.sh` → all runnable gates green: ledger check, contract:check, check, lint (only the pre-existing fe rental-form.tsx warning), arch (4 apps), be jest 303, fe vitest 180, be test:e2e 19 suites / 175 on real Postgres — deposit-at-pickup.e2e-spec.ts: create with collect writes deposit + rental_fee; fee only → no deposit row; 0₫ collect → 400 and no rental; concurrent creates for the same dress → one 201 + one 422 and payments only for the winner (no orphan); booking without deposit → 422 rejected_deposit_not_collected, still booked; pickup with depositCollected → out + one deposit row; deposit on file → body-less pickup 200; deposit brought while one on file → 422 with recordedAmount, nothing moves; race pickup+deposit vs collect → exactly one deposit row, loser gets its named outcome; board depositCollected is per rental (6M for a 2-dress rental, not 12M); born-out create without deposit allowed. fe vitest: create form fee pre-fill + unticked deposit + partial deposit sent, cleared fee → no collect, born-out warning; board badge 'Chưa thu cọc' / 'Đã cọc', deposit dialog pre-fill + body, no hand-out-without-deposit button, already-recorded keeps the dialog and hands out without a deposit, stale not_collected reopens the dialog. Playwright happy path updated to collect at booking; local run blocked before the changed steps (dev DB owner password is not the CI seed 'changeme') — the CI e2e job is the proof. Also in this branch: fix(fe) a980ffc — the cancel dialog no longer doubles each rejection with the global mutation toast (ships with PR #39, not in the 1067bc1 deploy). Not deployed. Deploy: no migration of its own (both came with rentals/cancel-with-refund, which must deploy first); after deploy reload the CMS on every shop device before the first handout — an old cached PWA shows rentalNotFound for the new outcomes.",
+      "deploy": {
+        "order": [
+          "be",
+          "fe"
+        ],
+        "migration": false
+      }
+    },
+    {
+      "id": "rentals/update-rental-by-staff",
+      "title": "Every staff member may edit an open rental (FR-RENT-13 opened beyond the owner)",
+      "tier": "standard",
+      "status": "in-progress",
+      "description": "Owner ask 2026-11-07: \"Mở tính năng sửa đơn cho nhân viên\"; scope asked back and answered \"Sửa tất cả như chủ\" (every field incl. discount/price). Resolves rentals/update-rental §6 Q1 + Q8 (removed from its ownerPending). rental:update policy → any authenticated staff; OpenAPI drops the 403 + owner-only summary (description only); FE shows Sửa đơn to everyone and the edit route loses its role redirect. Amendment: docs/design/rentals/update-rental.md §8.",
+      "dependencies": [
+        "rentals/update-rental"
+      ],
+      "acceptance": [
+        "AC1: staff PATCH /rentals/:id on an open rental → 200 and the edit (name + discount) is written",
+        "AC2: staff sees Sửa đơn on an open rental detail and gets the edit form (no redirect)"
+      ],
+      "evidence": "",
       "deploy": {
         "order": [
           "be",

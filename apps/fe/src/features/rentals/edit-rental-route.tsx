@@ -1,10 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 
 import { mapApiError } from '@/api/errors';
-import { useMeHttpControllerMeSuspense } from '@/api/generated/identity/identity';
 import {
   getGetRentalHttpControllerGetQueryKey,
   getGetTodayBoardHttpControllerGetQueryKey,
@@ -73,15 +72,13 @@ export function EditRentalRoute() {
 }
 
 /**
- * FR-RENT-13: the owner rewrites an open rental. The route guards itself on me.role — display
- * only; the BE policy (rental:update, owner-only, fail-closed) is the actual rule. The me query is
- * already in the cache (the session provider hydrated it), so the guard costs no request.
+ * FR-RENT-13: any staff member rewrites an open rental (owner decision 2026-11-07 — it was
+ * owner-only before). No role gate here: the BE policy rental:update is the rule.
  */
 function EditRental({ rentalId }: { rentalId: string }) {
   const { t } = useTranslation('rentals');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: me } = useMeHttpControllerMeSuspense();
   const { data: rental } = useGetRentalHttpControllerGetSuspense(rentalId);
 
   // Dress rejections render inside the form; the two rental-level outcomes are handled below.
@@ -105,7 +102,7 @@ function EditRental({ rentalId }: { rentalId: string }) {
     } catch (error) {
       const mapped = mapApiError(error);
       if (mapped.kind === 'outcome' && mapped.status === 'rejected_update_not_allowed') {
-        // Staff closed the rental while the owner was editing: say which state it is in and
+        // Someone closed the rental while this edit was open: say which state it is in and
         // go back to the (refreshed) detail — there is nothing left to edit here.
         toast.error(
           t('edit.notAllowed', {
@@ -129,10 +126,6 @@ function EditRental({ rentalId }: { rentalId: string }) {
     await refreshRentalQueries();
     toast.success(t('edit.success'));
     void navigate(`/rentals/${rentalId}`);
-  }
-
-  if (me.role !== 'owner') {
-    return <Navigate to={`/rentals/${rentalId}`} replace />;
   }
 
   return (

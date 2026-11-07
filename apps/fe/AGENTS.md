@@ -66,7 +66,7 @@ files here.
 4. **No shell routes remain.** `/rentals` is the real list (`rentals/list-rentals`,
    URL-owned q/status/page via `use-rental-filters`); `/rentals/new` navigates to it on
    success. `/rentals/:id` is the rental detail (`rentals/update-rental`, FR-RENT-12: get-rental
-   + the shared money dialog) and `/rentals/:id/edit` the OWNER's edit form (FR-RENT-13) — both
+   + the shared money dialog) and `/rentals/:id/edit` the edit form (FR-RENT-13; any staff since 2026-11-07, no role gate) — both
    `/rentals/new` and the edit render ONE `components/rental-form.tsx`; the route owns the
    mutation, the form owns the dress rejections. The today board at `/` is live and ACTIONABLE (`rentals/today-board` +
    `rentals/return-rental`): three sections (due-out / due-back / overdue), pickup +

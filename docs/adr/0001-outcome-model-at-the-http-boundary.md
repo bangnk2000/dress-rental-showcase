@@ -190,6 +190,7 @@ UNIQUE thành `CollectionConflictError`, service đọc lại sổ rồi trả �
 - `PATCH /rentals/:id` (FR-RENT-13, 2026-09-18): TOÀN BỘ endpoint là của owner (`rental:update`),
   không có nhánh nào trong use case phân biệt theo vai trò → staff gọi = guard chặn = 403
   **envelope**, giống `user:manage`/`dress:retire`. `GET /rentals/:id` là read: 404 envelope.
+  *Amendment 2026-11-07:* chủ tiệm mở `rental:update` cho mọi nhân viên — endpoint không còn 403.
 - `catalog/dress-photo-upload` — `POST /photos/upload-urls` (FR-CAT-10, 2026-09-25, spec
   [catalog/dress-photo-upload.md](../design/catalog/dress-photo-upload.md) §2): không có từ chối
   nghiệp vụ — loại/cỡ sai là **input invalid**, thiếu cấu hình R2 là **lỗi kỹ thuật**, nên service

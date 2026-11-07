@@ -51,7 +51,7 @@ function useStaffSession() {
 
 beforeEach(() => {
   resetRentals();
-  // Both routes read /auth/me for the owner gate — give the mutator a token so it answers.
+  // The session reads /auth/me — give the mutator a token so it answers.
   setTokens(testTokenPair);
 });
 
@@ -81,13 +81,16 @@ test('FR-RENT-12: the detail shows the agreement in full — notes included — 
   expect(screen.getByRole('button', { name: 'Huỷ' })).toBeInTheDocument();
 });
 
-test('a staff session sees the detail but no edit action', async () => {
+test('a staff session may edit too (owner decision 2026-11-07)', async () => {
   seedRentalDetail(makeRentalDetail());
   useStaffSession();
   renderRentalRoutes('/rentals/rental-1');
 
   await screen.findByRole('heading', { name: 'Lượt thuê của Nguyễn Thị Hoa' });
-  expect(screen.queryByRole('link', { name: 'Sửa đơn' })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Sửa đơn' })).toHaveAttribute(
+    'href',
+    '/rentals/rental-1/edit',
+  );
   expect(screen.getByRole('button', { name: /^Tiền/ })).toBeInTheDocument();
 });
 
@@ -227,15 +230,13 @@ test('a dress rejection keeps the edit form and points at the dress, like the cr
   expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeEnabled();
 });
 
-test('a staff session is redirected off the edit route to the detail', async () => {
+test('a staff session gets the edit form, not a redirect', async () => {
   seedRentalDetail(makeRentalDetail());
   useStaffSession();
   renderRentalRoutes('/rentals/rental-1/edit');
 
-  expect(
-    await screen.findByRole('heading', { name: 'Lượt thuê của Nguyễn Thị Hoa' }),
-  ).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Lưu thay đổi' })).not.toBeInTheDocument();
+  expect(await screen.findByRole('button', { name: 'Lưu thay đổi' })).toBeInTheDocument();
+  expect(screen.getByLabelText('Tên khách')).toHaveValue('Nguyễn Thị Hoa');
 });
 
 test('a closed rental shows no form on the edit route', async () => {

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 
-import { useMeHttpControllerMeSuspense } from '@/api/generated/identity/identity';
 import { useGetRentalHttpControllerGetSuspense } from '@/api/generated/rentals/rentals';
 import type { RentalDetailDto } from '@/api/generated/model';
 import { useCancelRental } from '@/api/use-cancel-rental';
@@ -26,13 +25,12 @@ export function RentalDetailRoute() {
 
 /**
  * ONE screen for one rental (FR-RENT-12): what was agreed, with whom, for when — and the first
- * place the notes are shown. Actions mirror the list row (money, cancel) plus the owner's edit
- * (FR-RENT-13). Pickup and return stay on the today board, where the settlement dialog lives.
+ * place the notes are shown. Actions mirror the list row (money, cancel) plus the edit
+ * (FR-RENT-13, any staff since 2026-11-07). Pickup and return stay on the today board, where the settlement dialog lives.
  */
 function RentalDetail({ rentalId }: { rentalId: string }) {
   const { t } = useTranslation('rentals');
   const { data: rental } = useGetRentalHttpControllerGetSuspense(rentalId);
-  const { data: me } = useMeHttpControllerMeSuspense();
   const [paymentsOpen, setPaymentsOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const cancelController = useCancelRental(cancelOpen ? rentalId : null);
@@ -85,9 +83,7 @@ function RentalDetail({ rentalId }: { rentalId: string }) {
             >
               {t('detail.actions.payments')}
             </Button>
-            {/* Editing is owner-only (FR-RENT-13): hiding the button is display — the edit
-                route AND the BE policy both re-check. */}
-            {open && me.role === 'owner' ? (
+            {open ? (
               <Button asChild>
                 <Link to={`/rentals/${rentalId}/edit`}>{t('detail.actions.edit')}</Link>
               </Button>
