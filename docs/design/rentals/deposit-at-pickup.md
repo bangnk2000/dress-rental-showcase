@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Bounded context | `rentals` (Core) — chủ của create + pickup; ghi vào sổ `payments` bằng domain code của record-collection (xem amendment R1 ở §6) |
-| Status | **rules approved 2026-11-07** (§6 Q1–Q6, Q8) — còn chờ: prototype §3 duyệt. Chưa có code. **Phụ thuộc:** `rentals/cancel-with-refund` (Q8) ship TRƯỚC |
+| Status | **approved 2026-11-07** (§6 Q1–Q6, Q8). Chủ tiệm **chọn bỏ vòng prototype** (2026-11-07, "code luôn đi") — §3 state matrix là bản thiết kế UI. Phụ thuộc `rentals/cancel-with-refund` đã merge (PR #38). Ledger `rentals/deposit-at-pickup` = in-progress |
 | AC source | Yêu cầu chủ tiệm 2026-11-07: *"khi tạo đơn có 1 checkbox để tick xem khách hàng đã trả cả tiền cọc hay chỉ mới trả tiền thuê; nếu chưa trả tiền cọc thì có warning ở màn giao váy và hiện thêm 1 modal confirm để nhân viên xác nhận là đã thu đủ tiền cọc khi giao váy"* |
 | FR | **FR-RENT-14 (đề xuất, §5)** — vào SRS cùng PR code, sau khi §6 được duyệt |
 | Rules approved by | Chủ tiệm — 2026-11-07 (§6) |
@@ -102,7 +102,10 @@ cache trình duyệt; toast lỗi chung đủ cho khoảng chuyển tiếp đó.
 | giao ngay (sinh `out`) | startDate ≤ hôm nay & không tick cọc | cảnh báo vàng ngay trên nút Lưu: "Đơn này giao ngay — chưa thu cọc" (Q5) |
 | accepted / rejections | như hiện tại | không đổi; sổ ghi cùng lúc nên trang chi tiết hiện ngay các dòng tiền |
 
-### Giao váy — Bảng Hôm nay (nút Giao ở CẢ ba mục: `dueOut`, và đơn `booked` nằm ở `dueBack` / `overdue` — FR-RENT-10c giao trễ; `today-route.tsx`) và `/rentals/:id`
+### Giao váy — Bảng Hôm nay (nút Giao ở CẢ ba mục: `dueOut`, và đơn `booked` nằm ở `dueBack` / `overdue` — FR-RENT-10c giao trễ; `today-route.tsx`)
+
+`/rentals/:id` KHÔNG có nút giao (giao và nhận về chỉ ở bảng Hôm nay — `rental-detail-route.tsx`), nên
+không thuộc phạm vi (sửa 2026-11-07 khi bắt đầu code).
 
 | State | Condition | Display / action |
 | --- | --- | --- |
@@ -117,15 +120,14 @@ cache trình duyệt; toast lỗi chung đủ cho khoảng chuyển tiếp đó.
 | pickup-not-allowed / not-found | có sẵn | hành vi hiện tại (toast + refetch) |
 | network-error | | toast + bấm lại (an toàn: lần 2 bị UNIQUE / state guard chặn) |
 
-Prototype từng hàng (`docs/design/prototypes/rentals/deposit-at-pickup/`): vòng duyệt thứ hai,
-TRƯỚC khi code.
+Prototype: chủ tiệm chọn bỏ (2026-11-07).
 
 ## 4. FE data needs
 
 | Need | Source | Change |
 | --- | --- | --- |
 | Board biết đơn nào chưa cọc | `GET /rentals/today-board` | **thêm `depositCollected: number`** (Σ dòng deposit, 0 = chưa) vào `TodayBoardRentalDto` — một subquery trong projection, KHÔNG gọi payments theo từng thẻ |
-| Pre-fill cọc trong modal | Σ `depositAmount` của váy | thêm `standardDeposit: number` vào `TodayBoardRentalDto`; trang chi tiết đã có (`dresses[].depositAmount`, `get-rental.query-handler.ts`) |
+| Pre-fill cọc trong modal | Σ `depositAmount` của váy | không đổi — `TodayBoardRentalDto.dresses[].depositAmount` đã có (bỏ `standardDeposit` dự tính ban đầu) |
 | Chi tiết đơn | `GET /rentals/:id/payments` (`summary.deposit`) | không đổi |
 | Tạo đơn | `CreateRentalRequestDto.collect` | mới |
 | Giao váy | `PickupRentalRequestDto.depositCollected` (body mới; hiện pickup không có body) | mới |

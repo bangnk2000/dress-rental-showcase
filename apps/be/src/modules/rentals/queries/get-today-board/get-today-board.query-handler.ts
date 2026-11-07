@@ -46,7 +46,11 @@ export class GetTodayBoardQueryHandler
              r.period::text AS period, ri.dress_id, ri.price,
              (lower(r.period) = ${date}::date) AS due_out,
              (upper(r.period) - 1 = ${date}::date) AS due_back,
-             (upper(r.period) - 1 < ${date}::date) AS overdue
+             (upper(r.period) - 1 < ${date}::date) AS overdue,
+             -- FR-RENT-14: per RENTAL, not per item row — a subquery, never a JOIN that would
+             -- multiply the deposit by the number of dresses.
+             (SELECT coalesce(sum(p.amount), 0)::int FROM payments p
+               WHERE p.rental_id = r.id AND p.kind = 'deposit') AS deposit_collected
       FROM rentals r
       JOIN rental_items ri ON ri.rental_id = r.id
       WHERE r.status IN ('booked', 'out')

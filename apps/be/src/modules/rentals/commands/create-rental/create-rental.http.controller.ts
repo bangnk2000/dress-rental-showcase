@@ -58,6 +58,10 @@ export class CreateRentalHttpController {
           dressId: item.dressId,
           price: item.price ?? null,
         })),
+        collect: {
+          deposit: body.collect?.deposit ?? null,
+          rentalFee: body.collect?.rentalFee ?? null,
+        },
       }),
     );
 

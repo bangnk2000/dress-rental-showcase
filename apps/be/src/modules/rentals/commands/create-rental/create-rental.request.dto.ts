@@ -29,6 +29,27 @@ export class CreateRentalItemRequestDto {
   readonly price?: number;
 }
 
+/**
+ * FR-RENT-14: money already handed over at booking, recorded in the same transaction as the
+ * rental. Absent amount = not collected (the ledger has no 0₫ rows, BR-4).
+ */
+export class CreateRentalCollectDto {
+  @ApiPropertyOptional({ example: 3000000, description: 'Deposit collected at booking (VND ≥ 1)' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  readonly deposit?: number;
+
+  @ApiPropertyOptional({
+    example: 1500000,
+    description: 'Rental fee collected at booking (VND ≥ 1)',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  readonly rentalFee?: number;
+}
+
 export class CreateRentalRequestDto {
   @ApiProperty({ example: 'Nguyễn Thị Hoa' })
   @IsString()
@@ -63,6 +84,16 @@ export class CreateRentalRequestDto {
   @IsInt()
   @Min(0)
   readonly discountAmount?: number;
+
+  @ApiPropertyOptional({
+    type: CreateRentalCollectDto,
+    description:
+      'FR-RENT-14: money handed over at booking — written to the ledger in the same transaction; omit = nothing collected',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateRentalCollectDto)
+  readonly collect?: CreateRentalCollectDto;
 
   @ApiProperty({ type: [CreateRentalItemRequestDto], description: 'Dresses to book (1..n)' })
   @IsArray()

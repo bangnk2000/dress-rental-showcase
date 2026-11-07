@@ -710,6 +710,17 @@
         ],
         "migration": true
       }
+    },
+    {
+      "id": "rentals/deposit-at-pickup",
+      "title": "Record money at booking; a booking without a deposit cannot be handed out until the deposit is collected",
+      "description": "Owner ask 2026-11-07, FR-RENT-14. Create form: optional rental fee paid (pre-filled) + checkbox \"Khách đã đóng cọc\" (unticked) with an editable deposit, recorded in the SAME transaction as the rental. Today board marks bookings whose ledger has no deposit; pickup is a hard block (§6.Q3) — the pickup modal collects the deposit and records it in the same transaction as booked → out (rejected_deposit_not_collected / rejected_deposit_already_recorded). Born-out creates without a deposit only warn on the form (§6.Q5). Applies to existing rentals too (§6.Q6). Owner approved §6 Q1–Q6, Q8 (split into rentals/cancel-with-refund, shipped first) and chose to skip the prototype round.",
+      "tier": "design",
+      "designDoc": "docs/design/rentals/deposit-at-pickup.md",
+      "status": "in-progress",
+      "dependencies": [
+        "rentals/cancel-with-refund"
+      ]
     }
   ]
 }

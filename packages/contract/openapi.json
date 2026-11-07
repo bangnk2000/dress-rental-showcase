@@ -1842,6 +1842,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PickupRentalRequestDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -1853,8 +1863,18 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid pickup body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "Business rejection: rejected_rental_not_found | rejected_pickup_not_allowed (carries currentStatus)",
+            "description": "Business rejection: rejected_rental_not_found | rejected_pickup_not_allowed (carries currentStatus) | rejected_deposit_not_collected | rejected_deposit_already_recorded (recordedAmount)",
             "content": {
               "application/json": {
                 "schema": {
@@ -1869,7 +1889,7 @@
             "bearer": []
           }
         ],
-        "summary": "Mark a booked rental as handed out to the customer",
+        "summary": "Hand a booked rental out to the customer — only with a deposit on file or collected now (FR-RENT-14)",
         "tags": [
           "rentals"
         ]
@@ -4411,6 +4431,23 @@
           "uploads"
         ]
       },
+      "CreateRentalCollectDto": {
+        "type": "object",
+        "properties": {
+          "deposit": {
+            "type": "number",
+            "minimum": 1,
+            "example": 3000000,
+            "description": "Deposit collected at booking (VND ≥ 1)"
+          },
+          "rentalFee": {
+            "type": "number",
+            "minimum": 1,
+            "example": 1500000,
+            "description": "Rental fee collected at booking (VND ≥ 1)"
+          }
+        }
+      },
       "CreateRentalItemRequestDto": {
         "type": "object",
         "properties": {
@@ -4467,6 +4504,14 @@
             "minimum": 0,
             "example": 100000,
             "description": "Discount on the rental fee in VND (integer, FR-RENT-11); omit or 0 = none. Must not exceed the sum of the item prices (400 otherwise)."
+          },
+          "collect": {
+            "description": "FR-RENT-14: money handed over at booking — written to the ledger in the same transaction; omit = nothing collected",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CreateRentalCollectDto"
+              }
+            ]
           },
           "items": {
             "uniqueItems": true,
@@ -4610,13 +4655,26 @@
           "status"
         ]
       },
+      "PickupRentalRequestDto": {
+        "type": "object",
+        "properties": {
+          "depositCollected": {
+            "type": "number",
+            "minimum": 1,
+            "example": 3000000,
+            "description": "Deposit collected at the counter as the dresses go out (VND integer ≥ 1). Required when no deposit is on file (rejected_deposit_not_collected otherwise); refused when one is (rejected_deposit_already_recorded)."
+          }
+        }
+      },
       "PickupRentalOutcomeDto": {
         "type": "object",
         "properties": {
           "status": {
             "enum": [
               "rejected_rental_not_found",
-              "rejected_pickup_not_allowed"
+              "rejected_pickup_not_allowed",
+              "rejected_deposit_not_collected",
+              "rejected_deposit_already_recorded"
             ],
             "type": "string"
           },
@@ -4628,6 +4686,10 @@
               "cancelled"
             ],
             "type": "string"
+          },
+          "recordedAmount": {
+            "type": "number",
+            "description": "Deposit already on file (rejected_deposit_already_recorded)"
           }
         },
         "required": [
@@ -4947,6 +5009,11 @@
             "example": "2026-08-03",
             "description": "Last rental day (inclusive)"
           },
+          "depositCollected": {
+            "type": "number",
+            "example": 3000000,
+            "description": "FR-RENT-14: deposit on file for this rental, VND (0 = none yet — a booked rental cannot be handed out without collecting one)"
+          },
           "dresses": {
             "type": "array",
             "items": {
@@ -4961,6 +5028,7 @@
           "status",
           "startDate",
           "endDate",
+          "depositCollected",
           "dresses"
         ]
       },

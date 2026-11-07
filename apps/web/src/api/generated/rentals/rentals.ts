@@ -40,6 +40,7 @@ import type {
   LateFeeQuoteResponseDto,
   ListRentalsHttpControllerListParams,
   PickupRentalOutcomeDto,
+  PickupRentalRequestDto,
   RentalDetailDto,
   RentalListResponseDto,
   ReturnRentalOutcomeDto,
@@ -383,16 +384,17 @@ export const useCancelRentalHttpControllerCancel = <TError = ApiErrorResponseDto
 }
 
 /**
- * @summary Mark a booked rental as handed out to the customer
+ * @summary Hand a booked rental out to the customer — only with a deposit on file or collected now (FR-RENT-14)
  */
-export const pickupRentalHttpControllerPickup = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<IdResponse> => {
+export const pickupRentalHttpControllerPickup = async (id: string,
+    pickupRentalRequestDto: PickupRentalRequestDto, options?: Parameters<typeof customFetch>[1]): Promise<IdResponse> => {
 
   return customFetch<IdResponse>(getPickupRentalHttpControllerPickupUrl(id),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pickupRentalRequestDto)
   }
 );}
 
@@ -400,9 +402,9 @@ export const pickupRentalHttpControllerPickup = async (id: string, options?: Par
 
 
 
-export const getPickupRentalHttpControllerPickupMutationOptions = <TError = PickupRentalOutcomeDto,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string}, TContext> => {
+export const getPickupRentalHttpControllerPickupMutationOptions = <TError = ApiErrorResponseDto | PickupRentalOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string;data: PickupRentalRequestDto}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string;data: PickupRentalRequestDto}, TContext> => {
 
 const mutationKey = ['pickupRentalHttpControllerPickup'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -414,10 +416,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, {id: string}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, {id: string;data: PickupRentalRequestDto}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  pickupRentalHttpControllerPickup(id,requestOptions)
+          return  pickupRentalHttpControllerPickup(id,data,requestOptions)
         }
 
 
@@ -428,18 +430,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PickupRentalHttpControllerPickupMutationResult = NonNullable<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>>
-
-    export type PickupRentalHttpControllerPickupMutationError = PickupRentalOutcomeDto
+    export type PickupRentalHttpControllerPickupMutationBody = PickupRentalRequestDto
+    export type PickupRentalHttpControllerPickupMutationError = ApiErrorResponseDto | PickupRentalOutcomeDto
 
     /**
- * @summary Mark a booked rental as handed out to the customer
+ * @summary Hand a booked rental out to the customer — only with a deposit on file or collected now (FR-RENT-14)
  */
-export const usePickupRentalHttpControllerPickup = <TError = PickupRentalOutcomeDto,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const usePickupRentalHttpControllerPickup = <TError = ApiErrorResponseDto | PickupRentalOutcomeDto,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>, TError,{id: string;data: PickupRentalRequestDto}, TContext>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof pickupRentalHttpControllerPickup>>,
         TError,
-        {id: string},
+        {id: string;data: PickupRentalRequestDto},
         TContext
       > => {
       return useMutation(getPickupRentalHttpControllerPickupMutationOptions(options), queryClient);

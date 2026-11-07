@@ -22,6 +22,13 @@ export class TodayBoardRentalDto {
   @ApiProperty({ example: '2026-08-03', description: 'Last rental day (inclusive)' })
   readonly endDate!: string;
 
+  @ApiProperty({
+    example: 3000000,
+    description:
+      'FR-RENT-14: deposit on file for this rental, VND (0 = none yet — a booked rental cannot be handed out without collecting one)',
+  })
+  readonly depositCollected!: number;
+
   @ApiProperty({ type: [RentalDressDto] })
   readonly dresses!: RentalDressDto[];
 }

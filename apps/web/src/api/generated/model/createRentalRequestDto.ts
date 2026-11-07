@@ -4,6 +4,7 @@
  * dress-rental API
  * OpenAPI spec version: 0
  */
+import type { CreateRentalCollectDto } from './createRentalCollectDto';
 import type { CreateRentalItemRequestDto } from './createRentalItemRequestDto';
 
 export interface CreateRentalRequestDto {
@@ -34,6 +35,8 @@ export interface CreateRentalRequestDto {
      * @minimum 0
      */
   discountAmount?: number;
+  /** FR-RENT-14: money handed over at booking — written to the ledger in the same transaction; omit = nothing collected */
+  collect?: CreateRentalCollectDto;
   /**
      * Dresses to book (1..n)
      * @minItems 1

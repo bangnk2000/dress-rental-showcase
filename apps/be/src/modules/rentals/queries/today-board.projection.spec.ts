@@ -37,9 +37,23 @@ function makeRow(overrides: Partial<TodayBoardRow>): TodayBoardRow {
     due_out: true,
     due_back: false,
     overdue: false,
+    deposit_collected: 0,
     ...overrides,
   };
 }
+
+test('FR-RENT-14: the deposit on file is carried once per rental, not summed per dress row', () => {
+  const board = toTodayBoardDto(
+    '2026-08-01',
+    [
+      makeRow({ dress_id: DRESS_A, deposit_collected: 3_000_000 }),
+      makeRow({ dress_id: DRESS_B, deposit_collected: 3_000_000 }),
+    ],
+    dresses,
+  );
+
+  expect(board.dueOut[0]?.depositCollected).toBe(3_000_000);
+});
 
 test('groups item rows into one entry per rental, dresses sorted by code', () => {
   const board = toTodayBoardDto(
