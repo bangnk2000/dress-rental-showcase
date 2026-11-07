@@ -3,7 +3,14 @@
 Older `session-handoff.md` entries, moved here VERBATIM (newest first) so the resume path stays
 small — only relative Markdown link targets gain a `../../` prefix, since this file sits two
 directories below the repo root. History only — never read on resume; grep it by session number,
-e.g. `## .* (19) —`.
+e.g. `## 2026-10-30 (50) — spec re-sync 2026.10.30: owner control plane + ledger tool (docs/harness only)
+
+- Done: vendored all seven sets from knowledge-system `518495c` (git archive, PR knowledge-system#1 — NOT merged yet) + `docs/spec/SHA256SUMS` checked in CI `harness`; `scripts/ledger.mjs` → reference version (adds `pending`, `stale-status`, strict lint on `tier` entries); `ownerPending` = the 9 §6 defaults on `rentals/update-rental` (spec now `agent-default`); `deploy` on PR #30/#31 entries; SRS §7 status column dropped (2 rows were stale); CODEOWNERS + PR template. Ledger 50/50, no feature work.
+- Proof: `ledger.mjs check` OK (0 strict); `pending` → 9 owner decisions + 2 undeployed with order; `sha256sum -c` clean, and a deliberate edit to a vendored file → detected; relative links in docs/spec all resolve.
+- Next: bangnk — (1) turn on branch protection for master: PR required + CI jobs required, no force-push; (2) answer `pending` (Q1–Q9 of update-rental §6); (3) after knowledge-system#1 merges, re-sync from the merge commit if it differs from `518495c`. Deploy PR #30 → #31 still per `pending` order.
+- Watch out: existing `Deviation #N` lines in `apps/*/AGENTS.md` have no upstream reference yet (new rule in upstream prompts/README §Versioning) — record them upstream at the next re-sync. Re-sync must run in a Linux shell (GNU sed); WSL login shell is fish → `wsl.exe --exec bash <script>`.
+
+## .* (19) —`.
 
 ## 2026-10-27 (49) — base dress code on public listings (`catalog:public-base-code` = pass)
 

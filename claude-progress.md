@@ -259,3 +259,5 @@ Never needed on resume — add your line at the top without reading further.
 - 2026-11-07 (54) — PR #38 merged. rentals/deposit-at-pickup pass, 53/53 (FR-RENT-14): money at
   booking in the rental's transaction, deposit gate at pickup under the row lock, board badge +
   deposit dialog; cancel-dialog double-toast fix. init.sh green, be e2e 175, fe 180. Not deployed.
+- 2026-11-07 (55) — PR #38/#39 merged; #38 already live (run 42363551332, 1067bc1) → ledger
+  deployed + Production bullet; #39 held by owner. Docs only.
