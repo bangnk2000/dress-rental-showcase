@@ -248,6 +248,7 @@ Trạng thái giao hàng KHÔNG ghi ở đây — đọc từ ledger: `node scri
 | FR-WEB-01, 06 (CTA giữ filter) | `web:featured-filter-link` | [web/search-dresses.md](./design/web/search-dresses.md) follow-up 2026-10-03 |
 | FR-WEB-02, 03 (mã váy gốc) | `catalog:public-base-code` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Amendment 2026-10-27 |
 | FR-WEB-06 | `web:search-dresses` | [web/search-dresses.md](./design/web/search-dresses.md) (as-built 2026-10-02) |
+| FR-RENT-01, 13, 14 + NFR-06 (bố cục form) | `fe:rental-form-ux` | [rental-form-ux.md](./design/rental-form-ux.md) |
 | NFR-06 | `fe:mobile-ux` | [cms-mobile-ux.md](./design/cms-mobile-ux.md) |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — |
 
