@@ -28,7 +28,10 @@ export function DressTable({ dresses, categoryNameById, onDuplicate }: DressTabl
   const { t } = useTranslation('dresses');
 
   return (
-    <Table>
+    // Phone (cms-mobile-ux D2/D3): each dress is a block — the thumbnail on the left spans the
+    // code and name lines; size and price, then status and the action, sit beside it. Category
+    // and deposit are hidden on phones (still shown on the dress detail page).
+    <Table stacked>
       <TableHeader>
         <TableRow>
           {/* A dress shop recognises stock by sight; the header would only add noise. */}
@@ -51,11 +54,11 @@ export function DressTable({ dresses, categoryNameById, onDuplicate }: DressTabl
       </TableHeader>
       <TableBody>
         {dresses.map((dress) => (
-          <TableRow key={dress.id}>
-            <TableCell>
+          <TableRow key={dress.id} className="max-md:grid-cols-[2.5rem_1fr_1fr]">
+            <TableCell className="max-md:row-span-2">
               <PhotoThumbnail src={dress.photoUrls[0]} />
             </TableCell>
-            <TableCell>
+            <TableCell stack="title">
               <Link
                 to={`/dresses/${dress.id}`}
                 className="font-medium text-primary underline-offset-4 hover:underline"
@@ -63,22 +66,29 @@ export function DressTable({ dresses, categoryNameById, onDuplicate }: DressTabl
                 {dress.code}
               </Link>
             </TableCell>
-            <TableCell>{dress.name}</TableCell>
-            <TableCell>{dress.sizeLabel ?? '—'}</TableCell>
-            <TableCell>
+            <TableCell stack="full">
+              {dress.name}
+            </TableCell>
+            <TableCell label={t('list.columns.size')} className="max-md:col-start-2">
+              {dress.sizeLabel ?? '—'}
+            </TableCell>
+            <TableCell className="max-md:hidden">
               {dress.categoryId ? (categoryNameById.get(dress.categoryId) ?? '—') : '—'}
             </TableCell>
-            <TableCell className="text-right tabular-nums">
+            <TableCell label={t('list.columns.rentalPrice')} className="text-right tabular-nums">
               {formatVnd(dress.rentalPrice)}
             </TableCell>
-            <TableCell className="text-right tabular-nums">
+            <TableCell className="text-right tabular-nums max-md:hidden">
               {formatVnd(dress.depositAmount)}
             </TableCell>
-            <TableCell>
+            <TableCell label={t('list.columns.status')} className="max-md:col-start-2">
               <DressStatusBadge status={dress.status} />
             </TableCell>
             {onDuplicate ? (
-              <TableCell className="text-right">
+              <TableCell
+                stack="actions"
+                className="text-right max-md:col-start-2"
+              >
                 {/* The visible label repeats down the list, so the code rides in the accessible name. */}
                 <Button
                   variant="outline"

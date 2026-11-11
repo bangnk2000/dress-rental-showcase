@@ -104,10 +104,15 @@ export function DressPicker({
             {results.map((dress) => (
               <li key={dress.id} className="flex items-center gap-2 p-2">
                 <PhotoThumbnail src={dress.photoUrls[0]} />
-                <span className="min-w-0 flex-1 truncate">
-                  <span className="font-medium">{dress.code}</span>{' '}
-                  <span className="text-muted-foreground">{dress.name}</span>{' '}
-                  <span className="whitespace-nowrap">{formatVnd(dress.rentalPrice)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">
+                    <span className="font-medium">{dress.code}</span>{' '}
+                    <span className="text-muted-foreground">{dress.name}</span>
+                  </span>
+                  {/* Own line: on a phone the name truncates, the price never does. */}
+                  <span className="block text-sm whitespace-nowrap tabular-nums">
+                    {formatVnd(dress.rentalPrice)}
+                  </span>
                 </span>
                 <Button
                   type="button"
@@ -213,14 +218,19 @@ function SelectedDressRow({
 
   return (
     <li className={cn('space-y-1 p-2', rejected && 'bg-destructive/5')}>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <PhotoThumbnail src={dress.photoUrl} />
-        <span className="min-w-0 flex-1 truncate">
-          <span className="font-medium">{dress.code}</span>{' '}
-          <span className="text-muted-foreground">{dress.name}</span>{' '}
-          <span className="whitespace-nowrap">{formatVnd(dress.rentalPrice)}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate">
+            <span className="font-medium">{dress.code}</span>{' '}
+            <span className="text-muted-foreground">{dress.name}</span>
+          </span>
+          {/* Own line: on a phone the name truncates, the price never does. */}
+          <span className="block text-sm whitespace-nowrap tabular-nums">
+            {formatVnd(dress.rentalPrice)}
+          </span>
         </span>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {available !== undefined ? (
             <Badge variant={available ? 'secondary' : 'destructive'}>
               {available ? t('picker.availability.free') : t('picker.availability.busy')}

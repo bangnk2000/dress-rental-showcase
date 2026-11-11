@@ -40,9 +40,9 @@ export function TodayBoardSection({
         <ul className="space-y-2">
           {rentals.map((rental) => (
             <li key={rental.rentalId} className="space-y-2 rounded-lg border p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-medium">{rental.customerName}</span>
-                <Badge variant={statusVariant[rental.status]}>
+              <div className="flex items-start justify-between gap-2">
+                <span className="min-w-0 font-medium break-words">{rental.customerName}</span>
+                <Badge variant={statusVariant[rental.status]} className="shrink-0">
                   {t(`status.${rental.status}`)}
                 </Badge>
               </div>
@@ -61,7 +61,7 @@ export function TodayBoardSection({
                   </Badge>
                 )
               ) : null}
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm break-words text-muted-foreground">
                 <a href={`tel:${rental.customerPhone}`}>{rental.customerPhone}</a>
                 {' · '}
                 {formatDate(rental.startDate)} – {formatDate(rental.endDate)}
@@ -81,7 +81,7 @@ export function TodayBoardSection({
                 ))}
               </ul>
               {renderActions ? (
-                <div className="flex justify-end">{renderActions(rental)}</div>
+                <div className="flex flex-wrap justify-end gap-2">{renderActions(rental)}</div>
               ) : null}
             </li>
           ))}

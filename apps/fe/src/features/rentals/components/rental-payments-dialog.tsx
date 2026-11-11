@@ -59,7 +59,7 @@ export function RentalPaymentsDialog({ rental, onClose }: RentalPaymentsDialogPr
 
   return (
     <Dialog open={rental !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('payments.title')}</DialogTitle>
           <DialogDescription>
@@ -91,7 +91,7 @@ export function RentalPaymentsDialog({ rental, onClose }: RentalPaymentsDialogPr
                   key={payment.id}
                   className="flex items-start justify-between gap-4 rounded-lg border p-3"
                 >
-                  <div>
+                  <div className="min-w-0 break-words">
                     <p className="text-sm font-medium">{t(`payments.kinds.${payment.kind}`)}</p>
                     {payment.note ? (
                       <p className="text-sm text-muted-foreground">{payment.note}</p>
@@ -100,7 +100,7 @@ export function RentalPaymentsDialog({ rental, onClose }: RentalPaymentsDialogPr
                       {formatDate(payment.createdAt)}
                     </p>
                   </div>
-                  <span className="text-sm font-medium tabular-nums">
+                  <span className="shrink-0 text-sm font-medium whitespace-nowrap tabular-nums">
                     {formatVnd(payment.amount)}
                   </span>
                 </li>

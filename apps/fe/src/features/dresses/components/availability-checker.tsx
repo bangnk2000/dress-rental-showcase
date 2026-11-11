@@ -53,8 +53,12 @@ export function AvailabilityChecker({ dressId }: { dressId: string }) {
 
   return (
     <div className="space-y-3">
-      <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3" noValidate>
-        <div className="grid gap-1.5">
+      <form
+        onSubmit={onSubmit}
+        className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap sm:gap-3"
+        noValidate
+      >
+        <div className="grid min-w-0 gap-1.5">
           <Label htmlFor={startId}>{t('detail.checker.startLabel')}</Label>
           <Input
             id={startId}
@@ -63,11 +67,11 @@ export function AvailabilityChecker({ dressId }: { dressId: string }) {
             onChange={onDateChange(setStartDate)}
           />
         </div>
-        <div className="grid gap-1.5">
+        <div className="grid min-w-0 gap-1.5">
           <Label htmlFor={endId}>{t('detail.checker.endLabel')}</Label>
           <Input id={endId} type="date" value={endDate} onChange={onDateChange(setEndDate)} />
         </div>
-        <Button type="submit" disabled={query.isFetching}>
+        <Button type="submit" className="col-span-2" disabled={query.isFetching}>
           {t('detail.checker.submit')}
         </Button>
       </form>

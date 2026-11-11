@@ -40,15 +40,19 @@ export function RentalFiltersBar({ q, status, onSearch, onStatusChange }: Rental
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <form role="search" className="flex items-center gap-2" onSubmit={handleSubmit}>
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+      <form
+        role="search"
+        className="flex w-full min-w-0 items-center gap-2 sm:w-auto"
+        onSubmit={handleSubmit}
+      >
         <Input
           type="search"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={t('list.searchPlaceholder')}
           aria-label={t('list.searchPlaceholder')}
-          className="w-64"
+          className="min-w-0 flex-1 sm:w-64 sm:flex-none"
         />
         <Button type="submit" variant="secondary">
           {t('list.searchButton')}
@@ -64,7 +68,7 @@ export function RentalFiltersBar({ q, status, onSearch, onStatusChange }: Rental
           )
         }
       >
-        <SelectTrigger aria-label={t('list.statusFilterLabel')} className="w-44">
+        <SelectTrigger aria-label={t('list.statusFilterLabel')} className="w-full sm:w-44">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

@@ -79,7 +79,7 @@ function ListingsTable() {
   }
 
   return (
-    <Table>
+    <Table stacked>
       <TableHeader>
         <TableRow>
           <TableHead className="w-14">
@@ -95,13 +95,13 @@ function ListingsTable() {
         {data.data.map((listing) => (
           <TableRow
             key={listing.id}
-            className="cursor-pointer"
+            className="cursor-pointer max-md:grid-cols-[2.5rem_1fr_1fr]"
             onClick={() => void navigate(`/website/${listing.id}`)}
           >
-            <TableCell>
+            <TableCell className="max-md:row-span-2">
               <PhotoThumbnail src={listing.coverUrl} />
             </TableCell>
-            <TableCell>
+            <TableCell stack="title">
               <Link
                 to={`/website/${listing.id}`}
                 className="font-medium hover:underline"
@@ -113,13 +113,13 @@ function ListingsTable() {
                 <span className="ml-2 text-xs font-medium text-primary">{t('list.hot')}</span>
               ) : null}
             </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
+            <TableCell stack="full" className="text-sm text-muted-foreground">
               {listing.styles.map((style) => t(`styles.${style}`)).join(', ')}
             </TableCell>
-            <TableCell className="tabular-nums">
+            <TableCell label={t('list.columns.sizes')} className="tabular-nums max-md:col-start-2">
               {t('list.activeSizes', { count: listing.activeSizeCount })}
             </TableCell>
-            <TableCell>
+            <TableCell label={t('list.columns.status')}>
               <ListingStatusBadge
                 status={listingWebStatus(listing.publishedAt, listing.visibleOnWeb)}
               />

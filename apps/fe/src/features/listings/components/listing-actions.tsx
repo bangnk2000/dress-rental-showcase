@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -39,6 +39,7 @@ export function ListingActions({ listing }: { listing: ListingDto }) {
   const everPublished = listing.firstPublishedAt !== null;
   const published = listing.publishedAt !== null;
   const staffLocked = !isOwner && everPublished;
+  const deleteHintId = useId();
   const dressIds = listing.dresses.map((dress) => dress.id);
   const webUrl = published ? listingWebUrl(listing.slug) : null;
 
@@ -153,22 +154,21 @@ export function ListingActions({ listing }: { listing: ListingDto }) {
           {t('publish.publish')}
         </Button>
       )}
-      {/* A disabled button fires no hover, so the tooltip sits on its wrapper. */}
-      <span title={staffLocked ? t('delete.staffDisabled') : undefined}>
-        <Button
-          variant="destructive"
-          disabled={busy || staffLocked}
-          aria-describedby={staffLocked ? 'listing-delete-hint' : undefined}
-          onClick={() => setDeleteOpen(true)}
-        >
-          {t('delete.button')}
-        </Button>
-        {staffLocked ? (
-          <span id="listing-delete-hint" className="sr-only">
-            {t('delete.staffDisabled')}
-          </span>
-        ) : null}
-      </span>
+      <Button
+        variant="destructive"
+        disabled={busy || staffLocked}
+        aria-describedby={staffLocked ? deleteHintId : undefined}
+        onClick={() => setDeleteOpen(true)}
+      >
+        {t('delete.button')}
+      </Button>
+      {/* Why the delete is off, as visible text: a hover tooltip never shows on a touch screen
+          (cms-mobile-ux). One copy, also the button's accessible description. */}
+      {staffLocked ? (
+        <span id={deleteHintId} className="text-xs text-muted-foreground">
+          {t('delete.staffDisabled')}
+        </span>
+      ) : null}
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

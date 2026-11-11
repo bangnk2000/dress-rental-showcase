@@ -547,7 +547,7 @@ test('delete (owner, draft): the confirmation carries no 404 warning', async () 
   expect(within(dialog).queryByText(/link sẽ thành 404/)).not.toBeInTheDocument();
 });
 
-test('delete (staff, ever published): the button is disabled with the owner-only tooltip', async () => {
+test('delete (staff, ever published): the button is disabled with a visible owner-only reason', async () => {
   signInAsStaff();
   seedListings([
     makeListing({ id: 'l1', firstPublishedAt: '2026-09-01T00:00:00.000Z' }),
@@ -556,7 +556,10 @@ test('delete (staff, ever published): the button is disabled with the owner-only
 
   // The role arrives with the me query; wait for the gate to close.
   await waitFor(() => expect(screen.getByRole('button', { name: 'Xoá mẫu' })).toBeDisabled());
-  expect(screen.getByTitle('Mẫu đã từng đăng — chỉ chủ tiệm được xoá')).toBeInTheDocument();
+  // Visible text (a hover tooltip never shows on a phone), one copy, wired as the description.
+  const reason = 'Mẫu đã từng đăng — chỉ chủ tiệm được xoá';
+  expect(screen.getAllByText(reason)).toHaveLength(1);
+  expect(screen.getByRole('button', { name: 'Xoá mẫu' })).toHaveAccessibleDescription(reason);
 });
 
 test('delete (staff): a 403 listing_published_owner_only still lands as the named toast', async () => {

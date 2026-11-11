@@ -111,7 +111,7 @@ function RentalDetail({ rentalId }: { rentalId: string }) {
           {info.map((item) => (
             <div key={item.label} className="rounded-lg border p-3">
               <dt className="text-xs text-muted-foreground">{item.label}</dt>
-              <dd className="mt-1 text-sm font-medium tabular-nums">{item.value}</dd>
+              <dd className="mt-1 text-sm font-medium break-words tabular-nums">{item.value}</dd>
               {item.hint ? (
                 <dd className="mt-1 text-xs text-muted-foreground">{item.hint}</dd>
               ) : null}
@@ -122,7 +122,10 @@ function RentalDetail({ rentalId }: { rentalId: string }) {
           <h2 className="text-base font-semibold">{t('detail.dresses.title')}</h2>
           <ul className="divide-y rounded-md border">
             {rental.dresses.map((dress) => (
-              <li key={dress.dressId} className="flex items-center justify-between gap-4 p-3">
+              <li
+                key={dress.dressId}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 p-3"
+              >
                 <span className="min-w-0 truncate">
                   <Link
                     to={`/dresses/${dress.dressId}`}

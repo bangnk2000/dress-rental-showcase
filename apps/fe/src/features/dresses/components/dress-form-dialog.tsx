@@ -309,8 +309,8 @@ export function DressFormDialog({ open, onOpenChange, dress }: DressFormDialogPr
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      {/* Scrolls on a short screen: the photo grid can add two rows of tiles. */}
-      <DialogContent className="max-h-[90dvh] overflow-y-auto">
+      {/* Scrolls on a short screen (kernel cap, cms-mobile-ux D4): the photo grid can add rows. */}
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{dress ? t('form.editTitle') : t('form.title')}</DialogTitle>
           <DialogDescription>

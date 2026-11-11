@@ -87,6 +87,8 @@ export function LoginForm() {
                   type="text"
                   autoComplete="username"
                   autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder={t('username.placeholder')}
                   {...field}
                 />

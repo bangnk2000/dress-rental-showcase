@@ -56,7 +56,7 @@ export function BookingCalendar({ ranges }: { ranges: readonly BookedRangeDto[] 
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          size="icon-sm"
           aria-label={t('detail.calendar.prevMonth')}
           onClick={() => shiftMonth(-1)}
         >
@@ -66,7 +66,7 @@ export function BookingCalendar({ ranges }: { ranges: readonly BookedRangeDto[] 
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          size="icon-sm"
           aria-label={t('detail.calendar.nextMonth')}
           onClick={() => shiftMonth(1)}
         >

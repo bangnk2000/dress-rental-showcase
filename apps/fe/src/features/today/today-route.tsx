@@ -134,10 +134,11 @@ export function TodayRoute() {
         {t('actions.return')}
       </Button>
     ) : (
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">{t('notPickedUp')}</span>
+      // Phone: the label takes its own line, the two buttons share the next one.
+      <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+        <span className="text-sm text-muted-foreground max-sm:basis-full">{t('notPickedUp')}</span>
         <Button
-          className={TOUCH_ACTION}
+          className={cn(TOUCH_ACTION, 'max-sm:flex-1')}
           disabled={pickupRental.isPending}
           aria-label={t('actions.pickupFor', { customer: rental.customerName })}
           onClick={() => startPickup(rental)}
@@ -146,7 +147,7 @@ export function TodayRoute() {
         </Button>
         <Button
           variant="outline"
-          className={TOUCH_ACTION}
+          className={cn(TOUCH_ACTION, 'max-sm:flex-1')}
           aria-label={t('actions.cancelFor', { customer: rental.customerName })}
           onClick={() => setCancelTarget(rental)}
         >
@@ -160,7 +161,8 @@ export function TodayRoute() {
       <PageHeader
         title={t('title')}
         actions={
-          <div className="flex items-center gap-1">
+          // Phone: one full-width bar (‹ date › Hôm nay), the date input takes what is left.
+          <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-1 sm:flex sm:w-auto">
             <Button
               variant="outline"
               size="icon"
@@ -177,7 +179,7 @@ export function TodayRoute() {
                 // clearing a native date input yields '' — keep the last real date
                 if (event.target.value) goToDate(event.target.value);
               }}
-              className="w-auto"
+              className="min-w-0 sm:w-auto"
             />
             <Button
               variant="outline"
