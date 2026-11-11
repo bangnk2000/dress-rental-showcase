@@ -204,6 +204,7 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 - **NFR-03** FE + BE ship như MỘT unit cùng origin ở prod (không CORS).
 - **NFR-04** Quy mô nhỏ: ~200 váy, vài người dùng đồng thời — không tối ưu sớm (YAGNI).
 - **NFR-05** Contract một chiều BE → openapi → FE, drift gate trong CI (bất biến #1 của repo).
+- **NFR-06** CMS (`apps/fe`) dùng được trọn vẹn trên điện thoại 360–414px: không tràn ngang, mọi hành động chạm tới được (≥ 44px trên màn hình cảm ứng), dialog cuộn được khi bàn phím bật (2026-11-11, [design/cms-mobile-ux.md](./design/cms-mobile-ux.md)).
 
 ## 6. Ngoài phạm vi (đến khi có quyết định khác)
 
@@ -247,6 +248,7 @@ Trạng thái giao hàng KHÔNG ghi ở đây — đọc từ ledger: `node scri
 | FR-WEB-01, 06 (CTA giữ filter) | `web:featured-filter-link` | [web/search-dresses.md](./design/web/search-dresses.md) follow-up 2026-10-03 |
 | FR-WEB-02, 03 (mã váy gốc) | `catalog:public-base-code` | [catalog/public-listing.md](./design/catalog/public-listing.md) §Amendment 2026-10-27 |
 | FR-WEB-06 | `web:search-dresses` | [web/search-dresses.md](./design/web/search-dresses.md) (as-built 2026-10-02) |
+| NFR-06 | `fe:mobile-ux` | [cms-mobile-ux.md](./design/cms-mobile-ux.md) |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

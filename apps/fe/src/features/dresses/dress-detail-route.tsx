@@ -102,7 +102,7 @@ function DressDetail({ dressId }: { dressId: string }) {
       <PageHeader
         title={`${dress.code} — ${dress.name}`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <DressStatusBadge status={dress.status} />
             <Button variant="outline" onClick={() => setEditOpen(true)}>
               {t('detail.actions.edit')}
@@ -128,7 +128,7 @@ function DressDetail({ dressId }: { dressId: string }) {
           {info.map((item) => (
             <div key={item.label} className="rounded-lg border p-3">
               <dt className="text-xs text-muted-foreground">{item.label}</dt>
-              <dd className="mt-1 text-sm font-medium">{item.value}</dd>
+              <dd className="mt-1 text-sm font-medium break-words">{item.value}</dd>
             </div>
           ))}
         </dl>

@@ -41,7 +41,7 @@ export function PriceHistorySection({ dressId }: { dressId: string }) {
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <Table>
+          <Table stacked>
             <TableHeader>
               <TableRow>
                 <TableHead>{t('priceHistory.columns.date')}</TableHead>
@@ -53,7 +53,7 @@ export function PriceHistorySection({ dressId }: { dressId: string }) {
             <TableBody>
               {history.data.data.map((entry, index) => (
                 <TableRow key={`${entry.changedAt}-${index}`}>
-                  <TableCell className="whitespace-nowrap">
+                  <TableCell stack="title" className="whitespace-nowrap">
                     {formatDate(entry.changedAt)}
                     {index === 0 ? (
                       <span className="ml-2 text-xs text-muted-foreground">
@@ -61,13 +61,21 @@ export function PriceHistorySection({ dressId }: { dressId: string }) {
                       </span>
                     ) : null}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell
+                    label={t('priceHistory.columns.rentalPrice')}
+                    className="text-right tabular-nums"
+                  >
                     {formatVnd(entry.rentalPrice)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell
+                    label={t('priceHistory.columns.deposit')}
+                    className="text-right tabular-nums"
+                  >
                     {formatVnd(entry.depositAmount)}
                   </TableCell>
-                  <TableCell>{entry.changedBy?.name ?? t('priceHistory.systemChange')}</TableCell>
+                  <TableCell stack="full" label={t('priceHistory.columns.changedBy')}>
+                    {entry.changedBy?.name ?? t('priceHistory.systemChange')}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -88,12 +88,12 @@ export function UsersRoute() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <Button onClick={() => setCreateOpen(true)}>{t('create.open')}</Button>
       </div>
 
-      <Table>
+      <Table stacked>
         <TableHeader>
           <TableRow>
             <TableHead>{t('columns.username')}</TableHead>
@@ -109,15 +109,19 @@ export function UsersRoute() {
             const rowPending = pendingRowId === user.id;
             return (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.username}</TableCell>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{t(user.role === 'owner' ? 'roles.owner' : 'roles.staff')}</TableCell>
-                <TableCell>
+                <TableCell stack="title" className="font-medium">
+                  {user.username}
+                </TableCell>
+                <TableCell stack="full">{user.name}</TableCell>
+                <TableCell label={t('columns.role')}>
+                  {t(user.role === 'owner' ? 'roles.owner' : 'roles.staff')}
+                </TableCell>
+                <TableCell label={t('columns.status')}>
                   <Badge variant={user.active ? 'secondary' : 'destructive'}>
                     {user.active ? t('status.active') : t('status.locked')}
                   </Badge>
                 </TableCell>
-                <TableCell className="space-x-2 text-right">
+                <TableCell stack="actions" className="space-x-2 text-right max-md:space-x-0">
                   <Button
                     variant="outline"
                     size="sm"

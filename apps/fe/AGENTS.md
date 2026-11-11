@@ -88,7 +88,10 @@ files here.
    a live DB) — **CI runs it as its own `e2e` job** and uploads report + trace on failure;
    vitest excludes `e2e/` via its include glob. Locators are scoped to the run's OWN rows
    (`ownRows`) — the target database is not assumed empty, so never reach for a page-wide
-   `getByRole('button', …)` on the board.
+   `getByRole('button', …)` on the board. Two projects (2026-11-12, `fe:mobile-ux`): `chromium`
+   runs only the happy path; `phone` (Pixel 7, Chromium) runs only `e2e/phone-layout.spec.ts`,
+   the NFR-06 proof — no page overflow, no off-edge element, no sideways-scrolling stacked table,
+   tall dialogs fit, nav reachable, ≥ 44px targets on coarse pointers. It makes its own fixtures.
 6. **`customInstance` omits the legacy `promise.cancel` hack** — TanStack Query v5 passes
    AbortSignal in the request config (signal-based cancellation).
 7. **Unified `radix-ui` package** (not per-primitive `@radix-ui/react-*`); shadcn `sonner.tsx` is
@@ -126,6 +129,14 @@ files here.
 - **A reference figure must say it is one.** The refund is computed from the deposit ACTUALLY
   collected (`summary.deposit`); the catalog standard is a fallback and the banner then reads
   "Chưa ghi nhận tiền cọc" rather than quietly presenting it as money the shop holds.
+- **Every screen works on a phone (NFR-06, [cms-mobile-ux](../../docs/design/cms-mobile-ux.md))
+  with ONE DOM.** Never render a table plus `md:hidden` cards, a second nav, or duplicated
+  buttons/text: jsdom applies no CSS (both copies are "visible" to Testing Library) and Playwright
+  `toHaveCount` counts hidden nodes. A data table opts into `<Table stacked>` (rows become blocks
+  below `md`; `TableCell` `label` / `stack="title|full|actions"`; hide a secondary column with
+  `max-md:hidden`). Touch sizes come from the kernel (`pointer-coarse:` in button/select/input) —
+  don't hand-size buttons. Dialogs scroll inside a `100dvh` cap; never add a local `max-h-[90vh]`.
+  A reason shown only in `title` never reaches a touch screen — render it as visible text.
 
 Two things that are NOT deviations but bite if missed: the three former
 `features/*/lib/is-conflict-error.ts` files are deleted — never recreate that shape; and rejection

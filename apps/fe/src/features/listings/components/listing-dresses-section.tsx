@@ -167,7 +167,7 @@ export function ListingDressesSection({ listing }: { listing: ListingDto }) {
             <ul className="divide-y rounded-md border">
               {results.map((dress) => (
                 <li key={dress.id} className="flex flex-wrap items-center gap-2 p-2">
-                  <span className="min-w-0 flex-1 truncate">
+                  <span className="min-w-0 flex-1 max-sm:basis-full sm:truncate">
                     <span className="font-medium">{dress.code}</span>{' '}
                     <span className="text-muted-foreground">{dress.name}</span>{' '}
                     <span>{dress.sizeLabel ?? t('dresses.freesize')}</span>{' '}
@@ -220,7 +220,7 @@ export function ListingDressesSection({ listing }: { listing: ListingDto }) {
       {draft.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('dresses.empty')}</p>
       ) : (
-        <Table>
+        <Table stacked>
           <TableHeader>
             <TableRow>
               <TableHead>{t('dresses.columns.size')}</TableHead>
@@ -236,22 +236,30 @@ export function ListingDressesSection({ listing }: { listing: ListingDto }) {
           <TableBody>
             {draft.map((dress) => (
               <TableRow key={dress.id}>
-                <TableCell>{dress.sizeLabel ?? t('dresses.freesize')}</TableCell>
-                <TableCell>
+                <TableCell label={t('dresses.columns.size')}>
+                  {dress.sizeLabel ?? t('dresses.freesize')}
+                </TableCell>
+                {/* Phone: code and name lead the block (CSS order only — one DOM). */}
+                <TableCell stack="title" className="max-md:order-first">
                   <Link to={`/dresses/${dress.id}`} className="font-medium hover:underline">
                     {dress.code}
                   </Link>
                 </TableCell>
-                <TableCell>{dress.name}</TableCell>
-                <TableCell className="text-right tabular-nums">
+                <TableCell stack="full" className="max-md:order-first">
+                  {dress.name}
+                </TableCell>
+                <TableCell
+                  label={t('dresses.columns.rentalPrice')}
+                  className="text-right tabular-nums"
+                >
                   {formatVnd(dress.rentalPrice)}
                 </TableCell>
-                <TableCell>
+                <TableCell label={t('dresses.columns.status')}>
                   <Badge variant={dress.status === 'active' ? 'default' : 'secondary'}>
                     {t(`dresses.status.${dress.status}`)}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell stack="actions">
                   <Button
                     type="button"
                     variant="ghost"
@@ -269,7 +277,7 @@ export function ListingDressesSection({ listing }: { listing: ListingDto }) {
           </TableBody>
         </Table>
       )}
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {dirty ? <span className="text-sm text-muted-foreground">{t('dresses.unsaved')}</span> : null}
         <Button
           type="button"

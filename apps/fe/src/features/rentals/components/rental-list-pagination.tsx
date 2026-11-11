@@ -16,7 +16,7 @@ export function RentalListPagination({
   const { t } = useTranslation('rentals');
 
   return (
-    <nav className="flex items-center justify-end gap-2">
+    <nav className="flex flex-wrap items-center justify-end gap-2">
       <Button
         variant="outline"
         size="sm"

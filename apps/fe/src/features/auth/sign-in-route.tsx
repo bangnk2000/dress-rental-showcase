@@ -23,8 +23,8 @@ export function SignInRoute() {
   }
 
   return (
-    <div className="flex justify-center py-10">
-      <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-sm">
+    <div className="flex justify-center py-6 sm:py-10">
+      <div className="w-full max-w-sm rounded-xl border bg-card p-5 shadow-sm sm:p-6">
         <div className="space-y-1 pb-6 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">{t('description')}</p>

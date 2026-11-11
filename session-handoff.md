@@ -6,6 +6,13 @@ Watch out, ≤ ~8 lines — detail belongs in the ledger evidence or the design 
 [`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md) (history only),
 prefixing its relative link targets with `../../`.
 
+## 2026-11-12 (57) — the CMS on a phone (`fe:mobile-ux` = pass)
+
+- Done: owner ask "điều chỉnh và cải thiện UI/UX của phần cms và tương thích tối với giao diện điện thoại". Design-tier, [`cms-mobile-ux`](docs/design/cms-mobile-ux.md) agent-default (D1–D6 → ownerPending) + NFR-06. One DOM everywhere: sticky header + scrollable nav strip, stacking PageHeader, dialogs capped at 100dvh and scrolling, `pointer-coarse` 44px targets, `<Table stacked>` on every list, today-board bar/card actions wrap, toast top-centre on phones. Ledger 55/55.
+- Proof: `bash init.sh` green; be e2e 175; fe vitest 185; Playwright `phone` project 14/14 + desktop happy path (local throwaway DB; CI `e2e` now runs both projects).
+- Next: bangnk — try it on the shop phones and confirm/reject D1–D6 (`ledger.mjs pending`). Deploy: fe only, no migration — but master's fe also carries #39 + update-rental-by-staff, which need **be first**; ship all with `only=auto` (be → fe).
+- Watch out: never add a breakpoint-duplicated DOM (table + cards, second nav) — jsdom and `toHaveCount` both see both copies (apps/fe/AGENTS.md §Screen rules). Not checked on real iOS Safari.
+
 ## 2026-11-07 (56) — every staff member may edit a rental (`rentals/update-rental-by-staff` = pass)
 
 - Done: owner ask "Mở tính năng sửa đơn cho nhân viên", scope = "Sửa tất cả như chủ" (discount included). `rental:update` → any staff; OpenAPI loses the 403 (description only, contract regenerated); FE shows Sửa đơn to all, edit route has no role redirect. update-rental §6 Q1 + Q8 resolved (§8 amendment, SRS FR-RENT-13, aggregate doc, ADR note). Ledger 54/54.
@@ -33,11 +40,3 @@ prefixing its relative link targets with `../../`.
 - Proof: all root gates green; be e2e 160 (new suite: race collect↔cancel, raw SQL CHECK, migration down/up), fe vitest 173.
 - Next: PR from `feat/cancel-with-refund` (holds both specs) → merge; deploy **migrate → be → fe** (`ledger.mjs pending`). Then `deposit-at-pickup`: prototype round, then build (Q3 = hard block at pickup → new outcome `rejected_deposit_not_collected`).
 - Watch out: outcome payload keys must never be `kind` — `mapApiError` overwrites it (hence `refundKind`). Kernel may not import `@/api`; shared data hooks go in `src/api/`. PowerShell eats `&` and backticks in inline bash — use script files.
-
-## 2026-10-31 (52) — first green GitHub Actions deploy (`infra/deploy-actions` = pass)
-
-- Done: run 1 (7b8d244) failed at web — Cloudflare Bot Fight Mode challenged the runner IP. Owner kept Bot Fight Mode; PR #36: web.sh builds through `ssh -L 3000:127.0.0.1:3000`, verify.sh checks nginx on the VPS + origin-by-IP 000 from the runner; WSL `harden-remote.sh` sshd now `AllowTcpForwarding local` + `PermitOpen 127.0.0.1:3000` (owner re-ran harden.sh). Run 41101946604 (5cd5646) green end to end; `.deployed` written by the workflow. Also found PR #30/#31 had been live since 2026-10-28 (`c00f926`) — ledger + Production bullet corrected.
-- Proof: ledger evidence of `infra/deploy-actions` (all verify lines, tunnel catalogue 99, 109 pages).
-- Next: routine deploys = Actions → deploy with `only=auto`. The release-lane debt (r2 R1–R11, un-packed features) is unchanged.
-- Watch out: verify from the runner no longer sees the Cloudflare edge — after Cloudflare changes run WSL `verify-external.sh`. `remote/build-remote.sh` + `backup-remote.sh` exist in repo AND in ~/deploy-dress (keep in step or retire the WSL copies). Node 20 action deprecation + ubuntu-latest → 26 annotations on every run (ci.yml too) — bump actions in one go later.
-

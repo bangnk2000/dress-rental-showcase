@@ -40,7 +40,7 @@ contract** is a different thing and each app may have one: `apps/be/AGENTS.md`,
 - **Production (as of 2026-11-07):** API/CMS + web = master `1067bc1` (PR #38 cancel-with-refund, migrations
   1755800000000/1), shipped by the `deploy` workflow run 42363551332, on top of `5cd5646` (2026-10-31) and release
   [`2026-09-30-r2`](docs/releases/2026-09-30-r2/README.md). **Undeployed on master:** PR #39 `67f0e3c`
-  (`rentals/deposit-at-pickup`) and `rentals/update-rental-by-staff` — both be → fe, no migration; owner holds them.
+  (`rentals/deposit-at-pickup`) and `rentals/update-rental-by-staff` — both be → fe, no migration; owner holds them; plus `fe:mobile-ux` (fe only, rides the same be → fe run).
   Redeploys: Actions → `deploy` ([`infra/deploy/README.md`](infra/deploy/README.md)); fallback + one-off ops +
   execution log: out-of-repo `~/deploy-dress/tencent/RUNBOOK.md` §7/§11.
 - **Next / watch-outs:** first entry of `session-handoff.md` — do not re-derive them here.

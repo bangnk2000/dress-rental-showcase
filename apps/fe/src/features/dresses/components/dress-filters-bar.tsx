@@ -53,15 +53,19 @@ export function DressFiltersBar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <form role="search" className="flex items-center gap-2" onSubmit={handleSubmit}>
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+      <form
+        role="search"
+        className="col-span-2 flex items-center gap-2"
+        onSubmit={handleSubmit}
+      >
         <Input
           type="search"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={t('list.searchPlaceholder')}
           aria-label={t('list.searchPlaceholder')}
-          className="w-64"
+          className="min-w-0 flex-1 sm:w-64 sm:flex-none"
         />
         <Button type="submit" variant="secondary">
           {t('list.searchButton')}
@@ -77,7 +81,7 @@ export function DressFiltersBar({
           )
         }
       >
-        <SelectTrigger aria-label={t('list.statusFilterLabel')} className="w-44">
+        <SelectTrigger aria-label={t('list.statusFilterLabel')} className="w-full min-w-0 sm:w-44">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -95,7 +99,7 @@ export function DressFiltersBar({
           onCategoryChange(value === ALL_CATEGORIES ? undefined : value)
         }
       >
-        <SelectTrigger aria-label={t('list.categoryFilterLabel')} className="w-44">
+        <SelectTrigger aria-label={t('list.categoryFilterLabel')} className="w-full min-w-0 sm:w-44">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

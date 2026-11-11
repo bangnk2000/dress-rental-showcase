@@ -35,7 +35,7 @@ export function RentalTable({ rentals, onCancel, onShowPayments }: RentalTablePr
   const { t } = useTranslation('rentals');
 
   return (
-    <Table>
+    <Table stacked>
       <TableHeader>
         <TableRow>
           <TableHead>{t('list.columns.customer')}</TableHead>
@@ -49,7 +49,7 @@ export function RentalTable({ rentals, onCancel, onShowPayments }: RentalTablePr
       <TableBody>
         {rentals.map((rental) => (
           <TableRow key={rental.rentalId}>
-            <TableCell className="font-medium">
+            <TableCell stack="title" className="font-medium">
               {/* The row's identity opens the rental (FR-RENT-12) — no extra "view" button. */}
               <Link
                 to={`/rentals/${rental.rentalId}`}
@@ -58,10 +58,10 @@ export function RentalTable({ rentals, onCancel, onShowPayments }: RentalTablePr
                 {rental.customerName}
               </Link>
             </TableCell>
-            <TableCell>
+            <TableCell label={t('list.columns.phone')}>
               <a href={`tel:${rental.customerPhone}`}>{rental.customerPhone}</a>
             </TableCell>
-            <TableCell>
+            <TableCell label={t('list.columns.dresses')}>
               {rental.dresses.map((dress, index) => (
                 <Fragment key={dress.dressId}>
                   {index > 0 ? ', ' : null}
@@ -74,14 +74,14 @@ export function RentalTable({ rentals, onCancel, onShowPayments }: RentalTablePr
                 </Fragment>
               ))}
             </TableCell>
-            <TableCell className="whitespace-nowrap">
+            <TableCell label={t('list.columns.period')} className="whitespace-nowrap">
               {formatDate(rental.startDate)} – {formatDate(rental.endDate)}
             </TableCell>
-            <TableCell>
+            <TableCell label={t('list.columns.status')}>
               <RentalStatusBadge status={rental.status} />
             </TableCell>
             {onCancel || onShowPayments ? (
-              <TableCell className="space-x-2 text-right">
+              <TableCell stack="actions" className="text-right md:space-x-2">
                 {onShowPayments ? (
                   <Button
                     variant="outline"

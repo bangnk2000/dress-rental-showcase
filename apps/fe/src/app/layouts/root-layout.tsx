@@ -23,10 +23,13 @@ export function RootLayout() {
 
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex w-full max-w-5xl items-center gap-6 px-4 py-3">
+      {/* cms-mobile-ux D1: one header, sticky. Below md the nav drops to its own row as an
+          edge-to-edge horizontally scrolling strip of ≥44px links; at md+ it sits inline as
+          before. ONE nav in the DOM for every width (tests count its links). */}
+      <header className="sticky top-0 z-40 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-6 gap-y-1 px-4 pt-3 pb-0 md:pb-3">
           <span className="text-base font-semibold text-primary">{t('app.name')}</span>
-          <nav className="flex items-center gap-4">
+          <nav className="scrollbar-none order-last -mx-4 flex w-[calc(100%+2rem)] items-center gap-1 overflow-x-auto px-2 md:order-none md:mx-0 md:w-auto md:gap-4 md:overflow-visible md:px-0">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}
@@ -34,8 +37,13 @@ export function RootLayout() {
                 end={item.end}
                 className={({ isActive }) =>
                   cn(
-                    'text-sm transition-colors hover:text-foreground',
-                    isActive ? 'font-medium text-foreground' : 'text-muted-foreground',
+                    // Phone: 44px tall tab with an underline marking the current page.
+                    'inline-flex min-h-11 shrink-0 items-center border-b-2 px-2 text-sm whitespace-nowrap transition-colors hover:text-foreground',
+                    // Desktop: plain inline text link, exactly as before.
+                    'md:min-h-0 md:border-b-0 md:px-0',
+                    isActive
+                      ? 'border-primary font-medium text-foreground'
+                      : 'border-transparent text-muted-foreground',
                   )
                 }
               >
@@ -50,7 +58,7 @@ export function RootLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
       <Toaster />

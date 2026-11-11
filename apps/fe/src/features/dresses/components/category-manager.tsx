@@ -113,15 +113,15 @@ export function CategoryManager({ categories }: { categories: CategoryDto[] }) {
       ) : (
         <ul className="space-y-1">
           {categories.map((category) => (
-            <li key={category.id} className="flex items-center gap-2 text-sm">
+            <li key={category.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
               {renameTarget?.id === category.id ? (
-                <form className="flex items-center gap-2" onSubmit={submitRename}>
+                <form className="flex w-full flex-wrap items-center gap-2" onSubmit={submitRename}>
                   <Input
                     autoFocus
                     value={renameDraft}
                     onChange={(event) => setRenameDraft(event.target.value)}
                     aria-label={t('categories.renameLabel', { name: category.name })}
-                    className="h-8 w-48"
+                    className="h-8 min-w-0 flex-1 sm:w-48 sm:flex-none"
                   />
                   <Button type="submit" size="sm" disabled={rename.isPending}>
                     {t('categories.renameSave')}
@@ -165,13 +165,13 @@ export function CategoryManager({ categories }: { categories: CategoryDto[] }) {
           ))}
         </ul>
       )}
-      <form className="flex items-center gap-2" onSubmit={submitCreate}>
+      <form className="flex flex-wrap items-center gap-2" onSubmit={submitCreate}>
         <Input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={t('categories.createPlaceholder')}
           aria-label={t('categories.createPlaceholder')}
-          className="w-56"
+          className="min-w-0 flex-1 sm:w-56 sm:flex-none"
         />
         <Button type="submit" variant="secondary" disabled={create.isPending || !draft.trim()}>
           {t('categories.create')}

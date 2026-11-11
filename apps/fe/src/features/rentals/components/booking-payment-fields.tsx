@@ -75,10 +75,10 @@ export function BookingPaymentFields({
         </p>
         {errorFor(errors.rentalFee)}
       </div>
-      <label className="flex items-center gap-2 text-sm">
+      <label className="flex min-h-11 items-center gap-3 text-sm">
         <input
           type="checkbox"
-          className="size-4"
+          className="size-5 shrink-0"
           checked={values.depositPaid}
           onChange={(event) => onChange({ ...values, depositPaid: event.target.checked })}
         />
