@@ -19,6 +19,8 @@ const DRESS_A = { code: `PH-${RUN}-A`, name: `Váy điện thoại ${RUN} A` };
 const DRESS_B = { code: `PH-${RUN}-B`, name: `Váy điện thoại ${RUN} B` };
 const CUSTOMER_TODAY = `Khách ĐT hôm nay ${RUN}`;
 const DRESS_C = { code: `PH-${RUN}-C`, name: `Váy điện thoại ${RUN} C` };
+// A category name at the 50-char maximum: the filter trigger must truncate it, not grow with it.
+const LONG_CATEGORY = `Danh mục rất dài để thử cắt chữ ${RUN}-`.padEnd(50, 'x');
 const CUSTOMER_TOMORROW = `Khách ĐT ngày mai ${RUN}`;
 const CUSTOMER_PAID_AHEAD = `Khách ĐT trả trước ${RUN}`;
 const LISTING = `Mẫu điện thoại ${RUN}`;
@@ -31,7 +33,15 @@ function shopDayIso(offsetDays = 0): string {
   return now.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
-const ids = { dressA: '', rentalToday: '', rentalPaidAhead: '', listing: '' };
+const ids = { dressA: '', rentalToday: '', rentalPaidAhead: '', listing: '', longCategory: '' };
+
+/** A valid 1×1 PNG — the photo field previews it locally; nothing uploads until Save. */
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+type Box = { x: number; y: number; width: number; height: number };
 
 test.beforeAll(async ({ playwright }, testInfo) => {
   // `request` is test-scoped; beforeAll builds its own context. The FE preview proxies /api to the
@@ -71,7 +81,12 @@ test.beforeAll(async ({ playwright }, testInfo) => {
     items: [{ dressId: dressB }],
   });
   // Booked AND paid ahead → its cancel opens the refund variant (the tallest alert dialog).
-  const dressC = await create('/api/v1/dresses', { ...DRESS_C, ...dress });
+  ids.longCategory = await create('/api/v1/categories', { name: LONG_CATEGORY });
+  const dressC = await create('/api/v1/dresses', {
+    ...DRESS_C,
+    ...dress,
+    categoryId: ids.longCategory,
+  });
   ids.rentalPaidAhead = await create('/api/v1/rentals', {
     customerName: CUSTOMER_PAID_AHEAD,
     customerPhone: '0909999999',
@@ -174,12 +189,40 @@ async function expectDialogFits(
   const dialog = page.getByRole(role);
   await expect(dialog).toBeVisible();
   const height = page.viewportSize()?.height ?? 0;
+  // After a viewport change (the keyboard proxy) the dialog's `100dvh` cap is re-resolved on a
+  // later frame — the box keeps its old height for a moment — so the height is polled, not read
+  // once. A dialog with no cap never settles and still fails.
+  await expect
+    .configure({ soft: true })
+    .poll(
+      async () => {
+        const b = await dialog.boundingBox();
+        return b ? b.y + b.height : Number.POSITIVE_INFINITY;
+      },
+      { message: `${what}: dialog never settled inside the ${height}px screen`, timeout: 3_000 },
+    )
+    .toBeLessThanOrEqual(height + 0.5);
   const box = await dialog.boundingBox();
   expect(box, `${what}: dialog has no box`).not.toBeNull();
   if (box) {
-    expect.soft(box.y, `${what}: dialog top is above the screen`).toBeGreaterThanOrEqual(-0.5);
+    // What the page itself believes the viewport is — tells "the CSS has no max-height" apart
+    // from "100dvh did not follow the viewport".
+    const metrics = await dialog.evaluate((el) => {
+      const probe = (h: string) => {
+        const div = document.createElement('div');
+        div.style.cssText = `position:fixed;top:0;height:${h};visibility:hidden`;
+        document.body.appendChild(div);
+        const px = div.getBoundingClientRect().height;
+        div.remove();
+        return Math.round(px);
+      };
+      return `innerHeight=${window.innerHeight} visualViewport=${Math.round(window.visualViewport?.height ?? 0)} 100dvh=${probe('100dvh')} 100svh=${probe('100svh')} 100vh=${probe('100vh')} dialog max-height=${getComputedStyle(el).maxHeight}`;
+    });
     expect
-      .soft(box.y + box.height, `${what}: dialog is taller than the ${height}px screen`)
+      .soft(box.y, `${what}: dialog top is above the screen (${metrics})`)
+      .toBeGreaterThanOrEqual(-0.5);
+    expect
+      .soft(box.y + box.height, `${what}: dialog is taller than the ${height}px screen (${metrics})`)
       .toBeLessThanOrEqual(height + 0.5);
   }
   if (lastButton) {
@@ -278,6 +321,119 @@ test.describe('signed in as owner', () => {
     await expectDialogFits(page, 'Lưu', 'dress form dialog');
   });
 
+  test('a long selected category stays inside its filter trigger', async ({ page }) => {
+    // Selected through the URL (the filter is URL-owned) — the Radix popover is not under test.
+    await page.goto(`/dresses?categoryId=${ids.longCategory}`);
+    await expect(page.getByRole('heading', { name: 'Váy', exact: true })).toBeVisible();
+    const trigger = page.getByRole('combobox', { name: 'Danh mục' });
+    await expect(trigger).toContainText(LONG_CATEGORY);
+    await expect(page.getByText(DRESS_C.code).first()).toBeVisible();
+    await expectFitsWidth(page, 'dresses list (long category selected)', { stacked: true });
+    const triggerBox = await trigger.boundingBox();
+    const valueBox = await trigger.locator('[data-slot="select-value"]').boundingBox();
+    expect(triggerBox && valueBox, 'filter trigger/value has no box').toBeTruthy();
+    if (triggerBox && valueBox) {
+      // Without the value's truncation (line-clamp ⇒ overflow hidden ⇒ min-width 0) the flex item
+      // keeps its content width and the text spills out of the trigger's right edge.
+      expect
+        .soft(
+          valueBox.x + valueBox.width,
+          'the selected category spills out of the filter trigger (value no longer truncates)',
+        )
+        .toBeLessThanOrEqual(triggerBox.x + triggerBox.width + 0.5);
+      expect
+        .soft(triggerBox.x + triggerBox.width, 'the filter trigger is wider than the screen')
+        .toBeLessThanOrEqual(viewportWidth(page));
+    }
+  });
+
+  test('dress form: photo tile buttons are 44px thumb targets inside their tile', async ({
+    page,
+  }) => {
+    await page.goto('/dresses');
+    await expect(page.getByRole('heading', { name: 'Váy', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Thêm váy' }).first().click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByLabel('Mã váy')).toBeVisible();
+    // Three local photos: previewed only — nothing uploads before Save, which is never clicked.
+    await dialog.getByLabel('Chọn ảnh để tải lên').setInputFiles(
+      [1, 2, 3].map((n) => ({ name: `phone-${n}.png`, mimeType: 'image/png', buffer: TINY_PNG })),
+    );
+    const tiles = dialog.locator('li[data-status]');
+    await expect(tiles).toHaveCount(3);
+    const coarse = await isCoarsePointer(page);
+    for (let i = 0; i < 3; i++) {
+      const tile = tiles.nth(i);
+      const tileBox = await tile.boundingBox();
+      const buttons = tile.getByRole('button');
+      await expect(buttons).toHaveCount(3);
+      const boxes: Box[] = [];
+      for (let b = 0; b < 3; b++) {
+        const box = await buttons.nth(b).boundingBox();
+        if (box) boxes.push(box);
+      }
+      expect(tileBox && boxes.length === 3, `photo ${i + 1}: tile or buttons have no box`).toBe(
+        true,
+      );
+      if (!tileBox) continue;
+      const where = `photo ${i + 1}`;
+      boxes.forEach((box, b) => {
+        if (coarse) {
+          expect.soft(box.width, `${where} button ${b + 1} narrower than 44px`).toBeGreaterThanOrEqual(44);
+          expect.soft(box.height, `${where} button ${b + 1} shorter than 44px`).toBeGreaterThanOrEqual(44);
+        }
+        expect
+          .soft(box.x, `${where} button ${b + 1} sticks out left of its tile`)
+          .toBeGreaterThanOrEqual(tileBox.x - 0.5);
+        expect
+          .soft(box.x + box.width, `${where} button ${b + 1} sticks out right of its tile`)
+          .toBeLessThanOrEqual(tileBox.x + tileBox.width + 0.5);
+      });
+      const byX = [...boxes].sort((a, b) => a.x - b.x);
+      for (let b = 1; b < byX.length; b++) {
+        const prev = byX[b - 1];
+        const cur = byX[b];
+        if (!prev || !cur) continue;
+        expect
+          .soft(prev.x + prev.width, `${where}: buttons ${b} and ${b + 1} overlap`)
+          .toBeLessThanOrEqual(cur.x + 0.5);
+      }
+    }
+    if (!coarse) {
+      test.info().annotations.push({
+        type: 'touch target not checked',
+        description: 'photo buttons: (pointer: coarse) does not match in this browser',
+      });
+    }
+    await expectFitsWidth(page, 'dress form with 3 photos (dialog open)');
+    await page.keyboard.press('Escape');
+  });
+
+  test('dress form with the keyboard up: dialog fits and "Lưu" is reachable', async ({ page }) => {
+    const size = page.viewportSize();
+    if (!size) throw new Error('phone project must set a viewport');
+    await page.goto('/dresses');
+    await expect(page.getByRole('heading', { name: 'Váy', exact: true })).toBeVisible();
+    // Headless Chromium ignores `interactive-widget` (it has no keyboard), so the shrink below
+    // only proves the dialog follows a smaller viewport. That the real keyboard DOES shrink it on
+    // Android depends on this meta — guard it directly.
+    await expect
+      .soft(page.locator('meta[name="viewport"]'))
+      .toHaveAttribute('content', /interactive-widget=resizes-content/);
+    await page.getByRole('button', { name: 'Thêm váy' }).first().click();
+    const code = page.getByRole('dialog').getByLabel('Mã váy');
+    await code.focus();
+    // Proxy for the on-screen keyboard: with `interactive-widget=resizes-content` Android Chrome
+    // shrinks the LAYOUT viewport (and 100dvh) to what is left above the keyboard. Headless
+    // Chromium has no keyboard, so shrink the viewport the same way.
+    await page.setViewportSize({ width: size.width, height: 480 });
+    try {
+      await expectDialogFits(page, 'Lưu', 'dress form dialog, keyboard up (412×480)');
+    } finally {
+      await page.setViewportSize(size);
+    }
+  });
+
   test('dress detail fits', async ({ page }) => {
     await page.goto(`/dresses/${ids.dressA}`);
     await expect(
@@ -341,6 +497,12 @@ test.describe('signed in as owner', () => {
       { label: 'Nhân viên', path: /\/users$/ },
       { label: 'Hôm nay', path: /\/$/ },
     ];
+    // The header's language switcher is a `size="sm"` select — the one most likely to stay small.
+    await expectThumbTarget(
+      page,
+      page.getByRole('banner').getByRole('combobox', { name: 'Ngôn ngữ' }),
+      'language switcher',
+    );
     for (const { label, path } of destinations) {
       // First navigation landmark = the app header; a list page may add its own (pagination).
       const link = page.getByRole('navigation').first().getByRole('link', { name: label, exact: true });

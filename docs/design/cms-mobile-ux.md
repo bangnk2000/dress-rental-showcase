@@ -69,7 +69,11 @@ nguyên (`use-rental-filters`, bộ lọc váy). Chỉ bố cục.
 - Feature: bảng đơn thuê, váy (3 cột trên điện thoại; D3 ẩn Danh mục + Cọc), website, váy-của-mẫu,
   nhân viên, lịch sử giá đều `stacked`; thanh ngày + hàng nút thẻ bảng hôm nay wrap (hết tràn trái);
   dress picker 2 dòng (giá không bị cắt); bộ lọc full-width; chi tiết váy/đơn header wrap; ô ảnh 112px
-  trên cảm ứng; nút xoá mẫu bị khoá hiện lý do bằng chữ (thay `title`).
+  trên cảm ứng (144px để 3 nút 44px vừa dưới ảnh); nút xoá mẫu bị khoá hiện lý do bằng chữ (thay `title`).
+- Bàn phím (Codex review vòng 0, C3): viewport `interactive-widget=resizes-content` — trên Android
+  Chrome bàn phím thu nhỏ layout viewport nên `100dvh` co theo và nút cuối dialog vẫn tới được.
+  iOS Safari bỏ qua thuộc tính này; ở đó trình duyệt tự cuộn ô đang nhập vào tầm nhìn, nội dung
+  dialog vẫn cuộn được — chưa thử trên máy iOS thật.
 - Proof: Playwright `phone` 14/14 + `chromium` happy path 1/1 (local, DB tạm); vitest toàn bộ xanh
   không đổi locator (trừ test lý do-xoá: `getByTitle` → `toHaveAccessibleDescription`).
 - Còn để ngỏ: safe-area trái/phải khi xoay ngang iPhone có tai thỏ; toast không đổi vị trí khi xoay.

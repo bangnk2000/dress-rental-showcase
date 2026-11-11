@@ -153,14 +153,14 @@ export function PhotoListField({
 
   function renderTile(photo: PhotoItem) {
     if (photo.kind === 'stored' && !photo.previewUrl) {
-      return <PhotoThumbnail src={photo.url} className="size-24 pointer-coarse:size-28" />;
+      return <PhotoThumbnail src={photo.url} className="size-24 pointer-coarse:size-36" />;
     }
     const failed = failureOf(photo) !== undefined;
     const percent = uploadPercent(photo);
     return (
       <div
         className={cn(
-          'relative flex size-24 items-center justify-center overflow-hidden rounded-md border bg-muted pointer-coarse:size-28',
+          'relative flex size-24 items-center justify-center overflow-hidden rounded-md border bg-muted pointer-coarse:size-36',
           failed && 'border-2 border-destructive',
         )}
       >
@@ -195,7 +195,7 @@ export function PhotoListField({
             // The id, not the index: reordering must move the <img>, not remount (and refetch) it.
             <li
               key={photo.id}
-              className="w-24 space-y-1 pointer-coarse:w-28"
+              className="w-24 space-y-1 pointer-coarse:w-36"
               data-status={photo.kind === 'stored' ? 'stored' : failure ? 'error' : 'pending'}
             >
               <div className="relative">
