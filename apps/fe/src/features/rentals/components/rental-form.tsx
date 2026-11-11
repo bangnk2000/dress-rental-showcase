@@ -1,11 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { mapApiError } from '@/api/errors';
-import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -15,6 +14,7 @@ import {
   FormLabel,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { formatVnd } from '@/lib/format';
 
 import {
@@ -22,6 +22,7 @@ import {
   rentalFormSchema,
   type RentalFormValues,
 } from '../schemas/rental-form.schema';
+import { BOOKING_DEPOSIT_ID, BOOKING_FEE_ID, DRESS_SEARCH_ID } from '../lib/form-field-ids';
 import { parseCollectAmount } from '../lib/parse-collect-amount';
 import {
   BookingPaymentFields,
@@ -30,6 +31,7 @@ import {
 } from './booking-payment-fields';
 import { DressPicker, type BlockedDresses, type PickerPeriod, type SelectedDress } from './dress-picker';
 import { RentalFormMessage } from './rental-form-message';
+import { RentalSummary, type SummaryDeposit } from './rental-summary';
 
 /** What the form hands the route once every client-side rule passed. */
 export interface RentalFormSubmission {
@@ -93,6 +95,28 @@ export function parseDiscount(raw: string): number {
   return trimmed !== '' && Number.isInteger(value) && value > 0 ? value : 0;
 }
 
+/** E3: rental length in days, BOTH ends counted (FR-RENT-01 inclusive) — 12→14 = 3. */
+function rentalDays(startDate: string, endDate: string): number | null {
+  const toUtc = (iso: string) => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return y && m && d ? Date.UTC(y, m - 1, d) : Number.NaN;
+  };
+  const days = (toUtc(endDate) - toUtc(startDate)) / 86_400_000 + 1;
+  return Number.isInteger(days) && days >= 1 ? days : null;
+}
+
+/**
+ * Bring a field the submit just complained about into view. The submit now sits in the summary —
+ * on a phone a bar at the bottom of the screen — so an error rendered far up the form would
+ * otherwise look like a tap that did nothing. `scrollIntoView` is absent in jsdom.
+ */
+function revealField(id: string): void {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.focus({ preventScroll: true });
+  element.scrollIntoView?.({ block: 'center' });
+}
+
 /**
  * ONE form for a rental's content — the new-rental screen and the owner's edit screen
  * (FR-RENT-13) render it with different defaults and a different submit. It owns everything
@@ -110,7 +134,6 @@ export function RentalForm({
   onCancel,
 }: RentalFormProps) {
   const { t } = useTranslation('rentals');
-  const { t: tCommon } = useTranslation('common'); // shared verbs only
 
   const form = useForm<RentalFormValues>({
     resolver: zodResolver(rentalFormSchema),
@@ -183,11 +206,16 @@ export function RentalForm({
   const submit = form.handleSubmit(async (values) => {
     if (selected.length === 0) {
       setFormError('form.errors.noDresses');
+      revealField(DRESS_SEARCH_ID);
       return;
     }
     const discountAmount = parseDiscount(values.discountAmount);
     if (discountAmount > subtotal) {
-      form.setError('discountAmount', { message: 'form.errors.discountTooLarge' });
+      form.setError(
+        'discountAmount',
+        { message: 'form.errors.discountTooLarge' },
+        { shouldFocus: true },
+      );
       return;
     }
     setFormError(null);
@@ -210,7 +238,10 @@ export function RentalForm({
           : {}),
       };
       setPaymentErrors(errors);
-      if (errors.rentalFee || errors.deposit) return;
+      if (errors.rentalFee || errors.deposit) {
+        revealField(errors.rentalFee ? BOOKING_FEE_ID : BOOKING_DEPOSIT_ID);
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -270,157 +301,207 @@ export function RentalForm({
   });
 
   const translate = t as unknown as (key: string) => string;
+  const days = period ? rentalDays(period.startDate, period.endDate) : null;
+  // The summary's deposit line (screen rule: a reference figure says it is one). Edit mode knows
+  // no catalog deposit for the kept dresses, so it shows none rather than a partial sum.
+  const depositOnScreen = payment.depositPaid ? parseCollectAmount(payment.deposit) : null;
+  const summaryDeposit: SummaryDeposit =
+    mode !== 'create'
+      ? null
+      : depositOnScreen !== null
+        ? { kind: 'collected', amount: depositOnScreen }
+        : standardDeposit > 0
+          ? { kind: 'reference', amount: standardDeposit }
+          : null;
 
   return (
     <Form {...form}>
-      <form onSubmit={(event) => void submit(event)} className="grid max-w-2xl gap-4" noValidate>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="customerName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('form.fields.customerName')}</FormLabel>
-                <FormControl>
-                  <Input autoComplete="off" {...field} />
-                </FormControl>
-                <RentalFormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="customerPhone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('form.fields.customerPhone')}</FormLabel>
-                <FormControl>
-                  <Input inputMode="tel" autoComplete="off" {...field} />
-                </FormControl>
-                <RentalFormMessage />
-              </FormItem>
-            )}
-          />
+      {/* rental-form-ux P1/P2: four titled sections on the left, the summary (which holds the ONE
+          submit) sticky on the right from lg; below lg the summary is a fixed bottom bar and the
+          form pads its end by the bar's published height so the last field stays reachable. */}
+      <form
+        onSubmit={(event) => void submit(event)}
+        className="grid max-w-2xl grid-cols-[minmax(0,1fr)] gap-6 max-lg:pb-[calc(var(--bottom-bar-h,6rem)+1rem)] lg:max-w-none lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start"
+        noValidate
+      >
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">
+          <FormSection id="rental-form-customer" title={t('form.sections.customer')}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="customerName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('form.fields.customerName')}</FormLabel>
+                    <FormControl>
+                      <Input autoComplete="off" {...field} />
+                    </FormControl>
+                    <RentalFormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="customerPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('form.fields.customerPhone')}</FormLabel>
+                    <FormControl>
+                      <Input inputMode="tel" autoComplete="off" {...field} />
+                    </FormControl>
+                    <RentalFormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </FormSection>
+
+          <FormSection id="rental-form-period" title={t('form.sections.period')}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('form.fields.startDate')}</FormLabel>
+                    <FormControl>
+                      <Input type="date" autoComplete="off" {...field} />
+                    </FormControl>
+                    {/* FR-RENT-10: same-day (or backdated) rentals are born DELIVERED — say so
+                        before submit, so the status on the list is no surprise. An EDIT never
+                        moves the status (FR-RENT-13 §6.Q3), so the hint is create-only. */}
+                    {mode === 'create' && field.value && field.value <= shopTodayIso() ? (
+                      <p className="text-sm text-muted-foreground">{t('form.startsToday')}</p>
+                    ) : null}
+                    <RentalFormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('form.fields.endDate')}</FormLabel>
+                    <FormControl>
+                      <Input type="date" autoComplete="off" {...field} />
+                    </FormControl>
+                    <RentalFormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            {/* E3: both ends count (FR-RENT-01 inclusive range) — 12→14 is 3 days. */}
+            {days !== null ? (
+              <p className="text-sm font-medium tabular-nums">
+                {t('form.dayCount', { count: days })}
+              </p>
+            ) : null}
+            <p className="text-sm text-muted-foreground">{t('form.bufferHint')}</p>
+          </FormSection>
+
+          <FormSection id="rental-form-dresses" title={t('form.sections.dresses')}>
+            <DressPicker
+              selected={selected}
+              onAdd={(dress) => {
+                setSelected((current) => [...current, dress]);
+                setFormError(null);
+                setBlocked(null);
+              }}
+              onRemove={(dressId) => {
+                setSelected((current) => current.filter((dress) => dress.id !== dressId));
+                // Dropping a dress can be exactly the fix the rejection asked for, so the message
+                // goes with the marking rather than outliving the problem it described.
+                setBlocked(null);
+                setFormError(null);
+              }}
+              error={formError === 'form.errors.noDresses' ? formError : null}
+              period={period}
+              blocked={blocked}
+              {...(ignoreRentalId ? { ignoreRentalId } : {})}
+            />
+          </FormSection>
+
+          <FormSection id="rental-form-payment" title={t('form.sections.payment')}>
+            <FormField
+              control={form.control}
+              name="discountAmount"
+              render={({ field }) => {
+                const amount = parseDiscount(field.value);
+                return (
+                  <FormItem>
+                    <FormLabel>{t('form.fields.discountAmount')}</FormLabel>
+                    <FormControl>
+                      <Input inputMode="numeric" autoComplete="off" {...field} />
+                    </FormControl>
+                    {/* Money the user typed is read back grouped (screen rules); otherwise the
+                        field says what it is for. */}
+                    <FormDescription className="tabular-nums">
+                      {amount > 0 ? formatVnd(amount) : t('form.discountHint')}
+                    </FormDescription>
+                    <RentalFormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+            {mode === 'create' ? (
+              <BookingPaymentFields
+                values={payment}
+                onChange={(next) => {
+                  if (next.rentalFee !== payment.rentalFee) touched.current.rentalFee = true;
+                  if (next.deposit !== payment.deposit) touched.current.deposit = true;
+                  setPayment(next);
+                  setPaymentErrors({});
+                }}
+                errors={paymentErrors}
+                expectedFee={expectedFee}
+                standardDeposit={standardDeposit}
+                bornOut={bornOut}
+              />
+            ) : null}
+            {/* E5: notes get room for a sentence or two; still optional. */}
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('form.fields.notes')}</FormLabel>
+                  <FormControl>
+                    <Textarea rows={3} autoComplete="off" {...field} />
+                  </FormControl>
+                  <RentalFormMessage />
+                </FormItem>
+              )}
+            />
+          </FormSection>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="startDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('form.fields.startDate')}</FormLabel>
-                <FormControl>
-                  <Input type="date" autoComplete="off" {...field} />
-                </FormControl>
-                {/* FR-RENT-10: same-day (or backdated) rentals are born DELIVERED — say so
-                    before submit, so the status on the list is no surprise. An EDIT never moves
-                    the status (FR-RENT-13 §6.Q3), so the hint is create-only. */}
-                {mode === 'create' && field.value && field.value <= shopTodayIso() ? (
-                  <p className="text-sm text-muted-foreground">{t('form.startsToday')}</p>
-                ) : null}
-                <RentalFormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="endDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('form.fields.endDate')}</FormLabel>
-                <FormControl>
-                  <Input type="date" autoComplete="off" {...field} />
-                </FormControl>
-                <RentalFormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <p className="text-sm text-muted-foreground">{t('form.bufferHint')}</p>
-        <DressPicker
+
+        {/* Every rejection outcome renders form-level inside the summary, next to the submit; the
+            picker owns only noDresses. */}
+        <RentalSummary
           selected={selected}
-          onAdd={(dress) => {
-            setSelected((current) => [...current, dress]);
-            setFormError(null);
-            setBlocked(null);
-          }}
-          onRemove={(dressId) => {
-            setSelected((current) => current.filter((dress) => dress.id !== dressId));
-            // Dropping a dress can be exactly the fix the rejection asked for, so the message
-            // goes with the marking rather than outliving the problem it described.
-            setBlocked(null);
-            setFormError(null);
-          }}
-          error={formError === 'form.errors.noDresses' ? formError : null}
-          period={period}
-          blocked={blocked}
+          subtotal={subtotal}
           discount={discount}
-          {...(ignoreRentalId ? { ignoreRentalId } : {})}
+          payable={expectedFee}
+          deposit={summaryDeposit}
+          alert={formError && formError !== 'form.errors.noDresses' ? translate(formError) : null}
+          submitLabel={submitLabel}
+          submitting={submitting}
+          onCancel={onCancel}
         />
-        <FormField
-          control={form.control}
-          name="discountAmount"
-          render={({ field }) => {
-            const amount = parseDiscount(field.value);
-            return (
-              <FormItem>
-                <FormLabel>{t('form.fields.discountAmount')}</FormLabel>
-                <FormControl>
-                  <Input inputMode="numeric" autoComplete="off" {...field} />
-                </FormControl>
-                {/* Money the user typed is read back grouped (screen rules); otherwise the
-                    field says what it is for. */}
-                <FormDescription className="tabular-nums">
-                  {amount > 0 ? formatVnd(amount) : t('form.discountHint')}
-                </FormDescription>
-                <RentalFormMessage />
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('form.fields.notes')}</FormLabel>
-              <FormControl>
-                <Input autoComplete="off" {...field} />
-              </FormControl>
-              <RentalFormMessage />
-            </FormItem>
-          )}
-        />
-        {mode === 'create' ? (
-          <BookingPaymentFields
-            values={payment}
-            onChange={(next) => {
-              if (next.rentalFee !== payment.rentalFee) touched.current.rentalFee = true;
-              if (next.deposit !== payment.deposit) touched.current.deposit = true;
-              setPayment(next);
-              setPaymentErrors({});
-            }}
-            errors={paymentErrors}
-            expectedFee={expectedFee}
-            standardDeposit={standardDeposit}
-            bornOut={bornOut}
-          />
-        ) : null}
-        {/* Every rejection outcome renders form-level here; the picker owns only noDresses. */}
-        {formError && formError !== 'form.errors.noDresses' ? (
-          <p role="alert" className="text-sm text-destructive">
-            {translate(formError)}
-          </p>
-        ) : null}
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            {tCommon('actions.cancel')}
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {submitLabel}
-          </Button>
-        </div>
       </form>
     </Form>
+  );
+}
+
+/** One titled block of the form (rental-form-ux P1): a labelled region with a small heading. */
+function FormSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      <h2 id={id} className="border-b pb-2 text-base font-semibold">
+        {title}
+      </h2>
+      {children}
+    </section>
   );
 }

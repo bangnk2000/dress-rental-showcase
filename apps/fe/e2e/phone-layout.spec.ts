@@ -297,6 +297,84 @@ test.describe('signed in as owner', () => {
     await expectFitsWidth(page, 'new rental');
   });
 
+  test('new rental: the bottom bar keeps the submit on screen; the breakdown opens above it', async ({
+    page,
+  }) => {
+    // rental-form-ux P3/E2 (docs/design/rental-form-ux.md §5 AC2).
+    await page.goto('/rentals/new');
+    await expect(page.getByRole('heading', { name: 'Tạo lượt thuê', exact: true })).toBeVisible();
+    const nameField = page.getByLabel('Tên khách');
+    await expect(async () => {
+      await nameField.fill(`Khách thanh đáy ${RUN}`);
+      await expect(nameField).toHaveValue(`Khách thanh đáy ${RUN}`);
+    }).toPass();
+    await page.getByPlaceholder('Tìm theo mã hoặc tên váy…').fill(DRESS_A.code);
+    const addBtn = page.getByRole('button', { name: 'Thêm', exact: true });
+    await expect(addBtn).toBeVisible();
+    // The search results (long names, an add button per row) must not widen the page: a wider
+    // page makes the phone zoom the whole layout out.
+    await expectFitsWidth(page, 'new rental, search results open');
+    await addBtn.click();
+    // The API upper-cases dress codes.
+    await expect(page.getByText(DRESS_A.code.toUpperCase(), { exact: true })).toBeVisible();
+
+    const height = page.viewportSize()?.height ?? 0;
+    const bar = page.getByRole('region', { name: 'Tóm tắt đơn thuê' });
+    const submit = page.getByRole('button', { name: 'Tạo lượt thuê', exact: true });
+    const toggle = bar.getByRole('button', { name: 'Xem chi tiết tính tiền' });
+    await expect(submit).toHaveCount(1);
+
+    // At the TOP of the form the bar — and the submit in it — is already on screen.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(bar.getByText(/^Khách trả/)).toBeVisible();
+    // The payable row (label + amount) — the subtotal shows the same amount, hidden while collapsed.
+    const payableRow = bar.getByText(/^Khách trả/).locator('xpath=..');
+    await expect(payableRow).toBeVisible();
+    await expect(payableRow).toContainText('1.500.000');
+    await expect(submit, 'submit is not on screen at the top of the form').toBeInViewport({
+      ratio: 1,
+    });
+    const barBox = await bar.boundingBox();
+    expect(barBox, 'bar has no box').not.toBeNull();
+    if (barBox) {
+      expect.soft(barBox.y, 'bar top is above the screen').toBeGreaterThanOrEqual(-0.5);
+      expect
+        .soft(barBox.y + barBox.height, 'bar is not docked to the bottom of the screen')
+        .toBeCloseTo(height, 0);
+    }
+    await expectThumbTarget(page, submit, 'bar submit');
+    await expectThumbTarget(page, toggle, 'bar breakdown toggle');
+    // Collapsed: the breakdown is not drawn yet.
+    await expect(bar.getByText('Tạm tính tiền thuê')).toBeHidden();
+
+    // E2: the toggle opens the arithmetic ABOVE the bar, inside the screen.
+    await toggle.click();
+    await expect(bar.getByRole('button', { name: 'Ẩn chi tiết tính tiền' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await expect(bar.getByText('Tạm tính tiền thuê')).toBeVisible();
+    await expect(bar.getByText(/^Khách trả/)).toBeVisible();
+    await expect(bar.getByRole('button', { name: 'Hủy', exact: true })).toBeVisible();
+    await expect(bar, 'the opened breakdown does not fit the screen').toBeInViewport({ ratio: 1 });
+    await expect(submit).toBeInViewport({ ratio: 1 });
+    await expectFitsWidth(page, 'new rental, breakdown open');
+    await bar.getByRole('button', { name: 'Ẩn chi tiết tính tiền' }).click();
+    await expect(bar.getByText('Tạm tính tiền thuê')).toBeHidden();
+
+    // The bar never hides the end of the form: scrolled to the bottom, the last field clears it.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const notes = await page.getByLabel('Ghi chú').boundingBox();
+    const docked = await bar.boundingBox();
+    expect(notes && docked, 'notes/bar have no box').toBeTruthy();
+    if (notes && docked) {
+      expect
+        .soft(notes.y + notes.height, 'the last field ends behind the bottom bar')
+        .toBeLessThanOrEqual(docked.y);
+    }
+    await expectFitsWidth(page, 'new rental, scrolled to the end');
+  });
+
   test('rental detail fits; money dialog fits', async ({ page }) => {
     await page.goto(`/rentals/${ids.rentalToday}`);
     await expect(

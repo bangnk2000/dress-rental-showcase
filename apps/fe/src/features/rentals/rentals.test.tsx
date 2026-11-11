@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Suspense } from 'react';
@@ -49,6 +49,19 @@ async function fillCustomerAndDates(user: ReturnType<typeof userEvent.setup>) {
 async function pickDress(user: ReturnType<typeof userEvent.setup>, code: string) {
   await user.type(screen.getByPlaceholderText('Tìm theo mã hoặc tên váy…'), code);
   await user.click(await screen.findByRole('button', { name: 'Thêm' }));
+}
+
+/** The ONE summary element (rental-form-ux P2/P3): sticky panel on desktop, bottom bar on a phone. */
+function summarySection() {
+  return screen.getByRole('region', { name: 'Tóm tắt đơn thuê' });
+}
+
+/** The amount on the same row as a summary label (`dt` → its `dd`). */
+function summaryAmount(label: string): string | null | undefined {
+  // Intl groups with a no-break space before ₫; compare with plain spaces.
+  return within(summarySection())
+    .getByText(label)
+    .nextElementSibling?.textContent?.replace(/\s/g, ' ');
 }
 
 beforeEach(() => {
@@ -103,7 +116,8 @@ test('searching adds a dress, and creating toasts then navigates to /rentals', a
     screen.getByText('Ngày nhận là hôm nay hoặc đã qua — đơn sẽ ghi là ĐÃ GIAO ngay khi tạo.'),
   ).toBeInTheDocument();
   await pickDress(user, 'DR-001');
-  expect(screen.getByText('Tạm tính tiền thuê')).toBeInTheDocument();
+  // rental-form-ux: the subtotal moved from under the picker into the summary.
+  expect(within(summarySection()).getByText('Tạm tính tiền thuê')).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
 
   expect(await screen.findByText('Đã tạo lượt thuê và ghi nhận giao váy.')).toBeInTheDocument();
@@ -425,8 +439,12 @@ test('FR-RENT-11: a discount is read back grouped, shown against the subtotal, a
   await user.type(screen.getByLabelText('Giảm giá (VND)'), '100000');
 
   expect(screen.getByText('100.000 ₫')).toBeInTheDocument(); // the digits, read back grouped
-  expect(screen.getByText('Tiền thuê sau giảm')).toBeInTheDocument();
-  // 400.000 shows in the picker total AND as the read-back of the pre-filled fee (FR-RENT-14).
+  // rental-form-ux: the result of the subtraction is the summary's "Khách trả" (was "Tiền thuê
+  // sau giảm" under the picker). 400.000 shows there AND as the read-back of the pre-filled fee
+  // (FR-RENT-14).
+  const summary = summarySection();
+  expect(within(summary).getByText('Khách trả')).toBeInTheDocument();
+  expect(within(summary).getByText('400.000 ₫')).toBeInTheDocument();
   expect(screen.getAllByText('400.000 ₫').length).toBeGreaterThanOrEqual(1);
   expect(screen.getByLabelText('Tiền thuê đã thu')).toHaveValue('400000');
 
@@ -451,4 +469,120 @@ test('FR-RENT-11: a discount above the subtotal is refused before any request go
   ).toBeInTheDocument();
   expect(getLastCreateRentalBody()).toBeNull();
   expect(screen.queryByText('rentals-list-stub')).not.toBeInTheDocument();
+});
+
+describe('rental-form-ux: sections and the one summary', () => {
+  test('the form is four titled sections', async () => {
+    renderNewRental();
+
+    for (const title of ['Khách hàng', 'Ngày thuê', 'Váy', 'Thanh toán']) {
+      expect(await screen.findByRole('region', { name: title })).toBeInTheDocument();
+    }
+    // E5: notes are multi-line now, label unchanged.
+    expect(screen.getByLabelText('Ghi chú').tagName).toBe('TEXTAREA');
+  });
+
+  test('E3: the day count includes both ends and shows only for a sensible range', async () => {
+    const user = userEvent.setup();
+    renderNewRental();
+
+    await fillCustomerAndDates(user); // 2026-08-01 → 2026-08-03
+    expect(screen.getByText('3 ngày')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Ngày trả'), { target: { value: '2026-08-01' } });
+    expect(screen.getByText('1 ngày')).toBeInTheDocument(); // a single-day rental is 1, not 0
+
+    fireEvent.change(screen.getByLabelText('Ngày trả'), { target: { value: '2026-07-31' } });
+    expect(screen.queryByText(/^\d+ ngày$/)).not.toBeInTheDocument();
+  });
+
+  test('the summary shows its arithmetic: subtotal − discount = what the customer pays', async () => {
+    seedDresses([
+      makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ', rentalPrice: 500_000, depositAmount: 2_000_000 }),
+      makeDress({ id: 'd2', code: 'DR-002', name: 'Váy cưới', rentalPrice: 300_000, depositAmount: 1_000_000 }),
+    ]);
+    const user = userEvent.setup();
+    renderNewRental();
+
+    await fillCustomerAndDates(user);
+    await pickDress(user, 'DR-001');
+    await pickDress(user, 'DR-002');
+    await user.type(screen.getByLabelText('Giảm giá (VND)'), '100000');
+
+    const summary = within(summarySection());
+    // Each picked dress, by code and price.
+    expect(summary.getByText('DR-001 · 500.000 ₫')).toBeInTheDocument();
+    expect(summary.getByText('DR-002 · 300.000 ₫')).toBeInTheDocument();
+    expect(summaryAmount('Tạm tính tiền thuê')).toBe('800.000 ₫');
+    expect(summaryAmount('Giảm giá')).toBe('−100.000 ₫');
+    expect(summary.getByText('700.000 ₫')).toBeInTheDocument(); // Khách trả
+    expect(summary.getByText('(2 váy)')).toBeInTheDocument();
+
+    // The deposit is separate and, until collected, labelled as the catalog REFERENCE.
+    expect(summary.getByText('Cọc chuẩn (tham khảo, chưa thu)')).toBeInTheDocument();
+    expect(summary.getByText('3.000.000 ₫')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Khách đã đóng cọc'));
+    const deposit = screen.getByLabelText('Tiền cọc đã thu');
+    await user.clear(deposit);
+    await user.type(deposit, '2500000');
+    expect(summary.getByText('Tiền cọc đã nhận')).toBeInTheDocument();
+    expect(summary.queryByText('Cọc chuẩn (tham khảo, chưa thu)')).not.toBeInTheDocument();
+    expect(summary.getByText('2.500.000 ₫')).toBeInTheDocument();
+    // …and never folded into what the customer pays.
+    expect(summary.getByText('700.000 ₫')).toBeInTheDocument();
+  });
+
+  test('ONE submit button, inside the form and the summary; Huỷ sits next to it', async () => {
+    renderNewRental();
+
+    const submits = await screen.findAllByRole('button', { name: 'Tạo lượt thuê' });
+    expect(submits).toHaveLength(1);
+    const submit = submits[0]!;
+    expect(submit).toHaveAttribute('type', 'submit');
+    expect(submit.closest('form')).not.toBeNull();
+    const summary = within(summarySection());
+    expect(summary.getByRole('button', { name: 'Tạo lượt thuê' })).toBe(submit);
+    expect(summary.getByRole('button', { name: 'Hủy' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Hủy' })).toHaveLength(1);
+  });
+
+  test('E2: the breakdown is a disclosure — aria-expanded follows the toggle, which never submits', async () => {
+    const user = userEvent.setup();
+    renderNewRental();
+
+    const toggle = await screen.findByRole('button', { name: 'Xem chi tiết tính tiền' });
+    expect(toggle).toHaveAttribute('type', 'button');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    const controlled = (toggle.getAttribute('aria-controls') ?? '').split(' ');
+    expect(controlled.length).toBeGreaterThan(0);
+    for (const id of controlled) expect(document.getElementById(id)).not.toBeNull();
+    // The breakdown it controls is the one holding the subtotal.
+    expect(
+      controlled.some((id) => document.getElementById(id)?.textContent?.includes('Tạm tính tiền thuê')),
+    ).toBe(true);
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveAccessibleName('Ẩn chi tiết tính tiền');
+    // A button inside the <form> that submitted would surface the validation messages.
+    expect(screen.queryByText('Vui lòng nhập tên khách')).not.toBeInTheDocument();
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('a rejection alert renders in the summary, right above the submit', async () => {
+    seedDresses([makeDress({ id: 'd1', code: 'DR-001', name: 'Đầm đỏ' })]);
+    seedBlockedDresses(['d1']);
+    const user = userEvent.setup();
+    renderNewRental();
+
+    await fillCustomerAndDates(user);
+    await pickDress(user, 'DR-001');
+    await user.click(screen.getByRole('button', { name: 'Tạo lượt thuê' }));
+
+    const alert = await within(summarySection()).findByRole('alert');
+    expect(alert).toHaveTextContent(/Có váy đã được thuê/);
+    expect(screen.getAllByText(/Có váy đã được thuê/)).toHaveLength(1);
+  });
 });

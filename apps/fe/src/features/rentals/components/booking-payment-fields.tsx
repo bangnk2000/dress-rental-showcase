@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatVnd } from '@/lib/format';
 
+import { BOOKING_DEPOSIT_ID, BOOKING_FEE_ID } from '../lib/form-field-ids';
 import { parseCollectAmount } from '../lib/parse-collect-amount';
 
 export interface BookingPaymentValues {
@@ -60,9 +61,9 @@ export function BookingPaymentFields({
     <fieldset className="grid gap-3 rounded-lg border p-3">
       <legend className="px-1 text-sm font-medium">{t('form.payment.title')}</legend>
       <div className="grid gap-1.5">
-        <Label htmlFor="booking-rental-fee">{t('form.payment.rentalFee')}</Label>
+        <Label htmlFor={BOOKING_FEE_ID}>{t('form.payment.rentalFee')}</Label>
         <Input
-          id="booking-rental-fee"
+          id={BOOKING_FEE_ID}
           inputMode="numeric"
           autoComplete="off"
           value={values.rentalFee}
@@ -86,9 +87,9 @@ export function BookingPaymentFields({
       </label>
       {values.depositPaid ? (
         <div className="grid gap-1.5">
-          <Label htmlFor="booking-deposit">{t('form.payment.deposit')}</Label>
+          <Label htmlFor={BOOKING_DEPOSIT_ID}>{t('form.payment.deposit')}</Label>
           <Input
-            id="booking-deposit"
+            id={BOOKING_DEPOSIT_ID}
             inputMode="numeric"
             autoComplete="off"
             value={values.deposit}
