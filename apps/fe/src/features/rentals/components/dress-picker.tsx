@@ -108,8 +108,9 @@ export function DressPicker({
                   <span className="block truncate">
                     <span className="font-medium">{dress.code}</span>{' '}
                     <span className="text-muted-foreground">{dress.name}</span>
-                  </span>
-                  {/* Own line: on a phone the name truncates, the price never does. */}
+                  </span>{' '}
+                  {/* Own line: on a phone the name truncates, the price never does. The space
+                      between the two blocks is invisible but keeps the text "name price". */}
                   <span className="block text-sm whitespace-nowrap tabular-nums">
                     {formatVnd(dress.rentalPrice)}
                   </span>
@@ -224,8 +225,9 @@ function SelectedDressRow({
           <span className="block truncate">
             <span className="font-medium">{dress.code}</span>{' '}
             <span className="text-muted-foreground">{dress.name}</span>
-          </span>
-          {/* Own line: on a phone the name truncates, the price never does. */}
+          </span>{' '}
+          {/* Own line: on a phone the name truncates, the price never does. The space between
+              the two blocks is invisible but keeps the text "name price". */}
           <span className="block text-sm whitespace-nowrap tabular-nums">
             {formatVnd(dress.rentalPrice)}
           </span>

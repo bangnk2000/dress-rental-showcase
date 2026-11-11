@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 /**
  * E2e runs against the REAL stack (infra/e2e-playwright, automated by infra/e2e-ci): a migrated +
@@ -36,7 +36,23 @@ export default defineConfig({
   // `list` for the terminal, `html` so a failed CI run has something to download besides the raw
   // trace (the `e2e` job uploads both on failure). Never auto-open: this also runs headless.
   reporter: [['list'], ['html', { open: 'never' }]],
-  projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
+  // Two projects, disjoint specs: `chromium` is the desktop staff day, `phone` is the NFR-06
+  // layout proof (docs/design/cms-mobile-ux.md §5). Split by file so the happy path does not run
+  // twice against the one shared database. The phone is a Chromium device on purpose — CI installs
+  // Chromium only, so no WebKit/iPhone profile. A project's `use` merges over the top-level one, so
+  // the vi locale and the shop timezone carry over (device descriptors set neither).
+  projects: [
+    {
+      name: 'chromium',
+      testIgnore: /phone-layout\.spec\.ts$/,
+      use: { browserName: 'chromium' },
+    },
+    {
+      name: 'phone',
+      testMatch: /phone-layout\.spec\.ts$/,
+      use: { ...devices['Pixel 7'] },
+    },
+  ],
   // Serving `dist` rather than the dev server is the point: the browser proof then covers the
   // artifact that actually ships — service worker included, which `devOptions.enabled: false`
   // keeps out of dev. `vite preview` proxies /api to :3000 like the dev server (vite.config.ts).
