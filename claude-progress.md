@@ -263,3 +263,5 @@ Never needed on resume — add your line at the top without reading further.
   deployed + Production bullet; #39 held by owner. Docs only.
 - 2026-11-07 (56) — rentals/update-rental-by-staff pass, 54/54: rental:update open to all staff
   (owner: "Sửa tất cả như chủ"), update-rental Q1+Q8 resolved. init.sh green, be e2e 175, fe 181.
+- 2026-11-12 (57) — fe:mobile-ux pass, 55/55: CMS usable on a phone (NFR-06), one DOM, stacked tables,
+  Playwright `phone` project 14/14. init.sh green, be e2e 175, fe 185. D1–D6 await owner.

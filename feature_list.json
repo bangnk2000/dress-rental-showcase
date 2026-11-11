@@ -752,7 +752,7 @@
       "title": "The staff CMS is fully usable on a phone (NFR-06): no horizontal overflow, thumb-sized targets, scrollable dialogs",
       "tier": "design",
       "designDoc": "docs/design/cms-mobile-ux.md",
-      "status": "in-progress",
+      "status": "pass",
       "description": "Owner ask 2026-11-11: \"điều chỉnh và cải thiện UI/UX của phần cms và tương thích tối với giao diện điện thoại\". NFR-06. FE-only, one DOM per screen (responsive classes only): sticky wrapping header with a scrollable nav strip, PageHeader that stacks, Dialog/AlertDialog capped at the dynamic viewport and scrolling, Table opt-in that stacks rows under md, pointer-coarse 44px targets, safe-area + toast placement, per-screen fixes from the 2026-11-11 audit. No BE, no contract change. Done = root gates green + a Playwright phone project proving no horizontal overflow on every main screen.",
       "dependencies": [],
       "acceptance": [
@@ -785,7 +785,15 @@
           "item": "D6: safe-area + toast lên giữa trên ở điện thoại (docs/design/cms-mobile-ux.md §3)",
           "since": "2026-11-11"
         }
-      ]
+      ],
+      "evidence": "2026-11-12 on bf2934d (+ docs): `bash init.sh` → all runnable gates green — ledger check, contract:check (no diff), check, lint (only the pre-existing fe rental-form.tsx:90 warning), arch, be jest, fe vitest 185 (13 files; +4 table.test.tsx stacked-table roles/labels), qr-admin 17, web 52, fe/qr-admin/web builds; be test:e2e 19 suites / 175. AC1 + AC2: Playwright `phone` project (Pixel 7, Chromium, coarse pointer) e2e/phone-layout.spec.ts 14/14 on a throwaway migrated+seeded DB — sign-in, board (+1 day), rentals list/new/detail (out + booked-with-deposit), dresses list/detail, /website, /website/new, /website/:id, users: scrollWidth ≤ 412, no off-edge element, no sideways-scrolling stacked table; return, dress form, money, cancel-with-refund and user-create dialogs fit and their last button scrolls into view; every nav link on screen, navigates, ≥ 44px. The same spec failed before the feature fixes (dress-detail header 455px; table wrappers scrolling on 4 lists). AC3: `chromium` happy path 1/1 with unchanged locators; vitest locators unchanged except listings disabled-delete reason (getByTitle → toHaveAccessibleDescription, the reason is now visible text). No BE/contract change. Not run: real iOS Safari / a physical phone. Not deployed.",
+      "testedAt": "2026-11-12",
+      "deploy": {
+        "order": [
+          "fe"
+        ],
+        "migration": false
+      }
     }
   ]
 }

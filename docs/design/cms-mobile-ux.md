@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | App | `apps/fe` (CMS nhân viên, `cms.example.com`) — không chạm BE, không đổi contract |
-| Status | **agent-default** · 2026-11-11 — chủ tiệm yêu cầu "điều chỉnh và cải thiện UI/UX của phần cms và tương thích tối với giao diện điện thoại", làm và merge trong một lượt; các lựa chọn §3 là **mặc định do agent chốt**, chờ chủ tiệm xác nhận/bác (`node scripts/ledger.mjs pending`, ledger `fe:mobile-ux`) |
+| Status | **agent-default** · 2026-11-11 · as-built 2026-11-12 (§6) — chủ tiệm yêu cầu "điều chỉnh và cải thiện UI/UX của phần cms và tương thích tối với giao diện điện thoại", làm và merge trong một lượt; các lựa chọn §3 là **mặc định do agent chốt**, chờ chủ tiệm xác nhận/bác (`node scripts/ledger.mjs pending`, ledger `fe:mobile-ux`) |
 | Requirement | **NFR-06** (SRS §5) — CMS dùng được trọn vẹn trên điện thoại 360–414px |
 | Rules approved by | agent-default (D1–D6 dưới đây) |
 
@@ -57,3 +57,19 @@ nguyên (`use-rental-filters`, bộ lọc váy). Chỉ bố cục.
 - Playwright **project `phone`** (Chromium, viewport Pixel 7 — CI chỉ có Chromium) chạy spec
   `e2e/phone-layout.spec.ts`: đăng nhập, mở từng màn hình chính, khẳng định
   `document.documentElement.scrollWidth <= innerWidth` và nav chạm tới được; CI job `e2e` chạy nó.
+
+## 6. As-built 2026-11-12
+
+- Kernel: `root-layout` (header sticky, nav thành dải cuộn ngang dưới `md`, link ≥ 44px, gạch chân
+  trang hiện tại), `page-header` (xếp chồng dưới `sm`), `dialog`/`alert-dialog`
+  (`max-h-[calc(100dvh-2rem)]` + cuộn, X 44px), `button`/`select`/`input` (`pointer-coarse:` 44px),
+  `table` (`<Table stacked>` + `TableCell label|stack`, role tường minh để Safari không mất ngữ nghĩa
+  bảng), `sonner` (giữa-trên dưới 768px, đo một lần lúc tải), `pwa-update-prompt`, `index.html`
+  (`viewport-fit=cover`, meta standalone, apple-touch-icon có sẵn).
+- Feature: bảng đơn thuê, váy (3 cột trên điện thoại; D3 ẩn Danh mục + Cọc), website, váy-của-mẫu,
+  nhân viên, lịch sử giá đều `stacked`; thanh ngày + hàng nút thẻ bảng hôm nay wrap (hết tràn trái);
+  dress picker 2 dòng (giá không bị cắt); bộ lọc full-width; chi tiết váy/đơn header wrap; ô ảnh 112px
+  trên cảm ứng; nút xoá mẫu bị khoá hiện lý do bằng chữ (thay `title`).
+- Proof: Playwright `phone` 14/14 + `chromium` happy path 1/1 (local, DB tạm); vitest toàn bộ xanh
+  không đổi locator (trừ test lý do-xoá: `getByTitle` → `toHaveAccessibleDescription`).
+- Còn để ngỏ: safe-area trái/phải khi xoay ngang iPhone có tai thỏ; toast không đổi vị trí khi xoay.
