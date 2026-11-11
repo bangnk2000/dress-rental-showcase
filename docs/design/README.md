@@ -19,6 +19,9 @@
 QR admin được ship độc lập tại `apps/qr-admin/` (không phải feature của `apps/fe`); bootstrap + UX
 design của nó ở [qr-admin.md](./qr-admin.md). SRS phase QR: [../SRS-qr-url.md](../SRS-qr-url.md).
 
+CMS trên điện thoại (NFR-06): [cms-mobile-ux.md](./cms-mobile-ux.md) — pattern nav/bảng/dialog/vùng chạm
+dùng chung cho mọi màn hình `apps/fe`, **agent-default** 2026-11-11 (D1–D6 chờ chủ tiệm).
+
 Website công khai (Next.js) ở `apps/web/` — bootstrap brief + contract gaps (BE chưa có endpoint
 ẩn danh) ở [public-web.md](./public-web.md). Chưa có slice nào.
 
