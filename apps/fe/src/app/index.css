@@ -90,4 +90,38 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+  /* cms-mobile-ux: no grey flash over every tapped control on mobile WebKit */
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Horizontal strips (the phone nav) scroll by swipe; the scrollbar is noise there. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* cms-mobile-ux D2: column label of a stacked table cell (components/ui/table.tsx). CSS
+   generated content, so the DOM stays one copy; the alt-text form keeps screen readers from
+   reading the label twice (the sr-only header row already names the column). */
+@layer components {
+  @media (width < 48rem) {
+    table[data-stacked] td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 0.125rem;
+      font-size: var(--text-xs);
+      line-height: var(--text-xs--line-height);
+      font-weight: 400;
+      color: var(--color-muted-foreground);
+    }
+    @supports (content: "a" / "") {
+      table[data-stacked] td[data-label]::before {
+        content: attr(data-label) / "";
+      }
+    }
+  }
 }

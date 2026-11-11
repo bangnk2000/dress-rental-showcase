@@ -16,12 +16,14 @@ export function PwaUpdatePrompt() {
 
   if (!needRefresh) return null;
 
+  // Phone: full width minus 1rem gutters, above the home indicator (cms-mobile-ux D6).
+
   return (
     <div
       role="status"
-      className="fixed right-4 bottom-4 z-50 flex items-center gap-3 rounded-lg border bg-popover p-4 text-popover-foreground shadow-lg"
+      className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex items-center gap-3 rounded-lg border bg-popover p-4 text-popover-foreground shadow-lg sm:right-4 sm:left-auto"
     >
-      <p className="text-sm">{t('pwa.updateAvailable')}</p>
+      <p className="min-w-0 flex-1 text-sm">{t('pwa.updateAvailable')}</p>
       <Button size="sm" onClick={() => void updateServiceWorker(true)}>
         {t('pwa.reload')}
       </Button>
