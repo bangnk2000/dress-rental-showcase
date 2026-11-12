@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Phạm vi | `.github/workflows/deploy.yml` + workflow mới `rollback.yml`, `infra/deploy/*.sh`, `infra/deploy/remote/build-remote.sh`, nhãn version trong `apps/fe` (build-time). Không chạm BE source, không đổi contract, không migration |
-| Status | **approved** 2026-11-12 — O1–O6 chủ tiệm chọn; A1–A9 chủ tiệm duyệt *"Duyệt A1–A9, code luôn"* · A10–A11 (thêm khi code) là agent-default |
+| Status | **as-built** 2026-11-12 (§8) · **approved** 2026-11-12 — O1–O6 chủ tiệm chọn; A1–A9 chủ tiệm duyệt *"Duyệt A1–A9, code luôn"* · A10–A11 (thêm khi code) là agent-default |
 | Requirement | NFR-07 |
 | Ledger | `infra/deploy-versioning`, `tier: design`; A10–A11 là `ownerPending` của entry (`node scripts/ledger.mjs pending`) |
 
@@ -178,3 +178,17 @@ Lần `deploy` kế tiếp so với `.deployed` (= T) như bình thường.
 - Endpoint BE `/version` (O6 chọn nhúng build-time).
 - Rollback tự động khi verify đỏ — con người quyết định có bấm `rollback` hay không.
 - Rút qua migration, chạy migration `down`.
+
+## 8. As-built (2026-11-12)
+
+Shipped in PR #48 (`87b6c00`) as designed, with two changes found in review before merge:
+
+- §3.4 step 3 compares the **env files the scripts produced** (`env=` sha256 of `apps/be/.env` / the dress-web
+  pm2 config, recorded per build) with the live files, not the scripts between two `ops=` — otherwise the very
+  first deploy after this PR (which edits those scripts) could not be rolled back.
+- O3: production had moved to `d2fbfb0` before seeding, so `v1.0.0` = `d2fbfb0` (bootstrap 2026-11-12 11:41 +07).
+
+Live drill: deploy v1.0.1 (run 43156778660) → rollback to v1.0.0 (43157149515, swap 5 s, job 30 s) → rollback
+back to v1.0.1 (43157234264, swap 7 s, job 35 s), verify green each time. Files: `infra/deploy/{plan,rollback,record,
+bootstrap-version,ssh-setup}.sh`, `.github/workflows/{deploy,rollback}.yml`, `apps/fe/src/lib/app-version.ts`,
+offline proof `infra/deploy/test/deploy-versioning.test.sh` (CI `deploy-scripts`). Operator guide: `infra/deploy/README.md`.

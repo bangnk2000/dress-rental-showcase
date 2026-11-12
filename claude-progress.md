@@ -6,6 +6,9 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md` (l
 Never needed on resume — add your line directly under this header (read only these first lines,
 e.g. `limit: 8`); never append at the bottom.
 
+- 2026-11-12 (62) — infra/deploy-versioning pass, 57/57: vX.Y.Z tags + deploy history + rollback workflow (NFR-07);
+  production v1.0.1 (87b6c00), rollback drill 5 s / 7 s swaps.
+
 - 2026-11-12 (61) — owner decisions (E1–E5, D1–D6 as proposed) + production d2fbfb0 (run 43153614172); stale
   deploy facts fixed (bbf1421 = #39 + #41 live since 2026-11-07).
 

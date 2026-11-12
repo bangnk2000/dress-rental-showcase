@@ -4,6 +4,13 @@ Newest first. Resume: `node scripts/ledger.mjs brief` prints ONLY the first entr
 file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-checklist.md) §State
 (archive: [`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md)).
 
+## 2026-11-12 (62) — versioned deploys + no-build rollback (`infra/deploy-versioning` = pass)
+
+- Done: NFR-07 shipped (PR #48, `87b6c00`): `deploy` bump input → tag vX.Y.Z + Release after verify, `.deploy-history`, one `.prev` build per part with sha/version/ops/lock/env metadata, Actions → `rollback` (swap + pm2 restart, refuses across migration / lockfile / env change), CMS footer version, plan.sh ignores AGENTS.md/README.md. Bootstrapped v1.0.0 = d2fbfb0; production now **v1.0.1**.
+- Proof: offline suite 20/20 (CI `deploy-scripts`); init.sh green; Playwright 20/20; live drill deploy v1.0.1 → rollback (swap 5 s) → rollback (7 s), verify green each.
+- Next: bangnk — A10 (agent docs never rebuild a part), A11 (version label in the footer) via `ledger.mjs pending`; update-rental Q2–Q7, Q9 still open. Use `bump=minor` for a feature/migration deploy.
+- Watch out: a refusal path was proven offline only. WSL fallback builds carry sha=unknown (never swapped back); WSL build-remote.sh copy synced, sync.sh appends history.
+
 ## 2026-11-12 (61) — owner decisions + production `d2fbfb0` (docs/ledger, deploy only)
 
 - Done: owner chose "as proposed" for rental-form-ux E1–E5 (PR #46) and mobile-ux D1–D6; approved deploy-versioning A1–A9 ("code luôn"). Found the ledger stale: deploy run 42384818412 (2026-11-07 15:07 UTC) had already shipped `bbf1421` = #39 deposit-at-pickup + #41 update-rental-by-staff — `deploy.deployed` back-filled. Deployed `d2fbfb0` (run 43153614172, be+fe+web, no migration): mobile-ux + rental-form-ux live.
@@ -31,11 +38,4 @@ file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-check
 - Proof: rule inventory in the PR (every MUST/never line of the old files mapped, grep-checked); link check 0 broken; `ledger.mjs check` OK; docs/spec SHA256SUMS OK; no generated/contract diff. `bash init.sh` NOT run locally (docs + `ledger.mjs` only) — CI on the PR is the gate proof.
 - Next: `fe:rental-form-ux` is `in-progress` on branch `feat/rental-form-ux` (not on master, so `brief` here says none) — it is the next session's work. Merge order: this docs PR first, then rebase `feat/rental-form-ux` onto master before that session closes (it conflicts on fe #5 and on the re-ordered claude-progress.md; keep the new #5 stub — e2e/README.md already says "every spec except phone-layout").
 - Watch out: that branch's close entry is (59), not (58). The user-scope `harness-session` skill was not changed (shared with other repos); `brief` is what its "read the latest handoff entry" step means here.
-
-## 2026-11-12 (57) — the CMS on a phone (`fe:mobile-ux` = pass)
-
-- Done: owner ask "điều chỉnh và cải thiện UI/UX của phần cms và tương thích tối với giao diện điện thoại". Design-tier, [`cms-mobile-ux`](docs/design/cms-mobile-ux.md) agent-default (D1–D6 → ownerPending) + NFR-06. One DOM everywhere: sticky header + scrollable nav strip, stacking PageHeader, dialogs capped at 100dvh and scrolling, `pointer-coarse` 44px targets, `<Table stacked>` on every list, today-board bar/card actions wrap, toast top-centre on phones. Ledger 55/55.
-- Proof: `bash init.sh` green; be e2e 175; fe vitest 185; Playwright `phone` project 14/14 + desktop happy path (local throwaway DB; CI `e2e` now runs both projects).
-- Next: bangnk — try it on the shop phones and confirm/reject D1–D6 (`ledger.mjs pending`). Deploy: fe only, no migration — but master's fe also carries #39 + update-rental-by-staff, which need **be first**; ship all with `only=auto` (be → fe).
-- Watch out: never add a breakpoint-duplicated DOM (table + cards, second nav) — jsdom and `toHaveCount` both see both copies (apps/fe/AGENTS.md §Screen rules). Not checked on real iOS Safari.
 
