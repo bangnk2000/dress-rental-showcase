@@ -802,50 +802,18 @@
       "title": "Every full production deploy carries a SemVer tag + server-side history, and the previous build can be swapped back in without rebuilding",
       "tier": "design",
       "designDoc": "docs/design/deploy-versioning.md",
-      "status": "todo",
+      "status": "in-progress",
       "description": "Owner ask 2026-11-12: \"thiếu việc đánh version release để xác định version đã deploy và có thể revert nhanh khi code lỗi\". NFR-07. deploy.yml computes vX.Y.Z (bump input, default patch) and tags + releases it after verify; .deploy-history on the VPS; one previous slot per part (fe dist.prev, web run.prev, be dist.prev) with sha/version/ops/lock metadata; a rollback workflow that swaps slots + restarts pm2 without building, refusing across a migration or an incompatible lockfile/script change; CMS shows its build version. No BE source, no contract, no migration. Done = deploy vX then rollback then rollback again, each verify green and timed; a migration range refused.",
       "dependencies": [
         "infra/deploy-actions"
       ],
       "ownerPending": [
         {
-          "item": "A1: gốc bump = tag vX.Y.Z cao nhất toàn repo, không chỉ tổ tiên của target (docs/design/deploy-versioning.md §3.1)",
+          "item": "A10: plan.sh bỏ qua AGENTS.md / README.md khi quyết phần nào build lại (docs/design/deploy-versioning.md §4)",
           "since": "2026-11-12"
         },
         {
-          "item": "A2: run một phần (record=false) không có tên: nhãn vX.Y.Z+sha7, không tag, không ghi history (docs/design/deploy-versioning.md §3.1)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "A3: rollback không nhận input; đích là bản liền trước (hoặc .deployed sau một deploy đỏ giữa chừng); bấm hai lần = quay lại (docs/design/deploy-versioning.md §3.4)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "A4: workflow riêng rollback.yml, không phải chế độ của deploy (docs/design/deploy-versioning.md §3.4)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "A5: có version mới thì FE luôn build lại (chỉ only=auto) để nhãn CMS khớp version production (docs/design/deploy-versioning.md §3.5)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "A6: mỗi version có GitHub Release, ghi chú tự sinh từ PR (docs/design/deploy-versioning.md §3.2)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "A7: nhãn version ở cuối menu CMS, chữ nhỏ, không i18n (docs/design/deploy-versioning.md §3.5)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "A8: version.json trong dist đọc công khai được (cùng thông tin với nhãn) (docs/design/deploy-versioning.md §3.3)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "A9: fallback WSL không tạo version: history ghi version=unversioned (docs/design/deploy-versioning.md §4)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "O3: xác nhận gốc v1.0.0 = production 1067bc1 (đối chiếu .deployed trên VPS trước khi tag) (docs/design/deploy-versioning.md §6 bước 1)",
+          "item": "A11: nhãn version CMS ở chân trang (CMS không có khung menu) (docs/design/deploy-versioning.md §4)",
           "since": "2026-11-12"
         }
       ]

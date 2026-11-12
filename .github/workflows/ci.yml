@@ -39,6 +39,17 @@ jobs:
       - name: vendored spec unchanged since last sync
         run: cd docs/spec && sha256sum --quiet -c SHA256SUMS
 
+  # Offline proof of the deploy version/rollback decisions (no ssh): plan.sh + rollback.sh on real
+  # commits of this repo, hence the full history. Seconds — runs on every event.
+  deploy-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: bash -n every deploy script
+        run: for f in infra/deploy/*.sh infra/deploy/remote/*.sh infra/deploy/test/*.sh; do bash -n "$f"; done
+      - run: bash infra/deploy/test/deploy-versioning.test.sh
+
   # The three drift gates, kept together in one fast job (no DB, no browser) as
   # docs/spec/init-monorepo-contract/03-ci-and-runtime.md §1 specifies. Gate 3
   # (`pnpm check`) type checks every app, so ci-scope.sh runs this job whenever

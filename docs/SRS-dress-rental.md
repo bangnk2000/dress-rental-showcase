@@ -251,7 +251,7 @@ Trạng thái giao hàng KHÔNG ghi ở đây — đọc từ ledger: `node scri
 | FR-WEB-06 | `web:search-dresses` | [web/search-dresses.md](./design/web/search-dresses.md) (as-built 2026-10-02) |
 | FR-RENT-01, 13, 14 + NFR-06 (bố cục form) | `fe:rental-form-ux` | [rental-form-ux.md](./design/rental-form-ux.md) |
 | NFR-06 | `fe:mobile-ux` | [cms-mobile-ux.md](./design/cms-mobile-ux.md) |
-| NFR-07 | `infra/deploy-versioning` (chưa mở) | [deploy-versioning.md](./design/deploy-versioning.md) (draft) |
+| NFR-07 | `infra/deploy-versioning` | [deploy-versioning.md](./design/deploy-versioning.md) (approved) |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

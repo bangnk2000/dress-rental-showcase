@@ -12,6 +12,12 @@ interface ImportMetaEnv {
    * published listing to `<origin>/bo-suu-tap/<slug>`; unset → the "Xem trên web" link is hidden.
    */
   readonly VITE_WEB_ORIGIN?: string;
+  /**
+   * The deploy's version (`v1.4.2`, or `v1.4.1+abc1234` for a partial deploy) and the built commit —
+   * set ONLY by `infra/deploy/fe.sh`. Read ONLY by `src/lib/app-version.ts`; unset → the footer says `dev`.
+   */
+  readonly VITE_APP_VERSION?: string;
+  readonly VITE_APP_SHA?: string;
 }
 
 interface ImportMeta {
