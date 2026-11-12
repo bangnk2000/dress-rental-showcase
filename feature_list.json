@@ -802,7 +802,7 @@
       "title": "Every full production deploy carries a SemVer tag + server-side history, and the previous build can be swapped back in without rebuilding",
       "tier": "design",
       "designDoc": "docs/design/deploy-versioning.md",
-      "status": "in-progress",
+      "status": "pass",
       "description": "Owner ask 2026-11-12: \"thiếu việc đánh version release để xác định version đã deploy và có thể revert nhanh khi code lỗi\". NFR-07. deploy.yml computes vX.Y.Z (bump input, default patch) and tags + releases it after verify; .deploy-history on the VPS; one previous slot per part (fe dist.prev, web run.prev, be dist.prev) with sha/version/ops/lock metadata; a rollback workflow that swaps slots + restarts pm2 without building, refusing across a migration or an incompatible lockfile/script change; CMS shows its build version. No BE source, no contract, no migration. Done = deploy vX then rollback then rollback again, each verify green and timed; a migration range refused.",
       "dependencies": [
         "infra/deploy-actions"
@@ -816,7 +816,18 @@
           "item": "A11: nhãn version CMS ở chân trang (CMS không có khung menu) (docs/design/deploy-versioning.md §4)",
           "since": "2026-11-12"
         }
-      ]
+      ],
+      "testedAt": "2026-11-12",
+      "deploy": {
+        "order": [
+          "be",
+          "fe",
+          "web"
+        ],
+        "migration": false,
+        "deployed": "87b6c00 2026-11-12"
+      },
+      "evidence": "2026-11-12, PR #48 merged as 87b6c00. Offline: `bash infra/deploy/test/deploy-versioning.test.sh` 20/20 on real commits (bump/meta/part rules; plan: no-tag refusal, C→D fe-only with AGENTS.md ignored, minor bump, tag reuse, partial-run name vX.Y.Z+sha7, A5 relabel, migration refusal; rollback: fe-only, be swap, scripts changed but env same → swap, lockfile differs / .env differs / migration / history mismatch / no history / no BE metadata → refuse, half-failed deploy → target .deployed), green also with a throwaway v* tag; CI job deploy-scripts green. `bash init.sh` green (fe vitest 194 incl. app-version 3, be 303), be e2e 175, Playwright 20/20 (chromium + phone) with the footer. Live drill on production: bootstrap-version.sh seeded d2fbfb0 = v1.0.0 (tag pushed, no restart); deploy run 43156778660 → v1.0.1 (be+fe+web, no migration, verify ok, previous builds kept as .prev, tag job created v1.0.1 + Release; job 147s); rollback dry-run 43157105791 (plan: swap be fe web, 11s); rollback 43157149515 → v1.0.0: swap 5s, verify ok, job 30s, history kind=rollback; rollback 43157234264 → back to v1.0.1: swap 7s, verify ok, job 35s. Not proven live: a refusal (migration / lockfile / env) — offline only; the build-failure restore in build-remote.sh — not exercised."
     }
   ]
 }
