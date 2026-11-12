@@ -25,6 +25,9 @@ dính cạnh (PC) / thanh đáy (điện thoại); P1–P4 chủ tiệm duyệt 
 CMS trên điện thoại (NFR-06): [cms-mobile-ux.md](./cms-mobile-ux.md) — pattern nav/bảng/dialog/vùng chạm
 dùng chung cho mọi màn hình `apps/fe`, **agent-default** 2026-11-11 (D1–D6 chờ chủ tiệm).
 
+Version deploy + rút về nhanh (NFR-07): [deploy-versioning.md](./deploy-versioning.md) — SemVer tag, lịch sử
+deploy, slot bản trước + workflow `rollback`; **draft** 2026-11-12 (O1–O6 chủ tiệm chọn, A1–A9 chờ duyệt).
+
 Website công khai (Next.js) ở `apps/web/` — bootstrap brief + contract gaps (BE chưa có endpoint
 ẩn danh) ở [public-web.md](./public-web.md). Chưa có slice nào.
 

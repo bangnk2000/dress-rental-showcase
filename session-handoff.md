@@ -4,6 +4,13 @@ Newest first. Resume: `node scripts/ledger.mjs brief` prints ONLY the first entr
 file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-checklist.md) §State
 (archive: [`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md)).
 
+## 2026-11-12 (60) — deploy versioning + fast rollback designed (`infra/deploy-versioning` = todo, docs only)
+
+- Done: owner ask "thiếu việc đánh version release để xác định version đã deploy và có thể revert nhanh khi code lỗi". Design-tier draft [`deploy-versioning`](docs/design/deploy-versioning.md) + NFR-07: SemVer tag per full deploy (bump input, default patch; v1.0.0 = 1067bc1), append-only `.deploy-history`, one `.prev` slot per part, a `rollback` workflow that swaps slots + restarts pm2 without building (refuses across a migration / lockfile / build-script change), CMS version label. O1–O6 owner-chosen; A1–A9 + O3 → ownerPending.
+- Proof: `ledger.mjs check` OK, stale-status OK. No code.
+- Next: bangnk — approve/reject A1–A9 and confirm v1.0.0 = 1067bc1 (`ledger.mjs pending`); flip the doc's Status to approved, then open the entry (§6: measure VPS disk first, seed v1.0.0 metadata before the first versioned deploy).
+- Watch out: the design gate blocks `in-progress` while the doc says draft (`ledger.mjs check`).
+
 ## 2026-11-12 (59) — rental form in four sections + a summary that stays in view (`fe:rental-form-ux` = pass)
 
 - Done: owner ask "màn hình tạo sửa đơn thuê … cần cải thiện UI/UX cả web pc và mobile"; design-tier [`rental-form-ux`](docs/design/rental-form-ux.md) P1–P4 approved, E1–E5 agent-default (ownerPending). Sections Khách hàng / Ngày thuê / Váy / Thanh toán; ONE summary element — sticky right column from lg, fixed bottom bar with payable + submit below lg. Branch rebased onto #43 (kept master's fe #5 stub). Ledger 56/56.
@@ -31,11 +38,4 @@ file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-check
 - Proof: `bash init.sh` all green; be e2e 175 (AC5 now: staff PATCH 200), fe vitest 181.
 - Next: bangnk — merge PR #40 then this PR; deploy **be → fe** (no migration) — can ride the same run as #39 (deposit-at-pickup). update-rental §6 Q2–Q7, Q9 still open.
 - Watch out: keep be → fe order — the new FE on the old BE shows staff a button that 403s.
-
-## 2026-11-07 (55) — PR #38 found live, PR #39 merged and held (docs/harness only)
-
-- Done: owner merged PR #38 + #39. The owner had already shipped #38 at 17:21 (deploy run 42363551332, target `1067bc1`, backup + R2, migrations 1755800000000/1 up, verify green) → `rentals/cancel-with-refund` `deploy.deployed` + Production bullet. Owner chose NOT to deploy #39 yet. Corrected the deposit-at-pickup evidence: the cancel-dialog fix a980ffc ships with #39, not #38.
-- Proof: `ledger.mjs check` OK; `pending` → only `rentals/deposit-at-pickup` undeployed (be → fe).
-- Next: bangnk — when ready, Actions → deploy `only=auto` (target `67f0e3c` or later), then reload the CMS on every shop device before the first handout and tell staff existing bookings need a deposit at pickup (§6.Q6); then `deploy.deployed` + Production bullet. Q1–Q9 of update-rental §6 still open.
-- Watch out: before #39 ships, the live cancel dialog still shows each rejection twice (a980ffc not live).
 

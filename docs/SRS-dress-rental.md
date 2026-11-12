@@ -205,6 +205,7 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
 - **NFR-04** Quy mô nhỏ: ~200 váy, vài người dùng đồng thời — không tối ưu sớm (YAGNI).
 - **NFR-05** Contract một chiều BE → openapi → FE, drift gate trong CI (bất biến #1 của repo).
 - **NFR-06** CMS (`apps/fe`) dùng được trọn vẹn trên điện thoại 360–414px: không tràn ngang, mọi hành động chạm tới được (≥ 44px trên màn hình cảm ứng), dialog cuộn được khi bàn phím bật (2026-11-11, [design/cms-mobile-ux.md](./design/cms-mobile-ux.md)).
+- **NFR-07** Mỗi lần deploy production đầy đủ mang một version SemVer (git tag) truy được kèm lịch sử deploy trên server, và rút về bản chạy ngay trước được mà không build lại khi khoảng rút không có migration (2026-11-12, [design/deploy-versioning.md](./design/deploy-versioning.md)).
 
 ## 6. Ngoài phạm vi (đến khi có quyết định khác)
 
@@ -250,6 +251,7 @@ Trạng thái giao hàng KHÔNG ghi ở đây — đọc từ ledger: `node scri
 | FR-WEB-06 | `web:search-dresses` | [web/search-dresses.md](./design/web/search-dresses.md) (as-built 2026-10-02) |
 | FR-RENT-01, 13, 14 + NFR-06 (bố cục form) | `fe:rental-form-ux` | [rental-form-ux.md](./design/rental-form-ux.md) |
 | NFR-06 | `fe:mobile-ux` | [cms-mobile-ux.md](./design/cms-mobile-ux.md) |
+| NFR-07 | `infra/deploy-versioning` (chưa mở) | [deploy-versioning.md](./design/deploy-versioning.md) (draft) |
 | (hạ tầng) | `infra/monorepo-skeleton`, `infra/fe-bootstrap`, `infra/e2e-playwright` | — |
 
 Quy tắc duy trì bảng này: **mỗi FR mới thêm vào SRS phải có hàng ở đây trước khi feature được

@@ -6,6 +6,9 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md` (l
 Never needed on resume — add your line directly under this header (read only these first lines,
 e.g. `limit: 8`); never append at the bottom.
 
+- 2026-11-12 (60) — infra/deploy-versioning designed (todo, docs only): SemVer tag + deploy history + .prev slots +
+  rollback workflow, NFR-07; A1–A9 + O3 await bangnk. Ledger 56/57 pass.
+
 - 2026-11-12 (59) — fe:rental-form-ux pass, 56/56: rental form in four sections, summary sticky on PC /
   bottom bar on a phone (FR-RENT-01/13/14, NFR-06). Rebased onto #43.
 
