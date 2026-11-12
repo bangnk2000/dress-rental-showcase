@@ -16,7 +16,8 @@ handoff, checklist) under `apps/*`; each app has its own **architecture contract
 ## Current state (a MAP — detail lives where each row points)
 
 - **Production (as of 2026-11-07):** API/CMS + web = master `1067bc1` (PR #38, migrations
-  1755800000000/1). Undeployed + order: `ledger.mjs pending`. Redeploy: Actions → `deploy`
+  1755800000000/1). Undeployed passes (+ order): `ledger.mjs pending` — the owner holds them; deploy
+  only on bangnk's word. Redeploy: Actions → `deploy`
   ([`infra/deploy/README.md`](infra/deploy/README.md)); fallback/ops log: out-of-repo `~/deploy-dress/tencent/RUNBOOK.md` §7/§11.
 
 | Area | Shape (detail: the app's `AGENTS.md`, `docs/design/`) |
@@ -49,7 +50,7 @@ handoff, checklist) under `apps/*`; each app has its own **architecture contract
 2. BE: dependencies point inward; SDKs only in adapters (init-nestjs-hexagonal rules).
 3. FE: no cross-feature imports; server state only in the TanStack Query cache (init-react rules).
 4. Cross-app sharing only through `packages/*` — apps never import each other.
-5. FE and BE ship as one unit (same origin in prod; `init-monorepo-contract/03-ci-and-runtime.md` §3).
+5. FE and BE ship as one unit (same origin in prod; `docs/spec/init-monorepo-contract/03-ci-and-runtime.md` §3).
    `apps/web` is its own Node process but same-origin for the browser via its `/api/v1` rewrite (01 §4b N5).
 6. Rental domain rule: booking overlap per dress is rejected at the DB level
    (Postgres `daterange` + exclusion constraint), never only in application code.
@@ -72,7 +73,7 @@ pnpm --filter fe build && pnpm --filter qr-admin build && pnpm --filter web buil
 ## Session rules
 
 - ONE entry `in-progress` at a time; evidence before `pass`. A cross-contract feature is ONE entry
-  carrying BOTH sides' proof (`init-monorepo-contract/04-harness-binding.md`).
+  carrying BOTH sides' proof (`docs/spec/init-monorepo-contract/04-harness-binding.md`).
 - Ids `<context>/<use-case>` (its FE slice `features/<kebab-id>` is the same entry) or `be:|fe:|web:<slug>`.
   New entries carry `tier` (+ `designDoc` if design-tier), enforced by `ledger.mjs check`; old entries: no backfill, no renames.
 - **Design gate before `in-progress`** (tier per `docs/design/README.md` §B2): design-tier (new

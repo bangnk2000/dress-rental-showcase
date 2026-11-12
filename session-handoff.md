@@ -7,9 +7,9 @@ file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-check
 ## 2026-11-12 (58) — agent docs on a diet (docs/harness only, no ledger entry)
 
 - Done: owner ask "tối ưu lại bộ tài liệu agent đọc… mỗi phiên bắt đầu phải đọc ít nhất nhưng vẫn giữ đúng rule". Root AGENTS.md 12.0 → 7.0 KB: new §Start of session + §Route by task replace the spec bullet list and the history in Current state; "Which doc to update" + handoff rotation moved into clean-state-checklist.md (now the one close procedure). New `node scripts/ledger.mjs brief` = summary + newest handoff entry (~2 KB) — resume no longer reads this file. App AGENTS.md trimmed (fe #5 detail → apps/fe/e2e/README.md; web search mechanics → search-dresses.md §8); deviation numbers and §Screen rules kept. claude-progress.md order repaired (lines moved verbatim).
-- Proof: rule inventory (every MUST/never line mapped, 0 unmapped — in the PR); link check 0 broken; `ledger.mjs check` OK; docs/spec SHA256SUMS OK; no generated/contract diff.
-- Next: bangnk — review/merge the docs PR. `feat/rental-form-ux` also edits apps/fe/AGENTS.md #5 (chromium project line): whichever merges second keeps the new #5 stub; the e2e README already says "every spec except phone-layout".
-- Watch out: the user-scope `harness-session` skill still says "read the latest handoff entry" — `brief` does exactly that; the skill was not changed (shared with other repos).
+- Proof: rule inventory in the PR (every MUST/never line of the old files mapped, grep-checked); link check 0 broken; `ledger.mjs check` OK; docs/spec SHA256SUMS OK; no generated/contract diff. `bash init.sh` NOT run locally (docs + `ledger.mjs` only) — CI on the PR is the gate proof.
+- Next: `fe:rental-form-ux` is `in-progress` on branch `feat/rental-form-ux` (not on master, so `brief` here says none) — it is the next session's work. Merge order: this docs PR first, then rebase `feat/rental-form-ux` onto master before that session closes (it conflicts on fe #5 and on the re-ordered claude-progress.md; keep the new #5 stub — e2e/README.md already says "every spec except phone-layout").
+- Watch out: that branch's close entry is (59), not (58). The user-scope `harness-session` skill was not changed (shared with other repos); `brief` is what its "read the latest handoff entry" step means here.
 
 ## 2026-11-12 (57) — the CMS on a phone (`fe:mobile-ux` = pass)
 
