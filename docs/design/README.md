@@ -20,7 +20,7 @@ QR admin được ship độc lập tại `apps/qr-admin/` (không phải featur
 design của nó ở [qr-admin.md](./qr-admin.md). SRS phase QR: [../SRS-qr-url.md](../SRS-qr-url.md).
 
 Form tạo/sửa đơn (FR-RENT-01/13/14 + NFR-06): [rental-form-ux.md](./rental-form-ux.md) — 4 khối + tóm tắt
-dính cạnh (PC) / thanh đáy (điện thoại); P1–P4 chủ tiệm duyệt 2026-11-12, E1–E5 agent-default.
+dính cạnh (PC) / thanh đáy (điện thoại); P1–P4 + E1–E5 chủ tiệm duyệt 2026-11-12, as-built.
 
 CMS trên điện thoại (NFR-06): [cms-mobile-ux.md](./cms-mobile-ux.md) — pattern nav/bảng/dialog/vùng chạm
 dùng chung cho mọi màn hình `apps/fe`, **agent-default** 2026-11-11 (D1–D6 chờ chủ tiệm).
