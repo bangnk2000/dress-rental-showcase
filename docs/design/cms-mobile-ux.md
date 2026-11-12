@@ -5,9 +5,9 @@
 | | |
 | --- | --- |
 | App | `apps/fe` (CMS nhân viên, `cms.example.com`) — không chạm BE, không đổi contract |
-| Status | **agent-default** · 2026-11-11 · as-built 2026-11-12 (§6) — chủ tiệm yêu cầu "điều chỉnh và cải thiện UI/UX của phần cms và tương thích tối với giao diện điện thoại", làm và merge trong một lượt; các lựa chọn §3 là **mặc định do agent chốt**, chờ chủ tiệm xác nhận/bác (`node scripts/ledger.mjs pending`, ledger `fe:mobile-ux`) |
+| Status | **as-built** 2026-11-12 (§6) · D1–D6 chủ tiệm chốt theo đề xuất 2026-11-12 (§3) · design 2026-11-11 — chủ tiệm yêu cầu "điều chỉnh và cải thiện UI/UX của phần cms và tương thích tối với giao diện điện thoại", làm và merge trong một lượt; các lựa chọn §3 do agent đề xuất, chủ tiệm chốt nguyên văn |
 | Requirement | **NFR-06** (SRS §5) — CMS dùng được trọn vẹn trên điện thoại 360–414px |
-| Rules approved by | agent-default (D1–D6 dưới đây) |
+| Rules approved by | bangnk 2026-11-12 (D1–D6 như đề xuất) |
 
 > Vì sao là design-tier: đổi **pattern tương tác FE** dùng chung cho mọi màn hình — header/nav,
 > bảng dữ liệu, dialog, kích thước chạm — chứ không phải một slice CRUD.
@@ -35,7 +35,9 @@
    feature chỉ opt-in.
 3. Desktop (≥ `md`) không đổi về bố cục; thay đổi kích thước chạm chỉ áp cho `pointer: coarse`.
 
-## 3. Quyết định (agent-default — mỗi dòng bác được độc lập)
+## 3. Quyết định (agent đề xuất — chủ tiệm chốt nguyên văn 2026-11-12)
+
+Quyết định bởi chủ tiệm (bangnk) 2026-11-12: *"Chốt theo đề xuất"* (cùng lý do với E1–E5 của rental-form-ux: *"đây chỉ là thay đổi giao diện nên cũng có thể rollback dễ không cần tôi check kĩ"*). Đổi một dòng dưới đây từ nay là việc mới.
 
 | # | Quyết định | Phương án bị loại | Chỗ sửa nếu chủ tiệm bác |
 | --- | --- | --- | --- |

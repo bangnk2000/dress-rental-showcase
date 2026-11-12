@@ -4,6 +4,13 @@ Newest first. Resume: `node scripts/ledger.mjs brief` prints ONLY the first entr
 file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-checklist.md) §State
 (archive: [`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md)).
 
+## 2026-11-12 (61) — owner decisions + production `d2fbfb0` (docs/ledger, deploy only)
+
+- Done: owner chose "as proposed" for rental-form-ux E1–E5 (PR #46) and mobile-ux D1–D6; approved deploy-versioning A1–A9 ("code luôn"). Found the ledger stale: deploy run 42384818412 (2026-11-07 15:07 UTC) had already shipped `bbf1421` = #39 deposit-at-pickup + #41 update-rental-by-staff — `deploy.deployed` back-filled. Deployed `d2fbfb0` (run 43153614172, be+fe+web, no migration): mobile-ux + rental-form-ux live.
+- Proof: deploy verify all ok (fe/api/web status codes, pm2 online, migrations 15); VPS disk 27G free of 40G, web standalone 67M, fe dist 1.1M.
+- Next: `infra/deploy-versioning` code (design approved). Tell staff: a booking without a deposit must collect it at pickup (live since 2026-11-07).
+- Watch out: plan.sh treats apps/be/AGENTS.md / apps/web/AGENTS.md doc edits as BE/web changes (API restarted for docs) — candidate fix inside deploy-versioning.
+
 ## 2026-11-12 (60) — deploy versioning + fast rollback designed (`infra/deploy-versioning` = todo, docs only)
 
 - Done: owner ask "thiếu việc đánh version release để xác định version đã deploy và có thể revert nhanh khi code lỗi". Design-tier draft [`deploy-versioning`](docs/design/deploy-versioning.md) + NFR-07: SemVer tag per full deploy (bump input, default patch; v1.0.0 = 1067bc1), append-only `.deploy-history`, one `.prev` slot per part, a `rollback` workflow that swaps slots + restarts pm2 without building (refuses across a migration / lockfile / build-script change), CMS version label. O1–O6 owner-chosen; A1–A9 + O3 → ownerPending.
@@ -31,11 +38,4 @@ file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-check
 - Proof: `bash init.sh` green; be e2e 175; fe vitest 185; Playwright `phone` project 14/14 + desktop happy path (local throwaway DB; CI `e2e` now runs both projects).
 - Next: bangnk — try it on the shop phones and confirm/reject D1–D6 (`ledger.mjs pending`). Deploy: fe only, no migration — but master's fe also carries #39 + update-rental-by-staff, which need **be first**; ship all with `only=auto` (be → fe).
 - Watch out: never add a breakpoint-duplicated DOM (table + cards, second nav) — jsdom and `toHaveCount` both see both copies (apps/fe/AGENTS.md §Screen rules). Not checked on real iOS Safari.
-
-## 2026-11-07 (56) — every staff member may edit a rental (`rentals/update-rental-by-staff` = pass)
-
-- Done: owner ask "Mở tính năng sửa đơn cho nhân viên", scope = "Sửa tất cả như chủ" (discount included). `rental:update` → any staff; OpenAPI loses the 403 (description only, contract regenerated); FE shows Sửa đơn to all, edit route has no role redirect. update-rental §6 Q1 + Q8 resolved (§8 amendment, SRS FR-RENT-13, aggregate doc, ADR note). Ledger 54/54.
-- Proof: `bash init.sh` all green; be e2e 175 (AC5 now: staff PATCH 200), fe vitest 181.
-- Next: bangnk — merge PR #40 then this PR; deploy **be → fe** (no migration) — can ride the same run as #39 (deposit-at-pickup). update-rental §6 Q2–Q7, Q9 still open.
-- Watch out: keep be → fe order — the new FE on the old BE shows staff a button that 403s.
 
