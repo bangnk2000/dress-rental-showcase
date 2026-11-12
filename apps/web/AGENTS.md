@@ -4,8 +4,8 @@ Public, anonymous Next.js 16 (App Router) site of the shop, per the init-nextjs 
 `docs/spec/init-nextjs/README.md` §Usage Flow 1b + `00-system-prompt.md` §Monorepo mode (open
 numbered detail files only per the File Map). Monorepo deltas N1–N5:
 `docs/spec/init-monorepo-contract/01-workspace-structure.md` §4b. Bootstrap brief:
-`docs/design/public-web.md`. **Session harness lives at the repo ROOT** (`../../AGENTS.md`,
-`feature_list.json`, `init.sh`) — never create harness files (or a `CLAUDE.md`) here.
+`docs/design/public-web.md`. The session harness is at the repo ROOT — never create harness files
+(or a `CLAUDE.md`) here.
 
 Sibling of `apps/fe` and `apps/qr-admin`: own generated client, own gates, ships as its own Node
 process. It MUST NOT import another app's source (root invariant 4).
@@ -69,14 +69,10 @@ unset in dev/CI, where no `/cdn-cgi` exists).
 
 ## Public collection search
 
-`CatalogBrowser` (`features/catalog`) filters public `name`/`tagline` and intersects style chips.
-`useCatalogSearch` owns input vs applied query, debounce 300 ms, native URL `q`/`style`,
-Back/Forward and same-route Next Link restore, plus timer cleanup. `CatalogUrlSync` subscribes
-to App Router through the kernel navigation door under Suspense; history passes null user data
-so Next maintains its internal state. Own-write notifications preserve newer drafts.
-Enter/clear/reset/style apply immediately; typing replaces
-history, style/reset push. Page does not read server searchParams: ISR 300 s stays intact;
-URL is restored after hydration. Design + evidence: `docs/design/web/search-dresses.md` (FR-WEB-06).
+FR-WEB-06, `features/catalog` (`CatalogBrowser`, `useCatalogSearch`, `CatalogUrlSync`): URL
+`q`/`style` is owned client-side — the page never reads server `searchParams`, so ISR 300 s stays
+intact; native history writes pass null user data so Next keeps its internal state. Debounce,
+history push/replace, timer cleanup and evidence: `docs/design/web/search-dresses.md` §8.
 
 ## Deviations from the stack spec (deliberate, keep consistent)
 
@@ -87,13 +83,13 @@ URL is restored after hydration. Design + evidence: `docs/design/web/search-dres
 3. **No shadcn components, no `components.json` yet** — nothing renders UI worth a primitive;
    `lib/utils.ts` `cn()` is ready. Fonts ARE loaded (`next/font/google`, Playfair Display +
    Plus Jakarta Sans, `vietnamese` subset), so `next build` needs network to Google Fonts.
-4. **No plop generator, no MSW; focused Playwright URL/navigation coverage** — slices are hand-copied (`features/<name>/
-   index.ts` + `components/` + colocated `*.test.tsx`); `src/test/render.tsx` `renderWithProviders`
-   wraps the real vi catalogue, and `src/test/setup.ts` stubs `@/i18n/navigation` (plain anchor) and
-   `next/image` (plain img). Still no MSW: HTTP is read only by RSC pages, so feature tests pass
+4. **No plop generator, no MSW; focused Playwright URL/navigation coverage** — slices are
+   hand-copied (`features/<name>/index.ts` + `components/` + colocated `*.test.tsx`).
+   `renderWithProviders` (`src/test/render.tsx`) wraps the real vi catalogue; `src/test/setup.ts`
+   stubs `@/i18n/navigation` and `next/image`. HTTP is read only by RSC pages, so feature tests pass
    DTO fixtures (`src/test/fixtures/`) and `src/api/public-catalog.test.ts` mocks the generated
-   functions. `e2e/catalog-navigation.spec.ts` proves actual Next Link restoration/timer cancellation; CI web
-   runs it against the production build. GAP still open: broader RSC/SEO browser coverage (09).
+   functions. `e2e/catalog-navigation.spec.ts` runs in CI `web` against the production build.
+   GAP still open: broader RSC/SEO browser coverage (09).
 5. **`src/proxy.ts` is not a boundaries element** — v7 element patterns match folders; the proxy
    imports only `src/i18n`. Classify it via `boundaries/files` if it ever grows.
 6. **`global-error.tsx` copy is inline** — it replaces the root layout, so no intl provider exists

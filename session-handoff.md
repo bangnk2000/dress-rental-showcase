@@ -1,10 +1,15 @@
 # Session Handoff
 
-Newest first. On resume read ONLY the first entry. Close: prepend one entry (Done / Proof / Next /
-Watch out, ≤ ~8 lines — detail belongs in the ledger evidence or the design doc), then keep at most
-5 entries here: move the oldest, verbatim, to the top of
-[`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md) (history only),
-prefixing its relative link targets with `../../`.
+Newest first. Resume: `node scripts/ledger.mjs brief` prints ONLY the first entry — don't read this
+file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-checklist.md) §State
+(archive: [`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md)).
+
+## 2026-11-12 (58) — agent docs on a diet (docs/harness only, no ledger entry)
+
+- Done: owner ask "tối ưu lại bộ tài liệu agent đọc… mỗi phiên bắt đầu phải đọc ít nhất nhưng vẫn giữ đúng rule". Root AGENTS.md 12.0 → 7.0 KB: new §Start of session + §Route by task replace the spec bullet list and the history in Current state; "Which doc to update" + handoff rotation moved into clean-state-checklist.md (now the one close procedure). New `node scripts/ledger.mjs brief` = summary + newest handoff entry (~2 KB) — resume no longer reads this file. App AGENTS.md trimmed (fe #5 detail → apps/fe/e2e/README.md; web search mechanics → search-dresses.md §8); deviation numbers and §Screen rules kept. claude-progress.md order repaired (lines moved verbatim).
+- Proof: rule inventory (every MUST/never line mapped, 0 unmapped — in the PR); link check 0 broken; `ledger.mjs check` OK; docs/spec SHA256SUMS OK; no generated/contract diff.
+- Next: bangnk — review/merge the docs PR. `feat/rental-form-ux` also edits apps/fe/AGENTS.md #5 (chromium project line): whichever merges second keeps the new #5 stub; the e2e README already says "every spec except phone-layout".
+- Watch out: the user-scope `harness-session` skill still says "read the latest handoff entry" — `brief` does exactly that; the skill was not changed (shared with other repos).
 
 ## 2026-11-12 (57) — the CMS on a phone (`fe:mobile-ux` = pass)
 
@@ -33,10 +38,3 @@ prefixing its relative link targets with `../../`.
 - Proof: `bash init.sh` all green; be e2e 175 (new deposit-at-pickup suite incl. no-orphan create race and pickup↔collect race), fe vitest 180.
 - Next: PR from `feat/deposit-at-pickup` → Codex review → owner merges; deploy **migrate → be → fe** for BOTH cancel-with-refund and deposit-at-pickup (`ledger.mjs pending`). Tell staff: existing bookings without a deposit now need one at pickup (§6.Q6).
 - Watch out: local Playwright stops at sign-in on the dev DB (owner password ≠ CI seed `changeme`); CI `e2e` is the proof. Every mutation that renders its own rejections needs `onError: () => undefined` (app/providers.tsx toasts globally).
-
-## 2026-11-07 (53) — cancel a prepaid booking with refunds (`rentals/cancel-with-refund` = pass)
-
-- Done: owner asked for "thu cọc khi tạo đơn + nhắc cọc khi giao váy"; two design-tier specs written and owner-approved — [`deposit-at-pickup`](docs/design/rentals/deposit-at-pickup.md) (rules approved, prototype pending) and its prerequisite [`cancel-with-refund`](docs/design/rentals/cancel-with-refund.md) (as-built). Built cancel-with-refund: migration 1755800000000 (`rental_fee_refund`), refunds in the cancel transaction, 4 new outcomes, ONE kernel cancel dialog + `api/use-cancel-rental.ts` on board/list/detail. Ledger 52/52.
-- Proof: all root gates green; be e2e 160 (new suite: race collect↔cancel, raw SQL CHECK, migration down/up), fe vitest 173.
-- Next: PR from `feat/cancel-with-refund` (holds both specs) → merge; deploy **migrate → be → fe** (`ledger.mjs pending`). Then `deposit-at-pickup`: prototype round, then build (Q3 = hard block at pickup → new outcome `rejected_deposit_not_collected`).
-- Watch out: outcome payload keys must never be `kind` — `mapApiError` overwrites it (hence `refundKind`). Kernel may not import `@/api`; shared data hooks go in `src/api/`. PowerShell eats `&` and backticks in inline bash — use script files.
