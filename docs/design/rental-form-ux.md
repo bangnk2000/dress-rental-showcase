@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | App | `apps/fe` — `/rentals/new` và `/rentals/:id/edit` (một `components/rental-form.tsx`); không chạm BE, không đổi contract |
-| Status | **approved** P1–P4 — chủ tiệm 2026-11-12: *"làm luôn theo đề xuất của bạn"* · chi tiết E1–E5 là agent-default (ledger `fe:rental-form-ux` ownerPending) |
+| Status | **as-built** 2026-11-12 · **approved** P1–P4 — chủ tiệm 2026-11-12: *"làm luôn theo đề xuất của bạn"* · E1–E5 chủ tiệm chốt theo đề xuất 2026-11-12 (§3) |
 | Requirement | FR-RENT-01 (tạo đơn), FR-RENT-13 (sửa đơn), FR-RENT-14 (tiền khi đặt), NFR-06 (điện thoại) |
 
 > Vì sao là design-tier: pattern tương tác FE mới — bảng tóm tắt dính cạnh (PC) / thanh tóm tắt cố định
@@ -28,7 +28,9 @@
 | P3 | Điện thoại: **thanh cố định dưới đáy** hiện số khách trả + nút gửi, chạm để mở chi tiết tính tiền |
 | P4 | Logic giữ nguyên (kiểm tra lịch trống, rejection, cọc khi giao); không đổi BE/contract |
 
-## 3. Chi tiết do agent chốt (agent-default — bác được từng dòng)
+## 3. Chi tiết do agent đề xuất — chủ tiệm chốt nguyên văn 2026-11-12
+
+Quyết định bởi chủ tiệm (bangnk) 2026-11-12: *"làm như bạn đề xuất đi đây chỉ là thay đổi giao diện nên cũng có thể rollback dễ không cần tôi check kĩ"*. Đổi một dòng dưới đây từ nay là việc mới, không phải sửa doc.
 
 | # | Mặc định | Chỗ sửa nếu bác |
 | --- | --- | --- |

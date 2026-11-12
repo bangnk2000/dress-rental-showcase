@@ -810,28 +810,6 @@
         "AC2: on a phone the bottom bar shows the payable amount and a ≥ 44px submit that works from the top of the form; the breakdown opens from the bar; no horizontal overflow",
         "AC3: field labels, button names, rejections and the create/edit flows are unchanged (vitest rentals + desktop happy path green)"
       ],
-      "ownerPending": [
-        {
-          "item": "E1: hai cột từ lg (1024px); dưới lg (cả tablet dọc) dùng thanh đáy (docs/design/rental-form-ux.md §3)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "E2: thanh đáy = Khách trả + số váy + nút gửi; chi tiết mở ngay trên thanh, không dùng dialog (docs/design/rental-form-ux.md §3)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "E3: số ngày thuê tính cả hai đầu — 12→14 = 3 ngày (docs/design/rental-form-ux.md §3)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "E4: nút Huỷ nằm cùng nút gửi trong khối tóm tắt; trên điện thoại trong phần chi tiết (docs/design/rental-form-ux.md §3)",
-          "since": "2026-11-12"
-        },
-        {
-          "item": "E5: ghi chú thành ô nhiều dòng (docs/design/rental-form-ux.md §3)",
-          "since": "2026-11-12"
-        }
-      ],
       "testedAt": "2026-11-12",
       "evidence": "2026-11-12 on 199860d (rebased onto master 6a66546) + docs: `bash init.sh` all runnable gates green — ledger check, contract:check (no diff), check, lint, arch, be jest, fe vitest 191 (13 files), qr-admin, web, fe/qr-admin/web builds; `CLEANING_BUFFER_DAYS=2 pnpm --filter be test:e2e` 19 suites / 175. Playwright via fe-e2e-local.sh (throwaway migrated+seeded DB) 20/20: AC1 — chromium e2e/rental-form-desktop.spec.ts 'summary in the right column, submit still on screen at the end of the form' (1280x800); AC2 — phone 'new rental: the bottom bar keeps the submit on screen; the breakdown opens above it' + 'new rental form fits' (no horizontal overflow) + the rest of phone-layout 17/17; AC3 — chromium happy path (create dress → book → pickup → return → settled) with unchanged locators + vitest rentals green (field labels unchanged). No BE/contract change. Not run: a physical phone / iOS Safari. Not deployed.",
       "deploy": {
