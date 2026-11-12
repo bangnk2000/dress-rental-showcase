@@ -64,7 +64,14 @@
       "notes": "Ghi chú",
       "discountAmount": "Giảm giá (VND)"
     },
+    "sections": {
+      "customer": "Khách hàng",
+      "period": "Ngày thuê",
+      "dresses": "Váy",
+      "payment": "Thanh toán"
+    },
     "bufferHint": "Sau ngày trả, váy được giữ thêm thời gian giặt ủi trước khi cho thuê tiếp.",
+    "dayCount": "{{count}} ngày",
     "discountHint": "Để trống nếu không giảm. Trừ vào tiền thuê, không trừ vào tiền cọc.",
     "startsToday": "Ngày nhận là hôm nay hoặc đã qua — đơn sẽ ghi là ĐÃ GIAO ngay khi tạo.",
     "submit": "Tạo lượt thuê",
@@ -108,9 +115,6 @@
     "add": "Thêm",
     "remove": "Bỏ chọn",
     "selectedEmpty": "Chưa chọn váy nào",
-    "total": "Tạm tính tiền thuê",
-    "discount": "Giảm giá",
-    "payable": "Tiền thuê sau giảm",
     "availability": {
       "free": "Còn trống",
       "busy": "Vướng lịch",
@@ -121,6 +125,19 @@
       "retired": "Váy này đã ngừng khai thác.",
       "notFound": "Váy này không còn trong danh mục."
     }
+  },
+  "summary": {
+    "title": "Tóm tắt đơn thuê",
+    "noDresses": "Chưa có váy trong đơn",
+    "subtotal": "Tạm tính tiền thuê",
+    "discount": "Giảm giá",
+    "payable": "Khách trả",
+    "dressCount": "{{count}} váy",
+    "depositCollected": "Tiền cọc đã nhận",
+    "depositReference": "Cọc chuẩn (tham khảo, chưa thu)",
+    "depositSeparate": "Tiền cọc tính riêng, không cộng vào số khách trả.",
+    "showDetails": "Xem chi tiết tính tiền",
+    "hideDetails": "Ẩn chi tiết tính tiền"
   },
   "errors": {
     "rentalNotFound": "Lượt thuê này không còn tồn tại. Danh sách đã được làm mới."

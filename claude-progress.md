@@ -6,6 +6,9 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md` (l
 Never needed on resume — add your line directly under this header (read only these first lines,
 e.g. `limit: 8`); never append at the bottom.
 
+- 2026-11-12 (59) — fe:rental-form-ux pass, 56/56: rental form in four sections, summary sticky on PC /
+  bottom bar on a phone (FR-RENT-01/13/14, NFR-06). Rebased onto #43.
+
 - 2026-11-12 (58) — agent docs diet (docs/harness only): root AGENTS.md 12.0 → 7.0 KB, `ledger.mjs brief`,
   close procedure = clean-state-checklist.md, app AGENTS.md trimmed, this log re-ordered. Ledger untouched 55/55.
 

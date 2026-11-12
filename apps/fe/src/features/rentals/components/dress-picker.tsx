@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { formatDate, formatVnd } from '@/lib/format';
 
+import { DRESS_SEARCH_ID } from '../lib/form-field-ids';
+
 /** The staff member's selection — form input state, not a server-state copy. */
 export interface SelectedDress {
   id: string;
@@ -49,8 +51,6 @@ interface DressPickerProps {
   period: PickerPeriod | null;
   /** Set from the last rejection; cleared as soon as the selection or the dates change. */
   blocked: BlockedDresses | null;
-  /** VND taken off the subtotal (FR-RENT-11), already parsed by the form; 0 = none. */
-  discount: number;
   /**
    * When editing a rental (FR-RENT-13): its own bookings are what the edit replaces, so they
    * are not conflicts — without this every kept dress reads "Vướng lịch" against itself.
@@ -70,7 +70,6 @@ export function DressPicker({
   error,
   period,
   blocked,
-  discount,
   ignoreRentalId,
 }: DressPickerProps) {
   const { t } = useTranslation('rentals');
@@ -85,13 +84,12 @@ export function DressPicker({
   const selectedIds = new Set(selected.map((dress) => dress.id));
   const results = (data?.data ?? []).filter((dress) => !selectedIds.has(dress.id));
   const translate = t as unknown as (key: string) => string;
-  const total = selected.reduce((sum, dress) => sum + dress.rentalPrice, 0);
 
   return (
-    <div className="grid gap-2">
-      <Label htmlFor="dress-picker-search">{t('picker.title')}</Label>
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
+      <Label htmlFor={DRESS_SEARCH_ID}>{t('picker.title')}</Label>
       <Input
-        id="dress-picker-search"
+        id={DRESS_SEARCH_ID}
         type="search"
         placeholder={t('picker.searchPlaceholder')}
         autoComplete="off"
@@ -154,26 +152,6 @@ export function DressPicker({
               {...(ignoreRentalId ? { ignoreRentalId } : {})}
             />
           ))}
-          <li className="space-y-1 p-2 text-sm">
-            <div className="flex items-center justify-between gap-2 font-medium">
-              <span>{t('picker.total')}</span>
-              <span className="tabular-nums">{formatVnd(total)}</span>
-            </div>
-            {/* The arithmetic behind the number staff will quote: subtotal, minus the discount,
-                equals what the customer pays for the rental (deposit is separate). */}
-            {discount > 0 ? (
-              <>
-                <div className="flex items-center justify-between gap-2 text-muted-foreground">
-                  <span>{t('picker.discount')}</span>
-                  <span className="tabular-nums">−{formatVnd(discount)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2 font-medium">
-                  <span>{t('picker.payable')}</span>
-                  <span className="tabular-nums">{formatVnd(Math.max(0, total - discount))}</span>
-                </div>
-              </>
-            ) : null}
-          </li>
         </ul>
       )}
       {error ? <p className="text-sm text-destructive">{translate(error)}</p> : null}

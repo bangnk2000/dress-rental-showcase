@@ -149,9 +149,14 @@ test('FR-RENT-13: the edit form is prefilled from the rental and saves the whole
   expect(screen.getByLabelText('Ngày trả')).toHaveValue('2099-08-03');
   expect(screen.getByLabelText('Ghi chú')).toHaveValue('Khách quen, hẹn 9h sáng');
   expect(screen.getByLabelText('Giảm giá (VND)')).toHaveValue('300000');
-  // The kept dress shows its AGREED price, not the catalog's; the picker totals follow it.
+  // The kept dress shows its AGREED price, not the catalog's; the totals follow it — in the
+  // summary since rental-form-ux (they used to sit under the picker).
   expect(screen.getByText('VD-001')).toBeInTheDocument();
-  expect(screen.getByText('Tiền thuê sau giảm')).toBeInTheDocument();
+  const summary = screen.getByRole('region', { name: 'Tóm tắt đơn thuê' });
+  expect(within(summary).getByText('Khách trả')).toBeInTheDocument();
+  // Edit knows no catalog deposit for the kept dresses: the summary shows none rather than a
+  // partial sum (screen rule: never present a reference figure as money held).
+  expect(within(summary).queryByText(/cọc/i)).not.toBeInTheDocument();
 
   const phone = screen.getByLabelText('Số điện thoại');
   await user.clear(phone);

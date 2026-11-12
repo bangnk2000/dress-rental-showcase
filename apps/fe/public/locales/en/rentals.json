@@ -64,7 +64,14 @@
       "notes": "Notes",
       "discountAmount": "Discount (VND)"
     },
+    "sections": {
+      "customer": "Customer",
+      "period": "Rental dates",
+      "dresses": "Dresses",
+      "payment": "Payment"
+    },
     "bufferHint": "After the return date the dress is held for cleaning before it can be rented again.",
+    "dayCount": "{{count}} day(s)",
     "discountHint": "Leave blank for none. Taken off the rental fee, not the deposit.",
     "startsToday": "The pick-up date is today or already past — the rental is recorded as DELIVERED on creation.",
     "submit": "Create rental",
@@ -108,9 +115,6 @@
     "add": "Add",
     "remove": "Remove",
     "selectedEmpty": "No dresses selected yet",
-    "total": "Rental subtotal",
-    "discount": "Discount",
-    "payable": "Rental fee after discount",
     "availability": {
       "free": "Available",
       "busy": "Booked",
@@ -121,6 +125,19 @@
       "retired": "This dress has been retired.",
       "notFound": "This dress is no longer in the catalog."
     }
+  },
+  "summary": {
+    "title": "Rental summary",
+    "noDresses": "No dresses in this rental yet",
+    "subtotal": "Rental subtotal",
+    "discount": "Discount",
+    "payable": "Customer pays",
+    "dressCount": "{{count}} dress(es)",
+    "depositCollected": "Deposit received",
+    "depositReference": "Standard deposit (reference, not collected)",
+    "depositSeparate": "The deposit is separate, not added to what the customer pays.",
+    "showDetails": "Show price breakdown",
+    "hideDetails": "Hide price breakdown"
   },
   "errors": {
     "rentalNotFound": "This rental no longer exists. The list has been refreshed."

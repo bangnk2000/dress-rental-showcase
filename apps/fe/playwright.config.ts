@@ -36,7 +36,8 @@ export default defineConfig({
   // `list` for the terminal, `html` so a failed CI run has something to download besides the raw
   // trace (the `e2e` job uploads both on failure). Never auto-open: this also runs headless.
   reporter: [['list'], ['html', { open: 'never' }]],
-  // Two projects, disjoint specs: `chromium` is the desktop staff day, `phone` is the NFR-06
+  // Two projects, disjoint specs: `chromium` is the desktop staff day (happy path + the desktop
+  // rental-form layout, rental-form-desktop.spec.ts), `phone` is the NFR-06
   // layout proof (docs/design/cms-mobile-ux.md §5). Split by file so the happy path does not run
   // twice against the one shared database. The phone is a Chromium device on purpose — CI installs
   // Chromium only, so no WebKit/iPhone profile. A project's `use` merges over the top-level one, so
