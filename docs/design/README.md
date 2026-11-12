@@ -26,7 +26,7 @@ CMS trên điện thoại (NFR-06): [cms-mobile-ux.md](./cms-mobile-ux.md) — p
 dùng chung cho mọi màn hình `apps/fe`, D1–D6 chủ tiệm duyệt 2026-11-12, as-built.
 
 Version deploy + rút về nhanh (NFR-07): [deploy-versioning.md](./deploy-versioning.md) — SemVer tag, lịch sử
-deploy, slot bản trước + workflow `rollback`; **draft** 2026-11-12 (O1–O6 chủ tiệm chọn, A1–A9 chờ duyệt).
+deploy, slot bản trước + workflow `rollback`; **approved** 2026-11-12 (O1–O6 + A1–A9 chủ tiệm; A10–A11 agent-default).
 
 Website công khai (Next.js) ở `apps/web/` — bootstrap brief + contract gaps (BE chưa có endpoint
 ẩn danh) ở [public-web.md](./public-web.md). Chưa có slice nào.

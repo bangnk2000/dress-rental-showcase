@@ -5,6 +5,7 @@ import { PwaUpdatePrompt } from '@/components/feedback/pwa-update-prompt';
 import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { Toaster } from '@/components/ui/sonner';
 import { SignOutButton, useSession } from '@/features/auth';
+import { appVersionLabel } from '@/lib/app-version';
 import { cn } from '@/lib/utils';
 
 export function RootLayout() {
@@ -61,6 +62,10 @@ export function RootLayout() {
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
+      {/* deploy-versioning A11: which build this device runs — one footer for every width. */}
+      <footer className="mx-auto w-full max-w-5xl px-4 pb-3 text-xs text-muted-foreground/70">
+        {appVersionLabel()}
+      </footer>
       <Toaster />
       <PwaUpdatePrompt />
     </div>

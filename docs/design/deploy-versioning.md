@@ -5,9 +5,9 @@
 | | |
 | --- | --- |
 | Phạm vi | `.github/workflows/deploy.yml` + workflow mới `rollback.yml`, `infra/deploy/*.sh`, `infra/deploy/remote/build-remote.sh`, nhãn version trong `apps/fe` (build-time). Không chạm BE source, không đổi contract, không migration |
-| Status | **draft — chờ chủ tiệm duyệt** · O1–O6 chủ tiệm chọn 2026-11-12 · A1–A9 là agent-default (bác được từng dòng) |
-| Requirement | NFR-07 (mới, cùng PR với doc này) |
-| Ledger | `infra/deploy-versioning`, `tier: design`; A1–A9 + xác nhận gốc `v1.0.0` là `ownerPending` của entry (`node scripts/ledger.mjs pending`). Code bắt đầu sau khi form đơn thuê mới xong (một entry đang làm mỗi lúc) |
+| Status | **approved** 2026-11-12 — O1–O6 chủ tiệm chọn; A1–A9 chủ tiệm duyệt *"Duyệt A1–A9, code luôn"* · A10–A11 (thêm khi code) là agent-default |
+| Requirement | NFR-07 |
+| Ledger | `infra/deploy-versioning`, `tier: design`; A10–A11 là `ownerPending` của entry (`node scripts/ledger.mjs pending`) |
 
 > Vì sao là design-tier: đổi cách rollback production hoạt động (state mới trên VPS: slot build trước,
 > lịch sử deploy) và thêm một luồng vận hành mới (workflow `rollback`). Sai ở đây là sai lúc đang có sự cố.
@@ -30,7 +30,7 @@
 | --- | --- |
 | O1 | Version kiểu **SemVer `vX.Y.Z`**, là git tag (annotated) gắn lên SHA vừa deploy thành công |
 | O2 | Số version: workflow có input **`bump: patch\|minor\|major`, mặc định `patch`**, tính từ tag cao nhất. Quy ước: có migration hoặc tính năng mới → `minor`; chỉ sửa lỗi/UI → `patch`; thay đổi lớn → `major` |
-| O3 | Bản đầu tiên: **`v1.0.0` = production hiện tại `1067bc1`** (tag tay một lần, xem §6 bước 1) |
+| O3 | Bản đầu tiên: **`v1.0.0` = production hiện tại** (tag tay một lần, xem §6 bước 1). Lúc chọn là `1067bc1`; production đã sang `d2fbfb0` (run 43153614172, 2026-11-12) trước khi gieo → `v1.0.0` = SHA mà `.deployed` ghi lúc gieo |
 | O4 | Rút về nhanh (không build) cho **FE + web luôn; BE có điều kiện** (§3.4) — không đủ điều kiện thì quay về đường build lại |
 | O5 | Giữ **2 bản** trên VPS: bản đang chạy + 1 bản trước |
 | O6 | Hiện version trong **CMS (`apps/fe`), nhúng lúc build** — không thêm endpoint BE |
@@ -71,8 +71,8 @@ không có tag v* nào    → dừng, báo "tag v1.0.0 trước" (không tự b�
 | Phần | Đang chạy | Bản trước | Metadata trong mỗi slot |
 | --- | --- | --- | --- |
 | FE | `apps/fe/dist` (nginx `root`) | `apps/fe/dist.prev` | `version.json` `{version, sha, date}` |
-| Web | `apps/web/run` (pm2 `dress-web` cwd) | `apps/web/run.prev` | `.built` (đã có) + `version=` |
-| BE | `apps/be/dist` (pm2 `dress-api`) | `apps/be/dist.prev` | `dist/.built` `sha= version= lock=<sha256 pnpm-lock.yaml>` |
+| Web | `apps/web/run` (pm2 `dress-web` cwd) | `apps/web/run.prev` | `.built` (đã có) + `version= ops= env=<sha256 dress-web.config.cjs>` |
+| BE | `apps/be/dist` (pm2 `dress-api`) | `apps/be/dist.prev` | `dist/.built` `sha= version= ops= lock=<sha256 pnpm-lock.yaml> env=<sha256 apps/be/.env>` |
 
 - FE/web: thay `rm -rf X.old` bằng `rm -rf X.prev && mv X X.prev && mv X.new X`. Đường dẫn nginx/pm2 không đổi
   → không phải sửa `serve.sh` hay nginx.
@@ -103,11 +103,12 @@ Quyết định toàn bộ **trước** khi đụng vào bất cứ thứ gì:
    - slot **trước** tương đương T (cùng SHA, hoặc không có thay đổi của phần đó giữa hai SHA) → **đổi slot**;
    - slot **đang chạy** đã tương đương T → **để nguyên**;
    - còn lại → **từ chối cả lần rút**, in lệnh fallback: `deploy ref=vT only=all`.
-3. Điều kiện riêng — so giữa **`ops=`** của slot đang chạy và slot được đổi vào (script nằm ở commit của
-   workflow, có thể mới hơn target):
-   - BE: `lock=` hai slot bằng nhau (node_modules đang cài dùng được cho dist cũ) **và**
-     `infra/deploy/remote/build-remote.sh` không đổi giữa hai `ops=` (`.env` đang có đúng là `.env` của T);
-   - web: `infra/deploy/web.sh` không đổi giữa hai `ops=` (nó viết lại env pm2 trong `dress-web.config.cjs`).
+3. Điều kiện riêng — so **cái script tạo ra**, không so bản thân script (sửa một dòng comment trong script
+   không được chặn rollback; as-built 2026-11-12, thay cho bản so `ops=` trước đó):
+   - BE: `lock=` hai slot bằng nhau (node_modules đang cài dùng được cho dist cũ) **và** `env=` của slot trước
+     (sha256 của `apps/be/.env` lúc build đó) = sha256 của `apps/be/.env` đang có;
+   - web: `env=` của slot trước (sha256 của `dress-web.config.cjs` lúc deploy đó) = sha256 của file đang có.
+   - `ops=` chỉ để tra cứu (commit của script đã deploy bản đó).
 
 Thực hiện: BE `mv` đổi `dist`↔`dist.prev` + `pm2 restart dress-api` (API gián đoạn vài giây, không build) →
 FE đổi slot → web đổi slot + `pm2 restart dress-web` → `verify.sh` → Record (`kind=rollback`, version = của T,
@@ -125,7 +126,7 @@ Lần `deploy` kế tiếp so với `.deployed` (= T) như bình thường.
   đổi slot nguyên tử, không downtime — để nhãn luôn khớp version production và slot `dist.prev` luôn là
   bản ngay trước.
 
-## 4. Chi tiết do agent chốt (agent-default — bác được từng dòng)
+## 4. Chi tiết do agent đề xuất (A1–A9 chủ tiệm duyệt 2026-11-12; A10–A11 agent-default)
 
 | # | Mặc định | Chỗ sửa nếu bác |
 | --- | --- | --- |
@@ -138,6 +139,8 @@ Lần `deploy` kế tiếp so với `.deployed` (= T) như bình thường.
 | A7 | Nhãn ở cuối menu, chữ nhỏ; không i18n (chuỗi kỹ thuật) | root-layout.tsx |
 | A8 | `version.json` nằm trong `dist` nên ai mở `cms.example.com/version.json` cũng đọc được version + sha — chấp nhận (cùng thông tin với nhãn, không bí mật) | §3.3 |
 | A9 | Fallback WSL (`sync.sh`, `build.sh`) không tạo version: ghi history `version=unversioned`; README "Keep in step" ghi rõ | §6 bước 5 |
+| A10 | plan.sh bỏ qua `AGENTS.md` / `README.md` khi quyết phần nào phải build lại — run 43153614172 đã restart API chỉ vì sửa `apps/be/AGENTS.md` | `lib.sh` `part_files` |
+| A11 | CMS không có khung menu riêng (nav là một dải trong header) → nhãn A7 đặt ở **chân trang**, chữ nhỏ mờ, cùng một DOM cho mọi cỡ màn hình | `root-layout.tsx` |
 
 ## 5. Rủi ro / giới hạn
 
@@ -146,19 +149,20 @@ Lần `deploy` kế tiếp so với `.deployed` (= T) như bình thường.
 | R1 | Đĩa VPS: thêm một bản web standalone + FE + BE dist | Đo `df` + `du` trước khi code (§6 bước 0); verify.sh đã in `disk /` |
 | R2 | PWA (`registerType: 'prompt'`): sau khi rút FE, máy đang mở CMS vẫn chạy bản cũ trong cache đến khi bấm "cập nhật" | Giữ nguyên hành vi prompt; ghi vào RUNBOOK: rút FE xong nhắc nhân viên bấm cập nhật / tải lại |
 | R3 | Rút qua migration vẫn là việc tay | Không đổi — đúng như plan.sh hiện nay; không tự chạy `down` trên production |
-| R4 | `.env` do build-remote.sh viết cho bản mới; dist cũ chạy với `.env` mới | §3.4 bước 3: `build-remote.sh` đổi giữa hai `ops=` → BE không rút nhanh, quay về `deploy ref=vT only=all` |
+| R4 | `.env` do build-remote.sh viết cho bản mới; dist cũ chạy với `.env` mới | §3.4 bước 3: `.env` đang có khác `env=` của bản trước → BE không rút nhanh, quay về `deploy ref=vT only=all` |
 | R5 | Mã nguồn `/opt/dress-rental` (git archive) vẫn là bản mới sau khi rút BE | Runtime chỉ dùng `dist` + `node_modules`; lần deploy sau giải nén lại toàn bộ |
 | R6 | Bản build đang chạy hôm nay không có metadata → sau deploy versioned đầu tiên, slot `.prev` không rút được — đúng lần cần lưới an toàn nhất | §6 bước 1 gieo metadata `v1.0.0` vào slot đang chạy trước deploy đầu tiên; nếu bước đó bị bỏ, rollback từ chối với lời nhắn rõ |
 
 ## 6. Kế hoạch triển khai + bằng chứng
 
-0. Đo đĩa VPS (`df -h /`, `du -sh` các thư mục build) — chỉ đọc.
-1. Gốc `v1.0.0` (sau khi chủ tiệm duyệt O3), một lần, có kiểm tra:
-   - ssh đọc `.deployed` → phải là `sha=1067bc1…`; khác thì dừng, hỏi chủ tiệm gốc nào đúng;
-   - `git tag -a v1.0.0 <sha đó> -m "production 2026-11-07, run 42363551332"` + push;
+0. Đo đĩa VPS — **xong 2026-11-12** (verify run 43153614172): `disk /` 27G trống / 40G, web standalone 67M,
+   fe dist 1.1M → R1 không đáng lo.
+1. Gốc `v1.0.0`, một lần, bằng `infra/deploy/bootstrap-version.sh <sha>` (có kiểm tra):
+   - ssh đọc `.deployed` → phải đúng `<sha>`; khác thì dừng;
    - gieo metadata vào slot **đang chạy**: `apps/fe/dist/version.json`, `apps/be/dist/.built`
-     (`sha= version=v1.0.0 lock=<sha256 pnpm-lock.yaml hiện có trên VPS> ops=1067bc1`), `version=v1.0.0` vào
-     `apps/web/run/.built`; ghi dòng đầu `.deploy-history`. Nhờ vậy deploy versioned đầu tiên rút được ngay.
+     (`sha= version=v1.0.0 ops=<sha> lock=<sha256 pnpm-lock.yaml trên VPS>`), `version= ops=` vào
+     `apps/web/run/.built`; ghi dòng đầu `.deploy-history` (`kind=bootstrap`);
+   - rồi `git tag -a v1.0.0 <sha>` + push. Nhờ vậy deploy versioned đầu tiên rút được ngay.
 2. `lib.sh` `part_changed` + plan.sh dùng nó; tính VERSION (§3.1). Bằng chứng: `bats`/shell test hoặc chạy
    plan.sh khô với `GITHUB_OUTPUT` tạm trên các cặp SHA thật (EXISTING, mới, run một phần, không tag).
 3. Slot hoá fe.sh / web.sh / build-remote.sh + metadata; record.sh ghi history + tag + release.

@@ -1,7 +1,7 @@
 name: deploy
 # Manual production deploy to the Tencent VPS (cms.example.com + example.com). Never runs on push:
 # a BE build stops the API for 1–2 minutes and the order (migrate → be → web) matters.
-# How it works, secrets, rollback, and the WSL fallback: infra/deploy/README.md.
+# How it works, secrets, versions, rollback, and the WSL fallback: infra/deploy/README.md.
 on:
   workflow_dispatch:
     inputs:
@@ -19,8 +19,14 @@ on:
         type: choice
         options: [auto, always]
         default: auto
+      bump:
+        description: New version vX.Y.Z — patch = fixes/UI, minor = new feature or migration, major = big change
+        type: choice
+        options: [patch, minor, major]
+        default: patch
 
 # One deploy at a time, and never cancel one half-way (an API stopped mid-build stays stopped).
+# rollback.yml shares this group, so a rollback queues behind a running deploy and vice versa.
 concurrency:
   group: deploy-production
   cancel-in-progress: false
@@ -33,16 +39,25 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
+      version: ${{ steps.plan.outputs.version }}
+      previous: ${{ steps.plan.outputs.previous }}
+      # Only a recorded (complete, verified) run names a version.
+      mint: ${{ steps.record.outcome == 'success' && steps.plan.outputs.mint || 'false' }}
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       # Two trees: the scripts come from THIS workflow's commit (ops/), the code that gets built from
       # the target (target/) — so rolling back to a commit older than infra/deploy/ still works.
       DEPLOY_TREE: ${{ github.workspace }}/target
+      # The scripts' commit, written into every build's metadata (rollback.sh compares it).
+      OPS_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           path: ops
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Resolve target (on master, ci green)
         id: target
@@ -61,30 +76,26 @@ jobs:
           echo "target $SHA ($(git log -1 --format=%s "$SHA"))"
           echo "sha=$SHA" >>"$GITHUB_OUTPUT"
 
+      # No credentials in target/.git: `pnpm install` runs that tree's lifecycle scripts.
       - uses: actions/checkout@v4
         with:
           path: target
           ref: ${{ steps.target.outputs.sha }}
+          persist-credentials: false
 
       - name: SSH key + pinned host key
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_SSH_KEY" ] && [ -n "$DEPLOY_KNOWN_HOSTS" ] \
-            || { echo "::error::set the repo secrets DEPLOY_HOST, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS"; exit 1; }
-          install -d -m 700 ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" >~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" >~/.ssh/known_hosts_deploy
-          . ops/infra/deploy/lib.sh && rssh true && echo "ssh ok"
+        run: bash ops/infra/deploy/ssh-setup.sh
 
-      - name: Plan
+      - name: Plan (parts, backup, version)
         id: plan
         env:
           TARGET_SHA: ${{ steps.target.outputs.sha }}
           ONLY: ${{ inputs.only }}
           BACKUP: ${{ inputs.backup }}
+          BUMP: ${{ inputs.bump }}
         run: bash ops/infra/deploy/plan.sh
 
       - name: Backup (proven restore + R2) before migrating
@@ -110,24 +121,32 @@ jobs:
         if: steps.plan.outputs.be == 'true'
         env:
           TARGET_SHA: ${{ steps.target.outputs.sha }}
+          VERSION: ${{ steps.plan.outputs.version }}
         run: bash ops/infra/deploy/be.sh
 
       - name: FE — build here, swap dist on the VPS
         if: steps.plan.outputs.fe == 'true'
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
         run: bash ops/infra/deploy/fe.sh
 
       - name: Web — build here (after BE), swap + restart dress-web
         if: steps.plan.outputs.web == 'true'
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
         run: bash ops/infra/deploy/web.sh
 
       - name: Verify production
         run: bash ops/infra/deploy/verify.sh
 
-      - name: Record deployed SHA
+      - name: Record deployed SHA + history
         id: record
         if: steps.plan.outputs.record == 'true'
         env:
           TARGET_SHA: ${{ steps.target.outputs.sha }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          PARTS: ${{ steps.plan.outputs.parts }}
+          KIND: deploy
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: bash ops/infra/deploy/record.sh
 
@@ -137,8 +156,38 @@ jobs:
           TARGET_SHA: ${{ steps.target.outputs.sha }}
         run: |
           {
-            echo "### deploy ${TARGET_SHA:0:7} — ${{ job.status }}"
-            echo "be=${{ steps.plan.outputs.be }} fe=${{ steps.plan.outputs.fe }} web=${{ steps.plan.outputs.web }} backup=${{ steps.plan.outputs.backup }} record=${{ steps.record.outcome }}"
+            echo "### deploy ${{ steps.plan.outputs.version }} (${TARGET_SHA:0:7}) — ${{ job.status }}"
+            echo "be=${{ steps.plan.outputs.be }} fe=${{ steps.plan.outputs.fe }} web=${{ steps.plan.outputs.web }} backup=${{ steps.plan.outputs.backup }} record=${{ steps.record.outcome }} new-tag=${{ steps.plan.outputs.mint }}"
             echo ""
             echo "Then: set \`deploy.deployed\` on the shipped ledger entries + the Production bullet in AGENTS.md."
+            echo "Something wrong after this deploy? Actions → **rollback** (no build, under a minute)."
           } >>"$GITHUB_STEP_SUMMARY"
+
+  # The ONLY job allowed to write to the repo, and it never runs a target tree's code.
+  tag:
+    needs: deploy
+    if: needs.deploy.outputs.mint == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag + GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.deploy.outputs.version }}
+          PREVIOUS: ${{ needs.deploy.outputs.previous }}
+          TARGET_SHA: ${{ needs.deploy.outputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          trap '[ $? = 0 ] || echo "::error::production already runs $VERSION (${TARGET_SHA:0:7}) — create the tag by hand: git tag -a $VERSION $TARGET_SHA && git push origin $VERSION"' EXIT
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" "$TARGET_SHA" -m "production $VERSION — $RUN_URL"
+          git push origin "refs/tags/$VERSION"
+          gh release create "$VERSION" --verify-tag --title "$VERSION" --generate-notes --notes-start-tag "$PREVIOUS"
+          echo "### tagged $VERSION → ${TARGET_SHA:0:7}" >>"$GITHUB_STEP_SUMMARY"

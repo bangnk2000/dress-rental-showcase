@@ -1,0 +1,71 @@
+name: rollback
+# Production panic button: puts the previous build of each part back and restarts pm2 — no install,
+# no build, no migration (docs/design/deploy-versioning.md §3.4, infra/deploy/README.md §Rollback).
+# Target = the deploy before the current one (or .deployed after a deploy that failed half-way).
+# Refuses — touching nothing — across a migration, a lockfile change or a changed env writer, and
+# then prints the rebuild fallback. Pressing it twice = forward again.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only show what would be swapped
+        type: boolean
+        default: false
+
+# Same group as deploy.yml: never swap slots while a deploy runs; queue behind it instead.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      OPS_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ops
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: SSH key + pinned host key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: bash ops/infra/deploy/ssh-setup.sh
+
+      - name: Decide, then swap the previous builds back
+        id: rb
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: bash ops/infra/deploy/rollback.sh
+
+      - name: Verify production
+        if: steps.rb.outputs.swapped == 'true'
+        run: bash ops/infra/deploy/verify.sh
+
+      - name: Record (kind=rollback)
+        if: steps.rb.outputs.swapped == 'true'
+        env:
+          TARGET_SHA: ${{ steps.rb.outputs.sha }}
+          VERSION: ${{ steps.rb.outputs.version }}
+          PARTS: ${{ steps.rb.outputs.parts }}
+          KIND: rollback
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash ops/infra/deploy/record.sh
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### rollback → ${{ steps.rb.outputs.version || 'nothing' }} (${{ steps.rb.outputs.sha }}) — ${{ job.status }}"
+            echo "swapped: ${{ steps.rb.outputs.parts || 'none' }}"
+            echo ""
+            echo "Then: the Production bullet in AGENTS.md. CMS devices keep the cached build until staff accept the update prompt (reload)."
+          } >>"$GITHUB_STEP_SUMMARY"

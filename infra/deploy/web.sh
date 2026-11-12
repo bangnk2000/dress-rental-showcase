@@ -12,8 +12,11 @@
 #  - HOSTNAME=localhost at runtime, NEVER 127.0.0.1 (307 loop / 500 behind nginx);
 #  - SITE_URL / NEXT_PUBLIC_*IMAGE_BASE_URL are baked at build; a local .env never ships.
 # Expects `pnpm install` already done on the target checkout. Runs after be.sh (BE before web).
+# Keeps the bundle it replaces as apps/web/run.prev — the slot rollback.sh swaps back
+# (docs/design/deploy-versioning.md §3.3) — unless that bundle is the same commit (a redeploy).
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
+: "${VERSION:=unversioned}" "${OPS_SHA:=unknown}"
 cd "$TREE"
 SHA=$(git rev-parse HEAD)
 grep -q "output: 'standalone'" apps/web/next.config.ts \
@@ -72,14 +75,15 @@ test -f "$S/apps/web/server.js"
 cp -r apps/web/.next/static "$S/apps/web/.next/static"
 [ -d apps/web/public ] && cp -r apps/web/public "$S/apps/web/public"
 find "$S" -maxdepth 3 -name '.env*' -type f -print -delete | sed 's/^/dropped from bundle: /'
-printf 'sha=%s date=%s site=https://%s images=%s published_at_build=%s by=github-actions\n' "$SHA" "$(date -Is)" "$WEB_DOMAIN" "$IMAGE_BASE_URL" "$PUBLISHED" >"$S/.built"
+printf 'sha=%s date=%s site=https://%s images=%s published_at_build=%s by=github-actions version=%s ops=%s\n' "$SHA" "$(date -Is)" "$WEB_DOMAIN" "$IMAGE_BASE_URL" "$PUBLISHED" "$VERSION" "$OPS_SHA" >"$S/.built"
 du -sh "$S"
 
 echo "== ship + swap + pm2 dress-web"
 tar -C "$S" -czf - . | rssh "set -e; mkdir -p $REMOTE_DIR/apps/web && cd $REMOTE_DIR/apps/web \
   && rm -rf run.new && mkdir run.new && tar --no-same-owner -xzf - -C run.new \
-  && rm -rf run.old && { [ -d run ] && mv run run.old || true; } && mv run.new run && rm -rf run.old \
-  && cat run/.built"
+  && if [ -d run ] && ! grep -q '^sha=$SHA ' run/.built 2>/dev/null; then rm -rf run.prev && mv run run.prev; else rm -rf run; fi \
+  && mv run.new run \
+  && cat run/.built && echo \"previous slot: \$(cat run.prev/.built 2>/dev/null || echo none)\""
 rssh 'bash -s' <<EOF
 set -euo pipefail
 export PATH=/usr/local/bin:/usr/bin:\$PATH
@@ -104,6 +108,9 @@ module.exports = {
   }],
 };
 CFG
+# env = sha256 of that pm2 config: rollback.sh swaps this bundle back only while the live config is
+# still this one (a rollback never rewrites it).
+sed -i "1s|\\\$| env=\$(sha256sum $OPS_DIR/dress-web.config.cjs | cut -c1-64)|" $REMOTE_DIR/apps/web/run/.built
 pm2 startOrRestart $OPS_DIR/dress-web.config.cjs --update-env >/dev/null
 pm2 save >/dev/null
 curl -s -o /dev/null --retry 20 --retry-connrefused --retry-delay 1 http://localhost:$WEB_PORT/robots.txt || true
