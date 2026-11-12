@@ -15,7 +15,8 @@ handoff, checklist) under `apps/*`; each app has its own **architecture contract
 
 ## Current state (a MAP — detail lives where each row points)
 
-- **Production (as of 2026-11-07):** API/CMS + web = master `1067bc1` (PR #38, migrations
+- **Production (as of 2026-11-12):** API/CMS + web = master `d2fbfb0` (deploy run 43153614172, no
+  migration; on top of `bbf1421` 2026-11-07 = #39 + #41, and `1067bc1` = PR #38, migrations
   1755800000000/1). Undeployed passes (+ order): `ledger.mjs pending` — the owner holds them; deploy
   only on bangnk's word. Redeploy: Actions → `deploy`
   ([`infra/deploy/README.md`](infra/deploy/README.md)); fallback/ops log: out-of-repo `~/deploy-dress/tencent/RUNBOOK.md` §7/§11.

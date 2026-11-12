@@ -6,6 +6,9 @@ session — evidence, decisions, watch-outs — lives in `session-handoff.md` (l
 Never needed on resume — add your line directly under this header (read only these first lines,
 e.g. `limit: 8`); never append at the bottom.
 
+- 2026-11-12 (61) — owner decisions (E1–E5, D1–D6 as proposed) + production d2fbfb0 (run 43153614172); stale
+  deploy facts fixed (bbf1421 = #39 + #41 live since 2026-11-07).
+
 - 2026-11-12 (60) — infra/deploy-versioning designed (todo, docs only): SemVer tag + deploy history + .prev slots +
   rollback workflow, NFR-07; A1–A9 + O3 await bangnk. Ledger 56/57 pass.
 

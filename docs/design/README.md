@@ -23,7 +23,7 @@ Form tạo/sửa đơn (FR-RENT-01/13/14 + NFR-06): [rental-form-ux.md](./rental
 dính cạnh (PC) / thanh đáy (điện thoại); P1–P4 + E1–E5 chủ tiệm duyệt 2026-11-12, as-built.
 
 CMS trên điện thoại (NFR-06): [cms-mobile-ux.md](./cms-mobile-ux.md) — pattern nav/bảng/dialog/vùng chạm
-dùng chung cho mọi màn hình `apps/fe`, **agent-default** 2026-11-11 (D1–D6 chờ chủ tiệm).
+dùng chung cho mọi màn hình `apps/fe`, D1–D6 chủ tiệm duyệt 2026-11-12, as-built.
 
 Version deploy + rút về nhanh (NFR-07): [deploy-versioning.md](./deploy-versioning.md) — SemVer tag, lịch sử
 deploy, slot bản trước + workflow `rollback`; **draft** 2026-11-12 (O1–O6 chủ tiệm chọn, A1–A9 chờ duyệt).

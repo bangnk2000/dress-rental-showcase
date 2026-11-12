@@ -721,7 +721,8 @@
           "be",
           "fe"
         ],
-        "migration": false
+        "migration": false,
+        "deployed": "bbf1421 2026-11-07"
       }
     },
     {
@@ -743,7 +744,8 @@
           "be",
           "fe"
         ],
-        "migration": false
+        "migration": false,
+        "deployed": "bbf1421 2026-11-07"
       },
       "testedAt": "2026-11-07"
     },
@@ -760,39 +762,14 @@
         "AC2: every nav destination is reachable on the phone viewport",
         "AC3: existing vitest + desktop Playwright happy path stay green with unchanged locators (one DOM)"
       ],
-      "ownerPending": [
-        {
-          "item": "D1: header sticky; dưới md nav thành dải link cuộn ngang (không tab bar đáy, không hamburger) (docs/design/cms-mobile-ux.md §3)",
-          "since": "2026-11-11"
-        },
-        {
-          "item": "D2: bảng dưới 768px hiển thị mỗi hàng thành khối xếp chồng, cùng một <table> (docs/design/cms-mobile-ux.md §3)",
-          "since": "2026-11-11"
-        },
-        {
-          "item": "D3: bảng váy trên điện thoại ẩn cột Danh mục + Tiền cọc (docs/design/cms-mobile-ux.md §3)",
-          "since": "2026-11-11"
-        },
-        {
-          "item": "D4: dialog cuộn bên trong, không bottom-sheet (docs/design/cms-mobile-ux.md §3)",
-          "since": "2026-11-11"
-        },
-        {
-          "item": "D5: vùng chạm ≥ 44px chỉ trên màn hình cảm ứng; desktop giữ cỡ cũ (docs/design/cms-mobile-ux.md §3)",
-          "since": "2026-11-11"
-        },
-        {
-          "item": "D6: safe-area + toast lên giữa trên ở điện thoại (docs/design/cms-mobile-ux.md §3)",
-          "since": "2026-11-11"
-        }
-      ],
       "evidence": "2026-11-12 on bf2934d (+ docs): `bash init.sh` → all runnable gates green — ledger check, contract:check (no diff), check, lint (only the pre-existing fe rental-form.tsx:90 warning), arch, be jest, fe vitest 185 (13 files; +4 table.test.tsx stacked-table roles/labels), qr-admin 17, web 52, fe/qr-admin/web builds; be test:e2e 19 suites / 175. AC1 + AC2: Playwright `phone` project (Pixel 7, Chromium, coarse pointer) e2e/phone-layout.spec.ts 14/14 (17/17 after Codex round 0: + language switcher ≥ 44px, long selected category stays in its trigger, 3 photo tiles with 44px buttons inside the tile, dress form fits a keyboard-sized 412×480 viewport + interactive-widget=resizes-content; those 4 checks fail with the round-0 fixes stashed) on a throwaway migrated+seeded DB — sign-in, board (+1 day), rentals list/new/detail (out + booked-with-deposit), dresses list/detail, /website, /website/new, /website/:id, users: scrollWidth ≤ 412, no off-edge element, no sideways-scrolling stacked table; return, dress form, money, cancel-with-refund and user-create dialogs fit and their last button scrolls into view; every nav link on screen, navigates, ≥ 44px. The same spec failed before the feature fixes (dress-detail header 455px; table wrappers scrolling on 4 lists). AC3: `chromium` happy path 1/1 with unchanged locators; vitest locators unchanged except listings disabled-delete reason (getByTitle → toHaveAccessibleDescription, the reason is now visible text). No BE/contract change. Not run: real iOS Safari / a physical phone. Not deployed. CI run 43067222913 on 2be280b: fe, contract, harness, e2e (both projects) green.",
       "testedAt": "2026-11-12",
       "deploy": {
         "order": [
           "fe"
         ],
-        "migration": false
+        "migration": false,
+        "deployed": "d2fbfb0 2026-11-12"
       }
     },
     {
@@ -816,7 +793,8 @@
         "order": [
           "fe"
         ],
-        "migration": false
+        "migration": false,
+        "deployed": "d2fbfb0 2026-11-12"
       }
     },
     {
