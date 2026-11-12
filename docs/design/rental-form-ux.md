@@ -54,3 +54,10 @@
 - Playwright `phone`: form tạo đơn không tràn ngang; thanh đáy luôn trong màn hình, nút gửi ≥ 44px và
   bấm được khi đang ở đầu form; mở chi tiết thấy phép tính. Desktop: tóm tắt nằm cột phải, vẫn thấy sau
   khi cuộn xuống cuối form. Happy path desktop vẫn xanh.
+
+## 6. As-built (2026-11-12)
+
+Shipped as designed (P1–P4, E1–E5) in `apps/fe/src/features/rentals/components/rental-form.tsx` +
+`rental-summary.tsx`: one summary element (`lg:sticky` right column / `fixed bottom-0` bar), breakdown behind an
+`aria-expanded` toggle, form-level rejection shown next to the submit, submit-time field errors scroll to and focus
+their field (`lib/form-field-ids.ts`), PWA update prompt lifted above the bar. Proof: ledger `fe:rental-form-ux` evidence.

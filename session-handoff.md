@@ -4,6 +4,13 @@ Newest first. Resume: `node scripts/ledger.mjs brief` prints ONLY the first entr
 file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-checklist.md) §State
 (archive: [`docs/harness/session-handoff-archive.md`](docs/harness/session-handoff-archive.md)).
 
+## 2026-11-12 (59) — rental form in four sections + a summary that stays in view (`fe:rental-form-ux` = pass)
+
+- Done: owner ask "màn hình tạo sửa đơn thuê … cần cải thiện UI/UX cả web pc và mobile"; design-tier [`rental-form-ux`](docs/design/rental-form-ux.md) P1–P4 approved, E1–E5 agent-default (ownerPending). Sections Khách hàng / Ngày thuê / Váy / Thanh toán; ONE summary element — sticky right column from lg, fixed bottom bar with payable + submit below lg. Branch rebased onto #43 (kept master's fe #5 stub). Ledger 56/56.
+- Proof: `bash init.sh` green; be e2e 175; fe vitest 191; Playwright 20/20 (chromium happy path + rental-form-desktop, phone 18) on a throwaway DB.
+- Next: bangnk — try the form on a shop phone + PC, confirm/reject E1–E5. Deploy: fe only, no migration — rides the held be → fe run with #39 + update-rental-by-staff + fe:mobile-ux (`only=auto`).
+- Watch out: the summary is ONE DOM node (no breakpoint copy); `zz-screens.spec.ts` (owner screenshots) is temporary and never committed.
+
 ## 2026-11-12 (58) — agent docs on a diet (docs/harness only, no ledger entry)
 
 - Done: owner ask "tối ưu lại bộ tài liệu agent đọc… mỗi phiên bắt đầu phải đọc ít nhất nhưng vẫn giữ đúng rule". Root AGENTS.md 12.0 → 7.0 KB: new §Start of session + §Route by task replace the spec bullet list and the history in Current state; "Which doc to update" + handoff rotation moved into clean-state-checklist.md (now the one close procedure). New `node scripts/ledger.mjs brief` = summary + newest handoff entry (~2 KB) — resume no longer reads this file. App AGENTS.md trimmed (fe #5 detail → apps/fe/e2e/README.md; web search mechanics → search-dresses.md §8); deviation numbers and §Screen rules kept. claude-progress.md order repaired (lines moved verbatim).
@@ -32,9 +39,3 @@ file. Close: prepend + rotate per [`clean-state-checklist.md`](clean-state-check
 - Next: bangnk — when ready, Actions → deploy `only=auto` (target `67f0e3c` or later), then reload the CMS on every shop device before the first handout and tell staff existing bookings need a deposit at pickup (§6.Q6); then `deploy.deployed` + Production bullet. Q1–Q9 of update-rental §6 still open.
 - Watch out: before #39 ships, the live cancel dialog still shows each rejection twice (a980ffc not live).
 
-## 2026-11-07 (54) — deposit at booking + deposit gate at pickup (`rentals/deposit-at-pickup` = pass)
-
-- Done: PR #38 (cancel-with-refund) merged by owner. Built FR-RENT-14: create form records rental fee (pre-filled) and deposit (unticked box) with the rental; a booking with no deposit on file cannot be handed out — the board marks it "Chưa thu cọc" and pickup opens "Thu cọc & giao váy" (deposit written with the handover, under the row lock). Also fixed the cancel dialog's double toast (merged, undeployed). Ledger 53/53.
-- Proof: `bash init.sh` all green; be e2e 175 (new deposit-at-pickup suite incl. no-orphan create race and pickup↔collect race), fe vitest 180.
-- Next: PR from `feat/deposit-at-pickup` → Codex review → owner merges; deploy **migrate → be → fe** for BOTH cancel-with-refund and deposit-at-pickup (`ledger.mjs pending`). Tell staff: existing bookings without a deposit now need one at pickup (§6.Q6).
-- Watch out: local Playwright stops at sign-in on the dev DB (owner password ≠ CI seed `changeme`); CI `e2e` is the proof. Every mutation that renders its own rejections needs `onError: () => undefined` (app/providers.tsx toasts globally).
