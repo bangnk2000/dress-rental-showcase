@@ -2,6 +2,7 @@
 // Cheap reads + lint of feature_list.json so an agent never opens the whole ledger.
 // Source: knowledge-system prompts/init-harness/08-ledger-tool.md (copy, then fill ID_PATTERN).
 //   node scripts/ledger.mjs check              lint (CI runs this; init.sh runs it first)
+//   node scripts/ledger.mjs brief              session start: summary + the newest session-handoff.md entry
 //   node scripts/ledger.mjs summary [n]        counts, in-progress, owner-pending, last n entries
 //   node scripts/ledger.mjs pending            what waits on a HUMAN: owner decisions + undeployed passes
 //   node scripts/ledger.mjs show <id>          one entry as JSON
@@ -106,10 +107,10 @@ if (cmd === 'check') {
   }
   const strict = features.filter((f) => f.tier !== undefined).length;
   console.log(`OK: ledger valid — ${features.length} entries (${strict} strict), ${wip.length} in-progress`);
-} else if (cmd === 'summary' || cmd === 'pending') {
+} else if (cmd === 'summary' || cmd === 'brief' || cmd === 'pending') {
   const pend = features.flatMap((f) => pendingOf(f).map((o) => `  ${o.since}  ${f.id} — ${o.item}`));
   const undep = features.filter(undeployed).map((f) => `  ${f.id} — order: ${f.deploy.order.join(' → ')}${f.deploy.migration ? ' (MIGRATION)' : ''}`);
-  if (cmd === 'summary') {
+  if (cmd === 'summary' || cmd === 'brief') {
     const counts = {};
     for (const f of features) counts[f.status] = (counts[f.status] ?? 0) + 1;
     console.log(`${features.length} entries — ${Object.entries(counts).map(([s, c]) => `${c} ${s}`).join(', ')}`);
@@ -119,6 +120,15 @@ if (cmd === 'check') {
     const n = Number(args[0] ?? 5);
     console.log(`last ${n}:`);
     for (const f of features.slice(-n)) console.log(`  ${f.status.padEnd(11)} ${(f.testedAt ?? '').slice(0, 10).padEnd(10)} ${f.id} — ${titleOf(f)}`);
+    if (cmd === 'brief') {
+      // Only the newest handoff entry: from the first `## ` heading to the next one.
+      const handoff = resolve(root, 'session-handoff.md');
+      const lines = existsSync(handoff) ? readFileSync(handoff, 'utf8').split('\n') : [];
+      const start = lines.findIndex((l) => l.startsWith('## '));
+      const end = start < 0 ? -1 : lines.findIndex((l, i) => i > start && l.startsWith('## '));
+      console.log('\nnewest session-handoff.md entry (Next / Watch out = this session\'s candidates):');
+      console.log(start < 0 ? '  none' : lines.slice(start, end < 0 ? undefined : end).join('\n').trimEnd());
+    }
   } else {
     console.log(`owner decisions (${pend.length}):`);
     console.log(pend.length ? pend.join('\n') : '  none');
@@ -155,6 +165,6 @@ if (cmd === 'check') {
   if (bad) process.exit(1);
   console.log(`OK: no stale ledger statuses in ${args.length} file(s)`);
 } else {
-  console.error(`unknown command ${cmd} — use check | summary [n] | pending | show <id> | ids | stale-status <md…>`);
+  console.error(`unknown command ${cmd} — use check | brief | summary [n] | pending | show <id> | ids | stale-status <md…>`);
   process.exit(1);
 }

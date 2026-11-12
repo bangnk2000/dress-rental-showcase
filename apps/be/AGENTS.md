@@ -1,11 +1,9 @@
 # AGENTS.md — apps/be (architecture contract)
 
 NestJS 11 hexagonal backend per the init-nestjs-hexagonal set — entry point
-`docs/spec/init-nestjs-hexagonal/README.md` (open its numbered detail files only per the File
-Map, never the whole folder) + the monorepo deltas in
-`docs/spec/init-monorepo-contract/01-workspace-structure.md` §4. **Session harness lives at
-the repo ROOT** (`../../AGENTS.md`, `feature_list.json`, `init.sh`) — never create harness
-files here.
+`docs/spec/init-nestjs-hexagonal/README.md` (numbered files only per its File Map) + monorepo deltas
+`docs/spec/init-monorepo-contract/01-workspace-structure.md` §4. The session harness is at the repo
+ROOT — never create harness files here.
 
 ## Commands (run from repo root)
 
@@ -74,20 +72,15 @@ files here.
 3. **Command handler files named `*.service.ts`** (per spec §02 naming) — no `*.command-handler.ts`.
 4. **Cross-context table-read adapters** (`rentals/database/dress-lookup.adapter.ts`,
    `rentals/database/payment-recorder.adapter.ts`, `payments/database/rental-lookup.adapter.ts`)
-   — the 2026-07-31 spec re-sync forbids reading a sibling context's tables (spec 01 §4 MUST NOT,
-   14-design-first §3.2; sanctioned channel = contract query on the QueryBus via
-   `libs/contracts/`). Kept as a deliberate deviation for this 4-context app: the adapters are
-   few, commented as boundaries, and a QueryBus layer earns nothing at this size. The cost is
-   schema-level coupling no guardrail sees — if a shared table's columns change, grep these
-   adapters. Migration path when it bites: one contract query per adapter.
+   although spec 01 §4 / 14-design-first §3.2 forbid reading a sibling context's tables (sanctioned
+   channel: a contract query on the QueryBus via `libs/contracts/`). Kept: few adapters, commented as
+   boundaries, a QueryBus layer earns nothing at this size. Cost = schema coupling no guardrail sees —
+   **if a shared table's columns change, grep these adapters.** Migration path: one contract query per adapter.
 5. **`correlationId` comes from the `x-request-id` header**, read in the global filter — the
    AsyncLocalStorage request-context of spec 07 §Observability is not implemented. The envelope
    shape is unaffected; add the context only when a log needs to be correlated without a header.
 
-(Historical: gaps #5 "no invariant proof" and #6 "flat `GENERIC.*` rejections" were CLOSED on
-2026-08-09 by `infra/invariant-proof-e2e` and `infra/outcome-model`; the story is in
-`docs/adr/0001-outcome-model-at-the-http-boundary.md` §1 and `docs/harness/session-handoff-archive.md` (19). Only LIVE
-deviations are numbered here, so nothing below is a constraint that no longer exists.)
+Only LIVE deviations are numbered here (former gaps #5/#6 closed 2026-08-09 — ADR 0001 §1).
 
 ## Wire contract — three facts, then read [ADR 0001](../../docs/adr/0001-outcome-model-at-the-http-boundary.md)
 

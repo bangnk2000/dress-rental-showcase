@@ -3,8 +3,7 @@
 Standalone Vite + React SPA for the owner-only QR URL tool, per the init-react set — entry point
 `docs/spec/init-react/README.md` (open its numbered detail files only per the File Map, never the
 whole folder). Product design: `docs/design/qr-admin.md`; requirements: `docs/SRS-qr-url.md`.
-**Session harness lives at the repo ROOT** (`../../AGENTS.md`, `feature_list.json`, `init.sh`) —
-never create harness files here.
+The session harness is at the repo ROOT — never create harness files here.
 
 This app is a SIBLING of `apps/fe`, not a feature inside it: it ships separately, has its own
 generated client, its own token storage and its own gates. It MUST NOT import `apps/fe` source
