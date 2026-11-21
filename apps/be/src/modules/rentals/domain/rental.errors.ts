@@ -164,6 +164,33 @@ export class ReturnDepositBasisChangedError extends ExceptionBase {
   }
 }
 
+/** FR-RENT-14 §6.Q3: a booking is not handed out until its deposit is on file. */
+export class DepositNotCollectedError extends ExceptionBase {
+  static readonly message = 'Collect the deposit before handing the dresses out';
+  public readonly code = 'RENTALS.DEPOSIT_NOT_COLLECTED';
+
+  constructor(cause?: Error, metadata?: unknown) {
+    super(DepositNotCollectedError.message, cause, metadata);
+  }
+}
+
+/**
+ * FR-RENT-14: the pickup brought a deposit but one is already on file — same rule (one deposit row
+ * per rental, BR-7) and therefore the same wire code as record-collection's
+ * `rejected_deposit_already_recorded`.
+ */
+export class PickupDepositAlreadyRecordedError extends ExceptionBase {
+  static readonly message = 'A deposit is already recorded for this rental';
+  public readonly code = 'RENTALS.DEPOSIT_ALREADY_RECORDED';
+
+  constructor(
+    readonly recordedAmount: number,
+    cause?: Error,
+  ) {
+    super(PickupDepositAlreadyRecordedError.message, cause, { recordedAmount });
+  }
+}
+
 /**
  * rentals/cancel-with-refund R3: the refunds were computed from collected amounts that are not
  * what the ledger holds under the row lock (or the caller sent no basis while money is on file).

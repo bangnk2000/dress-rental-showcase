@@ -39,8 +39,15 @@ export interface RentalRepositoryPort extends RepositoryPort<RentalEntity> {
    * `save` for a PICKUP, plus a re-read of the status under the rental's row lock: anything but
    * `booked` (a cancel committed since the load) → `RentalStateChangedError`, nothing written.
    * `saveReturned` does the same for `out`.
+   *
+   * FR-RENT-14, under the same lock: `depositCollected` null and no deposit on file →
+   * `DepositMissingError`; a deposit given while one is on file → `DepositOnFileError`; otherwise
+   * the given deposit is written in the SAME transaction as booked → out.
    */
-  savePickedUp(entity: RentalEntity): Promise<void>;
+  savePickedUp(entity: RentalEntity, depositCollected: number | null): Promise<void>;
+
+  /** `insert` + the money handed over at booking, in one transaction (FR-RENT-14). */
+  insertWithCollection(entity: RentalEntity, collection: BookingCollection): Promise<void>;
 
   /**
    * `save` for a CANCEL (rentals/cancel-with-refund), with the ledger re-read under the rental's
@@ -56,6 +63,13 @@ export interface RentalRepositoryPort extends RepositoryPort<RentalEntity> {
    * Every throw writes nothing.
    */
   saveCancelled(entity: RentalEntity, settlement: CancelSettlement | null): Promise<void>;
+}
+
+/** Money handed over at booking (FR-RENT-14); null/absent amounts = not collected. */
+export interface BookingCollection {
+  deposit: number | null;
+  rentalFee: number | null;
+  note: string | null;
 }
 
 /** What a cancel of a rental with money on file claims and pays back. */

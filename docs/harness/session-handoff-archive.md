@@ -5,6 +5,13 @@ small — only relative Markdown link targets gain a `../../` prefix, since this
 directories below the repo root. History only — never read on resume; grep it by session number,
 e.g. `## .* (19) —`.
 
+## 2026-10-27 (49) — base dress code on public listings (`catalog:public-base-code` = pass)
+
+- Done: owner ask "hiện thị thêm mã váy gốc" → `codes: string[]` on the public Summary/Detail DTO (distinct bases of active dresses, `DressCode.baseOf`), contract regenerated, web card "Mã VAY1" + detail "Mã váy: VAY1". R6 amended in `docs/design/catalog/public-listing.md` §Amendment 2026-10-27. Ledger 50/50.
+- Proof: be jest 290, web vitest green, be e2e 150 on real Postgres (public-catalog 8/8), web build green.
+- Next: PR → merge; deploy BE FIRST, then web (the new web reads `dress.codes`; against the old BE it is undefined → card/detail throw on `.length`; the old web just ignores the new field). PR #30 (accessory, needs migrate) is still undeployed too.
+- Watch out: a code like `VD_012` counts as a copy of `VD` — `baseOf` strips any trailing `_<digits>`; that is existing FR-CAT-08 behaviour, not new.
+
 ## 2026-10-19 (48) — listing style `accessory` (Phụ kiện) (`catalog:listing-style-accessory` = pass)
 
 - Done: seventh style code across DB CHECK (migration 1755700000000), `STYLES`, import keyword, FE vi/en labels, web chip + label, contract. PR #30; Codex C1 (no accessory e2e) fixed with migration up/down + `?style=accessory` tests. Ledger 49/49.

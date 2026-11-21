@@ -68,6 +68,13 @@ test('happy path: create dress → book tomorrow → pickup → return → settl
     await page.getByLabel('Ngày trả').fill(shopDayIso(1));
     await page.getByPlaceholder('Tìm theo mã hoặc tên váy…').fill(DRESS_CODE);
     await page.getByRole('button', { name: 'Thêm', exact: true }).click();
+    // FR-RENT-14: the money handed over at booking is recorded with the rental. The fee is
+    // pre-filled from the agreement; the deposit sits behind an unticked box and the shop took
+    // LESS than the catalog standard — the ledger records what was taken.
+    await expect(page.getByLabel('Tiền thuê đã thu')).toHaveValue('1500000');
+    await page.getByLabel('Khách đã đóng cọc').check();
+    await expect(page.getByLabel('Tiền cọc đã thu')).toHaveValue('3000000');
+    await page.getByLabel('Tiền cọc đã thu').fill('2000000');
     await page.getByRole('button', { name: 'Tạo lượt thuê' }).click();
     await expect(page.getByText('Đã tạo lượt thuê', { exact: true })).toBeVisible();
     // post-create landing: the rentals list shows the booked rental
@@ -76,17 +83,10 @@ test('happy path: create dress → book tomorrow → pickup → return → settl
     );
   });
 
-  await test.step('record the money taken at the counter (FR-PAY-02)', async () => {
+  await test.step('the money taken at booking is on the ledger (FR-RENT-14 / FR-PAY-02)', async () => {
     const row = page.getByRole('row', { name: new RegExp(CUSTOMER) });
     await row.getByRole('button', { name: /^Tiền/ }).click();
-    // Pre-filled from the catalog standard and the agreed price…
-    await expect(page.getByLabel('Tiền cọc')).toHaveValue('3000000');
-    await expect(page.getByLabel('Tiền thuê')).toHaveValue('1500000');
-    // …but the shop took less deposit than the standard, and the ledger records what was TAKEN.
-    await page.getByLabel('Tiền cọc').fill('2000000');
-    await page.getByRole('button', { name: 'Ghi nhận' }).click();
-    await expect(page.getByText('Đã ghi nhận tiền.')).toBeVisible();
-    // Both kinds are now on file, so the form gives way to the ledger it just wrote.
+    // Both kinds were recorded with the rental, so the collection form gives way to the ledger.
     await expect(
       page.getByText('Đã ghi nhận đủ tiền cọc và tiền thuê của lượt thuê này.'),
     ).toBeVisible();
@@ -109,6 +109,8 @@ test('happy path: create dress → book tomorrow → pickup → return → settl
     // a single-day rental sits on BOTH lists (hand out and take back) — and since FR-RENT-10 a
     // BOOKED card on the take-back list offers a pickup too, so scope the click to due-out.
     await expect(page.getByText(CUSTOMER)).toHaveCount(2);
+    // The deposit is on file, so the card says so and the tap hands out directly (FR-RENT-14).
+    await expect(ownRows.first()).toContainText('Đã cọc 2.000.000 ₫');
     const dueOut = page
       .locator('section')
       .filter({ has: page.getByRole('heading', { name: /Giao váy cho khách/ }) });

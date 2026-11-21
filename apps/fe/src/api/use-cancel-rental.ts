@@ -33,7 +33,9 @@ export function useCancelRental(rentalId: string | null): CancelRentalController
     query: { enabled: rentalId !== null },
   });
   const { data: me } = useMeHttpControllerMe();
-  const cancel = useCancelRentalHttpControllerCancel();
+  // The dialog renders every rejection in place; an empty onError overrides the app-wide mutation
+  // toast (app/providers.tsx) so a rejection is not ALSO announced as a generic failure.
+  const cancel = useCancelRentalHttpControllerCancel({ mutation: { onError: () => undefined } });
 
   async function refreshEverything(id: string): Promise<void> {
     // Board + list parameterless keys, the detail, and the ledger — a cancel can move money.

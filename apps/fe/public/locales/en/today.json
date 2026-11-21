@@ -74,5 +74,20 @@
     "rentalNotFound": "This rental no longer exists. The board has been refreshed.",
     "lateFeeWaiverForbidden": "Only the shop owner may charge less than the suggested late fee.",
     "waiverNoteRequired": "Reducing the late fee requires a reason."
+  },
+  "deposit": {
+    "missing": "Deposit not collected",
+    "collected": "Deposit {{amount}}"
+  },
+  "pickupDialog": {
+    "title": "Collect deposit & hand out",
+    "description": "{{customer}}'s rental has no deposit on file. Collect it before handing the dresses out — it is recorded together with the handover.",
+    "field": "Deposit collected",
+    "hint": "Standard deposit of the dresses: {{amount}}",
+    "submit": "Deposit collected & hand out",
+    "close": "Close",
+    "success": "Handed out and deposit recorded.",
+    "alreadyRecorded": "A deposit of {{amount}} was just recorded on another device — press \"Hand out\" to hand out without adding one.",
+    "notCollected": "No deposit on file — enter the deposit and try again."
   }
 }

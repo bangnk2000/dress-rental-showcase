@@ -15,6 +15,8 @@ export class CreateRentalCommand extends Command {
   /** VND taken off the rental fee (FR-RENT-11); 0 = none. */
   readonly discountAmount: number;
   readonly items: readonly CreateRentalItemInput[];
+  /** FR-RENT-14: money handed over at booking; null amounts = not collected. */
+  readonly collect: { deposit: number | null; rentalFee: number | null };
 
   constructor(props: CommandProps<CreateRentalCommand>) {
     super(props);
@@ -25,5 +27,6 @@ export class CreateRentalCommand extends Command {
     this.notes = props.notes;
     this.discountAmount = props.discountAmount;
     this.items = props.items;
+    this.collect = props.collect;
   }
 }

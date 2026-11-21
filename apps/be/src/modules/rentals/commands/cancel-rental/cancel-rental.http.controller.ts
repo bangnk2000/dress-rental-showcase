@@ -10,6 +10,7 @@ import {
 import { CommandBus } from '@nestjs/cqrs';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
@@ -62,6 +63,8 @@ export class CancelRentalHttpController {
       'Named denial: forbidden + reason cancel_retention_requires_owner (retainedAmount) — staff may only cancel with full refunds',
   })
   @ApiResponse({ status: 400, type: ApiErrorResponseDto, description: 'Invalid cancel body' })
+  // Optional on the wire too: a body-less cancel is the empty-ledger cancel it always was.
+  @ApiBody({ type: CancelRentalRequestDto, required: false })
   async cancel(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: CancelRentalRequestDto,

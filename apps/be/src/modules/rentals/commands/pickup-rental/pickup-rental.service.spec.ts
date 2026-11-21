@@ -4,6 +4,12 @@ import { RentalRepositoryPort } from '../../application/ports/rental.repository.
 import { RentalEntity } from '../../domain/rental.entity';
 import { RentalPeriod } from '../../domain/rental-period.value-object';
 import {
+  DepositMissingError,
+  DepositOnFileError,
+} from '../../application/ports/pickup-deposit.error';
+import {
+  DepositNotCollectedError,
+  PickupDepositAlreadyRecordedError,
   RentalNotFoundError,
   RentalPickupNotAllowedError,
 } from '../../domain/rental.errors';
@@ -41,6 +47,7 @@ function makeRepo(rental: RentalEntity | null): RentalRepositoryPort {
     saveReturned: jest.fn().mockResolvedValue(undefined),
     saveCancelled: jest.fn().mockResolvedValue(undefined),
     savePickedUp: jest.fn().mockResolvedValue(undefined),
+    insertWithCollection: jest.fn().mockResolvedValue(undefined),
     saveUpdated: jest.fn().mockResolvedValue(undefined),
     findOneById: jest.fn().mockResolvedValue(rental),
     findBlockedDressIds: jest.fn().mockResolvedValue([]),
@@ -48,7 +55,41 @@ function makeRepo(rental: RentalEntity | null): RentalRepositoryPort {
   };
 }
 
-const command = new PickupRentalCommand({ rentalId: RENTAL_ID });
+const command = new PickupRentalCommand({ rentalId: RENTAL_ID, depositCollected: null });
+
+test('FR-RENT-14: the deposit collected at the counter travels to the guarded write', async () => {
+  const rental = makeRental();
+  const repo = makeRepo(rental);
+
+  const result = await new PickupRentalService(repo).execute(
+    new PickupRentalCommand({ rentalId: RENTAL_ID, depositCollected: 3_000_000 }),
+  );
+
+  expect(result.isOk()).toBe(true);
+  expect(repo.savePickedUp).toHaveBeenCalledWith(rental, 3_000_000);
+});
+
+test('FR-RENT-14: no deposit on file and none brought → DepositNotCollectedError', async () => {
+  const repo = makeRepo(makeRental());
+  (repo.savePickedUp as jest.Mock).mockRejectedValue(new DepositMissingError());
+
+  const result = await new PickupRentalService(repo).execute(command);
+
+  expect(result.unwrapErr()).toBeInstanceOf(DepositNotCollectedError);
+});
+
+test('FR-RENT-14: a deposit brought while one is on file → already recorded, with the amount', async () => {
+  const repo = makeRepo(makeRental());
+  (repo.savePickedUp as jest.Mock).mockRejectedValue(new DepositOnFileError(2_000_000));
+
+  const result = await new PickupRentalService(repo).execute(
+    new PickupRentalCommand({ rentalId: RENTAL_ID, depositCollected: 3_000_000 }),
+  );
+
+  const error = result.unwrapErr() as PickupDepositAlreadyRecordedError;
+  expect(error).toBeInstanceOf(PickupDepositAlreadyRecordedError);
+  expect(error.recordedAmount).toBe(2_000_000);
+});
 
 test('books → out: saves and returns the rental id', async () => {
   const rental = makeRental();
@@ -59,7 +100,7 @@ test('books → out: saves and returns the rental id', async () => {
   expect(result.isOk()).toBe(true);
   expect(result.unwrap()).toBe(RENTAL_ID);
   expect(rental.status).toBe('out');
-  expect(repo.savePickedUp).toHaveBeenCalledWith(rental);
+  expect(repo.savePickedUp).toHaveBeenCalledWith(rental, null);
   expect(repo.save).not.toHaveBeenCalled(); // never the unguarded write
 });
 

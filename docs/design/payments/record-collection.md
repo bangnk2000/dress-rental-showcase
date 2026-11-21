@@ -65,6 +65,10 @@ Domain rules / invariants:
               [rentals/cancel-with-refund](../rentals/cancel-with-refund.md) §6): `deposit_refund`
               nay có HAI nơi sinh — trả váy và huỷ đơn `booked` đã trả trước — và kind mới
               `rental_fee_refund` chỉ do huỷ sinh ra. Lệnh này vẫn chỉ ghi `deposit`/`rental_fee`.
+              **Amendment 2026-11-07 (2)** ([rentals/deposit-at-pickup](../rentals/deposit-at-pickup.md)
+              §7, FR-RENT-14): `deposit`/`rental_fee` nay còn sinh lúc TẠO đơn và `deposit` lúc
+              GIAO váy, ghi trong transaction của rentals — R2/R3 vẫn giữ (DTO `@Min(1)`, partial
+              UNIQUE, cùng row lock).
   - R2 (AC1): số tiền là VND integer ≥ 1 (BR-4). 0 nghĩa là "không thu", và cách diễn đạt
               "không thu" là VẮNG MẶT field, không phải số 0 — sổ không có dòng 0₫.
   - R3 (AC2): mỗi đơn tối đa MỘT dòng `deposit` và MỘT dòng `rental_fee`. Chặn ở

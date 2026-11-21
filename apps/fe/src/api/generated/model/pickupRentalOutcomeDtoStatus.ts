@@ -11,4 +11,6 @@ export type PickupRentalOutcomeDtoStatus = typeof PickupRentalOutcomeDtoStatus[k
 export const PickupRentalOutcomeDtoStatus = {
   rejected_rental_not_found: 'rejected_rental_not_found',
   rejected_pickup_not_allowed: 'rejected_pickup_not_allowed',
+  rejected_deposit_not_collected: 'rejected_deposit_not_collected',
+  rejected_deposit_already_recorded: 'rejected_deposit_already_recorded',
 } as const;

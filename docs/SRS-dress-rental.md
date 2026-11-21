@@ -112,6 +112,13 @@ AuthZ là ABAC **fail-closed** (permission chưa đăng ký = DENY) — `libs/au
   trước) huỷ được **kèm dòng hoàn** `deposit_refund` / `rental_fee_refund` ghi CÙNG transaction,
   mỗi khoản hoàn ≤ khoản đã thu (basis kiểm dưới row lock); giữ lại tiền chỉ chủ tiệm và phải ghi
   lý do. Quyết định + lý do: [design/rentals/cancel-with-refund.md](./design/rentals/cancel-with-refund.md) §6.
+- **FR-RENT-14** Thu tiền lúc đặt & chặn giao khi chưa cọc: form tạo đơn ghi nhận **tiền thuê đã
+  thu** (tuỳ chọn) và — khi tick "Khách đã đóng cọc" — **tiền cọc** vào sổ CÙNG transaction tạo
+  đơn. Một đơn `booked` mà sổ **chưa có dòng cọc** hiện "Chưa thu cọc" trên bảng Hôm nay và **không
+  giao được** cho tới khi thu cọc: modal giao váy ghi dòng `deposit` CÙNG transaction với
+  `booked → out` (`rejected_deposit_not_collected` / `rejected_deposit_already_recorded`). Đơn sinh
+  `out` lúc tạo (FR-RENT-10b) mà không cọc chỉ bị cảnh báo trên form. Áp cho mọi đơn. Quyết định +
+  lý do: [design/rentals/deposit-at-pickup.md](./design/rentals/deposit-at-pickup.md) §6.
 - **FR-RENT-07** Bảng "Hôm nay": váy phải giao hôm nay (due out — gồm cả đơn **đã giao** trong
   ngày, xếp sau đơn chưa giao, để nhân viên nhìn một chỗ thấy cả ngày đã giao gì), phải nhận về
   hôm nay (due back), và **OVERDUE** — màn hình nhân viên mở mỗi sáng, có nút thao tác trực tiếp.
@@ -232,6 +239,7 @@ Trạng thái giao hàng KHÔNG ghi ở đây — đọc từ ledger: `node scri
 | FR-CAT-08 | `catalog/duplicate-dress` | [catalog-aggregate.md](./design/catalog-aggregate.md) §Nhân bản |
 | FR-RENT-11 | `rentals/rental-discount` | [rentals-aggregate.md](./design/rentals-aggregate.md) §Giảm giá |
 | FR-RENT-12, 13 | `rentals/update-rental` | [rentals/update-rental.md](./design/rentals/update-rental.md) (spec `as-built`), [rentals-aggregate.md](./design/rentals-aggregate.md) §Sửa đơn |
+| FR-RENT-14 | `rentals/deposit-at-pickup` | [rentals/deposit-at-pickup.md](./design/rentals/deposit-at-pickup.md) |
 | FR-WEB-01..04 | `web:public-pages` (mock data) | [web/public-pages.md](./design/web/public-pages.md) |
 | FR-CAT-10, 11 | `catalog/dress-photo-upload` | [catalog/dress-photo-upload.md](./design/catalog/dress-photo-upload.md) (spec `as-built`), [catalog-aggregate.md](./design/catalog-aggregate.md) |
 | FR-CAT-09 | `catalog/public-listing` | [catalog/public-listing.md](./design/catalog/public-listing.md) (spec `approved`) |

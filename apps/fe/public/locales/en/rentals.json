@@ -86,6 +86,19 @@
       "dressNotFound": "A dress is no longer in the catalog. Please pick again.",
       "discountInvalid": "Digits only (VND)",
       "discountTooLarge": "The discount cannot exceed the rental subtotal"
+    },
+    "payment": {
+      "title": "Paid at booking",
+      "rentalFee": "Rental fee collected",
+      "rentalFeeHint": "Leave blank if nothing was paid. Expected rental fee: {{amount}}",
+      "depositPaid": "Customer paid the deposit",
+      "deposit": "Deposit collected",
+      "depositHint": "Standard deposit of the dresses: {{amount}}",
+      "bornOutNoDeposit": "This rental is handed out today but no deposit is recorded — if the customer paid one, tick \"Customer paid the deposit\".",
+      "errors": {
+        "invalidAmount": "Enter the amount in digits only, no separators (e.g. 1500000) — or leave it blank if nothing was paid.",
+        "depositRequired": "With \"Customer paid the deposit\" ticked, enter the deposit collected (digits only, e.g. 3000000)."
+      }
     }
   },
   "picker": {

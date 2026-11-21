@@ -126,7 +126,9 @@ pre-check/entity ở service VÀ ràng buộc/điều kiện nằm trong câu gh
 | `rentals/create-rental` | `RentalDressRetiredError` | `rejected_dress_retired` | `dressIds[]` | FR-RENT-01, FR-CAT-03 |
 | `rentals/create-rental` | `DressUnavailableError` | `rejected_dress_unavailable` | `dressIds[]` | FR-RENT-02, BR-1 |
 | `rentals/pickup-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-04 |
-| `rentals/pickup-rental` | `RentalPickupNotAllowedError` | `rejected_pickup_not_allowed` | `currentStatus` | FR-RENT-04, BR-3 |
+| `rentals/pickup-rental` | `RentalPickupNotAllowedError` | `rejected_pickup_not_allowed` (pre-check LẪN đọc lại dưới row lock) | `currentStatus` | FR-RENT-04, BR-3 |
+| `rentals/pickup-rental` | `DepositNotCollectedError` | `rejected_deposit_not_collected` — sổ chưa có dòng cọc và lệnh giao không kèm cọc (đọc dưới row lock) | — | FR-RENT-14 |
+| `rentals/pickup-rental` | `PickupDepositAlreadyRecordedError` | `rejected_deposit_already_recorded` — dùng lại mã của record-collection: lệnh giao kèm cọc nhưng sổ đã có dòng cọc (pre-check dưới lock LẪN thua UNIQUE) | `recordedAmount` | FR-RENT-14, BR-7 |
 | `rentals/return-rental` | `RentalNotFoundError` | `rejected_rental_not_found` | — | FR-RENT-05 |
 | `rentals/return-rental` | `RentalReturnNotAllowedError` | `rejected_return_not_allowed` (từ FR-RENT-10 gồm cả `booked` — chưa giao thì chưa nhận về) | `currentStatus` | FR-RENT-05, FR-RENT-10, BR-3 |
 | `rentals/return-rental` | `LateFeeWaiverNotAllowedError` | `forbidden` (**403**) + `reason: 'late_fee_waiver_requires_owner'` | `suggestedLateFee`, `submittedLateFee` | FR-RENT-09 |
@@ -236,6 +238,8 @@ với query (`throwOnError: isServerOrNetworkError`); fault của mutation rende
 | `rejected_dress_unavailable` | giữ form, message form-level "trùng lịch (gồm đệm giặt)" | `rentals:form.errors.dressUnavailable` |
 | `rejected_rental_not_found` | toast + invalidate board/list (đơn đã bị người khác xử lý) | `rentals:errors.rentalNotFound` / `today:errors.rentalNotFound` |
 | `rejected_pickup_not_allowed` | toast nêu `currentStatus` + invalidate board | `today:errors.pickupNotAllowed` |
+| `rejected_deposit_not_collected` | invalidate board + MỞ modal thu cọc cho đơn đó (board cũ tưởng đã cọc) | `today:pickupDialog.notCollected` |
+| `rejected_deposit_already_recorded` (pickup) | GIỮ modal thu cọc, nói số đã ghi, invalidate board; nút đổi thành "Giao váy" (giao không kèm cọc) | `today:pickupDialog.alreadyRecorded` |
 | `rejected_return_not_allowed` | đóng dialog, toast nêu `currentStatus` + invalidate; `currentStatus='booked'` có câu RIÊNG chỉ việc ("giao trước khi nhận về") | `today:errors.returnNotAllowed` / `today:errors.returnNotPickedUp` |
 | `forbidden` (`late_fee_waiver_requires_owner`) | GIỮ dialog, field error dưới phí trễ; số đề xuất vẫn hiển thị ở banner phía trên (message form là i18n key, không nội suy tham số) | `today:errors.lateFeeWaiverForbidden` |
 | `rejected_waiver_note_required` | GIỮ dialog, focus field Ghi chú + message bắt buộc lý do | `today:errors.waiverNoteRequired` |
