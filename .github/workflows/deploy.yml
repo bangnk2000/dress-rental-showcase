@@ -47,6 +47,9 @@ jobs:
       mint: ${{ steps.record.outcome == 'success' && steps.plan.outputs.mint || 'false' }}
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_DOMAIN: ${{ vars.DEPLOY_DOMAIN }}
+      DEPLOY_WEB_DOMAIN: ${{ vars.DEPLOY_WEB_DOMAIN }}
+      DEPLOY_IMAGE_BASE_URL: ${{ vars.DEPLOY_IMAGE_BASE_URL }}
       # Two trees: the scripts come from THIS workflow's commit (ops/), the code that gets built from
       # the target (target/) — so rolling back to a commit older than infra/deploy/ still works.
       DEPLOY_TREE: ${{ github.workspace }}/target

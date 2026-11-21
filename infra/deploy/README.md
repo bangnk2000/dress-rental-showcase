@@ -96,6 +96,13 @@ Repo Settings → Secrets and variables → Actions → **repository secrets**:
 - `DEPLOY_KNOWN_HOSTS`: the output of `ssh-keyscan -t ed25519 <IP>`, verified once against the VPS.
   Host-key checking is strict.
 
+Repo Settings → Secrets and variables → Actions → **repository variables** (no domain is hard-coded;
+`lib.sh` stops if one is missing):
+
+- `DEPLOY_DOMAIN`: staff SPA + API origin, e.g. `cms.example.com`.
+- `DEPLOY_WEB_DOMAIN`: public website, e.g. `example.com`.
+- `DEPLOY_IMAGE_BASE_URL`: public origin of the photo bucket, e.g. `https://img.example.com`.
+
 The key's public half goes into `/root/.ssh/authorized_keys` on the VPS. `harden.sh` already allows
 `22/tcp` from anywhere, with fail2ban on sshd.
 

@@ -26,6 +26,9 @@ jobs:
     timeout-minutes: 15
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_DOMAIN: ${{ vars.DEPLOY_DOMAIN }}
+      DEPLOY_WEB_DOMAIN: ${{ vars.DEPLOY_WEB_DOMAIN }}
+      DEPLOY_IMAGE_BASE_URL: ${{ vars.DEPLOY_IMAGE_BASE_URL }}
       OPS_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4

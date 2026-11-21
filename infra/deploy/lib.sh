@@ -11,9 +11,13 @@ SSH_USER="${DEPLOY_SSH_USER:-root}"
 SSH_KEY="${DEPLOY_SSH_KEY_FILE:-$HOME/.ssh/deploy_key}"
 KNOWN_HOSTS="${DEPLOY_KNOWN_HOSTS_FILE:-$HOME/.ssh/known_hosts_deploy}"
 
-DOMAIN="${DEPLOY_DOMAIN:-cms.example.com}"              # staff SPA + API origin (Cloudflare proxied)
-WEB_DOMAIN="${DEPLOY_WEB_DOMAIN:-example.com}"          # public site apps/web
-IMAGE_BASE_URL="${DEPLOY_IMAGE_BASE_URL:-https://img.example.com}"  # = BE IMAGE_PUBLIC_BASE_URL
+# Domains come ONLY from the environment (repository variables in CI) — no real domain is baked in.
+: "${DEPLOY_DOMAIN:?DEPLOY_DOMAIN is not set (repository variable, e.g. cms.example.com)}"
+: "${DEPLOY_WEB_DOMAIN:?DEPLOY_WEB_DOMAIN is not set (repository variable, e.g. example.com)}"
+: "${DEPLOY_IMAGE_BASE_URL:?DEPLOY_IMAGE_BASE_URL is not set (repository variable, e.g. https://img.example.com)}"
+DOMAIN="$DEPLOY_DOMAIN"                 # staff SPA + API origin (Cloudflare proxied)
+WEB_DOMAIN="$DEPLOY_WEB_DOMAIN"         # public site apps/web
+IMAGE_BASE_URL="$DEPLOY_IMAGE_BASE_URL" # = BE IMAGE_PUBLIC_BASE_URL
 WEB_PORT=3001                                           # dress-web binds localhost:3001 (never 127.0.0.1)
 REMOTE_DIR=/opt/dress-rental
 OPS_DIR=/opt/dress-ops

@@ -3,18 +3,20 @@
 #   bash infra/deploy/test/deploy-versioning.test.sh
 # Uses REAL commits of this repo (full history needed) so the path rules (lib.sh part_re) and the
 # migration rule are exercised on real diffs:
-#   A 5cd5646 → B 1067bc1 adds two migrations;  B → C bbf1421 changes apps/be (no migration, same lockfile);
-#   C → D d2fbfb0 changes apps/fe + apps/{be,web}/AGENTS.md only.
+#   A f6e6e41 → B 2767ce1 adds two migrations;  B → C cbfae78 changes apps/be (no migration, same lockfile);
+#   C → D 5ed91ba changes apps/fe + apps/{be,web}/AGENTS.md only.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DEPLOY="$(cd "$HERE/.." && pwd)"
 REPO="$(cd "$DEPLOY/../.." && pwd)"
 export DEPLOY_HOST=offline-test
-A=5cd564622416dc674970e46473c895a671978367
-B=1067bc1e0bc408c6e64995ab5a24383db578043e
-C=bbf1421ddb0d42b034f7635946019b4f76333b74
-D=d2fbfb044131dbfdc04849fc1cd0f9b8a2e7cb32
-OLD_OPS=$(git -C "$REPO" rev-parse 68b4bec~1)   # before infra/deploy/remote/build-remote.sh existed
+export DEPLOY_DOMAIN=cms.example.com DEPLOY_WEB_DOMAIN=example.com
+export DEPLOY_IMAGE_BASE_URL=https://img.example.com
+A=f6e6e41d01b80d5f29c220a4eca21f59c39ab5fe
+B=2767ce1e545e90fc85ab7bd0e02ce95989fb42f8
+C=cbfae78331e746e391d65fe57a3dafa46068b156
+D=5ed91ba9a52f1c72852b97ac41b7f1cc4064ae1d
+OLD_OPS=$(git -C "$REPO" rev-parse 65780e6~1)   # before infra/deploy/remote/build-remote.sh existed
 L=1111111111111111111111111111111111111111111111111111111111111111
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 pass=0 fail=0

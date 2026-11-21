@@ -1,5 +1,11 @@
 # dress-rental
 
+> **Bản showcase.** Đây là bản sao của một hệ thống đang chạy production cho một tiệm cho thuê váy.
+> Tên thương hiệu, domain, địa chỉ, số điện thoại và ảnh cửa hàng đã được thay bằng dữ liệu giả
+> (`Atelier Demo`, `example.com`) trong toàn bộ lịch sử commit. Mọi domain được cấu hình qua biến
+> môi trường (`.env.example` của từng app; `DEPLOY_*` repository variables cho deploy — xem
+> `infra/deploy/README.md`), không có domain nào được hard-code.
+
 Ứng dụng nội bộ cho tiệm cho thuê váy (khoảng 200 váy), thay thế quy trình Google
 Sheets. Giao diện chính dành cho nhân viên, tiếng Việt là ngôn ngữ ưu tiên.
 
